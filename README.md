@@ -2,6 +2,8 @@
 - 电报群：[http://t.me/q115_strm](https://t.me/q115_strm)
 - QQ群：1057459156
 
+  ### 从v.10.x版本升级到 v0.11.x或以上版本时，如果无启动，则删除docker容器，删除本地镜像，然后重新构建compose.
+
 ## 介绍
 - **默认用户名 admin,密码 admin123**
 - 默认端口：http-12333   https-12332
