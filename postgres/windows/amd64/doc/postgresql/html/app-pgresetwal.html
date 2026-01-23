@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_resetwal</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-pg-ctl.html" title="pg_ctl" /><link rel="next" href="app-pgrewind.html" title="pg_rewind" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_resetwal</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-pg-ctl.html" title="pg_ctl">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><th width="60%" align="center">PostgreSQL Server Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="app-pgrewind.html" title="pg_rewind">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-PGRESETWAL"><div class="titlepage"></div><a id="id-1.9.5.8.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_resetwal</span></span></h2><p>pg_resetwal — reset the write-ahead log and other control information of a <span class="productname">PostgreSQL</span> database cluster</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.5.8.4.1"><code class="command">pg_resetwal</code> [ <code class="option">-f</code>  |   <code class="option">--force</code> ] [ <code class="option">-n</code>  |   <code class="option">--dry-run</code> ] [<em class="replaceable"><code>option</code></em>...]  [ <code class="option">-D</code>  |   <code class="option">--pgdata</code> ]<em class="replaceable"><code>datadir</code></em> </p></div></div><div class="refsect1" id="R1-APP-PGRESETWAL-1"><h2>Description</h2><p>
+   <code class="command">pg_resetwal</code> clears the write-ahead log (WAL) and
+   optionally resets some other control information stored in the
+   <code class="filename">pg_control</code> file.  This function is sometimes needed
+   if these files have become corrupted.  It should be used only as a
+   last resort, when the server will not start due to such corruption.
+  </p><p>
+   After running this command, it should be possible to start the server,
+   but bear in mind that the database might contain inconsistent data due to
+   partially-committed transactions.  You should immediately dump your data,
+   run <code class="command">initdb</code>, and restore.  After restore, check for
+   inconsistencies and repair as needed.
+  </p><p>
+   This utility can only be run by the user who installed the server, because
+   it requires read/write access to the data directory.
+   For safety reasons, you must specify the data directory on the command line.
+   <code class="command">pg_resetwal</code> does not use the environment variable
+   <code class="envar">PGDATA</code>.
+  </p><p>
+   If <code class="command">pg_resetwal</code> complains that it cannot determine
+   valid data for <code class="filename">pg_control</code>, you can force it to proceed anyway
+   by specifying the <code class="option">-f</code> (force) option.  In this case plausible
+   values will be substituted for the missing data.  Most of the fields can be
+   expected to match, but manual assistance might be needed for the next OID,
+   next transaction ID and epoch, next multitransaction ID and offset, and
+   WAL starting location fields. These fields can be set using the options
+   discussed below. If you are not able to determine correct values for all
+   these fields, <code class="option">-f</code> can still be used, but
+   the recovered database must be treated with even more suspicion than
+   usual: an immediate dump and restore is imperative.  <span class="emphasis"><em>Do not</em></span>
+   execute any data-modifying operations in the database before you dump,
+   as any such action is likely to make the corruption worse.
+  </p></div><div class="refsect1" id="id-1.9.5.8.6"><h2>Options</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-f</code><br /></span><span class="term"><code class="option">--force</code></span></dt><dd><p>
+      Force <code class="command">pg_resetwal</code> to proceed even if it cannot determine
+      valid data for <code class="filename">pg_control</code>, as explained above.
+     </p></dd><dt><span class="term"><code class="option">-n</code><br /></span><span class="term"><code class="option">--dry-run</code></span></dt><dd><p>
+      The <code class="option">-n</code>/<code class="option">--dry-run</code> option instructs
+      <code class="command">pg_resetwal</code> to print the values reconstructed from
+      <code class="filename">pg_control</code> and values about to be changed, and then exit
+      without modifying anything. This is mainly a debugging tool, but can be
+      useful as a sanity check before allowing <code class="command">pg_resetwal</code>
+      to proceed for real.
+     </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>Display version information, then exit.</p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>Show help, then exit.</p></dd></dl></div><p>
+   The following options are only needed when
+   <code class="command">pg_resetwal</code> is unable to determine appropriate values
+   by reading <code class="filename">pg_control</code>.  Safe values can be determined as
+   described below.  For values that take numeric arguments, hexadecimal
+   values can be specified by using the prefix <code class="literal">0x</code>.
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-c <em class="replaceable"><code>xid</code></em>,<em class="replaceable"><code>xid</code></em></code><br /></span><span class="term"><code class="option">--commit-timestamp-ids=<em class="replaceable"><code>xid</code></em>,<em class="replaceable"><code>xid</code></em></code></span></dt><dd><p>
+      Manually set the oldest and newest transaction IDs for which the commit
+      time can be retrieved.
+     </p><p>
+      A safe value for the oldest transaction ID for which the commit time can
+      be retrieved (first part) can be determined by looking
+      for the numerically smallest file name in the directory
+      <code class="filename">pg_commit_ts</code> under the data directory.  Conversely, a safe
+      value for the newest transaction ID for which the commit time can be
+      retrieved (second part) can be determined by looking for the numerically
+      greatest file name in the same directory.  The file names are in
+      hexadecimal.
+     </p></dd><dt><span class="term"><code class="option">-e <em class="replaceable"><code>xid_epoch</code></em></code><br /></span><span class="term"><code class="option">--epoch=<em class="replaceable"><code>xid_epoch</code></em></code></span></dt><dd><p>
+      Manually set the next transaction ID's epoch.
+     </p><p>
+      The transaction ID epoch is not actually stored anywhere in the database
+      except in the field that is set by <code class="command">pg_resetwal</code>,
+      so any value will work so far as the database itself is concerned.
+      You might need to adjust this value to ensure that replication
+      systems such as <span class="application">Slony-I</span> and
+      <span class="application">Skytools</span> work correctly —
+      if so, an appropriate value should be obtainable from the state of
+      the downstream replicated database.
+     </p></dd><dt><span class="term"><code class="option">-l <em class="replaceable"><code>walfile</code></em></code><br /></span><span class="term"><code class="option">--next-wal-file=<em class="replaceable"><code>walfile</code></em></code></span></dt><dd><p>
+      Manually set the WAL starting location by specifying the name of the
+      next WAL segment file.
+     </p><p>
+      The name of next WAL segment file should be
+      larger than any WAL segment file name currently existing in
+      the directory <code class="filename">pg_wal</code> under the data directory.
+      These names are also in hexadecimal and have three parts.  The first
+      part is the <span class="quote">“<span class="quote">timeline ID</span>”</span> and should usually be kept the same.
+      For example, if <code class="filename">00000001000000320000004A</code> is the
+      largest entry in <code class="filename">pg_wal</code>, use <code class="literal">-l 00000001000000320000004B</code> or higher.
+     </p><p>
+      Note that when using nondefault WAL segment sizes, the numbers in the WAL
+      file names are different from the LSNs that are reported by system
+      functions and system views.  This option takes a WAL file name, not an
+      LSN.
+     </p><div class="note"><h3 class="title">Note</h3><p>
+       <code class="command">pg_resetwal</code> itself looks at the files in
+       <code class="filename">pg_wal</code> and chooses a default <code class="option">-l</code> setting
+       beyond the last existing file name.  Therefore, manual adjustment of
+       <code class="option">-l</code> should only be needed if you are aware of WAL segment
+       files that are not currently present in <code class="filename">pg_wal</code>, such as
+       entries in an offline archive; or if the contents of
+       <code class="filename">pg_wal</code> have been lost entirely.
+      </p></div></dd><dt><span class="term"><code class="option">-m <em class="replaceable"><code>mxid</code></em>,<em class="replaceable"><code>mxid</code></em></code><br /></span><span class="term"><code class="option">--multixact-ids=<em class="replaceable"><code>mxid</code></em>,<em class="replaceable"><code>mxid</code></em></code></span></dt><dd><p>
+      Manually set the next and oldest multitransaction ID.
+     </p><p>
+      A safe value for the next multitransaction ID (first part) can be
+      determined by looking for the numerically largest file name in the
+      directory <code class="filename">pg_multixact/offsets</code> under the data directory,
+      adding one, and then multiplying by 65536 (0x10000).  Conversely, a safe
+      value for the oldest multitransaction ID (second part of
+      <code class="option">-m</code>) can be determined by looking for the numerically smallest
+      file name in the same directory and multiplying by 65536.  The file
+      names are in hexadecimal, so the easiest way to do this is to specify
+      the option value in hexadecimal and append four zeroes.
+     </p></dd><dt><span class="term"><code class="option">-o <em class="replaceable"><code>oid</code></em></code><br /></span><span class="term"><code class="option">--next-oid=<em class="replaceable"><code>oid</code></em></code></span></dt><dd><p>
+      Manually set the next OID.
+     </p><p>
+      There is no comparably easy way to determine a next OID that's beyond
+      the largest one in the database, but fortunately it is not critical to
+      get the next-OID setting right.
+     </p></dd><dt><span class="term"><code class="option">-O <em class="replaceable"><code>mxoff</code></em></code><br /></span><span class="term"><code class="option">--multixact-offset=<em class="replaceable"><code>mxoff</code></em></code></span></dt><dd><p>
+      Manually set the next multitransaction offset.
+     </p><p>
+      A safe value can be determined by looking for the numerically largest
+      file name in the directory <code class="filename">pg_multixact/members</code> under the
+      data directory, adding one, and then multiplying by 52352 (0xCC80).
+      The file names are in hexadecimal.  There is no simple recipe such as
+      the ones for other options of appending zeroes.
+     </p></dd><dt><span class="term"><code class="option">--wal-segsize=<em class="replaceable"><code>wal_segment_size</code></em></code></span></dt><dd><p>
+      Set the new WAL segment size, in megabytes.  The value must be set to a
+      power of 2 between 1 and 1024 (megabytes).  See the same option of <a class="xref" href="app-initdb.html" title="initdb"><span class="refentrytitle"><span class="application">initdb</span></span></a> for more information.
+     </p><div class="note"><h3 class="title">Note</h3><p>
+       While <code class="command">pg_resetwal</code> will set the WAL starting address
+       beyond the latest existing WAL segment file, some segment size changes
+       can cause previous WAL file names to be reused.  It is recommended to
+       use <code class="option">-l</code> together with this option to manually set the
+       WAL starting address if WAL file name overlap will cause problems with
+       your archiving strategy.
+      </p></div></dd><dt><span class="term"><code class="option">-u <em class="replaceable"><code>xid</code></em></code><br /></span><span class="term"><code class="option">--oldest-transaction-id=<em class="replaceable"><code>xid</code></em></code></span></dt><dd><p>
+      Manually set the oldest unfrozen transaction ID.
+     </p><p>
+      A safe value can be determined by looking for the numerically smallest
+      file name in the directory <code class="filename">pg_xact</code> under the data directory
+      and then multiplying by 1048576 (0x100000).  Note that the file names are in
+      hexadecimal.  It is usually easiest to specify the option value in
+      hexadecimal too. For example, if <code class="filename">0007</code> is the smallest entry
+      in <code class="filename">pg_xact</code>, <code class="literal">-u 0x700000</code> will work (five
+      trailing zeroes provide the proper multiplier).
+     </p></dd><dt><span class="term"><code class="option">-x <em class="replaceable"><code>xid</code></em></code><br /></span><span class="term"><code class="option">--next-transaction-id=<em class="replaceable"><code>xid</code></em></code></span></dt><dd><p>
+      Manually set the next transaction ID.
+     </p><p>
+      A safe value can be determined by looking for the numerically largest
+      file name in the directory <code class="filename">pg_xact</code> under the data directory,
+      adding one,
+      and then multiplying by 1048576 (0x100000).  Note that the file names are in
+      hexadecimal.  It is usually easiest to specify the option value in
+      hexadecimal too. For example, if <code class="filename">0011</code> is the largest entry
+      in <code class="filename">pg_xact</code>, <code class="literal">-x 0x1200000</code> will work (five
+      trailing zeroes provide the proper multiplier).
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.5.8.7"><h2>Environment</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="envar">PG_COLOR</code></span></dt><dd><p>
+      Specifies whether to use color in diagnostic messages. Possible values
+      are <code class="literal">always</code>, <code class="literal">auto</code> and
+      <code class="literal">never</code>.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.5.8.8"><h2>Notes</h2><p>
+   This command must not be used when the server is
+   running.  <code class="command">pg_resetwal</code> will refuse to start up if
+   it finds a server lock file in the data directory.  If the
+   server crashed then a lock file might have been left
+   behind; in that case you can remove the lock file to allow
+   <code class="command">pg_resetwal</code> to run.  But before you do
+   so, make doubly certain that there is no server process still alive.
+  </p><p>
+   <code class="command">pg_resetwal</code> works only with servers of the same
+   major version.
+  </p></div><div class="refsect1" id="id-1.9.5.8.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="app-pgcontroldata.html" title="pg_controldata"><span class="refentrytitle"><span class="application">pg_controldata</span></span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-pg-ctl.html" title="pg_ctl">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="app-pgrewind.html" title="pg_rewind">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_ctl</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_rewind</span></td></tr></table></div></body></html>

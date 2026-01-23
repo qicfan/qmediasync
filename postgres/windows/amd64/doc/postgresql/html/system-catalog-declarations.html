@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>71.1. System Catalog Declaration Rules</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents" /><link rel="next" href="system-catalog-initial-data.html" title="71.2. System Catalog Initial Data" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">71.1. System Catalog Declaration Rules</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Up</a></td><th width="60%" align="center">Chapter 71. System Catalog Declarations and Initial Contents</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="system-catalog-initial-data.html" title="71.2. System Catalog Initial Data">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SYSTEM-CATALOG-DECLARATIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">71.1. System Catalog Declaration Rules</h2></div></div></div><p>
+   The key part of a catalog header file is a C structure definition
+   describing the layout of each row of the catalog.  This begins with
+   a <code class="literal">CATALOG</code> macro, which so far as the C compiler is
+   concerned is just shorthand for <code class="literal">typedef struct
+   FormData_<em class="replaceable"><code>catalogname</code></em></code>.
+   Each field in the struct gives rise to a catalog column.
+   Fields can be annotated using the BKI property macros described
+   in <code class="filename">genbki.h</code>, for example to define a default value
+   for a field or mark it as nullable or not nullable.
+   The <code class="literal">CATALOG</code> line can also be annotated, with some
+   other BKI property macros described in <code class="filename">genbki.h</code>, to
+   define other properties of the catalog as a whole, such as whether
+   it is a shared relation.
+  </p><p>
+   The system catalog cache code (and most catalog-munging code in general)
+   assumes that the fixed-length portions of all system catalog tuples are
+   in fact present, because it maps this C struct declaration onto them.
+   Thus, all variable-length fields and nullable fields must be placed at
+   the end, and they cannot be accessed as struct fields.
+   For example, if you tried to
+   set <code class="structname">pg_type</code>.<code class="structfield">typrelid</code>
+   to be NULL, it would fail when some piece of code tried to reference
+   <code class="literal">typetup-&gt;typrelid</code> (or worse,
+   <code class="literal">typetup-&gt;typelem</code>, because that follows
+   <code class="structfield">typrelid</code>).  This would result in
+   random errors or even segmentation violations.
+  </p><p>
+   As a partial guard against this type of error, variable-length or
+   nullable fields should not be made directly visible to the C compiler.
+   This is accomplished by wrapping them in <code class="literal">#ifdef
+   CATALOG_VARLEN</code> ... <code class="literal">#endif</code> (where
+   <code class="literal">CATALOG_VARLEN</code> is a symbol that is never defined).
+   This prevents C code from carelessly trying to access fields that might
+   not be there or might be at some other offset.
+   As an independent guard against creating incorrect rows, we
+   require all columns that should be non-nullable to be marked so
+   in <code class="structname">pg_attribute</code>.  The bootstrap code will
+   automatically mark catalog columns as <code class="literal">NOT NULL</code>
+   if they are fixed-width and are not preceded by any nullable or
+   variable-width column.
+   Where this rule is inadequate, you can force correct marking by using
+   <code class="literal">BKI_FORCE_NOT_NULL</code>
+   and <code class="literal">BKI_FORCE_NULL</code> annotations as needed.
+  </p><p>
+   Frontend code should not include any <code class="filename">pg_xxx.h</code>
+   catalog header file, as these files may contain C code that won't compile
+   outside the backend.  (Typically, that happens because these files also
+   contain declarations for functions
+   in <code class="filename">src/backend/catalog/</code> files.)
+   Instead, frontend code may include the corresponding
+   generated <code class="filename">pg_xxx_d.h</code> header, which will contain
+   OID <code class="literal">#define</code>s and any other data that might be of use
+   on the client side.  If you want macros or other code in a catalog header
+   to be visible to frontend code, write <code class="literal">#ifdef
+   EXPOSE_TO_CLIENT_CODE</code> ... <code class="literal">#endif</code> around that
+   section to instruct <code class="filename">genbki.pl</code> to copy that section
+   to the <code class="filename">pg_xxx_d.h</code> header.
+  </p><p>
+   A few of the catalogs are so fundamental that they can't even be created
+   by the <acronym class="acronym">BKI</acronym> <code class="literal">create</code> command that's
+   used for most catalogs, because that command needs to write information
+   into these catalogs to describe the new catalog.  These are
+   called <em class="firstterm">bootstrap</em> catalogs, and defining one takes
+   a lot of extra work: you have to manually prepare appropriate entries for
+   them in the pre-loaded contents of <code class="structname">pg_class</code>
+   and <code class="structname">pg_type</code>, and those entries will need to be
+   updated for subsequent changes to the catalog's structure.
+   (Bootstrap catalogs also need pre-loaded entries
+   in <code class="structname">pg_attribute</code>, but
+   fortunately <code class="filename">genbki.pl</code> handles that chore nowadays.)
+   Avoid making new catalogs be bootstrap catalogs if at all possible.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="system-catalog-initial-data.html" title="71.2. System Catalog Initial Data">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 71. System Catalog Declarations and Initial Contents </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 71.2. System Catalog Initial Data</td></tr></table></div></body></html>

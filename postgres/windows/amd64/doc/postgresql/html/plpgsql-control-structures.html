@@ -1,0 +1,943 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>43.6. Control Structures</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="plpgsql-statements.html" title="43.5. Basic Statements" /><link rel="next" href="plpgsql-cursors.html" title="43.7. Cursors" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">43.6. Control Structures</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="plpgsql-statements.html" title="43.5. Basic Statements">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="plpgsql.html" title="Chapter 43. PL/pgSQL — SQL Procedural Language">Up</a></td><th width="60%" align="center">Chapter 43. <span xmlns="http://www.w3.org/1999/xhtml" class="application">PL/pgSQL</span> — <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="plpgsql-cursors.html" title="43.7. Cursors">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLPGSQL-CONTROL-STRUCTURES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">43.6. Control Structures</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-STATEMENTS-RETURNING">43.6.1. Returning from a Function</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-STATEMENTS-RETURNING-PROCEDURE">43.6.2. Returning from a Procedure</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-STATEMENTS-CALLING-PROCEDURE">43.6.3. Calling a Procedure</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-CONDITIONALS">43.6.4. Conditionals</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-CONTROL-STRUCTURES-LOOPS">43.6.5. Simple Loops</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-RECORDS-ITERATING">43.6.6. Looping through Query Results</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-FOREACH-ARRAY">43.6.7. Looping through Arrays</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING">43.6.8. Trapping Errors</a></span></dt><dt><span class="sect2"><a href="plpgsql-control-structures.html#PLPGSQL-CALL-STACK">43.6.9. Obtaining Execution Location Information</a></span></dt></dl></div><p>
+    Control structures are probably the most useful (and
+    important) part of <span class="application">PL/pgSQL</span>. With
+    <span class="application">PL/pgSQL</span>'s control structures,
+    you can manipulate <span class="productname">PostgreSQL</span> data in a very
+    flexible and powerful way.
+   </p><div class="sect2" id="PLPGSQL-STATEMENTS-RETURNING"><div class="titlepage"><div><div><h3 class="title">43.6.1. Returning from a Function</h3></div></div></div><p>
+     There are two commands available that allow you to return data
+     from a function: <code class="command">RETURN</code> and <code class="command">RETURN
+     NEXT</code>.
+    </p><div class="sect3" id="id-1.8.8.8.3.3"><div class="titlepage"><div><div><h4 class="title">43.6.1.1. <code class="command">RETURN</code></h4></div></div></div><pre class="synopsis">
+RETURN <em class="replaceable"><code>expression</code></em>;
+</pre><p>
+      <code class="command">RETURN</code> with an expression terminates the
+      function and returns the value of
+      <em class="replaceable"><code>expression</code></em> to the caller.  This form
+      is used for <span class="application">PL/pgSQL</span> functions that do
+      not return a set.
+     </p><p>
+      In a function that returns a scalar type, the expression's result will
+      automatically be cast into the function's return type as described for
+      assignments.  But to return a composite (row) value, you must write an
+      expression delivering exactly the requested column set.  This may
+      require use of explicit casting.
+     </p><p>
+      If you declared the function with output parameters, write just
+      <code class="command">RETURN</code> with no expression.  The current values
+      of the output parameter variables will be returned.
+     </p><p>
+      If you declared the function to return <code class="type">void</code>, a
+      <code class="command">RETURN</code> statement can be used to exit the function
+      early; but do not write an expression following
+      <code class="command">RETURN</code>.
+     </p><p>
+      The return value of a function cannot be left undefined. If
+      control reaches the end of the top-level block of the function
+      without hitting a <code class="command">RETURN</code> statement, a run-time
+      error will occur.  This restriction does not apply to functions
+      with output parameters and functions returning <code class="type">void</code>,
+      however.  In those cases a <code class="command">RETURN</code> statement is
+      automatically executed if the top-level block finishes.
+     </p><p>
+      Some examples:
+
+</p><pre class="programlisting">
+-- functions returning a scalar type
+RETURN 1 + 2;
+RETURN scalar_var;
+
+-- functions returning a composite type
+RETURN composite_type_var;
+RETURN (1, 2, 'three'::text);  -- must cast columns to correct types
+</pre><p>
+     </p></div><div class="sect3" id="id-1.8.8.8.3.4"><div class="titlepage"><div><div><h4 class="title">43.6.1.2. <code class="command">RETURN NEXT</code> and <code class="command">RETURN QUERY</code></h4></div></div></div><a id="id-1.8.8.8.3.4.2" class="indexterm"></a><a id="id-1.8.8.8.3.4.3" class="indexterm"></a><pre class="synopsis">
+RETURN NEXT <em class="replaceable"><code>expression</code></em>;
+RETURN QUERY <em class="replaceable"><code>query</code></em>;
+RETURN QUERY EXECUTE <em class="replaceable"><code>command-string</code></em> [<span class="optional"> USING <em class="replaceable"><code>expression</code></em> [<span class="optional">, ... </span>] </span>];
+</pre><p>
+      When a <span class="application">PL/pgSQL</span> function is declared to return
+      <code class="literal">SETOF <em class="replaceable"><code>sometype</code></em></code>, the procedure
+      to follow is slightly different.  In that case, the individual
+      items to return are specified by a sequence of <code class="command">RETURN
+      NEXT</code> or <code class="command">RETURN QUERY</code> commands, and
+      then a final <code class="command">RETURN</code> command with no argument
+      is used to indicate that the function has finished executing.
+      <code class="command">RETURN NEXT</code> can be used with both scalar and
+      composite data types; with a composite result type, an entire
+      <span class="quote">“<span class="quote">table</span>”</span> of results will be returned.
+      <code class="command">RETURN QUERY</code> appends the results of executing
+      a query to the function's result set. <code class="command">RETURN
+      NEXT</code> and <code class="command">RETURN QUERY</code> can be freely
+      intermixed in a single set-returning function, in which case
+      their results will be concatenated.
+     </p><p>
+      <code class="command">RETURN NEXT</code> and <code class="command">RETURN
+      QUERY</code> do not actually return from the function —
+      they simply append zero or more rows to the function's result
+      set.  Execution then continues with the next statement in the
+      <span class="application">PL/pgSQL</span> function.  As successive
+      <code class="command">RETURN NEXT</code> or <code class="command">RETURN
+      QUERY</code> commands are executed, the result set is built
+      up.  A final <code class="command">RETURN</code>, which should have no
+      argument, causes control to exit the function (or you can just
+      let control reach the end of the function).
+     </p><p>
+      <code class="command">RETURN QUERY</code> has a variant
+      <code class="command">RETURN QUERY EXECUTE</code>, which specifies the
+      query to be executed dynamically.  Parameter expressions can
+      be inserted into the computed query string via <code class="literal">USING</code>,
+      in just the same way as in the <code class="command">EXECUTE</code> command.
+     </p><p>
+      If you declared the function with output parameters, write just
+      <code class="command">RETURN NEXT</code> with no expression.  On each
+      execution, the current values of the output parameter
+      variable(s) will be saved for eventual return as a row of the
+      result.  Note that you must declare the function as returning
+      <code class="literal">SETOF record</code> when there are multiple output
+      parameters, or <code class="literal">SETOF <em class="replaceable"><code>sometype</code></em></code>
+      when there is just one output parameter of type
+      <em class="replaceable"><code>sometype</code></em>, in order to create a set-returning
+      function with output parameters.
+     </p><p>
+      Here is an example of a function using <code class="command">RETURN
+      NEXT</code>:
+
+</p><pre class="programlisting">
+CREATE TABLE foo (fooid INT, foosubid INT, fooname TEXT);
+INSERT INTO foo VALUES (1, 2, 'three');
+INSERT INTO foo VALUES (4, 5, 'six');
+
+CREATE OR REPLACE FUNCTION get_all_foo() RETURNS SETOF foo AS
+$BODY$
+DECLARE
+    r foo%rowtype;
+BEGIN
+    FOR r IN
+        SELECT * FROM foo WHERE fooid &gt; 0
+    LOOP
+        -- can do some processing here
+        RETURN NEXT r; -- return current row of SELECT
+    END LOOP;
+    RETURN;
+END;
+$BODY$
+LANGUAGE plpgsql;
+
+SELECT * FROM get_all_foo();
+</pre><p>
+     </p><p>
+      Here is an example of a function using <code class="command">RETURN
+      QUERY</code>:
+
+</p><pre class="programlisting">
+CREATE FUNCTION get_available_flightid(date) RETURNS SETOF integer AS
+$BODY$
+BEGIN
+    RETURN QUERY SELECT flightid
+                   FROM flight
+                  WHERE flightdate &gt;= $1
+                    AND flightdate &lt; ($1 + 1);
+
+    -- Since execution is not finished, we can check whether rows were returned
+    -- and raise exception if not.
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No flight at %.', $1;
+    END IF;
+
+    RETURN;
+ END;
+$BODY$
+LANGUAGE plpgsql;
+
+-- Returns available flights or raises exception if there are no
+-- available flights.
+SELECT * FROM get_available_flightid(CURRENT_DATE);
+</pre><p>
+     </p><div class="note"><h3 class="title">Note</h3><p>
+       The current implementation of <code class="command">RETURN NEXT</code>
+       and <code class="command">RETURN QUERY</code> stores the entire result set
+       before returning from the function, as discussed above.  That
+       means that if a <span class="application">PL/pgSQL</span> function produces a
+       very large result set, performance might be poor: data will be
+       written to disk to avoid memory exhaustion, but the function
+       itself will not return until the entire result set has been
+       generated.  A future version of <span class="application">PL/pgSQL</span> might
+       allow users to define set-returning functions
+       that do not have this limitation.  Currently, the point at
+       which data begins being written to disk is controlled by the
+       <a class="xref" href="runtime-config-resource.html#GUC-WORK-MEM">work_mem</a>
+       configuration variable.  Administrators who have sufficient
+       memory to store larger result sets in memory should consider
+       increasing this parameter.
+      </p></div></div></div><div class="sect2" id="PLPGSQL-STATEMENTS-RETURNING-PROCEDURE"><div class="titlepage"><div><div><h3 class="title">43.6.2. Returning from a Procedure</h3></div></div></div><p>
+     A procedure does not have a return value.  A procedure can therefore end
+     without a <code class="command">RETURN</code> statement.  If you wish to use
+     a <code class="command">RETURN</code> statement to exit the code early, write
+     just <code class="command">RETURN</code> with no expression.
+    </p><p>
+     If the procedure has output parameters, the final values of the output
+     parameter variables will be returned to the caller.
+    </p></div><div class="sect2" id="PLPGSQL-STATEMENTS-CALLING-PROCEDURE"><div class="titlepage"><div><div><h3 class="title">43.6.3. Calling a Procedure</h3></div></div></div><p>
+     A <span class="application">PL/pgSQL</span> function, procedure,
+     or <code class="command">DO</code> block can call a procedure
+     using <code class="command">CALL</code>.  Output parameters are handled
+     differently from the way that <code class="command">CALL</code> works in plain
+     SQL.  Each <code class="literal">OUT</code> or <code class="literal">INOUT</code>
+     parameter of the procedure must
+     correspond to a variable in the <code class="command">CALL</code> statement, and
+     whatever the procedure returns is assigned back to that variable after
+     it returns.  For example:
+</p><pre class="programlisting">
+CREATE PROCEDURE triple(INOUT x int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    x := x * 3;
+END;
+$$;
+
+DO $$
+DECLARE myvar int := 5;
+BEGIN
+  CALL triple(myvar);
+  RAISE NOTICE 'myvar = %', myvar;  -- prints 15
+END;
+$$;
+</pre><p>
+     The variable corresponding to an output parameter can be a simple
+     variable or a field of a composite-type variable.  Currently,
+     it cannot be an element of an array.
+    </p></div><div class="sect2" id="PLPGSQL-CONDITIONALS"><div class="titlepage"><div><div><h3 class="title">43.6.4. Conditionals</h3></div></div></div><p>
+     <code class="command">IF</code> and <code class="command">CASE</code> statements let you execute
+     alternative commands based on certain conditions.
+     <span class="application">PL/pgSQL</span> has three forms of <code class="command">IF</code>:
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="literal">IF ... THEN ... END IF</code></p></li><li class="listitem"><p><code class="literal">IF ... THEN ... ELSE ... END IF</code></p></li><li class="listitem"><p><code class="literal">IF ... THEN ... ELSIF ... THEN ... ELSE ... END IF</code></p></li></ul></div><p>
+
+    and two forms of <code class="command">CASE</code>:
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="literal">CASE ... WHEN ... THEN ... ELSE ... END CASE</code></p></li><li class="listitem"><p><code class="literal">CASE WHEN ... THEN ... ELSE ... END CASE</code></p></li></ul></div><p>
+    </p><div class="sect3" id="id-1.8.8.8.6.3"><div class="titlepage"><div><div><h4 class="title">43.6.4.1. <code class="literal">IF-THEN</code></h4></div></div></div><pre class="synopsis">
+IF <em class="replaceable"><code>boolean-expression</code></em> THEN
+    <em class="replaceable"><code>statements</code></em>
+END IF;
+</pre><p>
+        <code class="literal">IF-THEN</code> statements are the simplest form of
+        <code class="literal">IF</code>. The statements between
+        <code class="literal">THEN</code> and <code class="literal">END IF</code> will be
+        executed if the condition is true. Otherwise, they are
+        skipped.
+       </p><p>
+        Example:
+</p><pre class="programlisting">
+IF v_user_id &lt;&gt; 0 THEN
+    UPDATE users SET email = v_email WHERE user_id = v_user_id;
+END IF;
+</pre><p>
+       </p></div><div class="sect3" id="id-1.8.8.8.6.4"><div class="titlepage"><div><div><h4 class="title">43.6.4.2. <code class="literal">IF-THEN-ELSE</code></h4></div></div></div><pre class="synopsis">
+IF <em class="replaceable"><code>boolean-expression</code></em> THEN
+    <em class="replaceable"><code>statements</code></em>
+ELSE
+    <em class="replaceable"><code>statements</code></em>
+END IF;
+</pre><p>
+        <code class="literal">IF-THEN-ELSE</code> statements add to
+        <code class="literal">IF-THEN</code> by letting you specify an
+        alternative set of statements that should be executed if the
+        condition is not true.  (Note this includes the case where the
+        condition evaluates to NULL.)
+       </p><p>
+        Examples:
+</p><pre class="programlisting">
+IF parentid IS NULL OR parentid = ''
+THEN
+    RETURN fullname;
+ELSE
+    RETURN hp_true_filename(parentid) || '/' || fullname;
+END IF;
+</pre><p>
+
+</p><pre class="programlisting">
+IF v_count &gt; 0 THEN
+    INSERT INTO users_count (count) VALUES (v_count);
+    RETURN 't';
+ELSE
+    RETURN 'f';
+END IF;
+</pre><p>
+     </p></div><div class="sect3" id="id-1.8.8.8.6.5"><div class="titlepage"><div><div><h4 class="title">43.6.4.3. <code class="literal">IF-THEN-ELSIF</code></h4></div></div></div><pre class="synopsis">
+IF <em class="replaceable"><code>boolean-expression</code></em> THEN
+    <em class="replaceable"><code>statements</code></em>
+[<span class="optional"> ELSIF <em class="replaceable"><code>boolean-expression</code></em> THEN
+    <em class="replaceable"><code>statements</code></em>
+[<span class="optional"> ELSIF <em class="replaceable"><code>boolean-expression</code></em> THEN
+    <em class="replaceable"><code>statements</code></em>
+    ...
+</span>]
+</span>]
+[<span class="optional"> ELSE
+    <em class="replaceable"><code>statements</code></em> </span>]
+END IF;
+</pre><p>
+        Sometimes there are more than just two alternatives.
+        <code class="literal">IF-THEN-ELSIF</code> provides a convenient
+        method of checking several alternatives in turn.
+        The <code class="literal">IF</code> conditions are tested successively
+        until the first one that is true is found.  Then the
+        associated statement(s) are executed, after which control
+        passes to the next statement after <code class="literal">END IF</code>.
+        (Any subsequent <code class="literal">IF</code> conditions are <span class="emphasis"><em>not</em></span>
+        tested.)  If none of the <code class="literal">IF</code> conditions is true,
+        then the <code class="literal">ELSE</code> block (if any) is executed.
+       </p><p>
+        Here is an example:
+
+</p><pre class="programlisting">
+IF number = 0 THEN
+    result := 'zero';
+ELSIF number &gt; 0 THEN
+    result := 'positive';
+ELSIF number &lt; 0 THEN
+    result := 'negative';
+ELSE
+    -- hmm, the only other possibility is that number is null
+    result := 'NULL';
+END IF;
+</pre><p>
+       </p><p>
+        The key word <code class="literal">ELSIF</code> can also be spelled
+        <code class="literal">ELSEIF</code>.
+       </p><p>
+        An alternative way of accomplishing the same task is to nest
+        <code class="literal">IF-THEN-ELSE</code> statements, as in the
+        following example:
+
+</p><pre class="programlisting">
+IF demo_row.sex = 'm' THEN
+    pretty_sex := 'man';
+ELSE
+    IF demo_row.sex = 'f' THEN
+        pretty_sex := 'woman';
+    END IF;
+END IF;
+</pre><p>
+       </p><p>
+        However, this method requires writing a matching <code class="literal">END IF</code>
+        for each <code class="literal">IF</code>, so it is much more cumbersome than
+        using <code class="literal">ELSIF</code> when there are many alternatives.
+       </p></div><div class="sect3" id="id-1.8.8.8.6.6"><div class="titlepage"><div><div><h4 class="title">43.6.4.4. Simple <code class="literal">CASE</code></h4></div></div></div><pre class="synopsis">
+CASE <em class="replaceable"><code>search-expression</code></em>
+    WHEN <em class="replaceable"><code>expression</code></em> [<span class="optional">, <em class="replaceable"><code>expression</code></em> [<span class="optional"> ... </span>]</span>] THEN
+      <em class="replaceable"><code>statements</code></em>
+  [<span class="optional"> WHEN <em class="replaceable"><code>expression</code></em> [<span class="optional">, <em class="replaceable"><code>expression</code></em> [<span class="optional"> ... </span>]</span>] THEN
+      <em class="replaceable"><code>statements</code></em>
+    ... </span>]
+  [<span class="optional"> ELSE
+      <em class="replaceable"><code>statements</code></em> </span>]
+END CASE;
+</pre><p>
+       The simple form of <code class="command">CASE</code> provides conditional execution
+       based on equality of operands.  The <em class="replaceable"><code>search-expression</code></em>
+       is evaluated (once) and successively compared to each
+       <em class="replaceable"><code>expression</code></em> in the <code class="literal">WHEN</code> clauses.
+       If a match is found, then the corresponding
+       <em class="replaceable"><code>statements</code></em> are executed, and then control
+       passes to the next statement after <code class="literal">END CASE</code>.  (Subsequent
+       <code class="literal">WHEN</code> expressions are not evaluated.)  If no match is
+       found, the <code class="literal">ELSE</code> <em class="replaceable"><code>statements</code></em> are
+       executed; but if <code class="literal">ELSE</code> is not present, then a
+       <code class="literal">CASE_NOT_FOUND</code> exception is raised.
+      </p><p>
+       Here is a simple example:
+
+</p><pre class="programlisting">
+CASE x
+    WHEN 1, 2 THEN
+        msg := 'one or two';
+    ELSE
+        msg := 'other value than one or two';
+END CASE;
+</pre><p>
+      </p></div><div class="sect3" id="id-1.8.8.8.6.7"><div class="titlepage"><div><div><h4 class="title">43.6.4.5. Searched <code class="literal">CASE</code></h4></div></div></div><pre class="synopsis">
+CASE
+    WHEN <em class="replaceable"><code>boolean-expression</code></em> THEN
+      <em class="replaceable"><code>statements</code></em>
+  [<span class="optional"> WHEN <em class="replaceable"><code>boolean-expression</code></em> THEN
+      <em class="replaceable"><code>statements</code></em>
+    ... </span>]
+  [<span class="optional"> ELSE
+      <em class="replaceable"><code>statements</code></em> </span>]
+END CASE;
+</pre><p>
+       The searched form of <code class="command">CASE</code> provides conditional execution
+       based on truth of Boolean expressions.  Each <code class="literal">WHEN</code> clause's
+       <em class="replaceable"><code>boolean-expression</code></em> is evaluated in turn,
+       until one is found that yields <code class="literal">true</code>.  Then the
+       corresponding <em class="replaceable"><code>statements</code></em> are executed, and
+       then control passes to the next statement after <code class="literal">END CASE</code>.
+       (Subsequent <code class="literal">WHEN</code> expressions are not evaluated.)
+       If no true result is found, the <code class="literal">ELSE</code>
+       <em class="replaceable"><code>statements</code></em> are executed;
+       but if <code class="literal">ELSE</code> is not present, then a
+       <code class="literal">CASE_NOT_FOUND</code> exception is raised.
+      </p><p>
+       Here is an example:
+
+</p><pre class="programlisting">
+CASE
+    WHEN x BETWEEN 0 AND 10 THEN
+        msg := 'value is between zero and ten';
+    WHEN x BETWEEN 11 AND 20 THEN
+        msg := 'value is between eleven and twenty';
+END CASE;
+</pre><p>
+      </p><p>
+       This form of <code class="command">CASE</code> is entirely equivalent to
+       <code class="literal">IF-THEN-ELSIF</code>, except for the rule that reaching
+       an omitted <code class="literal">ELSE</code> clause results in an error rather
+       than doing nothing.
+      </p></div></div><div class="sect2" id="PLPGSQL-CONTROL-STRUCTURES-LOOPS"><div class="titlepage"><div><div><h3 class="title">43.6.5. Simple Loops</h3></div></div></div><a id="id-1.8.8.8.7.2" class="indexterm"></a><p>
+     With the <code class="literal">LOOP</code>, <code class="literal">EXIT</code>,
+     <code class="literal">CONTINUE</code>, <code class="literal">WHILE</code>, <code class="literal">FOR</code>,
+     and <code class="literal">FOREACH</code> statements, you can arrange for your
+     <span class="application">PL/pgSQL</span> function to repeat a series of commands.
+    </p><div class="sect3" id="id-1.8.8.8.7.4"><div class="titlepage"><div><div><h4 class="title">43.6.5.1. <code class="literal">LOOP</code></h4></div></div></div><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+LOOP
+    <em class="replaceable"><code>statements</code></em>
+END LOOP [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>];
+</pre><p>
+      <code class="literal">LOOP</code> defines an unconditional loop that is repeated
+      indefinitely until terminated by an <code class="literal">EXIT</code> or
+      <code class="command">RETURN</code> statement.  The optional
+      <em class="replaceable"><code>label</code></em> can be used by <code class="literal">EXIT</code>
+      and <code class="literal">CONTINUE</code> statements within nested loops to
+      specify which loop those statements refer to.
+     </p></div><div class="sect3" id="id-1.8.8.8.7.5"><div class="titlepage"><div><div><h4 class="title">43.6.5.2. <code class="literal">EXIT</code></h4></div></div></div><a id="id-1.8.8.8.7.5.2" class="indexterm"></a><pre class="synopsis">
+EXIT [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>] [<span class="optional"> WHEN <em class="replaceable"><code>boolean-expression</code></em> </span>];
+</pre><p>
+        If no <em class="replaceable"><code>label</code></em> is given, the innermost
+        loop is terminated and the statement following <code class="literal">END
+        LOOP</code> is executed next.  If <em class="replaceable"><code>label</code></em>
+        is given, it must be the label of the current or some outer
+        level of nested loop or block. Then the named loop or block is
+        terminated and control continues with the statement after the
+        loop's/block's corresponding <code class="literal">END</code>.
+       </p><p>
+        If <code class="literal">WHEN</code> is specified, the loop exit occurs only if
+        <em class="replaceable"><code>boolean-expression</code></em> is true. Otherwise, control passes
+        to the statement after <code class="literal">EXIT</code>.
+       </p><p>
+        <code class="literal">EXIT</code> can be used with all types of loops; it is
+        not limited to use with unconditional loops.
+       </p><p>
+        When used with a
+        <code class="literal">BEGIN</code> block, <code class="literal">EXIT</code> passes
+        control to the next statement after the end of the block.
+        Note that a label must be used for this purpose; an unlabeled
+        <code class="literal">EXIT</code> is never considered to match a
+        <code class="literal">BEGIN</code> block.  (This is a change from
+        pre-8.4 releases of <span class="productname">PostgreSQL</span>, which
+        would allow an unlabeled <code class="literal">EXIT</code> to match
+        a <code class="literal">BEGIN</code> block.)
+       </p><p>
+        Examples:
+</p><pre class="programlisting">
+LOOP
+    -- some computations
+    IF count &gt; 0 THEN
+        EXIT;  -- exit loop
+    END IF;
+END LOOP;
+
+LOOP
+    -- some computations
+    EXIT WHEN count &gt; 0;  -- same result as previous example
+END LOOP;
+
+&lt;&lt;ablock&gt;&gt;
+BEGIN
+    -- some computations
+    IF stocks &gt; 100000 THEN
+        EXIT ablock;  -- causes exit from the BEGIN block
+    END IF;
+    -- computations here will be skipped when stocks &gt; 100000
+END;
+</pre><p>
+       </p></div><div class="sect3" id="id-1.8.8.8.7.6"><div class="titlepage"><div><div><h4 class="title">43.6.5.3. <code class="literal">CONTINUE</code></h4></div></div></div><a id="id-1.8.8.8.7.6.2" class="indexterm"></a><pre class="synopsis">
+CONTINUE [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>] [<span class="optional"> WHEN <em class="replaceable"><code>boolean-expression</code></em> </span>];
+</pre><p>
+        If no <em class="replaceable"><code>label</code></em> is given, the next iteration of
+        the innermost loop is begun. That is, all statements remaining
+        in the loop body are skipped, and control returns
+        to the loop control expression (if any) to determine whether
+        another loop iteration is needed.
+        If <em class="replaceable"><code>label</code></em> is present, it
+        specifies the label of the loop whose execution will be
+        continued.
+       </p><p>
+        If <code class="literal">WHEN</code> is specified, the next iteration of the
+        loop is begun only if <em class="replaceable"><code>boolean-expression</code></em> is
+        true. Otherwise, control passes to the statement after
+        <code class="literal">CONTINUE</code>.
+       </p><p>
+        <code class="literal">CONTINUE</code> can be used with all types of loops; it
+        is not limited to use with unconditional loops.
+       </p><p>
+        Examples:
+</p><pre class="programlisting">
+LOOP
+    -- some computations
+    EXIT WHEN count &gt; 100;
+    CONTINUE WHEN count &lt; 50;
+    -- some computations for count IN [50 .. 100]
+END LOOP;
+</pre><p>
+       </p></div><div class="sect3" id="id-1.8.8.8.7.7"><div class="titlepage"><div><div><h4 class="title">43.6.5.4. <code class="literal">WHILE</code></h4></div></div></div><a id="id-1.8.8.8.7.7.2" class="indexterm"></a><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+WHILE <em class="replaceable"><code>boolean-expression</code></em> LOOP
+    <em class="replaceable"><code>statements</code></em>
+END LOOP [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>];
+</pre><p>
+        The <code class="literal">WHILE</code> statement repeats a
+        sequence of statements so long as the
+        <em class="replaceable"><code>boolean-expression</code></em>
+        evaluates to true.  The expression is checked just before
+        each entry to the loop body.
+       </p><p>
+        For example:
+</p><pre class="programlisting">
+WHILE amount_owed &gt; 0 AND gift_certificate_balance &gt; 0 LOOP
+    -- some computations here
+END LOOP;
+
+WHILE NOT done LOOP
+    -- some computations here
+END LOOP;
+</pre><p>
+       </p></div><div class="sect3" id="PLPGSQL-INTEGER-FOR"><div class="titlepage"><div><div><h4 class="title">43.6.5.5. <code class="literal">FOR</code> (Integer Variant)</h4></div></div></div><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+FOR <em class="replaceable"><code>name</code></em> IN [<span class="optional"> REVERSE </span>] <em class="replaceable"><code>expression</code></em> .. <em class="replaceable"><code>expression</code></em> [<span class="optional"> BY <em class="replaceable"><code>expression</code></em> </span>] LOOP
+    <em class="replaceable"><code>statements</code></em>
+END LOOP [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>];
+</pre><p>
+        This form of <code class="literal">FOR</code> creates a loop that iterates over a range
+        of integer values. The variable
+        <em class="replaceable"><code>name</code></em> is automatically defined as type
+        <code class="type">integer</code> and exists only inside the loop (any existing
+        definition of the variable name is ignored within the loop).
+        The two expressions giving
+        the lower and upper bound of the range are evaluated once when entering
+        the loop. If the <code class="literal">BY</code> clause isn't specified the iteration
+        step is 1, otherwise it's the value specified in the <code class="literal">BY</code>
+        clause, which again is evaluated once on loop entry.
+        If <code class="literal">REVERSE</code> is specified then the step value is
+        subtracted, rather than added, after each iteration.
+       </p><p>
+        Some examples of integer <code class="literal">FOR</code> loops:
+</p><pre class="programlisting">
+FOR i IN 1..10 LOOP
+    -- i will take on the values 1,2,3,4,5,6,7,8,9,10 within the loop
+END LOOP;
+
+FOR i IN REVERSE 10..1 LOOP
+    -- i will take on the values 10,9,8,7,6,5,4,3,2,1 within the loop
+END LOOP;
+
+FOR i IN REVERSE 10..1 BY 2 LOOP
+    -- i will take on the values 10,8,6,4,2 within the loop
+END LOOP;
+</pre><p>
+       </p><p>
+        If the lower bound is greater than the upper bound (or less than,
+        in the <code class="literal">REVERSE</code> case), the loop body is not
+        executed at all.  No error is raised.
+       </p><p>
+        If a <em class="replaceable"><code>label</code></em> is attached to the
+        <code class="literal">FOR</code> loop then the integer loop variable can be
+        referenced with a qualified name, using that
+        <em class="replaceable"><code>label</code></em>.
+       </p></div></div><div class="sect2" id="PLPGSQL-RECORDS-ITERATING"><div class="titlepage"><div><div><h3 class="title">43.6.6. Looping through Query Results</h3></div></div></div><p>
+     Using a different type of <code class="literal">FOR</code> loop, you can iterate through
+     the results of a query and manipulate that data
+     accordingly. The syntax is:
+</p><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+FOR <em class="replaceable"><code>target</code></em> IN <em class="replaceable"><code>query</code></em> LOOP
+    <em class="replaceable"><code>statements</code></em>
+END LOOP [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>];
+</pre><p>
+     The <em class="replaceable"><code>target</code></em> is a record variable, row variable,
+     or comma-separated list of scalar variables.
+     The <em class="replaceable"><code>target</code></em> is successively assigned each row
+     resulting from the <em class="replaceable"><code>query</code></em> and the loop body is
+     executed for each row. Here is an example:
+</p><pre class="programlisting">
+CREATE FUNCTION refresh_mviews() RETURNS integer AS $$
+DECLARE
+    mviews RECORD;
+BEGIN
+    RAISE NOTICE 'Refreshing all materialized views...';
+
+    FOR mviews IN
+       SELECT n.nspname AS mv_schema,
+              c.relname AS mv_name,
+              pg_catalog.pg_get_userbyid(c.relowner) AS owner
+         FROM pg_catalog.pg_class c
+    LEFT JOIN pg_catalog.pg_namespace n ON (n.oid = c.relnamespace)
+        WHERE c.relkind = 'm'
+     ORDER BY 1
+    LOOP
+
+        -- Now "mviews" has one record with information about the materialized view
+
+        RAISE NOTICE 'Refreshing materialized view %.% (owner: %)...',
+                     quote_ident(mviews.mv_schema),
+                     quote_ident(mviews.mv_name),
+                     quote_ident(mviews.owner);
+        EXECUTE format('REFRESH MATERIALIZED VIEW %I.%I', mviews.mv_schema, mviews.mv_name);
+    END LOOP;
+
+    RAISE NOTICE 'Done refreshing materialized views.';
+    RETURN 1;
+END;
+$$ LANGUAGE plpgsql;
+</pre><p>
+
+     If the loop is terminated by an <code class="literal">EXIT</code> statement, the last
+     assigned row value is still accessible after the loop.
+    </p><p>
+     The <em class="replaceable"><code>query</code></em> used in this type of <code class="literal">FOR</code>
+     statement can be any SQL command that returns rows to the caller:
+     <code class="command">SELECT</code> is the most common case,
+     but you can also use <code class="command">INSERT</code>, <code class="command">UPDATE</code>, or
+     <code class="command">DELETE</code> with a <code class="literal">RETURNING</code> clause.  Some utility
+     commands such as <code class="command">EXPLAIN</code> will work too.
+    </p><p>
+     <span class="application">PL/pgSQL</span> variables are replaced by query parameters,
+     and the query plan is cached for possible re-use, as discussed in
+     detail in <a class="xref" href="plpgsql-implementation.html#PLPGSQL-VAR-SUBST" title="43.11.1. Variable Substitution">Section 43.11.1</a> and
+     <a class="xref" href="plpgsql-implementation.html#PLPGSQL-PLAN-CACHING" title="43.11.2. Plan Caching">Section 43.11.2</a>.
+    </p><p>
+     The <code class="literal">FOR-IN-EXECUTE</code> statement is another way to iterate over
+     rows:
+</p><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+FOR <em class="replaceable"><code>target</code></em> IN EXECUTE <em class="replaceable"><code>text_expression</code></em> [<span class="optional"> USING <em class="replaceable"><code>expression</code></em> [<span class="optional">, ... </span>] </span>] LOOP
+    <em class="replaceable"><code>statements</code></em>
+END LOOP [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>];
+</pre><p>
+     This is like the previous form, except that the source query
+     is specified as a string expression, which is evaluated and replanned
+     on each entry to the <code class="literal">FOR</code> loop.  This allows the programmer to
+     choose the speed of a preplanned query or the flexibility of a dynamic
+     query, just as with a plain <code class="command">EXECUTE</code> statement.
+     As with <code class="command">EXECUTE</code>, parameter values can be inserted
+     into the dynamic command via <code class="literal">USING</code>.
+    </p><p>
+     Another way to specify the query whose results should be iterated
+     through is to declare it as a cursor.  This is described in
+     <a class="xref" href="plpgsql-cursors.html#PLPGSQL-CURSOR-FOR-LOOP" title="43.7.4. Looping through a Cursor's Result">Section 43.7.4</a>.
+    </p></div><div class="sect2" id="PLPGSQL-FOREACH-ARRAY"><div class="titlepage"><div><div><h3 class="title">43.6.7. Looping through Arrays</h3></div></div></div><p>
+     The <code class="literal">FOREACH</code> loop is much like a <code class="literal">FOR</code> loop,
+     but instead of iterating through the rows returned by an SQL query,
+     it iterates through the elements of an array value.
+     (In general, <code class="literal">FOREACH</code> is meant for looping through
+     components of a composite-valued expression; variants for looping
+     through composites besides arrays may be added in future.)
+     The <code class="literal">FOREACH</code> statement to loop over an array is:
+
+</p><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+FOREACH <em class="replaceable"><code>target</code></em> [<span class="optional"> SLICE <em class="replaceable"><code>number</code></em> </span>] IN ARRAY <em class="replaceable"><code>expression</code></em> LOOP
+    <em class="replaceable"><code>statements</code></em>
+END LOOP [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>];
+</pre><p>
+    </p><p>
+     Without <code class="literal">SLICE</code>, or if <code class="literal">SLICE 0</code> is specified,
+     the loop iterates through individual elements of the array produced
+     by evaluating the <em class="replaceable"><code>expression</code></em>.
+     The <em class="replaceable"><code>target</code></em> variable is assigned each
+     element value in sequence, and the loop body is executed for each element.
+     Here is an example of looping through the elements of an integer
+     array:
+
+</p><pre class="programlisting">
+CREATE FUNCTION sum(int[]) RETURNS int8 AS $$
+DECLARE
+  s int8 := 0;
+  x int;
+BEGIN
+  FOREACH x IN ARRAY $1
+  LOOP
+    s := s + x;
+  END LOOP;
+  RETURN s;
+END;
+$$ LANGUAGE plpgsql;
+</pre><p>
+
+     The elements are visited in storage order, regardless of the number of
+     array dimensions.  Although the <em class="replaceable"><code>target</code></em> is
+     usually just a single variable, it can be a list of variables when
+     looping through an array of composite values (records).  In that case,
+     for each array element, the variables are assigned from successive
+     columns of the composite value.
+    </p><p>
+     With a positive <code class="literal">SLICE</code> value, <code class="literal">FOREACH</code>
+     iterates through slices of the array rather than single elements.
+     The <code class="literal">SLICE</code> value must be an integer constant not larger
+     than the number of dimensions of the array.  The
+     <em class="replaceable"><code>target</code></em> variable must be an array,
+     and it receives successive slices of the array value, where each slice
+     is of the number of dimensions specified by <code class="literal">SLICE</code>.
+     Here is an example of iterating through one-dimensional slices:
+
+</p><pre class="programlisting">
+CREATE FUNCTION scan_rows(int[]) RETURNS void AS $$
+DECLARE
+  x int[];
+BEGIN
+  FOREACH x SLICE 1 IN ARRAY $1
+  LOOP
+    RAISE NOTICE 'row = %', x;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT scan_rows(ARRAY[[1,2,3],[4,5,6],[7,8,9],[10,11,12]]);
+
+NOTICE:  row = {1,2,3}
+NOTICE:  row = {4,5,6}
+NOTICE:  row = {7,8,9}
+NOTICE:  row = {10,11,12}
+</pre><p>
+    </p></div><div class="sect2" id="PLPGSQL-ERROR-TRAPPING"><div class="titlepage"><div><div><h3 class="title">43.6.8. Trapping Errors</h3></div></div></div><a id="id-1.8.8.8.10.2" class="indexterm"></a><p>
+     By default, any error occurring in a <span class="application">PL/pgSQL</span>
+     function aborts execution of the function and the
+     surrounding transaction.  You can trap errors and recover
+     from them by using a <code class="command">BEGIN</code> block with an
+     <code class="literal">EXCEPTION</code> clause.  The syntax is an extension of the
+     normal syntax for a <code class="command">BEGIN</code> block:
+
+</p><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+[<span class="optional"> DECLARE
+    <em class="replaceable"><code>declarations</code></em> </span>]
+BEGIN
+    <em class="replaceable"><code>statements</code></em>
+EXCEPTION
+    WHEN <em class="replaceable"><code>condition</code></em> [<span class="optional"> OR <em class="replaceable"><code>condition</code></em> ... </span>] THEN
+        <em class="replaceable"><code>handler_statements</code></em>
+    [<span class="optional"> WHEN <em class="replaceable"><code>condition</code></em> [<span class="optional"> OR <em class="replaceable"><code>condition</code></em> ... </span>] THEN
+          <em class="replaceable"><code>handler_statements</code></em>
+      ... </span>]
+END;
+</pre><p>
+    </p><p>
+     If no error occurs, this form of block simply executes all the
+     <em class="replaceable"><code>statements</code></em>, and then control passes
+     to the next statement after <code class="literal">END</code>.  But if an error
+     occurs within the <em class="replaceable"><code>statements</code></em>, further
+     processing of the <em class="replaceable"><code>statements</code></em> is
+     abandoned, and control passes to the <code class="literal">EXCEPTION</code> list.
+     The list is searched for the first <em class="replaceable"><code>condition</code></em>
+     matching the error that occurred.  If a match is found, the
+     corresponding <em class="replaceable"><code>handler_statements</code></em> are
+     executed, and then control passes to the next statement after
+     <code class="literal">END</code>.  If no match is found, the error propagates out
+     as though the <code class="literal">EXCEPTION</code> clause were not there at all:
+     the error can be caught by an enclosing block with
+     <code class="literal">EXCEPTION</code>, or if there is none it aborts processing
+     of the function.
+    </p><p>
+     The <em class="replaceable"><code>condition</code></em> names can be any of
+     those shown in <a class="xref" href="errcodes-appendix.html" title="Appendix A. PostgreSQL Error Codes">Appendix A</a>.  A category
+     name matches any error within its category.  The special
+     condition name <code class="literal">OTHERS</code> matches every error type except
+     <code class="literal">QUERY_CANCELED</code> and <code class="literal">ASSERT_FAILURE</code>.
+     (It is possible, but often unwise, to trap those two error types
+     by name.)  Condition names are
+     not case-sensitive.  Also, an error condition can be specified
+     by <code class="literal">SQLSTATE</code> code; for example these are equivalent:
+</p><pre class="programlisting">
+WHEN division_by_zero THEN ...
+WHEN SQLSTATE '22012' THEN ...
+</pre><p>
+    </p><p>
+     If a new error occurs within the selected
+     <em class="replaceable"><code>handler_statements</code></em>, it cannot be caught
+     by this <code class="literal">EXCEPTION</code> clause, but is propagated out.
+     A surrounding <code class="literal">EXCEPTION</code> clause could catch it.
+    </p><p>
+     When an error is caught by an <code class="literal">EXCEPTION</code> clause,
+     the local variables of the <span class="application">PL/pgSQL</span> function
+     remain as they were when the error occurred, but all changes
+     to persistent database state within the block are rolled back.
+     As an example, consider this fragment:
+
+</p><pre class="programlisting">
+INSERT INTO mytab(firstname, lastname) VALUES('Tom', 'Jones');
+BEGIN
+    UPDATE mytab SET firstname = 'Joe' WHERE lastname = 'Jones';
+    x := x + 1;
+    y := x / 0;
+EXCEPTION
+    WHEN division_by_zero THEN
+        RAISE NOTICE 'caught division_by_zero';
+        RETURN x;
+END;
+</pre><p>
+
+     When control reaches the assignment to <code class="literal">y</code>, it will
+     fail with a <code class="literal">division_by_zero</code> error.  This will be caught by
+     the <code class="literal">EXCEPTION</code> clause.  The value returned in the
+     <code class="command">RETURN</code> statement will be the incremented value of
+     <code class="literal">x</code>, but the effects of the <code class="command">UPDATE</code> command will
+     have been rolled back.  The <code class="command">INSERT</code> command preceding the
+     block is not rolled back, however, so the end result is that the database
+     contains <code class="literal">Tom Jones</code> not <code class="literal">Joe Jones</code>.
+    </p><div class="tip"><h3 class="title">Tip</h3><p>
+      A block containing an <code class="literal">EXCEPTION</code> clause is significantly
+      more expensive to enter and exit than a block without one.  Therefore,
+      don't use <code class="literal">EXCEPTION</code> without need.
+     </p></div><div class="example" id="PLPGSQL-UPSERT-EXAMPLE"><p class="title"><strong>Example 43.2. Exceptions with <code class="command">UPDATE</code>/<code class="command">INSERT</code></strong></p><div class="example-contents"><p>
+
+    This example uses exception handling to perform either
+    <code class="command">UPDATE</code> or <code class="command">INSERT</code>, as appropriate.  It is
+    recommended that applications use <code class="command">INSERT</code> with
+    <code class="literal">ON CONFLICT DO UPDATE</code> rather than actually using
+    this pattern.  This example serves primarily to illustrate use of
+    <span class="application">PL/pgSQL</span> control flow structures:
+
+</p><pre class="programlisting">
+CREATE TABLE db (a INT PRIMARY KEY, b TEXT);
+
+CREATE FUNCTION merge_db(key INT, data TEXT) RETURNS VOID AS
+$$
+BEGIN
+    LOOP
+        -- first try to update the key
+        UPDATE db SET b = data WHERE a = key;
+        IF found THEN
+            RETURN;
+        END IF;
+        -- not there, so try to insert the key
+        -- if someone else inserts the same key concurrently,
+        -- we could get a unique-key failure
+        BEGIN
+            INSERT INTO db(a,b) VALUES (key, data);
+            RETURN;
+        EXCEPTION WHEN unique_violation THEN
+            -- Do nothing, and loop to try the UPDATE again.
+        END;
+    END LOOP;
+END;
+$$
+LANGUAGE plpgsql;
+
+SELECT merge_db(1, 'david');
+SELECT merge_db(1, 'dennis');
+</pre><p>
+
+     This coding assumes the <code class="literal">unique_violation</code> error is caused by
+     the <code class="command">INSERT</code>, and not by, say, an <code class="command">INSERT</code> in a
+     trigger function on the table.  It might also misbehave if there is
+     more than one unique index on the table, since it will retry the
+     operation regardless of which index caused the error.
+     More safety could be had by using the
+     features discussed next to check that the trapped error was the one
+     expected.
+    </p></div></div><br class="example-break" /><div class="sect3" id="PLPGSQL-EXCEPTION-DIAGNOSTICS"><div class="titlepage"><div><div><h4 class="title">43.6.8.1. Obtaining Information about an Error</h4></div></div></div><p>
+     Exception handlers frequently need to identify the specific error that
+     occurred.  There are two ways to get information about the current
+     exception in <span class="application">PL/pgSQL</span>: special variables and the
+     <code class="command">GET STACKED DIAGNOSTICS</code> command.
+    </p><p>
+     Within an exception handler, the special variable
+     <code class="varname">SQLSTATE</code> contains the error code that corresponds to
+     the exception that was raised (refer to <a class="xref" href="errcodes-appendix.html#ERRCODES-TABLE" title="Table A.1. PostgreSQL Error Codes">Table A.1</a>
+     for a list of possible error codes). The special variable
+     <code class="varname">SQLERRM</code> contains the error message associated with the
+     exception. These variables are undefined outside exception handlers.
+    </p><p>
+     Within an exception handler, one may also retrieve
+     information about the current exception by using the
+     <code class="command">GET STACKED DIAGNOSTICS</code> command, which has the form:
+
+</p><pre class="synopsis">
+GET STACKED DIAGNOSTICS <em class="replaceable"><code>variable</code></em> { = | := } <em class="replaceable"><code>item</code></em> [<span class="optional"> , ... </span>];
+</pre><p>
+
+     Each <em class="replaceable"><code>item</code></em> is a key word identifying a status
+     value to be assigned to the specified <em class="replaceable"><code>variable</code></em>
+     (which should be of the right data type to receive it).  The currently
+     available status items are shown
+     in <a class="xref" href="plpgsql-control-structures.html#PLPGSQL-EXCEPTION-DIAGNOSTICS-VALUES" title="Table 43.2. Error Diagnostics Items">Table 43.2</a>.
+    </p><div class="table" id="PLPGSQL-EXCEPTION-DIAGNOSTICS-VALUES"><p class="title"><strong>Table 43.2. Error Diagnostics Items</strong></p><div class="table-contents"><table class="table" summary="Error Diagnostics Items" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /></colgroup><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="literal">RETURNED_SQLSTATE</code></td><td><code class="type">text</code></td><td>the SQLSTATE error code of the exception</td></tr><tr><td><code class="literal">COLUMN_NAME</code></td><td><code class="type">text</code></td><td>the name of the column related to exception</td></tr><tr><td><code class="literal">CONSTRAINT_NAME</code></td><td><code class="type">text</code></td><td>the name of the constraint related to exception</td></tr><tr><td><code class="literal">PG_DATATYPE_NAME</code></td><td><code class="type">text</code></td><td>the name of the data type related to exception</td></tr><tr><td><code class="literal">MESSAGE_TEXT</code></td><td><code class="type">text</code></td><td>the text of the exception's primary message</td></tr><tr><td><code class="literal">TABLE_NAME</code></td><td><code class="type">text</code></td><td>the name of the table related to exception</td></tr><tr><td><code class="literal">SCHEMA_NAME</code></td><td><code class="type">text</code></td><td>the name of the schema related to exception</td></tr><tr><td><code class="literal">PG_EXCEPTION_DETAIL</code></td><td><code class="type">text</code></td><td>the text of the exception's detail message, if any</td></tr><tr><td><code class="literal">PG_EXCEPTION_HINT</code></td><td><code class="type">text</code></td><td>the text of the exception's hint message, if any</td></tr><tr><td><code class="literal">PG_EXCEPTION_CONTEXT</code></td><td><code class="type">text</code></td><td>line(s) of text describing the call stack at the time of the
+          exception (see <a class="xref" href="plpgsql-control-structures.html#PLPGSQL-CALL-STACK" title="43.6.9. Obtaining Execution Location Information">Section 43.6.9</a>)</td></tr></tbody></table></div></div><br class="table-break" /><p>
+     If the exception did not set a value for an item, an empty string
+     will be returned.
+    </p><p>
+     Here is an example:
+</p><pre class="programlisting">
+DECLARE
+  text_var1 text;
+  text_var2 text;
+  text_var3 text;
+BEGIN
+  -- some processing which might cause an exception
+  ...
+EXCEPTION WHEN OTHERS THEN
+  GET STACKED DIAGNOSTICS text_var1 = MESSAGE_TEXT,
+                          text_var2 = PG_EXCEPTION_DETAIL,
+                          text_var3 = PG_EXCEPTION_HINT;
+END;
+</pre><p>
+    </p></div></div><div class="sect2" id="PLPGSQL-CALL-STACK"><div class="titlepage"><div><div><h3 class="title">43.6.9. Obtaining Execution Location Information</h3></div></div></div><p>
+    The <code class="command">GET DIAGNOSTICS</code> command, previously described
+    in <a class="xref" href="plpgsql-statements.html#PLPGSQL-STATEMENTS-DIAGNOSTICS" title="43.5.5. Obtaining the Result Status">Section 43.5.5</a>, retrieves information
+    about current execution state (whereas the <code class="command">GET STACKED
+    DIAGNOSTICS</code> command discussed above reports information about
+    the execution state as of a previous error).  Its <code class="literal">PG_CONTEXT</code>
+    status item is useful for identifying the current execution
+    location.  <code class="literal">PG_CONTEXT</code> returns a text string with line(s)
+    of text describing the call stack.  The first line refers to the current
+    function and currently executing <code class="command">GET DIAGNOSTICS</code>
+    command.  The second and any subsequent lines refer to calling functions
+    further up the call stack.  For example:
+
+</p><pre class="programlisting">
+CREATE OR REPLACE FUNCTION outer_func() RETURNS integer AS $$
+BEGIN
+  RETURN inner_func();
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION inner_func() RETURNS integer AS $$
+DECLARE
+  stack text;
+BEGIN
+  GET DIAGNOSTICS stack = PG_CONTEXT;
+  RAISE NOTICE E'--- Call Stack ---\n%', stack;
+  RETURN 1;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT outer_func();
+
+NOTICE:  --- Call Stack ---
+PL/pgSQL function inner_func() line 5 at GET DIAGNOSTICS
+PL/pgSQL function outer_func() line 3 at RETURN
+CONTEXT:  PL/pgSQL function outer_func() line 3 at RETURN
+ outer_func
+ ------------
+           1
+(1 row)
+</pre><p>
+
+   </p><p>
+    <code class="literal">GET STACKED DIAGNOSTICS ... PG_EXCEPTION_CONTEXT</code>
+    returns the same sort of stack trace, but describing the location
+    at which an error was detected, rather than the current location.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="plpgsql-statements.html" title="43.5. Basic Statements">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="plpgsql.html" title="Chapter 43. PL/pgSQL — SQL Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="plpgsql-cursors.html" title="43.7. Cursors">Next</a></td></tr><tr><td width="40%" align="left" valign="top">43.5. Basic Statements </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 43.7. Cursors</td></tr></table></div></body></html>

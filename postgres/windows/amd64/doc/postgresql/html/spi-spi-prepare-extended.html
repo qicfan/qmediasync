@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SPI_prepare_extended</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spi-spi-prepare-cursor.html" title="SPI_prepare_cursor" /><link rel="next" href="spi-spi-prepare-params.html" title="SPI_prepare_params" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SPI_prepare_extended</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spi-spi-prepare-cursor.html" title="SPI_prepare_cursor">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spi-interface.html" title="47.1. Interface Functions">Up</a></td><th width="60%" align="center">47.1. Interface Functions</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spi-spi-prepare-params.html" title="SPI_prepare_params">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SPI-SPI-PREPARE-EXTENDED"><div class="titlepage"></div><a id="id-1.8.12.8.10.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SPI_prepare_extended</span></h2><p>SPI_prepare_extended — prepare a statement, without executing it yet</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+SPIPlanPtr SPI_prepare_extended(const char * <em class="parameter"><code>command</code></em>,
+                                const SPIPrepareOptions * <em class="parameter"><code>options</code></em>)
+</pre></div><div class="refsect1" id="id-1.8.12.8.10.5"><h2>Description</h2><p>
+   <code class="function">SPI_prepare_extended</code> creates and returns a prepared
+   statement for the specified command, but doesn't execute the command.
+   This function is equivalent to <code class="function">SPI_prepare</code>,
+   with the addition that the caller can specify options to control
+   the parsing of external parameter references, as well as other facets
+   of query parsing and planning.
+  </p></div><div class="refsect1" id="id-1.8.12.8.10.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">const char * <em class="parameter"><code>command</code></em></code></span></dt><dd><p>
+      command string
+     </p></dd><dt><span class="term"><code class="literal">const SPIPrepareOptions * <em class="parameter"><code>options</code></em></code></span></dt><dd><p>
+      struct containing optional arguments
+     </p></dd></dl></div><p>
+   Callers should always zero out the entire <em class="parameter"><code>options</code></em>
+   struct, then fill whichever fields they want to set.  This ensures forward
+   compatibility of code, since any fields that are added to the struct in
+   future will be defined to behave backwards-compatibly if they are zero.
+   The currently available <em class="parameter"><code>options</code></em> fields are:
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">ParserSetupHook <em class="parameter"><code>parserSetup</code></em></code></span></dt><dd><p>
+      Parser hook setup function
+     </p></dd><dt><span class="term"><code class="literal">void * <em class="parameter"><code>parserSetupArg</code></em></code></span></dt><dd><p>
+      pass-through argument for <em class="parameter"><code>parserSetup</code></em>
+     </p></dd><dt><span class="term"><code class="literal">RawParseMode <em class="parameter"><code>parseMode</code></em></code></span></dt><dd><p>
+      mode for raw parsing; <code class="literal">RAW_PARSE_DEFAULT</code> (zero)
+      produces default behavior
+     </p></dd><dt><span class="term"><code class="literal">int <em class="parameter"><code>cursorOptions</code></em></code></span></dt><dd><p>
+      integer bit mask of cursor options; zero produces default behavior
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.8.12.8.10.7"><h2>Return Value</h2><p>
+   <code class="function">SPI_prepare_extended</code> has the same return conventions as
+   <code class="function">SPI_prepare</code>.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spi-spi-prepare-cursor.html" title="SPI_prepare_cursor">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spi-interface.html" title="47.1. Interface Functions">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spi-spi-prepare-params.html" title="SPI_prepare_params">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SPI_prepare_cursor </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SPI_prepare_params</td></tr></table></div></body></html>

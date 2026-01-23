@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER TEXT SEARCH CONFIGURATION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altertablespace.html" title="ALTER TABLESPACE" /><link rel="next" href="sql-altertsdictionary.html" title="ALTER TEXT SEARCH DICTIONARY" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER TEXT SEARCH CONFIGURATION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altertablespace.html" title="ALTER TABLESPACE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-altertsdictionary.html" title="ALTER TEXT SEARCH DICTIONARY">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERTSCONFIG"><div class="titlepage"></div><a id="id-1.9.3.37.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER TEXT SEARCH CONFIGURATION</span></h2><p>ALTER TEXT SEARCH CONFIGURATION — change the definition of a text search configuration</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em>
+    ADD MAPPING FOR <em class="replaceable"><code>token_type</code></em> [, ... ] WITH <em class="replaceable"><code>dictionary_name</code></em> [, ... ]
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em>
+    ALTER MAPPING FOR <em class="replaceable"><code>token_type</code></em> [, ... ] WITH <em class="replaceable"><code>dictionary_name</code></em> [, ... ]
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em>
+    ALTER MAPPING REPLACE <em class="replaceable"><code>old_dictionary</code></em> WITH <em class="replaceable"><code>new_dictionary</code></em>
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em>
+    ALTER MAPPING FOR <em class="replaceable"><code>token_type</code></em> [, ... ] REPLACE <em class="replaceable"><code>old_dictionary</code></em> WITH <em class="replaceable"><code>new_dictionary</code></em>
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em>
+    DROP MAPPING [ IF EXISTS ] FOR <em class="replaceable"><code>token_type</code></em> [, ... ]
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TEXT SEARCH CONFIGURATION <em class="replaceable"><code>name</code></em> SET SCHEMA <em class="replaceable"><code>new_schema</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.37.5"><h2>Description</h2><p>
+   <code class="command">ALTER TEXT SEARCH CONFIGURATION</code> changes the definition of
+   a text search configuration.  You can modify
+   its mappings from token types to dictionaries,
+   or change the configuration's name or owner.
+  </p><p>
+   You must be the owner of the configuration to use
+   <code class="command">ALTER TEXT SEARCH CONFIGURATION</code>.
+  </p></div><div class="refsect1" id="id-1.9.3.37.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of an existing text search
+      configuration.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>token_type</code></em></span></dt><dd><p>
+      The name of a token type that is emitted by the configuration's
+      parser.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>dictionary_name</code></em></span></dt><dd><p>
+      The name of a text search dictionary to be consulted for the
+      specified token type(s).  If multiple dictionaries are listed,
+      they are consulted in the specified order.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>old_dictionary</code></em></span></dt><dd><p>
+      The name of a text search dictionary to be replaced in the mapping.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_dictionary</code></em></span></dt><dd><p>
+      The name of a text search dictionary to be substituted for
+      <em class="replaceable"><code>old_dictionary</code></em>.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name of the text search configuration.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The new owner of the text search configuration.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_schema</code></em></span></dt><dd><p>
+      The new schema for the text search configuration.
+     </p></dd></dl></div><p>
+   The <code class="literal">ADD MAPPING FOR</code> form installs a list of dictionaries to be
+   consulted for the specified token type(s); it is an error if there is
+   already a mapping for any of the token types.
+   The <code class="literal">ALTER MAPPING FOR</code> form does the same, but first removing
+   any existing mapping for those token types.
+   The <code class="literal">ALTER MAPPING REPLACE</code> forms substitute <em class="replaceable"><code>new_dictionary</code></em> for <em class="replaceable"><code>old_dictionary</code></em> anywhere the latter appears.
+   This is done for only the specified token types when <code class="literal">FOR</code>
+   appears, or for all mappings of the configuration when it doesn't.
+   The <code class="literal">DROP MAPPING</code> form removes all dictionaries for the
+   specified token type(s), causing tokens of those types to be ignored
+   by the text search configuration.  It is an error if there is no mapping
+   for the token types, unless <code class="literal">IF EXISTS</code> appears.
+  </p></div><div class="refsect1" id="id-1.9.3.37.7"><h2>Examples</h2><p>
+   The following example replaces the <code class="literal">english</code> dictionary
+   with the <code class="literal">swedish</code> dictionary anywhere that <code class="literal">english</code>
+   is used within <code class="literal">my_config</code>.
+  </p><pre class="programlisting">
+ALTER TEXT SEARCH CONFIGURATION my_config
+  ALTER MAPPING REPLACE english WITH swedish;
+</pre></div><div class="refsect1" id="id-1.9.3.37.8"><h2>Compatibility</h2><p>
+   There is no <code class="command">ALTER TEXT SEARCH CONFIGURATION</code> statement in
+   the SQL standard.
+  </p></div><div class="refsect1" id="id-1.9.3.37.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createtsconfig.html" title="CREATE TEXT SEARCH CONFIGURATION"><span class="refentrytitle">CREATE TEXT SEARCH CONFIGURATION</span></a>, <a class="xref" href="sql-droptsconfig.html" title="DROP TEXT SEARCH CONFIGURATION"><span class="refentrytitle">DROP TEXT SEARCH CONFIGURATION</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altertablespace.html" title="ALTER TABLESPACE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-altertsdictionary.html" title="ALTER TEXT SEARCH DICTIONARY">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER TABLESPACE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER TEXT SEARCH DICTIONARY</td></tr></table></div></body></html>

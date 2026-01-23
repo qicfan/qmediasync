@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE PUBLICATION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createprocedure.html" title="CREATE PROCEDURE" /><link rel="next" href="sql-createrole.html" title="CREATE ROLE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE PUBLICATION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createprocedure.html" title="CREATE PROCEDURE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createrole.html" title="CREATE ROLE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATEPUBLICATION"><div class="titlepage"></div><a id="id-1.9.3.77.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE PUBLICATION</span></h2><p>CREATE PUBLICATION — define a new publication</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE PUBLICATION <em class="replaceable"><code>name</code></em>
+    [ FOR TABLE [ ONLY ] <em class="replaceable"><code>table_name</code></em> [ * ] [, ...]
+      | FOR ALL TABLES ]
+    [ WITH ( <em class="replaceable"><code>publication_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] ) ]
+</pre></div><div class="refsect1" id="id-1.9.3.77.5"><h2>Description</h2><p>
+   <code class="command">CREATE PUBLICATION</code> adds a new publication
+   into the current database.  The publication name must be distinct from
+   the name of any existing publication in the current database.
+  </p><p>
+   A publication is essentially a group of tables whose data changes are
+   intended to be replicated through logical replication.  See
+   <a class="xref" href="logical-replication-publication.html" title="31.1. Publication">Section 31.1</a> for details about how
+   publications fit into the logical replication setup.
+   </p></div><div class="refsect1" id="id-1.9.3.77.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of the new publication.
+     </p></dd><dt><span class="term"><code class="literal">FOR TABLE</code></span></dt><dd><p>
+      Specifies a list of tables to add to the publication.  If
+      <code class="literal">ONLY</code> is specified before the table name, only
+      that table is added to the publication.  If <code class="literal">ONLY</code> is not
+      specified, the table and all its descendant tables (if any) are added.
+      Optionally, <code class="literal">*</code> can be specified after the table name to
+      explicitly indicate that descendant tables are included.
+      This does not apply to a partitioned table, however.  The partitions of
+      a partitioned table are always implicitly considered part of the
+      publication, so they are never explicitly added to the publication.
+     </p><p>
+      Only persistent base tables and partitioned tables can be part of a
+      publication.  Temporary tables, unlogged tables, foreign tables,
+      materialized views, and regular views cannot be part of a publication.
+     </p><p>
+      When a partitioned table is added to a publication, all of its existing
+      and future partitions are implicitly considered to be part of the
+      publication.  So, even operations that are performed directly on a
+      partition are also published via publications that its ancestors are
+      part of.
+     </p></dd><dt><span class="term"><code class="literal">FOR ALL TABLES</code></span></dt><dd><p>
+      Marks the publication as one that replicates changes for all tables in
+      the database, including tables created in the future.
+     </p></dd><dt><span class="term"><code class="literal">WITH ( <em class="replaceable"><code>publication_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )</code></span></dt><dd><p>
+      This clause specifies optional parameters for a publication.  The
+      following parameters are supported:
+
+      </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">publish</code> (<code class="type">string</code>)</span></dt><dd><p>
+          This parameter determines which DML operations will be published by
+          the new publication to the subscribers.  The value is
+          comma-separated list of operations.  The allowed operations are
+          <code class="literal">insert</code>, <code class="literal">update</code>,
+          <code class="literal">delete</code>, and <code class="literal">truncate</code>.
+          The default is to publish all actions,
+          and so the default value for this option is
+          <code class="literal">'insert, update, delete, truncate'</code>.
+         </p></dd><dt><span class="term"><code class="literal">publish_via_partition_root</code> (<code class="type">boolean</code>)</span></dt><dd><p>
+          This parameter determines whether changes in a partitioned table (or
+          on its partitions) contained in the publication will be published
+          using the identity and schema of the partitioned table rather than
+          that of the individual partitions that are actually changed; the
+          latter is the default.  Enabling this allows the changes to be
+          replicated into a non-partitioned table or a partitioned table
+          consisting of a different set of partitions.
+         </p><p>
+          If this is enabled, <code class="literal">TRUNCATE</code> operations performed
+          directly on partitions are not replicated.
+         </p></dd></dl></div></dd></dl></div></div><div class="refsect1" id="id-1.9.3.77.7"><h2>Notes</h2><p>
+   If neither <code class="literal">FOR TABLE</code> nor <code class="literal">FOR ALL
+   TABLES</code> is specified, then the publication starts out with an
+   empty set of tables.  That is useful if tables are to be added later.
+  </p><p>
+   The creation of a publication does not start replication.  It only defines
+   a grouping and filtering logic for future subscribers.
+  </p><p>
+   To create a publication, the invoking user must have the
+   <code class="literal">CREATE</code> privilege for the current database.
+   (Of course, superusers bypass this check.)
+  </p><p>
+   To add a table to a publication, the invoking user must have ownership
+   rights on the table.  The <code class="command">FOR ALL TABLES</code> clause requires
+   the invoking user to be a superuser.
+  </p><p>
+   The tables added to a publication that publishes <code class="command">UPDATE</code>
+   and/or <code class="command">DELETE</code> operations must have
+   <code class="literal">REPLICA IDENTITY</code> defined.  Otherwise those operations will be
+   disallowed on those tables.
+  </p><p>
+   For an <code class="command">INSERT ... ON CONFLICT</code> command, the publication will
+   publish the operation that results from the command.  Depending
+   on the outcome, it may be published as either <code class="command">INSERT</code> or
+   <code class="command">UPDATE</code>, or it may not be published at all.
+  </p><p>
+   <code class="command">ATTACH</code>ing a table into a partition tree whose root is
+   published using a publication with <code class="literal">publish_via_partition_root</code>
+   set to <code class="literal">true</code> does not result in the table's existing contents
+   being replicated.
+  </p><p>
+   <code class="command">COPY ... FROM</code> commands are published
+   as <code class="command">INSERT</code> operations.
+  </p><p>
+   <acronym class="acronym">DDL</acronym> operations are not published.
+  </p></div><div class="refsect1" id="id-1.9.3.77.8"><h2>Examples</h2><p>
+   Create a publication that publishes all changes in two tables:
+</p><pre class="programlisting">
+CREATE PUBLICATION mypublication FOR TABLE users, departments;
+</pre><p>
+  </p><p>
+   Create a publication that publishes all changes in all tables:
+</p><pre class="programlisting">
+CREATE PUBLICATION alltables FOR ALL TABLES;
+</pre><p>
+  </p><p>
+   Create a publication that only publishes <code class="command">INSERT</code>
+   operations in one table:
+</p><pre class="programlisting">
+CREATE PUBLICATION insert_only FOR TABLE mydata
+    WITH (publish = 'insert');
+</pre></div><div class="refsect1" id="id-1.9.3.77.9"><h2>Compatibility</h2><p>
+   <code class="command">CREATE PUBLICATION</code> is a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.77.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-alterpublication.html" title="ALTER PUBLICATION"><span class="refentrytitle">ALTER PUBLICATION</span></a>, <a class="xref" href="sql-droppublication.html" title="DROP PUBLICATION"><span class="refentrytitle">DROP PUBLICATION</span></a>, <a class="xref" href="sql-createsubscription.html" title="CREATE SUBSCRIPTION"><span class="refentrytitle">CREATE SUBSCRIPTION</span></a>, <a class="xref" href="sql-altersubscription.html" title="ALTER SUBSCRIPTION"><span class="refentrytitle">ALTER SUBSCRIPTION</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createprocedure.html" title="CREATE PROCEDURE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createrole.html" title="CREATE ROLE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE PROCEDURE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE ROLE</td></tr></table></div></body></html>

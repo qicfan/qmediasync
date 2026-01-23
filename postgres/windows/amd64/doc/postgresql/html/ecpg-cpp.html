@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>36.13. C++ Applications</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-lo.html" title="36.12. Large Objects" /><link rel="next" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">36.13. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">C++</acronym> Applications</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-lo.html" title="36.12. Large Objects">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><th width="60%" align="center">Chapter 36. <span xmlns="http://www.w3.org/1999/xhtml" class="application">ECPG</span> — Embedded <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> in C</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ECPG-CPP"><div class="titlepage"><div><div><h2 class="title" style="clear: both">36.13. <acronym class="acronym">C++</acronym> Applications</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ecpg-cpp.html#ECPG-CPP-SCOPE">36.13.1. Scope for Host Variables</a></span></dt><dt><span class="sect2"><a href="ecpg-cpp.html#ECPG-CPP-AND-C">36.13.2. C++ Application Development with External C Module</a></span></dt></dl></div><p>
+   ECPG has some limited support for C++ applications.  This section
+   describes some caveats.
+  </p><p>
+   The <code class="command">ecpg</code> preprocessor takes an input file
+   written in C (or something like C) and embedded SQL commands,
+   converts the embedded SQL commands into C language chunks, and
+   finally generates a <code class="filename">.c</code> file.  The header file
+   declarations of the library functions used by the C language chunks
+   that <code class="command">ecpg</code> generates are wrapped
+   in <code class="literal">extern "C" { ... }</code> blocks when used under
+   C++, so they should work seamlessly in C++.
+  </p><p>
+   In general, however, the <code class="command">ecpg</code> preprocessor only
+   understands C; it does not handle the special syntax and reserved
+   words of the C++ language.  So, some embedded SQL code written in
+   C++ application code that uses complicated features specific to C++
+   might fail to be preprocessed correctly or might not work as
+   expected.
+  </p><p>
+   A safe way to use the embedded SQL code in a C++ application is
+   hiding the ECPG calls in a C module, which the C++ application code
+   calls into to access the database, and linking that together with
+   the rest of the C++ code.  See <a class="xref" href="ecpg-cpp.html#ECPG-CPP-AND-C" title="36.13.2. C++ Application Development with External C Module">Section 36.13.2</a>
+   about that.
+  </p><div class="sect2" id="ECPG-CPP-SCOPE"><div class="titlepage"><div><div><h3 class="title">36.13.1. Scope for Host Variables</h3></div></div></div><p>
+    The <code class="command">ecpg</code> preprocessor understands the scope of
+    variables in C.  In the C language, this is rather simple because
+    the scopes of variables is based on their code blocks.  In C++,
+    however, the class member variables are referenced in a different
+    code block from the declared position, so
+    the <code class="command">ecpg</code> preprocessor will not understand the
+    scope of the class member variables.
+   </p><p>
+    For example, in the following case, the <code class="command">ecpg</code>
+    preprocessor cannot find any declaration for the
+    variable <code class="literal">dbname</code> in the <code class="literal">test</code>
+    method, so an error will occur.
+
+</p><pre class="programlisting">
+class TestCpp
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char dbname[1024];
+    EXEC SQL END DECLARE SECTION;
+
+  public:
+    TestCpp();
+    void test();
+    ~TestCpp();
+};
+
+TestCpp::TestCpp()
+{
+    EXEC SQL CONNECT TO testdb1;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+}
+
+void Test::test()
+{
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current_database = %s\n", dbname);
+}
+
+TestCpp::~TestCpp()
+{
+    EXEC SQL DISCONNECT ALL;
+}
+</pre><p>
+
+    This code will result in an error like this:
+</p><pre class="screen">
+<strong class="userinput"><code>ecpg test_cpp.pgc</code></strong>
+test_cpp.pgc:28: ERROR: variable "dbname" is not declared
+</pre><p>
+   </p><p>
+    To avoid this scope issue, the <code class="literal">test</code> method
+    could be modified to use a local variable as intermediate storage.
+    But this approach is only a poor workaround, because it uglifies
+    the code and reduces performance.
+
+</p><pre class="programlisting">
+void TestCpp::test()
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char tmp[1024];
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT current_database() INTO :tmp;
+    strlcpy(dbname, tmp, sizeof(tmp));
+
+    printf("current_database = %s\n", dbname);
+}
+</pre><p>
+   </p></div><div class="sect2" id="ECPG-CPP-AND-C"><div class="titlepage"><div><div><h3 class="title">36.13.2. C++ Application Development with External C Module</h3></div></div></div><p>
+    If you understand these technical limitations of
+    the <code class="command">ecpg</code> preprocessor in C++, you might come to
+    the conclusion that linking C objects and C++ objects at the link
+    stage to enable C++ applications to use ECPG features could be
+    better than writing some embedded SQL commands in C++ code
+    directly.  This section describes a way to separate some embedded
+    SQL commands from C++ application code with a simple example.  In
+    this example, the application is implemented in C++, while C and
+    ECPG is used to connect to the PostgreSQL server.
+   </p><p>
+    Three kinds of files have to be created: a C file
+    (<code class="filename">*.pgc</code>), a header file, and a C++ file:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="filename">test_mod.pgc</code></span></dt><dd><p>
+        A sub-routine module to execute SQL commands embedded in C.
+        It is going to be converted
+        into <code class="filename">test_mod.c</code> by the preprocessor.
+
+</p><pre class="programlisting">
+#include "test_mod.h"
+#include &lt;stdio.h&gt;
+
+void
+db_connect()
+{
+    EXEC SQL CONNECT TO testdb1;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+}
+
+void
+db_test()
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char dbname[1024];
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current_database = %s\n", dbname);
+}
+
+void
+db_disconnect()
+{
+    EXEC SQL DISCONNECT ALL;
+}
+</pre><p>
+       </p></dd><dt><span class="term"><code class="filename">test_mod.h</code></span></dt><dd><p>
+        A header file with declarations of the functions in the C
+        module (<code class="filename">test_mod.pgc</code>).  It is included by
+        <code class="filename">test_cpp.cpp</code>.  This file has to have an
+        <code class="literal">extern "C"</code> block around the declarations,
+        because it will be linked from the C++ module.
+
+</p><pre class="programlisting">
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void db_connect();
+void db_test();
+void db_disconnect();
+
+#ifdef __cplusplus
+}
+#endif
+</pre><p>
+       </p></dd><dt><span class="term"><code class="filename">test_cpp.cpp</code></span></dt><dd><p>
+        The main code for the application, including
+        the <code class="function">main</code> routine, and in this example a
+        C++ class.
+
+</p><pre class="programlisting">
+#include "test_mod.h"
+
+class TestCpp
+{
+  public:
+    TestCpp();
+    void test();
+    ~TestCpp();
+};
+
+TestCpp::TestCpp()
+{
+    db_connect();
+}
+
+void
+TestCpp::test()
+{
+    db_test();
+}
+
+TestCpp::~TestCpp()
+{
+    db_disconnect();
+}
+
+int
+main(void)
+{
+    TestCpp *t = new TestCpp();
+
+    t-&gt;test();
+    return 0;
+}
+</pre><p>
+       </p></dd></dl></div><p>
+   </p><p>
+    To build the application, proceed as follows.  Convert
+    <code class="filename">test_mod.pgc</code> into <code class="filename">test_mod.c</code> by
+    running <code class="command">ecpg</code>, and generate
+    <code class="filename">test_mod.o</code> by compiling
+    <code class="filename">test_mod.c</code> with the C compiler:
+</p><pre class="programlisting">
+ecpg -o test_mod.c test_mod.pgc
+cc -c test_mod.c -o test_mod.o
+</pre><p>
+   </p><p>
+    Next, generate <code class="filename">test_cpp.o</code> by compiling
+    <code class="filename">test_cpp.cpp</code> with the C++ compiler:
+</p><pre class="programlisting">
+c++ -c test_cpp.cpp -o test_cpp.o
+</pre><p>
+   </p><p>
+    Finally, link these object files, <code class="filename">test_cpp.o</code>
+    and <code class="filename">test_mod.o</code>, into one executable, using the C++
+    compiler driver:
+</p><pre class="programlisting">
+c++ test_cpp.o test_mod.o -lecpg -o test_cpp
+</pre><p>
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-lo.html" title="36.12. Large Objects">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Next</a></td></tr><tr><td width="40%" align="left" valign="top">36.12. Large Objects </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 36.14. Embedded SQL Commands</td></tr></table></div></body></html>

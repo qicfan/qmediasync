@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.7. btree_gist</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="btree-gin.html" title="F.6. btree_gin" /><link rel="next" href="citext.html" title="F.8. citext" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.7. btree_gist</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="btree-gin.html" title="F.6. btree_gin">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="citext.html" title="F.8. citext">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BTREE-GIST"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.7. btree_gist</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="btree-gist.html#id-1.11.7.16.8">F.7.1. Example Usage</a></span></dt><dt><span class="sect2"><a href="btree-gist.html#id-1.11.7.16.9">F.7.2. Authors</a></span></dt></dl></div><a id="id-1.11.7.16.2" class="indexterm"></a><p>
+  <code class="filename">btree_gist</code> provides GiST index operator classes that
+  implement B-tree equivalent behavior for the data types
+  <code class="type">int2</code>, <code class="type">int4</code>, <code class="type">int8</code>, <code class="type">float4</code>,
+  <code class="type">float8</code>, <code class="type">numeric</code>, <code class="type">timestamp with time zone</code>,
+  <code class="type">timestamp without time zone</code>, <code class="type">time with time zone</code>,
+  <code class="type">time without time zone</code>, <code class="type">date</code>, <code class="type">interval</code>,
+  <code class="type">oid</code>, <code class="type">money</code>, <code class="type">char</code>,
+  <code class="type">varchar</code>, <code class="type">text</code>, <code class="type">bytea</code>, <code class="type">bit</code>,
+  <code class="type">varbit</code>, <code class="type">macaddr</code>, <code class="type">macaddr8</code>, <code class="type">inet</code>,
+  <code class="type">cidr</code>, <code class="type">uuid</code>, and all <code class="type">enum</code> types.
+ </p><p>
+  In general, these operator classes will not outperform the equivalent
+  standard B-tree index methods, and they lack one major feature of the
+  standard B-tree code: the ability to enforce uniqueness.  However,
+  they provide some other features that are not available with a B-tree
+  index, as described below.  Also, these operator classes are useful
+  when a multicolumn GiST index is needed, wherein some of the columns
+  are of data types that are only indexable with GiST but other columns
+  are just simple data types.  Lastly, these operator classes are useful for
+  GiST testing and as a base for developing other GiST operator classes.
+ </p><p>
+  In addition to the typical B-tree search operators, <code class="filename">btree_gist</code>
+  also provides index support for <code class="literal">&lt;&gt;</code> (<span class="quote">“<span class="quote">not
+  equals</span>”</span>). This may be useful in combination with an
+  <a class="link" href="sql-createtable.html#SQL-CREATETABLE-EXCLUDE">exclusion constraint</a>,
+  as described below.
+ </p><p>
+  Also, for data types for which there is a natural distance metric,
+  <code class="filename">btree_gist</code> defines a distance operator <code class="literal">&lt;-&gt;</code>,
+  and provides GiST index support for nearest-neighbor searches using
+  this operator.  Distance operators are provided for
+  <code class="type">int2</code>, <code class="type">int4</code>, <code class="type">int8</code>, <code class="type">float4</code>,
+  <code class="type">float8</code>, <code class="type">timestamp with time zone</code>,
+  <code class="type">timestamp without time zone</code>,
+  <code class="type">time without time zone</code>, <code class="type">date</code>, <code class="type">interval</code>,
+  <code class="type">oid</code>, and <code class="type">money</code>.
+ </p><p>
+  This module is considered <span class="quote">“<span class="quote">trusted</span>”</span>, that is, it can be
+  installed by non-superusers who have <code class="literal">CREATE</code> privilege
+  on the current database.
+ </p><div class="sect2" id="id-1.11.7.16.8"><div class="titlepage"><div><div><h3 class="title">F.7.1. Example Usage</h3></div></div></div><p>
+   Simple example using <code class="literal">btree_gist</code> instead of <code class="literal">btree</code>:
+  </p><pre class="programlisting">
+CREATE TABLE test (a int4);
+-- create index
+CREATE INDEX testidx ON test USING GIST (a);
+-- query
+SELECT * FROM test WHERE a &lt; 10;
+-- nearest-neighbor search: find the ten entries closest to "42"
+SELECT *, a &lt;-&gt; 42 AS dist FROM test ORDER BY a &lt;-&gt; 42 LIMIT 10;
+</pre><p>
+   Use an <a class="link" href="sql-createtable.html#SQL-CREATETABLE-EXCLUDE">exclusion
+   constraint</a> to enforce the rule that a cage at a zoo
+   can contain only one kind of animal:
+  </p><pre class="programlisting">
+=&gt; CREATE TABLE zoo (
+  cage   INTEGER,
+  animal TEXT,
+  EXCLUDE USING GIST (cage WITH =, animal WITH &lt;&gt;)
+);
+
+=&gt; INSERT INTO zoo VALUES(123, 'zebra');
+INSERT 0 1
+=&gt; INSERT INTO zoo VALUES(123, 'zebra');
+INSERT 0 1
+=&gt; INSERT INTO zoo VALUES(123, 'lion');
+ERROR:  conflicting key value violates exclusion constraint "zoo_cage_animal_excl"
+DETAIL:  Key (cage, animal)=(123, lion) conflicts with existing key (cage, animal)=(123, zebra).
+=&gt; INSERT INTO zoo VALUES(124, 'lion');
+INSERT 0 1
+</pre></div><div class="sect2" id="id-1.11.7.16.9"><div class="titlepage"><div><div><h3 class="title">F.7.2. Authors</h3></div></div></div><p>
+   Teodor Sigaev (<code class="email">&lt;<a class="email" href="mailto:teodor@stack.net">teodor@stack.net</a>&gt;</code>),
+   Oleg Bartunov (<code class="email">&lt;<a class="email" href="mailto:oleg@sai.msu.su">oleg@sai.msu.su</a>&gt;</code>),
+   Janko Richter (<code class="email">&lt;<a class="email" href="mailto:jankorichter@yahoo.de">jankorichter@yahoo.de</a>&gt;</code>), and
+   Paul Jungwirth (<code class="email">&lt;<a class="email" href="mailto:pj@illuminatedcomputing.com">pj@illuminatedcomputing.com</a>&gt;</code>).  See
+   <a class="ulink" href="http://www.sai.msu.su/~megera/postgres/gist/" target="_top">http://www.sai.msu.su/~megera/postgres/gist/</a>
+   for additional information.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="btree-gin.html" title="F.6. btree_gin">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="citext.html" title="F.8. citext">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.6. btree_gin </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.8. citext</td></tr></table></div></body></html>

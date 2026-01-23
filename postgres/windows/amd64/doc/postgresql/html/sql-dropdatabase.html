@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>DROP DATABASE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-dropconversion.html" title="DROP CONVERSION" /><link rel="next" href="sql-dropdomain.html" title="DROP DOMAIN" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">DROP DATABASE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-dropconversion.html" title="DROP CONVERSION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-dropdomain.html" title="DROP DOMAIN">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-DROPDATABASE"><div class="titlepage"></div><a id="id-1.9.3.108.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">DROP DATABASE</span></h2><p>DROP DATABASE — remove a database</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+DROP DATABASE [ IF EXISTS ] <em class="replaceable"><code>name</code></em> [ [ WITH ] ( <em class="replaceable"><code>option</code></em> [, ...] ) ]
+
+<span class="phrase">where <em class="replaceable"><code>option</code></em> can be:</span>
+
+    FORCE
+</pre></div><div class="refsect1" id="id-1.9.3.108.5"><h2>Description</h2><p>
+   <code class="command">DROP DATABASE</code> drops a database. It removes the
+   catalog entries for the database and deletes the directory
+   containing the data.  It can only be executed by the database owner.
+   It cannot be executed while you are connected to the target database.
+   (Connect to <code class="literal">postgres</code> or any other database to issue this
+   command.)
+   Also, if anyone else is connected to the target database, this command will
+   fail unless you use the <code class="literal">FORCE</code> option described below.
+  </p><p>
+   <code class="command">DROP DATABASE</code> cannot be undone.  Use it with care!
+  </p></div><div class="refsect1" id="id-1.9.3.108.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">IF EXISTS</code></span></dt><dd><p>
+      Do not throw an error if the database does not exist. A notice is issued
+      in this case.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of the database to remove.
+     </p></dd><dt><span class="term"><code class="literal">FORCE</code></span></dt><dd><p>
+      Attempt to terminate all existing connections to the target database.
+      It doesn't terminate if prepared transactions, active logical replication
+      slots or subscriptions are present in the target database.
+     </p><p>
+      This will fail if the current user has no permissions to terminate other
+      connections. Required permissions are the same as with
+      <code class="literal">pg_terminate_backend</code>, described in
+      <a class="xref" href="functions-admin.html#FUNCTIONS-ADMIN-SIGNAL" title="9.27.2. Server Signaling Functions">Section 9.27.2</a>.  This will also fail if we
+      are not able to terminate connections.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.108.7"><h2>Notes</h2><p>
+    <code class="command">DROP DATABASE</code> cannot be executed inside a transaction
+    block.
+   </p><p>
+   This command cannot be executed while connected to the target
+   database. Thus, it might be more convenient to use the program
+   <a class="xref" href="app-dropdb.html" title="dropdb"><span class="refentrytitle"><span class="application">dropdb</span></span></a> instead,
+   which is a wrapper around this command.
+  </p></div><div class="refsect1" id="id-1.9.3.108.8"><h2>Compatibility</h2><p>
+   There is no <code class="command">DROP DATABASE</code> statement in the SQL standard.
+  </p></div><div class="refsect1" id="id-1.9.3.108.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createdatabase.html" title="CREATE DATABASE"><span class="refentrytitle">CREATE DATABASE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-dropconversion.html" title="DROP CONVERSION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-dropdomain.html" title="DROP DOMAIN">Next</a></td></tr><tr><td width="40%" align="left" valign="top">DROP CONVERSION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> DROP DOMAIN</td></tr></table></div></body></html>

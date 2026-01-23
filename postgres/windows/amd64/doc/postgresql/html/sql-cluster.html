@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CLUSTER</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-close.html" title="CLOSE" /><link rel="next" href="sql-comment.html" title="COMMENT" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CLUSTER</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-close.html" title="CLOSE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-comment.html" title="COMMENT">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CLUSTER"><div class="titlepage"></div><a id="id-1.9.3.51.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CLUSTER</span></h2><p>CLUSTER — cluster a table according to an index</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CLUSTER [VERBOSE] <em class="replaceable"><code>table_name</code></em> [ USING <em class="replaceable"><code>index_name</code></em> ]
+CLUSTER ( <em class="replaceable"><code>option</code></em> [, ...] ) <em class="replaceable"><code>table_name</code></em> [ USING <em class="replaceable"><code>index_name</code></em> ]
+CLUSTER [VERBOSE]
+
+<span class="phrase">where <em class="replaceable"><code>option</code></em> can be one of:</span>
+
+    VERBOSE [ <em class="replaceable"><code>boolean</code></em> ]
+</pre></div><div class="refsect1" id="id-1.9.3.51.5"><h2>Description</h2><p>
+   <code class="command">CLUSTER</code> instructs <span class="productname">PostgreSQL</span>
+   to cluster the table specified
+   by <em class="replaceable"><code>table_name</code></em>
+   based on the index specified by
+   <em class="replaceable"><code>index_name</code></em>. The index must
+   already have been defined on
+   <em class="replaceable"><code>table_name</code></em>.
+  </p><p>
+   When a table is clustered, it is physically reordered
+   based on the index information. Clustering is a one-time operation:
+   when the table is subsequently updated, the changes are
+   not clustered.  That is, no attempt is made to store new or
+   updated rows according to their index order.  (If one wishes, one can
+   periodically recluster by issuing the command again.  Also, setting
+   the table's <code class="literal">fillfactor</code> storage parameter to less than
+   100% can aid in preserving cluster ordering during updates, since updated
+   rows are kept on the same page if enough space is available there.)
+  </p><p>
+   When a table is clustered, <span class="productname">PostgreSQL</span>
+   remembers which index it was clustered by.  The form
+   <code class="command">CLUSTER <em class="replaceable"><code>table_name</code></em></code>
+   reclusters the table using the same index as before.  You can also
+   use the <code class="literal">CLUSTER</code> or <code class="literal">SET WITHOUT CLUSTER</code>
+   forms of <a class="link" href="sql-altertable.html" title="ALTER TABLE"><code class="command">ALTER TABLE</code></a> to set the index to be used for
+   future cluster operations, or to clear any previous setting.
+  </p><p>
+   <code class="command">CLUSTER</code> without any parameter reclusters all the
+   previously-clustered tables in the current database that the calling user
+   owns, or all such tables if called by a superuser.  This
+   form of <code class="command">CLUSTER</code> cannot be executed inside a transaction
+   block.
+  </p><p>
+   When a table is being clustered, an <code class="literal">ACCESS
+   EXCLUSIVE</code> lock is acquired on it. This prevents any other
+   database operations (both reads and writes) from operating on the
+   table until the <code class="command">CLUSTER</code> is finished.
+  </p></div><div class="refsect1" id="id-1.9.3.51.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      The name (possibly schema-qualified) of a table.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>index_name</code></em></span></dt><dd><p>
+      The name of an index.
+     </p></dd><dt><span class="term"><code class="literal">VERBOSE</code></span></dt><dd><p>
+      Prints a progress report as each table is clustered.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>boolean</code></em></span></dt><dd><p>
+      Specifies whether the selected option should be turned on or off.
+      You can write <code class="literal">TRUE</code>, <code class="literal">ON</code>, or
+      <code class="literal">1</code> to enable the option, and <code class="literal">FALSE</code>,
+      <code class="literal">OFF</code>, or <code class="literal">0</code> to disable it.  The
+      <em class="replaceable"><code>boolean</code></em> value can also
+      be omitted, in which case <code class="literal">TRUE</code> is assumed.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.51.7"><h2>Notes</h2><p>
+    In cases where you are accessing single rows randomly
+    within a table, the actual order of the data in the
+    table is unimportant. However, if you tend to access some
+    data more than others, and there is an index that groups
+    them together, you will benefit from using <code class="command">CLUSTER</code>.
+    If you are requesting a range of indexed values from a table, or a
+    single indexed value that has multiple rows that match,
+    <code class="command">CLUSTER</code> will help because once the index identifies the
+    table page for the first row that matches, all other rows
+    that match are probably already on the same table page,
+    and so you save disk accesses and speed up the query.
+   </p><p>
+    <code class="command">CLUSTER</code> can re-sort the table using either an index scan
+    on the specified index, or (if the index is a b-tree) a sequential
+    scan followed by sorting.  It will attempt to choose the method that
+    will be faster, based on planner cost parameters and available statistical
+    information.
+   </p><p>
+    When an index scan is used, a temporary copy of the table is created that
+    contains the table data in the index order.  Temporary copies of each
+    index on the table are created as well.  Therefore, you need free space on
+    disk at least equal to the sum of the table size and the index sizes.
+   </p><p>
+    When a sequential scan and sort is used, a temporary sort file is
+    also created, so that the peak temporary space requirement is as much
+    as double the table size, plus the index sizes.  This method is often
+    faster than the index scan method, but if the disk space requirement is
+    intolerable, you can disable this choice by temporarily setting <a class="xref" href="runtime-config-query.html#GUC-ENABLE-SORT">enable_sort</a> to <code class="literal">off</code>.
+   </p><p>
+    It is advisable to set <a class="xref" href="runtime-config-resource.html#GUC-MAINTENANCE-WORK-MEM">maintenance_work_mem</a> to
+    a reasonably large value (but not more than the amount of RAM you can
+    dedicate to the <code class="command">CLUSTER</code> operation) before clustering.
+   </p><p>
+    Because the planner records statistics about the ordering of
+    tables, it is advisable to run <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a>
+    on the newly clustered table.
+    Otherwise, the planner might make poor choices of query plans.
+   </p><p>
+    Because <code class="command">CLUSTER</code> remembers which indexes are clustered,
+    one can cluster the tables one wants clustered manually the first time,
+    then set up a periodic maintenance script that executes
+    <code class="command">CLUSTER</code> without any parameters, so that the desired tables
+    are periodically reclustered.
+   </p><p>
+    Each backend running <code class="command">CLUSTER</code> will report its progress
+    in the <code class="structname">pg_stat_progress_cluster</code> view. See
+    <a class="xref" href="progress-reporting.html#CLUSTER-PROGRESS-REPORTING" title="28.4.4. CLUSTER Progress Reporting">Section 28.4.4</a> for details.
+  </p></div><div class="refsect1" id="id-1.9.3.51.8"><h2>Examples</h2><p>
+   Cluster the table <code class="literal">employees</code> on the basis of
+   its index <code class="literal">employees_ind</code>:
+</p><pre class="programlisting">
+CLUSTER employees USING employees_ind;
+</pre><p>
+  </p><p>
+   Cluster the <code class="literal">employees</code> table using the same
+   index that was used before:
+</p><pre class="programlisting">
+CLUSTER employees;
+</pre><p>
+  </p><p>
+   Cluster all tables in the database that have previously been clustered:
+</p><pre class="programlisting">
+CLUSTER;
+</pre></div><div class="refsect1" id="id-1.9.3.51.9"><h2>Compatibility</h2><p>
+   There is no <code class="command">CLUSTER</code> statement in the SQL standard.
+  </p><p>
+   The syntax
+</p><pre class="synopsis">
+CLUSTER <em class="replaceable"><code>index_name</code></em> ON <em class="replaceable"><code>table_name</code></em>
+</pre><p>
+  is also supported for compatibility with pre-8.3 <span class="productname">PostgreSQL</span>
+  versions.
+  </p></div><div class="refsect1" id="id-1.9.3.51.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="app-clusterdb.html" title="clusterdb"><span class="refentrytitle"><span class="application">clusterdb</span></span></a>, <a class="xref" href="progress-reporting.html#CLUSTER-PROGRESS-REPORTING" title="28.4.4. CLUSTER Progress Reporting">Section 28.4.4</a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-close.html" title="CLOSE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-comment.html" title="COMMENT">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CLOSE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> COMMENT</td></tr></table></div></body></html>

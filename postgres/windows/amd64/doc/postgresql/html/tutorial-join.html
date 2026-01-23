@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>2.6. Joins Between Tables</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="tutorial-select.html" title="2.5. Querying a Table" /><link rel="next" href="tutorial-agg.html" title="2.7. Aggregate Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">2.6. Joins Between Tables</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="tutorial-select.html" title="2.5. Querying a Table">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="tutorial-sql.html" title="Chapter 2. The SQL Language">Up</a></td><th width="60%" align="center">Chapter 2. The <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="tutorial-agg.html" title="2.7. Aggregate Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TUTORIAL-JOIN"><div class="titlepage"><div><div><h2 class="title" style="clear: both">2.6. Joins Between Tables</h2></div></div></div><a id="id-1.4.4.7.2" class="indexterm"></a><p>
+    Thus far, our queries have only accessed one table at a time.
+    Queries can access multiple tables at once, or access the same
+    table in such a way that multiple rows of the table are being
+    processed at the same time.  Queries that access multiple tables
+    (or multiple instances of the same table) at one time are called
+    <em class="firstterm">join</em> queries.  They combine rows from one table
+    with rows from a second table, with an expression specifying which rows
+    are to be paired.  For example, to return all the weather records together
+    with the location of the associated city, the database needs to compare
+    the <code class="structfield">city</code>
+    column of each row of the <code class="structname">weather</code> table with the
+    <code class="structfield">name</code> column of all rows in the <code class="structname">cities</code>
+    table, and select the pairs of rows where these values match.<a href="#ftn.id-1.4.4.7.3.6" class="footnote"><sup class="footnote" id="id-1.4.4.7.3.6">[4]</sup></a>
+    This would be accomplished by the following query:
+
+</p><pre class="programlisting">
+SELECT * FROM weather JOIN cities ON city = name;
+</pre><p>
+
+</p><pre class="screen">
+     city      | temp_lo | temp_hi | prcp |    date    |     name      | location
+---------------+---------+---------+------+------------+---------------+-----------
+ San Francisco |      46 |      50 | 0.25 | 1994-11-27 | San Francisco | (-194,53)
+ San Francisco |      43 |      57 |    0 | 1994-11-29 | San Francisco | (-194,53)
+(2 rows)
+</pre><p>
+
+   </p><p>
+    Observe two things about the result set:
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       There is no result row for the city of Hayward.  This is
+       because there is no matching entry in the
+       <code class="structname">cities</code> table for Hayward, so the join
+       ignores the unmatched rows in the <code class="structname">weather</code> table.  We will see
+       shortly how this can be fixed.
+      </p></li><li class="listitem"><p>
+       There are two columns containing the city name.  This is
+       correct because the lists of columns from the
+       <code class="structname">weather</code> and
+       <code class="structname">cities</code> tables are concatenated.  In
+       practice this is undesirable, though, so you will probably want
+       to list the output columns explicitly rather than using
+       <code class="literal">*</code>:
+</p><pre class="programlisting">
+SELECT city, temp_lo, temp_hi, prcp, date, location
+    FROM weather JOIN cities ON city = name;
+</pre><p>
+      </p></li></ul></div><p>
+   </p><p>
+    Since the columns all had different names, the parser
+    automatically found which table they belong to.  If there
+    were duplicate column names in the two tables you'd need to
+    <em class="firstterm">qualify</em> the column names to show which one you
+    meant, as in:
+
+</p><pre class="programlisting">
+SELECT weather.city, weather.temp_lo, weather.temp_hi,
+       weather.prcp, weather.date, cities.location
+    FROM weather JOIN cities ON weather.city = cities.name;
+</pre><p>
+
+    It is widely considered good style to qualify all column names
+    in a join query, so that the query won't fail if a duplicate
+    column name is later added to one of the tables.
+   </p><p>
+    Join queries of the kind seen thus far can also be written in this
+    form:
+
+</p><pre class="programlisting">
+SELECT *
+    FROM weather, cities
+    WHERE city = name;
+</pre><p>
+
+    This syntax pre-dates the <code class="literal">JOIN</code>/<code class="literal">ON</code>
+    syntax, which was introduced in SQL-92.  The tables are simply listed in
+    the <code class="literal">FROM</code> clause, and the comparison expression is added
+    to the <code class="literal">WHERE</code> clause.  The results from this older
+    implicit syntax and the newer explicit
+    <code class="literal">JOIN</code>/<code class="literal">ON</code> syntax are identical.  But
+    for a reader of the query, the explicit syntax makes its meaning easier to
+    understand: The join condition is introduced by its own key word whereas
+    previously the condition was mixed into the <code class="literal">WHERE</code>
+    clause together with other conditions.
+   </p><a id="id-1.4.4.7.7" class="indexterm"></a><p>
+    Now we will figure out how we can get the Hayward records back in.
+    What we want the query to do is to scan the
+    <code class="structname">weather</code> table and for each row to find the
+    matching <code class="structname">cities</code> row(s).  If no matching row is
+    found we want some <span class="quote">“<span class="quote">empty values</span>”</span> to be substituted
+    for the <code class="structname">cities</code> table's columns.  This kind
+    of query is called an <em class="firstterm">outer join</em>.  (The
+    joins we have seen so far are <em class="firstterm">inner joins</em>.)
+    The command looks like this:
+
+</p><pre class="programlisting">
+SELECT *
+    FROM weather LEFT OUTER JOIN cities ON weather.city = cities.name;
+</pre><p>
+
+</p><pre class="screen">
+     city      | temp_lo | temp_hi | prcp |    date    |     name      | location
+---------------+---------+---------+------+------------+---------------+-----------
+ Hayward       |      37 |      54 |      | 1994-11-29 |               |
+ San Francisco |      46 |      50 | 0.25 | 1994-11-27 | San Francisco | (-194,53)
+ San Francisco |      43 |      57 |    0 | 1994-11-29 | San Francisco | (-194,53)
+(3 rows)
+</pre><p>
+
+    This query is called a <em class="firstterm">left outer
+    join</em> because the table mentioned on the left of the
+    join operator will have each of its rows in the output at least
+    once, whereas the table on the right will only have those rows
+    output that match some row of the left table.  When outputting a
+    left-table row for which there is no right-table match, empty (null)
+    values are substituted for the right-table columns.
+   </p><p><strong>Exercise: </strong>
+     There are also right outer joins and full outer joins.  Try to
+     find out what those do.
+    </p><a id="id-1.4.4.7.10" class="indexterm"></a><a id="id-1.4.4.7.11" class="indexterm"></a><p>
+    We can also join a table against itself.  This is called a
+    <em class="firstterm">self join</em>.  As an example, suppose we wish
+    to find all the weather records that are in the temperature range
+    of other weather records.  So we need to compare the
+    <code class="structfield">temp_lo</code> and <code class="structfield">temp_hi</code> columns of
+    each <code class="structname">weather</code> row to the
+    <code class="structfield">temp_lo</code> and
+    <code class="structfield">temp_hi</code> columns of all other
+    <code class="structname">weather</code> rows.  We can do this with the
+    following query:
+
+</p><pre class="programlisting">
+SELECT w1.city, w1.temp_lo AS low, w1.temp_hi AS high,
+       w2.city, w2.temp_lo AS low, w2.temp_hi AS high
+    FROM weather w1 JOIN weather w2
+        ON w1.temp_lo &lt; w2.temp_lo AND w1.temp_hi &gt; w2.temp_hi;
+</pre><p>
+
+</p><pre class="screen">
+     city      | low | high |     city      | low | high
+---------------+-----+------+---------------+-----+------
+ San Francisco |  43 |   57 | San Francisco |  46 |   50
+ Hayward       |  37 |   54 | San Francisco |  46 |   50
+(2 rows)
+</pre><p>
+
+    Here we have relabeled the weather table as <code class="literal">w1</code> and
+    <code class="literal">w2</code> to be able to distinguish the left and right side
+    of the join.  You can also use these kinds of aliases in other
+    queries to save some typing, e.g.:
+</p><pre class="programlisting">
+SELECT *
+    FROM weather w JOIN cities c ON w.city = c.name;
+</pre><p>
+    You will encounter this style of abbreviating quite frequently.
+   </p><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.id-1.4.4.7.3.6" class="footnote"><p><a href="#id-1.4.4.7.3.6" class="para"><sup class="para">[4] </sup></a>
+      This  is only a conceptual model.  The join is usually performed
+      in a more efficient manner than actually comparing each possible
+      pair of rows, but this is invisible to the user.
+     </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tutorial-select.html" title="2.5. Querying a Table">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="tutorial-sql.html" title="Chapter 2. The SQL Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="tutorial-agg.html" title="2.7. Aggregate Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">2.5. Querying a Table </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 2.7. Aggregate Functions</td></tr></table></div></body></html>

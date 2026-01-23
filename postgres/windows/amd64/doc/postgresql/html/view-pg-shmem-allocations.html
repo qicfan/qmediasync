@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.88. pg_shmem_allocations</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="view-pg-shadow.html" title="52.87. pg_shadow" /><link rel="next" href="view-pg-stats.html" title="52.89. pg_stats" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.88. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_shmem_allocations</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="view-pg-shadow.html" title="52.87. pg_shadow">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="view-pg-stats.html" title="52.89. pg_stats">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="VIEW-PG-SHMEM-ALLOCATIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.88. <code class="structname">pg_shmem_allocations</code></h2></div></div></div><a id="id-1.10.4.90.2" class="indexterm"></a><p>
+   The <code class="structname">pg_shmem_allocations</code> view shows allocations
+   made from the server's main shared memory segment.  This includes both
+   memory allocated by <span class="productname">postgres</span> itself and memory
+   allocated by extensions using the mechanisms detailed in
+   <a class="xref" href="xfunc-c.html#XFUNC-SHARED-ADDIN" title="38.10.10. Shared Memory and LWLocks">Section 38.10.10</a>.
+  </p><p>
+   Note that this view does not include memory allocated using the dynamic
+   shared memory infrastructure.
+  </p><div class="table" id="id-1.10.4.90.5"><p class="title"><strong>Table 52.89. <code class="structname">pg_shmem_allocations</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_shmem_allocations Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">name</code> <code class="type">text</code>
+      </p>
+      <p>
+       The name of the shared memory allocation. NULL for unused memory
+       and <code class="literal">&lt;anonymous&gt;</code> for anonymous
+       allocations.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">off</code> <code class="type">int8</code>
+      </p>
+      <p>
+       The offset at which the allocation starts. NULL for anonymous
+       allocations, since details related to them are not known.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">size</code> <code class="type">int8</code>
+      </p>
+      <p>
+       Size of the allocation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">allocated_size</code> <code class="type">int8</code>
+      </p>
+      <p>
+       Size of the allocation including padding. For anonymous
+       allocations, no information about padding is available, so the
+       <code class="literal">size</code> and <code class="literal">allocated_size</code> columns
+       will always be equal. Padding is not meaningful for free memory, so
+       the columns will be equal in that case also.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   Anonymous allocations are allocations that have been made
+   with <code class="literal">ShmemAlloc()</code> directly, rather than via
+   <code class="literal">ShmemInitStruct()</code> or
+   <code class="literal">ShmemInitHash()</code>.
+  </p><p>
+   By default, the <code class="structname">pg_shmem_allocations</code> view can be
+   read only by superusers.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="view-pg-shadow.html" title="52.87. pg_shadow">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="view-pg-stats.html" title="52.89. pg_stats">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.87. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_shadow</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.89. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_stats</code></td></tr></table></div></body></html>

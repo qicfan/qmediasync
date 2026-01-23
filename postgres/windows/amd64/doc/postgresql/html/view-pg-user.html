@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.95. pg_user</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="view-pg-timezone-names.html" title="52.94. pg_timezone_names" /><link rel="next" href="view-pg-user-mappings.html" title="52.96. pg_user_mappings" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.95. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_user</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="view-pg-timezone-names.html" title="52.94. pg_timezone_names">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="view-pg-user-mappings.html" title="52.96. pg_user_mappings">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="VIEW-PG-USER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.95. <code class="structname">pg_user</code></h2></div></div></div><a id="id-1.10.4.97.2" class="indexterm"></a><p>
+   The view <code class="structname">pg_user</code> provides access to
+   information about database users.  This is simply a publicly
+   readable view of
+   <a class="link" href="view-pg-shadow.html" title="52.87. pg_shadow"><code class="structname">pg_shadow</code></a>
+   that blanks out the password field.
+  </p><div class="table" id="id-1.10.4.97.4"><p class="title"><strong>Table 52.96. <code class="structname">pg_user</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_user Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">usename</code> <code class="type">name</code>
+      </p>
+      <p>
+       User name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">usesysid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       ID of this user
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">usecreatedb</code> <code class="type">bool</code>
+      </p>
+      <p>
+       User can create databases
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">usesuper</code> <code class="type">bool</code>
+      </p>
+      <p>
+       User is a superuser
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">userepl</code> <code class="type">bool</code>
+      </p>
+      <p>
+       User can initiate streaming replication and put the system in and
+       out of backup mode.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">usebypassrls</code> <code class="type">bool</code>
+      </p>
+      <p>
+       User bypasses every row-level security policy, see
+       <a class="xref" href="ddl-rowsecurity.html" title="5.8. Row Security Policies">Section 5.8</a> for more information.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">passwd</code> <code class="type">text</code>
+      </p>
+      <p>
+       Not the password (always reads as <code class="literal">********</code>)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">valuntil</code> <code class="type">timestamptz</code>
+      </p>
+      <p>
+       Password expiry time (only used for password authentication)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">useconfig</code> <code class="type">text[]</code>
+      </p>
+      <p>
+       Session defaults for run-time configuration variables
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="view-pg-timezone-names.html" title="52.94. pg_timezone_names">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="view-pg-user-mappings.html" title="52.96. pg_user_mappings">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.94. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_timezone_names</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.96. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_user_mappings</code></td></tr></table></div></body></html>

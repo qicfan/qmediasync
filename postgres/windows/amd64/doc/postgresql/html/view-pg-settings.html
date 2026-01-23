@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.86. pg_settings</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="view-pg-sequences.html" title="52.85. pg_sequences" /><link rel="next" href="view-pg-shadow.html" title="52.87. pg_shadow" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.86. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_settings</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="view-pg-sequences.html" title="52.85. pg_sequences">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="view-pg-shadow.html" title="52.87. pg_shadow">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="VIEW-PG-SETTINGS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.86. <code class="structname">pg_settings</code></h2></div></div></div><a id="id-1.10.4.88.2" class="indexterm"></a><p>
+   The view <code class="structname">pg_settings</code> provides access to
+   run-time parameters of the server.  It is essentially an alternative
+   interface to the <a class="link" href="sql-show.html" title="SHOW"><code class="command">SHOW</code></a>
+   and <a class="link" href="sql-set.html" title="SET"><code class="command">SET</code></a> commands.
+   It also provides access to some facts about each parameter that are
+   not directly available from <a class="link" href="sql-show.html" title="SHOW"><code class="command">SHOW</code></a>, such as minimum and
+   maximum values.
+  </p><div class="table" id="id-1.10.4.88.4"><p class="title"><strong>Table 52.87. <code class="structname">pg_settings</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_settings Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">name</code> <code class="type">text</code>
+      </p>
+      <p>
+       Run-time configuration parameter name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">setting</code> <code class="type">text</code>
+      </p>
+      <p>
+       Current value of the parameter
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">unit</code> <code class="type">text</code>
+      </p>
+      <p>
+       Implicit unit of the parameter
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">category</code> <code class="type">text</code>
+      </p>
+      <p>
+       Logical group of the parameter
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">short_desc</code> <code class="type">text</code>
+      </p>
+      <p>
+       A brief description of the parameter
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">extra_desc</code> <code class="type">text</code>
+      </p>
+      <p>
+       Additional, more detailed, description of the parameter
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">context</code> <code class="type">text</code>
+      </p>
+      <p>
+       Context required to set the parameter's value (see below)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">vartype</code> <code class="type">text</code>
+      </p>
+      <p>
+       Parameter type (<code class="literal">bool</code>, <code class="literal">enum</code>,
+       <code class="literal">integer</code>, <code class="literal">real</code>, or <code class="literal">string</code>)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">source</code> <code class="type">text</code>
+      </p>
+      <p>
+       Source of the current parameter value
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">min_val</code> <code class="type">text</code>
+      </p>
+      <p>
+       Minimum allowed value of the parameter (null for non-numeric
+       values)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">max_val</code> <code class="type">text</code>
+      </p>
+      <p>
+       Maximum allowed value of the parameter (null for non-numeric
+       values)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">enumvals</code> <code class="type">text[]</code>
+      </p>
+      <p>
+       Allowed values of an enum parameter (null for non-enum
+       values)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">boot_val</code> <code class="type">text</code>
+      </p>
+      <p>
+       Parameter value assumed at server startup if the parameter is
+       not otherwise set
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">reset_val</code> <code class="type">text</code>
+      </p>
+      <p>
+       Value that <a class="link" href="sql-reset.html" title="RESET"><code class="command">RESET</code></a> would reset the parameter to
+       in the current session
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">sourcefile</code> <code class="type">text</code>
+      </p>
+      <p>
+       Configuration file the current value was set in (null for
+       values set from sources other than configuration files, or when
+       examined by a user who is neither a superuser or a member of
+       <code class="literal">pg_read_all_settings</code>); helpful when using
+       <code class="literal">include</code> directives in configuration files
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">sourceline</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Line number within the configuration file the current value was
+       set at (null for values set from sources other than configuration files,
+       or when examined by a user who is neither a superuser or a member of
+       <code class="literal">pg_read_all_settings</code>).
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pending_restart</code> <code class="type">bool</code>
+      </p>
+      <p>
+       <code class="literal">true</code> if the value has been changed in the
+       configuration file but needs a restart; or <code class="literal">false</code>
+       otherwise.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   There are several possible values of <code class="structfield">context</code>.
+   In order of decreasing difficulty of changing the setting, they are:
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">internal</code></span></dt><dd><p>
+      These settings cannot be changed directly; they reflect internally
+      determined values.  Some of them may be adjustable by rebuilding the
+      server with different configuration options, or by changing options
+      supplied to <span class="application">initdb</span>.
+     </p></dd><dt><span class="term"><code class="literal">postmaster</code></span></dt><dd><p>
+      These settings can only be applied when the server starts, so any change
+      requires restarting the server.  Values for these settings are typically
+      stored in the <code class="filename">postgresql.conf</code> file, or passed on
+      the command line when starting the server.  Of course, settings with any
+      of the lower <code class="structfield">context</code> types can also be
+      set at server start time.
+     </p></dd><dt><span class="term"><code class="literal">sighup</code></span></dt><dd><p>
+      Changes to these settings can be made in
+      <code class="filename">postgresql.conf</code> without restarting the server.
+      Send a <span class="systemitem">SIGHUP</span> signal to the postmaster to
+      cause it to re-read <code class="filename">postgresql.conf</code> and apply
+      the changes.  The postmaster will also forward the
+      <span class="systemitem">SIGHUP</span> signal to its child processes so that
+      they all pick up the new value.
+     </p></dd><dt><span class="term"><code class="literal">superuser-backend</code></span></dt><dd><p>
+      Changes to these settings can be made in
+      <code class="filename">postgresql.conf</code> without restarting the server.
+      They can also be set for a particular session in the connection request
+      packet (for example, via <span class="application">libpq</span>'s <code class="literal">PGOPTIONS</code>
+      environment variable), but only if the connecting user is a superuser.
+      However, these settings never change in a session after it is started.
+      If you change them in <code class="filename">postgresql.conf</code>, send a
+      <span class="systemitem">SIGHUP</span> signal to the postmaster to cause it to
+      re-read <code class="filename">postgresql.conf</code>.  The new values will only
+      affect subsequently-launched sessions.
+     </p></dd><dt><span class="term"><code class="literal">backend</code></span></dt><dd><p>
+      Changes to these settings can be made in
+      <code class="filename">postgresql.conf</code> without restarting the server.
+      They can also be set for a particular session in the connection request
+      packet (for example, via <span class="application">libpq</span>'s <code class="literal">PGOPTIONS</code>
+      environment variable); any user can make such a change for their session.
+      However, these settings never change in a session after it is started.
+      If you change them in <code class="filename">postgresql.conf</code>, send a
+      <span class="systemitem">SIGHUP</span> signal to the postmaster to cause it to
+      re-read <code class="filename">postgresql.conf</code>.  The new values will only
+      affect subsequently-launched sessions.
+     </p></dd><dt><span class="term"><code class="literal">superuser</code></span></dt><dd><p>
+      These settings can be set from <code class="filename">postgresql.conf</code>,
+      or within a session via the <code class="command">SET</code> command; but only superusers
+      can change them via <code class="command">SET</code>.  Changes in
+      <code class="filename">postgresql.conf</code> will affect existing sessions
+      only if no session-local value has been established with <code class="command">SET</code>.
+     </p></dd><dt><span class="term"><code class="literal">user</code></span></dt><dd><p>
+      These settings can be set from <code class="filename">postgresql.conf</code>,
+      or within a session via the <code class="command">SET</code> command.  Any user is
+      allowed to change their session-local value.  Changes in
+      <code class="filename">postgresql.conf</code> will affect existing sessions
+      only if no session-local value has been established with <code class="command">SET</code>.
+     </p></dd></dl></div><p>
+   See <a class="xref" href="config-setting.html" title="20.1. Setting Parameters">Section 20.1</a> for more information about the various
+   ways to change these parameters.
+  </p><p>
+   This view does not display <a class="link" href="runtime-config-custom.html" title="20.16. Customized Options">customized options</a>
+   until the extension module that defines them has been loaded.
+  </p><p>
+   This view cannot be inserted into or deleted from, but it can be updated.  An
+   <code class="command">UPDATE</code> applied to a row of <code class="structname">pg_settings</code>
+   is equivalent to executing the <code class="command">SET</code> command on that named
+   parameter. The change only affects the value used by the current
+   session. If an <code class="command">UPDATE</code> is issued within a transaction
+   that is later aborted, the effects of the <code class="command">UPDATE</code> command
+   disappear when the transaction is rolled back. Once the surrounding
+   transaction is committed, the effects will persist until the end of the
+   session, unless overridden by another <code class="command">UPDATE</code> or
+   <code class="command">SET</code>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="view-pg-sequences.html" title="52.85. pg_sequences">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="view-pg-shadow.html" title="52.87. pg_shadow">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.85. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_sequences</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.87. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_shadow</code></td></tr></table></div></body></html>

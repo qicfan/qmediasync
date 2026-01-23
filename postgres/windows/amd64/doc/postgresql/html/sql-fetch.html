@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>FETCH</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-explain.html" title="EXPLAIN" /><link rel="next" href="sql-grant.html" title="GRANT" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">FETCH</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-explain.html" title="EXPLAIN">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-grant.html" title="GRANT">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-FETCH"><div class="titlepage"></div><a id="id-1.9.3.149.1" class="indexterm"></a><a id="id-1.9.3.149.2" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">FETCH</span></h2><p>FETCH — retrieve rows from a query using a cursor</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+FETCH [ <em class="replaceable"><code>direction</code></em> ] [ FROM | IN ] <em class="replaceable"><code>cursor_name</code></em>
+
+<span class="phrase">where <em class="replaceable"><code>direction</code></em> can be one of:</span>
+
+    NEXT
+    PRIOR
+    FIRST
+    LAST
+    ABSOLUTE <em class="replaceable"><code>count</code></em>
+    RELATIVE <em class="replaceable"><code>count</code></em>
+    <em class="replaceable"><code>count</code></em>
+    ALL
+    FORWARD
+    FORWARD <em class="replaceable"><code>count</code></em>
+    FORWARD ALL
+    BACKWARD
+    BACKWARD <em class="replaceable"><code>count</code></em>
+    BACKWARD ALL
+</pre></div><div class="refsect1" id="id-1.9.3.149.6"><h2>Description</h2><p>
+   <code class="command">FETCH</code> retrieves rows using a previously-created cursor.
+  </p><p>
+   A cursor has an associated position, which is used by
+   <code class="command">FETCH</code>.  The cursor position can be before the first row of the
+   query result, on any particular row of the result, or after the last row
+   of the result.  When created, a cursor is positioned before the first row.
+   After fetching some rows, the cursor is positioned on the row most recently
+   retrieved.  If <code class="command">FETCH</code> runs off the end of the available rows
+   then the cursor is left positioned after the last row, or before the first
+   row if fetching backward.  <code class="command">FETCH ALL</code> or <code class="command">FETCH BACKWARD
+   ALL</code> will always leave the cursor positioned after the last row or before
+   the first row.
+  </p><p>
+   The forms <code class="literal">NEXT</code>, <code class="literal">PRIOR</code>, <code class="literal">FIRST</code>,
+   <code class="literal">LAST</code>, <code class="literal">ABSOLUTE</code>, <code class="literal">RELATIVE</code> fetch
+   a single row after moving the cursor appropriately.  If there is no
+   such row, an empty result is returned, and the cursor is left
+   positioned before the first row or after the last row as
+   appropriate.
+  </p><p>
+   The forms using <code class="literal">FORWARD</code> and <code class="literal">BACKWARD</code>
+   retrieve the indicated number of rows moving in the forward or
+   backward direction, leaving the cursor positioned on the
+   last-returned row (or after/before all rows, if the <em class="replaceable"><code>count</code></em> exceeds the number of rows
+   available).
+  </p><p>
+   <code class="literal">RELATIVE 0</code>, <code class="literal">FORWARD 0</code>, and
+   <code class="literal">BACKWARD 0</code> all request fetching the current row without
+   moving the cursor, that is, re-fetching the most recently fetched
+   row.  This will succeed unless the cursor is positioned before the
+   first row or after the last row; in which case, no row is returned.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    This page describes usage of cursors at the SQL command level.
+    If you are trying to use cursors inside a <span class="application">PL/pgSQL</span>
+    function, the rules are different —
+    see <a class="xref" href="plpgsql-cursors.html#PLPGSQL-CURSOR-USING" title="43.7.3. Using Cursors">Section 43.7.3</a>.
+   </p></div></div><div class="refsect1" id="id-1.9.3.149.7"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>direction</code></em></span></dt><dd><p><em class="replaceable"><code>direction</code></em> defines
+      the fetch direction and number of rows to fetch.  It can be one
+      of the following:
+
+      </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">NEXT</code></span></dt><dd><p>
+          Fetch the next row. This is the default if <em class="replaceable"><code>direction</code></em> is omitted.
+         </p></dd><dt><span class="term"><code class="literal">PRIOR</code></span></dt><dd><p>
+          Fetch the prior row.
+         </p></dd><dt><span class="term"><code class="literal">FIRST</code></span></dt><dd><p>
+          Fetch the first row of the query (same as <code class="literal">ABSOLUTE 1</code>).
+         </p></dd><dt><span class="term"><code class="literal">LAST</code></span></dt><dd><p>
+          Fetch the last row of the query (same as <code class="literal">ABSOLUTE -1</code>).
+         </p></dd><dt><span class="term"><code class="literal">ABSOLUTE <em class="replaceable"><code>count</code></em></code></span></dt><dd><p>
+          Fetch the <em class="replaceable"><code>count</code></em>'th row of the query,
+          or the <code class="literal">abs(<em class="replaceable"><code>count</code></em>)</code>'th row from
+          the end if <em class="replaceable"><code>count</code></em> is negative.  Position
+          before first row or after last row if <em class="replaceable"><code>count</code></em> is out of range; in
+          particular, <code class="literal">ABSOLUTE 0</code> positions before
+          the first row.
+         </p></dd><dt><span class="term"><code class="literal">RELATIVE <em class="replaceable"><code>count</code></em></code></span></dt><dd><p>
+          Fetch the <em class="replaceable"><code>count</code></em>'th succeeding row, or
+          the <code class="literal">abs(<em class="replaceable"><code>count</code></em>)</code>'th prior
+          row if <em class="replaceable"><code>count</code></em> is
+          negative.  <code class="literal">RELATIVE 0</code> re-fetches the
+          current row, if any.
+         </p></dd><dt><span class="term"><em class="replaceable"><code>count</code></em></span></dt><dd><p>
+          Fetch the next <em class="replaceable"><code>count</code></em> rows (same as
+          <code class="literal">FORWARD <em class="replaceable"><code>count</code></em></code>).
+         </p></dd><dt><span class="term"><code class="literal">ALL</code></span></dt><dd><p>
+          Fetch all remaining rows (same as <code class="literal">FORWARD ALL</code>).
+         </p></dd><dt><span class="term"><code class="literal">FORWARD</code></span></dt><dd><p>
+          Fetch the next row (same as <code class="literal">NEXT</code>).
+         </p></dd><dt><span class="term"><code class="literal">FORWARD <em class="replaceable"><code>count</code></em></code></span></dt><dd><p>
+          Fetch the next <em class="replaceable"><code>count</code></em> rows.
+          <code class="literal">FORWARD 0</code> re-fetches the current row.
+         </p></dd><dt><span class="term"><code class="literal">FORWARD ALL</code></span></dt><dd><p>
+          Fetch all remaining rows.
+         </p></dd><dt><span class="term"><code class="literal">BACKWARD</code></span></dt><dd><p>
+          Fetch the prior row (same as <code class="literal">PRIOR</code>).
+         </p></dd><dt><span class="term"><code class="literal">BACKWARD <em class="replaceable"><code>count</code></em></code></span></dt><dd><p>
+          Fetch the prior <em class="replaceable"><code>count</code></em> rows (scanning
+          backwards).  <code class="literal">BACKWARD 0</code> re-fetches the
+          current row.
+         </p></dd><dt><span class="term"><code class="literal">BACKWARD ALL</code></span></dt><dd><p>
+          Fetch all prior rows (scanning backwards).
+         </p></dd></dl></div></dd><dt><span class="term"><em class="replaceable"><code>count</code></em></span></dt><dd><p><em class="replaceable"><code>count</code></em> is a
+      possibly-signed integer constant, determining the location or
+      number of rows to fetch.  For <code class="literal">FORWARD</code> and
+      <code class="literal">BACKWARD</code> cases, specifying a negative <em class="replaceable"><code>count</code></em> is equivalent to changing
+      the sense of <code class="literal">FORWARD</code> and <code class="literal">BACKWARD</code>.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>cursor_name</code></em></span></dt><dd><p>
+      An open cursor's name.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.149.8"><h2>Outputs</h2><p>
+   On successful completion, a <code class="command">FETCH</code> command returns a command
+   tag of the form
+</p><pre class="screen">
+FETCH <em class="replaceable"><code>count</code></em>
+</pre><p>
+   The <em class="replaceable"><code>count</code></em> is the number
+   of rows fetched (possibly zero).  Note that in
+   <span class="application">psql</span>, the command tag will not actually be
+   displayed, since <span class="application">psql</span> displays the fetched
+   rows instead.
+  </p></div><div class="refsect1" id="id-1.9.3.149.9"><h2>Notes</h2><p>
+   The cursor should be declared with the <code class="literal">SCROLL</code>
+   option if one intends to use any variants of <code class="command">FETCH</code>
+   other than <code class="command">FETCH NEXT</code> or <code class="command">FETCH FORWARD</code> with
+   a positive count.  For simple queries
+   <span class="productname">PostgreSQL</span> will allow backwards fetch
+   from cursors not declared with <code class="literal">SCROLL</code>, but this
+   behavior is best not relied on. If the cursor is declared with
+   <code class="literal">NO SCROLL</code>, no backward fetches are allowed.
+  </p><p>
+   <code class="literal">ABSOLUTE</code> fetches are not any faster than
+   navigating to the desired row with a relative move: the underlying
+   implementation must traverse all the intermediate rows anyway.
+   Negative absolute fetches are even worse: the query must be read to
+   the end to find the last row, and then traversed backward from
+   there.  However, rewinding to the start of the query (as with
+   <code class="literal">FETCH ABSOLUTE 0</code>) is fast.
+  </p><p>
+   <a class="link" href="sql-declare.html" title="DECLARE"><code class="command">DECLARE</code></a>
+   is used to define a cursor.  Use
+   <a class="link" href="sql-move.html" title="MOVE"><code class="command">MOVE</code></a>
+   to change cursor position without retrieving data.
+  </p></div><div class="refsect1" id="id-1.9.3.149.10"><h2>Examples</h2><p>
+   The following example traverses a table using a cursor:
+
+</p><pre class="programlisting">
+BEGIN WORK;
+
+-- Set up a cursor:
+DECLARE liahona SCROLL CURSOR FOR SELECT * FROM films;
+
+-- Fetch the first 5 rows in the cursor liahona:
+FETCH FORWARD 5 FROM liahona;
+
+ code  |          title          | did | date_prod  |   kind   |  len
+-------+-------------------------+-----+------------+----------+-------
+ BL101 | The Third Man           | 101 | 1949-12-23 | Drama    | 01:44
+ BL102 | The African Queen       | 101 | 1951-08-11 | Romantic | 01:43
+ JL201 | Une Femme est une Femme | 102 | 1961-03-12 | Romantic | 01:25
+ P_301 | Vertigo                 | 103 | 1958-11-14 | Action   | 02:08
+ P_302 | Becket                  | 103 | 1964-02-03 | Drama    | 02:28
+
+-- Fetch the previous row:
+FETCH PRIOR FROM liahona;
+
+ code  |  title  | did | date_prod  |  kind  |  len
+-------+---------+-----+------------+--------+-------
+ P_301 | Vertigo | 103 | 1958-11-14 | Action | 02:08
+
+-- Close the cursor and end the transaction:
+CLOSE liahona;
+COMMIT WORK;
+</pre></div><div class="refsect1" id="id-1.9.3.149.11"><h2>Compatibility</h2><p>
+   The SQL standard defines <code class="command">FETCH</code> for use in
+   embedded SQL only.  The variant of <code class="command">FETCH</code>
+   described here returns the data as if it were a
+   <code class="command">SELECT</code> result rather than placing it in host
+   variables.  Other than this point, <code class="command">FETCH</code> is
+   fully upward-compatible with the SQL standard.
+  </p><p>
+   The <code class="command">FETCH</code> forms involving
+   <code class="literal">FORWARD</code> and <code class="literal">BACKWARD</code>, as well
+   as the forms <code class="literal">FETCH <em class="replaceable"><code>count</code></em></code> and <code class="literal">FETCH
+   ALL</code>, in which <code class="literal">FORWARD</code> is implicit, are
+   <span class="productname">PostgreSQL</span> extensions.
+  </p><p>
+   The SQL standard allows only <code class="literal">FROM</code> preceding the cursor
+   name; the option to use <code class="literal">IN</code>, or to leave them out altogether, is
+   an extension.
+  </p></div><div class="refsect1" id="id-1.9.3.149.12"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-close.html" title="CLOSE"><span class="refentrytitle">CLOSE</span></a>, <a class="xref" href="sql-declare.html" title="DECLARE"><span class="refentrytitle">DECLARE</span></a>, <a class="xref" href="sql-move.html" title="MOVE"><span class="refentrytitle">MOVE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-explain.html" title="EXPLAIN">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-grant.html" title="GRANT">Next</a></td></tr><tr><td width="40%" align="left" valign="top">EXPLAIN </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> GRANT</td></tr></table></div></body></html>

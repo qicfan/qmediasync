@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.28. Trigger Functions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-admin.html" title="9.27. System Administration Functions" /><link rel="next" href="functions-event-triggers.html" title="9.29. Event Trigger Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.28. Trigger Functions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-admin.html" title="9.27. System Administration Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-event-triggers.html" title="9.29. Event Trigger Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-TRIGGER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.28. Trigger Functions</h2></div></div></div><p>
+   While many uses of triggers involve user-written trigger functions,
+   <span class="productname">PostgreSQL</span> provides a few built-in trigger
+   functions that can be used directly in user-defined triggers.  These
+   are summarized in <a class="xref" href="functions-trigger.html#BUILTIN-TRIGGERS-TABLE" title="Table 9.99. Built-In Trigger Functions">Table 9.99</a>.
+   (Additional built-in trigger functions exist, which implement foreign
+   key constraints and deferred index constraints.  Those are not documented
+   here since users need not use them directly.)
+  </p><p>
+   For more information about creating triggers, see
+   <a class="xref" href="sql-createtrigger.html" title="CREATE TRIGGER"><span class="refentrytitle">CREATE TRIGGER</span></a>.
+  </p><div class="table" id="BUILTIN-TRIGGERS-TABLE"><p class="title"><strong>Table 9.99. Built-In Trigger Functions</strong></p><div class="table-contents"><table class="table" summary="Built-In Trigger Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example Usage
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.34.4.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">suppress_redundant_updates_trigger</code> ( )
+        → <code class="returnvalue">trigger</code>
+       </p>
+       <p>
+        Suppresses do-nothing update operations.  See below for details.
+       </p>
+       <p>
+        <code class="literal">CREATE TRIGGER ... suppress_redundant_updates_trigger()</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.34.4.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">tsvector_update_trigger</code> ( )
+        → <code class="returnvalue">trigger</code>
+       </p>
+       <p>
+        Automatically updates a <code class="type">tsvector</code> column from associated
+        plain-text document column(s).  The text search configuration to use
+        is specified by name as a trigger argument.  See
+        <a class="xref" href="textsearch-features.html#TEXTSEARCH-UPDATE-TRIGGERS" title="12.4.3. Triggers for Automatic Updates">Section 12.4.3</a> for details.
+       </p>
+       <p>
+        <code class="literal">CREATE TRIGGER ... tsvector_update_trigger(tsvcol, 'pg_catalog.swedish', title, body)</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.34.4.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">tsvector_update_trigger_column</code> ( )
+        → <code class="returnvalue">trigger</code>
+       </p>
+       <p>
+        Automatically updates a <code class="type">tsvector</code> column from associated
+        plain-text document column(s).  The text search configuration to use
+        is taken from a <code class="type">regconfig</code> column of the table.  See
+        <a class="xref" href="textsearch-features.html#TEXTSEARCH-UPDATE-TRIGGERS" title="12.4.3. Triggers for Automatic Updates">Section 12.4.3</a> for details.
+       </p>
+       <p>
+        <code class="literal">CREATE TRIGGER ... tsvector_update_trigger_column(tsvcol, tsconfigcol, title, body)</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+      The <code class="function">suppress_redundant_updates_trigger</code> function,
+      when applied as a row-level <code class="literal">BEFORE UPDATE</code> trigger,
+      will prevent any update that does not actually change the data in the
+      row from taking place.  This overrides the normal behavior which always
+      performs a physical row update
+      regardless of whether or not the data has changed. (This normal behavior
+      makes updates run faster, since no checking is required, and is also
+      useful in certain cases.)
+    </p><p>
+      Ideally, you should avoid running updates that don't actually
+      change the data in the record. Redundant updates can cost considerable
+      unnecessary time, especially if there are lots of indexes to alter,
+      and space in dead rows that will eventually have to be vacuumed.
+      However, detecting such situations in client code is not
+      always easy, or even possible, and writing expressions to detect
+      them can be error-prone. An alternative is to use
+      <code class="function">suppress_redundant_updates_trigger</code>, which will skip
+      updates that don't change the data. You should use this with care,
+      however. The trigger takes a small but non-trivial time for each record,
+      so if most of the records affected by updates do actually change,
+      use of this trigger will make updates run slower on average.
+    </p><p>
+      The <code class="function">suppress_redundant_updates_trigger</code> function can be
+      added to a table like this:
+</p><pre class="programlisting">
+CREATE TRIGGER z_min_update
+BEFORE UPDATE ON tablename
+FOR EACH ROW EXECUTE FUNCTION suppress_redundant_updates_trigger();
+</pre><p>
+      In most cases, you need to fire this trigger last for each row, so that
+      it does not override other triggers that might wish to alter the row.
+      Bearing in mind that triggers fire in name order, you would therefore
+      choose a trigger name that comes after the name of any other trigger
+      you might have on the table.  (Hence the <span class="quote">“<span class="quote">z</span>”</span> prefix in the
+      example.)
+    </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-admin.html" title="9.27. System Administration Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-event-triggers.html" title="9.29. Event Trigger Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.27. System Administration Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.29. Event Trigger Functions</td></tr></table></div></body></html>

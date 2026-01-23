@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE MATERIALIZED VIEW</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createlanguage.html" title="CREATE LANGUAGE" /><link rel="next" href="sql-createoperator.html" title="CREATE OPERATOR" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE MATERIALIZED VIEW</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createlanguage.html" title="CREATE LANGUAGE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createoperator.html" title="CREATE OPERATOR">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATEMATERIALIZEDVIEW"><div class="titlepage"></div><a id="id-1.9.3.71.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE MATERIALIZED VIEW</span></h2><p>CREATE MATERIALIZED VIEW — define a new materialized view</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE MATERIALIZED VIEW [ IF NOT EXISTS ] <em class="replaceable"><code>table_name</code></em>
+    [ (<em class="replaceable"><code>column_name</code></em> [, ...] ) ]
+    [ USING <em class="replaceable"><code>method</code></em> ]
+    [ WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] ) ]
+    [ TABLESPACE <em class="replaceable"><code>tablespace_name</code></em> ]
+    AS <em class="replaceable"><code>query</code></em>
+    [ WITH [ NO ] DATA ]
+</pre></div><div class="refsect1" id="id-1.9.3.71.5"><h2>Description</h2><p>
+   <code class="command">CREATE MATERIALIZED VIEW</code> defines a materialized view of
+   a query.  The query is executed and used to populate the view at the time
+   the command is issued (unless <code class="command">WITH NO DATA</code> is used) and may be
+   refreshed later using <code class="command">REFRESH MATERIALIZED VIEW</code>.
+  </p><p>
+   <code class="command">CREATE MATERIALIZED VIEW</code> is similar to
+   <code class="command">CREATE TABLE AS</code>, except that it also remembers the query used
+   to initialize the view, so that it can be refreshed later upon demand.
+   A materialized view has many of the same properties as a table, but there
+   is no support for temporary materialized views.
+  </p><p>
+   <code class="command">CREATE MATERIALIZED VIEW</code> requires
+   <code class="literal">CREATE</code> privilege on the schema used for the materialized
+   view.
+  </p></div><div class="refsect1" id="id-1.9.3.71.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">IF NOT EXISTS</code></span></dt><dd><p>
+      Do not throw an error if a materialized view with the same name already
+      exists. A notice is issued in this case.  Note that there is no guarantee
+      that the existing materialized view is anything like the one that would
+      have been created.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of the materialized view to be
+      created.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>column_name</code></em></span></dt><dd><p>
+      The name of a column in the new materialized view.  If column names are
+      not provided, they are taken from the output column names of the query.
+     </p></dd><dt><span class="term"><code class="literal">USING <em class="replaceable"><code>method</code></em></code></span></dt><dd><p>
+      This optional clause specifies the table access method to use to store
+      the contents for the new materialized view; the method needs be an
+      access method of type <code class="literal">TABLE</code>. See <a class="xref" href="tableam.html" title="Chapter 61. Table Access Method Interface Definition">Chapter 61</a> for more information.  If this option is not
+      specified, the default table access method is chosen for the new
+      materialized view. See <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLE-ACCESS-METHOD">default_table_access_method</a>
+      for more information.
+     </p></dd><dt><span class="term"><code class="literal">WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )</code></span></dt><dd><p>
+      This clause specifies optional storage parameters for the new
+      materialized view; see
+      <a class="xref" href="sql-createtable.html#SQL-CREATETABLE-STORAGE-PARAMETERS" title="Storage Parameters">Storage Parameters</a> in the
+      <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> documentation for more
+      information.  All parameters supported for <code class="literal">CREATE
+      TABLE</code> are also supported for <code class="literal">CREATE MATERIALIZED
+      VIEW</code>.
+      See <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> for more information.
+     </p></dd><dt><span class="term"><code class="literal">TABLESPACE <em class="replaceable"><code>tablespace_name</code></em></code></span></dt><dd><p>
+      The <em class="replaceable"><code>tablespace_name</code></em> is the name
+      of the tablespace in which the new materialized view is to be created.
+      If not specified, <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLESPACE">default_tablespace</a> is consulted.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>query</code></em></span></dt><dd><p>
+      A <a class="link" href="sql-select.html" title="SELECT"><code class="command">SELECT</code></a>, <a class="link" href="sql-select.html#SQL-TABLE" title="TABLE Command"><code class="command">TABLE</code></a>,
+      or <a class="link" href="sql-values.html" title="VALUES"><code class="command">VALUES</code></a> command.  This query will run within a
+      security-restricted operation; in particular, calls to functions that
+      themselves create temporary tables will fail.
+     </p></dd><dt><span class="term"><code class="literal">WITH [ NO ] DATA</code></span></dt><dd><p>
+      This clause specifies whether or not the materialized view should be
+      populated at creation time.  If not, the materialized view will be
+      flagged as unscannable and cannot be queried until <code class="command">REFRESH
+      MATERIALIZED VIEW</code> is used.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.71.7"><h2>Compatibility</h2><p>
+   <code class="command">CREATE MATERIALIZED VIEW</code> is a
+   <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.71.8"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-altermaterializedview.html" title="ALTER MATERIALIZED VIEW"><span class="refentrytitle">ALTER MATERIALIZED VIEW</span></a>, <a class="xref" href="sql-createtableas.html" title="CREATE TABLE AS"><span class="refentrytitle">CREATE TABLE AS</span></a>, <a class="xref" href="sql-createview.html" title="CREATE VIEW"><span class="refentrytitle">CREATE VIEW</span></a>, <a class="xref" href="sql-dropmaterializedview.html" title="DROP MATERIALIZED VIEW"><span class="refentrytitle">DROP MATERIALIZED VIEW</span></a>, <a class="xref" href="sql-refreshmaterializedview.html" title="REFRESH MATERIALIZED VIEW"><span class="refentrytitle">REFRESH MATERIALIZED VIEW</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createlanguage.html" title="CREATE LANGUAGE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createoperator.html" title="CREATE OPERATOR">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE LANGUAGE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE OPERATOR</td></tr></table></div></body></html>

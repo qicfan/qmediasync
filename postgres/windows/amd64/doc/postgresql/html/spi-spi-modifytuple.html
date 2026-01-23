@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SPI_modifytuple</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spi-spi-returntuple.html" title="SPI_returntuple" /><link rel="next" href="spi-spi-freetuple.html" title="SPI_freetuple" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SPI_modifytuple</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spi-spi-returntuple.html" title="SPI_returntuple">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spi-memory.html" title="47.3. Memory Management">Up</a></td><th width="60%" align="center">47.3. Memory Management</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spi-spi-freetuple.html" title="SPI_freetuple">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SPI-SPI-MODIFYTUPLE"><div class="titlepage"></div><a id="id-1.8.12.10.11.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SPI_modifytuple</span></h2><p>SPI_modifytuple — create a row by replacing selected fields of a given row</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+HeapTuple SPI_modifytuple(Relation <em class="parameter"><code>rel</code></em>, HeapTuple <em class="parameter"><code>row</code></em>, int <em class="parameter"><code>ncols</code></em>,
+                          int * <em class="parameter"><code>colnum</code></em>, Datum * <em class="parameter"><code>values</code></em>, const char * <em class="parameter"><code>nulls</code></em>)
+</pre></div><div class="refsect1" id="id-1.8.12.10.11.5"><h2>Description</h2><p>
+   <code class="function">SPI_modifytuple</code> creates a new row by
+   substituting new values for selected columns, copying the original
+   row's columns at other positions.  The input row is not modified.
+   The new row is returned in the upper executor context.
+  </p><p>
+   This function can only be used while connected to SPI.
+   Otherwise, it returns NULL and sets <code class="varname">SPI_result</code> to
+   <code class="symbol">SPI_ERROR_UNCONNECTED</code>.
+  </p></div><div class="refsect1" id="id-1.8.12.10.11.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">Relation <em class="parameter"><code>rel</code></em></code></span></dt><dd><p>
+      Used only as the source of the row descriptor for the row.
+      (Passing a relation rather than a row descriptor is a
+      misfeature.)
+     </p></dd><dt><span class="term"><code class="literal">HeapTuple <em class="parameter"><code>row</code></em></code></span></dt><dd><p>
+      row to be modified
+     </p></dd><dt><span class="term"><code class="literal">int <em class="parameter"><code>ncols</code></em></code></span></dt><dd><p>
+      number of columns to be changed
+     </p></dd><dt><span class="term"><code class="literal">int * <em class="parameter"><code>colnum</code></em></code></span></dt><dd><p>
+      an array of length <em class="parameter"><code>ncols</code></em>, containing the numbers
+      of the columns that are to be changed (column numbers start at 1)
+     </p></dd><dt><span class="term"><code class="literal">Datum * <em class="parameter"><code>values</code></em></code></span></dt><dd><p>
+      an array of length <em class="parameter"><code>ncols</code></em>, containing the
+      new values for the specified columns
+     </p></dd><dt><span class="term"><code class="literal">const char * <em class="parameter"><code>nulls</code></em></code></span></dt><dd><p>
+      an array of length <em class="parameter"><code>ncols</code></em>, describing which
+      new values are null
+     </p><p>
+      If <em class="parameter"><code>nulls</code></em> is <code class="symbol">NULL</code> then
+      <code class="function">SPI_modifytuple</code> assumes that no new values
+      are null.  Otherwise, each entry of the <em class="parameter"><code>nulls</code></em>
+      array should be <code class="literal">' '</code> if the corresponding new value is
+      non-null, or <code class="literal">'n'</code> if the corresponding new value is
+      null.  (In the latter case, the actual value in the corresponding
+      <em class="parameter"><code>values</code></em> entry doesn't matter.)  Note that
+      <em class="parameter"><code>nulls</code></em> is not a text string, just an array: it
+      does not need a <code class="literal">'\0'</code> terminator.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.8.12.10.11.7"><h2>Return Value</h2><p>
+   new row with modifications, allocated in the upper executor
+   context, or <code class="symbol">NULL</code> on error
+   (see <code class="varname">SPI_result</code> for an error indication)
+  </p><p>
+   On error, <code class="varname">SPI_result</code> is set as follows:
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="symbol">SPI_ERROR_ARGUMENT</code></span></dt><dd><p>
+       if <em class="parameter"><code>rel</code></em> is <code class="symbol">NULL</code>, or if
+       <em class="parameter"><code>row</code></em> is <code class="symbol">NULL</code>, or if <em class="parameter"><code>ncols</code></em>
+       is less than or equal to 0, or if <em class="parameter"><code>colnum</code></em> is
+       <code class="symbol">NULL</code>, or if <em class="parameter"><code>values</code></em> is <code class="symbol">NULL</code>.
+      </p></dd><dt><span class="term"><code class="symbol">SPI_ERROR_NOATTRIBUTE</code></span></dt><dd><p>
+       if <em class="parameter"><code>colnum</code></em> contains an invalid column number (less
+       than or equal to 0 or greater than the number of columns in
+       <em class="parameter"><code>row</code></em>)
+      </p></dd><dt><span class="term"><code class="symbol">SPI_ERROR_UNCONNECTED</code></span></dt><dd><p>
+       if SPI is not active
+      </p></dd></dl></div><p>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spi-spi-returntuple.html" title="SPI_returntuple">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spi-memory.html" title="47.3. Memory Management">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spi-spi-freetuple.html" title="SPI_freetuple">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SPI_returntuple </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SPI_freetuple</td></tr></table></div></body></html>

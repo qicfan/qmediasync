@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>11.5. Combining Multiple Indexes</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="indexes-ordering.html" title="11.4. Indexes and ORDER BY" /><link rel="next" href="indexes-unique.html" title="11.6. Unique Indexes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">11.5. Combining Multiple Indexes</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="indexes-ordering.html" title="11.4. Indexes and ORDER BY">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="indexes.html" title="Chapter 11. Indexes">Up</a></td><th width="60%" align="center">Chapter 11. Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="indexes-unique.html" title="11.6. Unique Indexes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INDEXES-BITMAP-SCANS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">11.5. Combining Multiple Indexes</h2></div></div></div><a id="id-1.5.10.8.2" class="indexterm"></a><a id="id-1.5.10.8.3" class="indexterm"></a><p>
+   A single index scan can only use query clauses that use the index's
+   columns with operators of its operator class and are joined with
+   <code class="literal">AND</code>.  For example, given an index on <code class="literal">(a, b)</code>
+   a query condition like <code class="literal">WHERE a = 5 AND b = 6</code> could
+   use the index, but a query like <code class="literal">WHERE a = 5 OR b = 6</code> could not
+   directly use the index.
+  </p><p>
+   Fortunately,
+   <span class="productname">PostgreSQL</span> has the ability to combine multiple indexes
+   (including multiple uses of the same index) to handle cases that cannot
+   be implemented by single index scans.  The system can form <code class="literal">AND</code>
+   and <code class="literal">OR</code> conditions across several index scans.  For example,
+   a query like <code class="literal">WHERE x = 42 OR x = 47 OR x = 53 OR x = 99</code>
+   could be broken down into four separate scans of an index on <code class="literal">x</code>,
+   each scan using one of the query clauses.  The results of these scans are
+   then ORed together to produce the result.  Another example is that if we
+   have separate indexes on <code class="literal">x</code> and <code class="literal">y</code>, one possible
+   implementation of a query like <code class="literal">WHERE x = 5 AND y = 6</code> is to
+   use each index with the appropriate query clause and then AND together
+   the index results to identify the result rows.
+  </p><p>
+   To combine multiple indexes, the system scans each needed index and
+   prepares a <em class="firstterm">bitmap</em> in memory giving the locations of
+   table rows that are reported as matching that index's conditions.
+   The bitmaps are then ANDed and ORed together as needed by the query.
+   Finally, the actual table rows are visited and returned.  The table rows
+   are visited in physical order, because that is how the bitmap is laid
+   out; this means that any ordering of the original indexes is lost, and
+   so a separate sort step will be needed if the query has an <code class="literal">ORDER
+   BY</code> clause.  For this reason, and because each additional index scan
+   adds extra time, the planner will sometimes choose to use a simple index
+   scan even though additional indexes are available that could have been
+   used as well.
+  </p><p>
+   In all but the simplest applications, there are various combinations of
+   indexes that might be useful, and the database developer must make
+   trade-offs to decide which indexes to provide.  Sometimes multicolumn
+   indexes are best, but sometimes it's better to create separate indexes
+   and rely on the index-combination feature.  For example, if your
+   workload includes a mix of queries that sometimes involve only column
+   <code class="literal">x</code>, sometimes only column <code class="literal">y</code>, and sometimes both
+   columns, you might choose to create two separate indexes on
+   <code class="literal">x</code> and <code class="literal">y</code>, relying on index combination to
+   process the queries that use both columns.  You could also create a
+   multicolumn index on <code class="literal">(x, y)</code>.  This index would typically be
+   more efficient than index combination for queries involving both
+   columns, but as discussed in <a class="xref" href="indexes-multicolumn.html" title="11.3. Multicolumn Indexes">Section 11.3</a>, it
+   would be almost useless for queries involving only <code class="literal">y</code>, so it
+   should not be the only index.  A combination of the multicolumn index
+   and a separate index on <code class="literal">y</code> would serve reasonably well.  For
+   queries involving only <code class="literal">x</code>, the multicolumn index could be
+   used, though it would be larger and hence slower than an index on
+   <code class="literal">x</code> alone.  The last alternative is to create all three
+   indexes, but this is probably only reasonable if the table is searched
+   much more often than it is updated and all three types of query are
+   common.  If one of the types of query is much less common than the
+   others, you'd probably settle for creating just the two indexes that
+   best match the common types.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="indexes-ordering.html" title="11.4. Indexes and ORDER BY">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="indexes.html" title="Chapter 11. Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="indexes-unique.html" title="11.6. Unique Indexes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">11.4. Indexes and <code xmlns="http://www.w3.org/1999/xhtml" class="literal">ORDER BY</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 11.6. Unique Indexes</td></tr></table></div></body></html>

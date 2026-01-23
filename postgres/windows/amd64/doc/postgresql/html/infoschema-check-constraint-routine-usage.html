@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>37.8. check_constraint_routine_usage</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="infoschema-character-sets.html" title="37.7. character_sets" /><link rel="next" href="infoschema-check-constraints.html" title="37.9. check_constraints" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">37.8. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">check_constraint_routine_usage</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="infoschema-character-sets.html" title="37.7. character_sets">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><th width="60%" align="center">Chapter 37. The Information Schema</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="infoschema-check-constraints.html" title="37.9. check_constraints">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INFOSCHEMA-CHECK-CONSTRAINT-ROUTINE-USAGE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">37.8. <code class="literal">check_constraint_routine_usage</code></h2></div></div></div><p>
+   The view <code class="literal">check_constraint_routine_usage</code>
+   identifies routines (functions and procedures) that are used by a
+   check constraint.  Only those routines are shown that are owned by
+   a currently enabled role.
+  </p><div class="table" id="id-1.7.6.12.3"><p class="title"><strong>Table 37.6. <code class="structname">check_constraint_routine_usage</code> Columns</strong></p><div class="table-contents"><table class="table" summary="check_constraint_routine_usage Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">constraint_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database containing the constraint (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">constraint_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema containing the constraint
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">constraint_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the constraint
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">specific_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database containing the function (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">specific_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema containing the function
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">specific_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       The <span class="quote">“<span class="quote">specific name</span>”</span> of the function.  See <a class="xref" href="infoschema-routines.html" title="37.45. routines">Section 37.45</a> for more information.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="infoschema-character-sets.html" title="37.7. character_sets">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="infoschema-check-constraints.html" title="37.9. check_constraints">Next</a></td></tr><tr><td width="40%" align="left" valign="top">37.7. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">character_sets</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 37.9. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">check_constraints</code></td></tr></table></div></body></html>

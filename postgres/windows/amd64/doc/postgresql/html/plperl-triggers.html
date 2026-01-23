@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>45.6. PL/Perl Triggers</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="plperl-trusted.html" title="45.5. Trusted and Untrusted PL/Perl" /><link rel="next" href="plperl-event-triggers.html" title="45.7. PL/Perl Event Triggers" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">45.6. PL/Perl Triggers</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="plperl-trusted.html" title="45.5. Trusted and Untrusted PL/Perl">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="plperl.html" title="Chapter 45. PL/Perl — Perl Procedural Language">Up</a></td><th width="60%" align="center">Chapter 45. PL/Perl — Perl Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="plperl-event-triggers.html" title="45.7. PL/Perl Event Triggers">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLPERL-TRIGGERS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">45.6. PL/Perl Triggers</h2></div></div></div><p>
+   PL/Perl can be used to write trigger functions.  In a trigger function,
+   the hash reference <code class="varname">$_TD</code> contains information about the
+   current trigger event. <code class="varname">$_TD</code> is a global variable,
+   which gets a separate local value for each invocation of the trigger.
+   The fields of the <code class="varname">$_TD</code> hash reference are:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">$_TD-&gt;{new}{foo}</code></span></dt><dd><p>
+       <code class="literal">NEW</code> value of column <code class="literal">foo</code>
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{old}{foo}</code></span></dt><dd><p>
+       <code class="literal">OLD</code> value of column <code class="literal">foo</code>
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{name}</code></span></dt><dd><p>
+       Name of the trigger being called
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{event}</code></span></dt><dd><p>
+       Trigger event: <code class="literal">INSERT</code>, <code class="literal">UPDATE</code>,
+       <code class="literal">DELETE</code>, <code class="literal">TRUNCATE</code>, or <code class="literal">UNKNOWN</code>
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{when}</code></span></dt><dd><p>
+       When the trigger was called: <code class="literal">BEFORE</code>,
+       <code class="literal">AFTER</code>, <code class="literal">INSTEAD OF</code>, or
+       <code class="literal">UNKNOWN</code>
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{level}</code></span></dt><dd><p>
+       The trigger level: <code class="literal">ROW</code>, <code class="literal">STATEMENT</code>, or <code class="literal">UNKNOWN</code>
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{relid}</code></span></dt><dd><p>
+       OID of the table on which the trigger fired
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{table_name}</code></span></dt><dd><p>
+       Name of the table on which the trigger fired
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{relname}</code></span></dt><dd><p>
+       Name of the table on which the trigger fired. This has been deprecated,
+       and could be removed in a future release.
+       Please use $_TD-&gt;{table_name} instead.
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{table_schema}</code></span></dt><dd><p>
+       Name of the schema in which the table on which the trigger fired, is
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{argc}</code></span></dt><dd><p>
+       Number of arguments of the trigger function
+      </p></dd><dt><span class="term"><code class="literal">@{$_TD-&gt;{args}}</code></span></dt><dd><p>
+       Arguments of the trigger function.  Does not exist if <code class="literal">$_TD-&gt;{argc}</code> is 0.
+      </p></dd></dl></div><p>
+  </p><p>
+   Row-level triggers can return one of the following:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">return;</code></span></dt><dd><p>
+       Execute the operation
+      </p></dd><dt><span class="term"><code class="literal">"SKIP"</code></span></dt><dd><p>
+       Don't execute the operation
+      </p></dd><dt><span class="term"><code class="literal">"MODIFY"</code></span></dt><dd><p>
+       Indicates that the <code class="literal">NEW</code> row was modified by
+       the trigger function
+      </p></dd></dl></div><p>
+  </p><p>
+   Here is an example of a trigger function, illustrating some of the
+   above:
+</p><pre class="programlisting">
+CREATE TABLE test (
+    i int,
+    v varchar
+);
+
+CREATE OR REPLACE FUNCTION valid_id() RETURNS trigger AS $$
+    if (($_TD-&gt;{new}{i} &gt;= 100) || ($_TD-&gt;{new}{i} &lt;= 0)) {
+        return "SKIP";    # skip INSERT/UPDATE command
+    } elsif ($_TD-&gt;{new}{v} ne "immortal") {
+        $_TD-&gt;{new}{v} .= "(modified by trigger)";
+        return "MODIFY";  # modify row and execute INSERT/UPDATE command
+    } else {
+        return;           # execute INSERT/UPDATE command
+    }
+$$ LANGUAGE plperl;
+
+CREATE TRIGGER test_valid_id_trig
+    BEFORE INSERT OR UPDATE ON test
+    FOR EACH ROW EXECUTE FUNCTION valid_id();
+</pre><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="plperl-trusted.html" title="45.5. Trusted and Untrusted PL/Perl">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="plperl.html" title="Chapter 45. PL/Perl — Perl Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="plperl-event-triggers.html" title="45.7. PL/Perl Event Triggers">Next</a></td></tr><tr><td width="40%" align="left" valign="top">45.5. Trusted and Untrusted PL/Perl </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 45.7. PL/Perl Event Triggers</td></tr></table></div></body></html>

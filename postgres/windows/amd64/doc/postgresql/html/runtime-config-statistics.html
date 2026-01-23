@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>20.9. Run-time Statistics</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="runtime-config-logging.html" title="20.8. Error Reporting and Logging" /><link rel="next" href="runtime-config-autovacuum.html" title="20.10. Automatic Vacuuming" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">20.9. Run-time Statistics</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="runtime-config-logging.html" title="20.8. Error Reporting and Logging">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime-config.html" title="Chapter 20. Server Configuration">Up</a></td><th width="60%" align="center">Chapter 20. Server Configuration</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="runtime-config-autovacuum.html" title="20.10. Automatic Vacuuming">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RUNTIME-CONFIG-STATISTICS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">20.9. Run-time Statistics</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="runtime-config-statistics.html#RUNTIME-CONFIG-STATISTICS-COLLECTOR">20.9.1. Query and Index Statistics Collector</a></span></dt><dt><span class="sect2"><a href="runtime-config-statistics.html#RUNTIME-CONFIG-STATISTICS-MONITOR">20.9.2. Statistics Monitoring</a></span></dt></dl></div><div class="sect2" id="RUNTIME-CONFIG-STATISTICS-COLLECTOR"><div class="titlepage"><div><div><h3 class="title">20.9.1. Query and Index Statistics Collector</h3></div></div></div><p>
+      These parameters control server-wide statistics collection features.
+      When statistics collection is enabled, the data that is produced can be
+      accessed via the <code class="structname">pg_stat</code> and
+      <code class="structname">pg_statio</code> family of system views.
+      Refer to <a class="xref" href="monitoring.html" title="Chapter 28. Monitoring Database Activity">Chapter 28</a> for more information.
+     </p><div class="variablelist"><dl class="variablelist"><dt id="GUC-TRACK-ACTIVITIES"><span class="term"><code class="varname">track_activities</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.2.3.1.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Enables the collection of information on the currently
+        executing command of each session, along with its identifier and the
+        time when that command began execution. This parameter is on by
+        default. Note that even when enabled, this information is not
+        visible to all users, only to superusers, roles with privileges of the
+        <code class="literal">pg_read_all_stats</code> role and the user owning the
+        sessions being reported on (including sessions belonging to a role they
+        have the privileges of), so it should not represent a security risk.
+        Only superusers can change this setting.
+       </p></dd><dt id="GUC-TRACK-ACTIVITY-QUERY-SIZE"><span class="term"><code class="varname">track_activity_query_size</code> (<code class="type">integer</code>)
+      <a id="id-1.6.7.12.2.3.2.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+       Specifies the amount of memory reserved to store the text of the
+       currently executing command for each active session, for the
+       <code class="structname">pg_stat_activity</code>.<code class="structfield">query</code> field.
+       If this value is specified without units, it is taken as bytes.
+       The default value is 1024 bytes.
+       This parameter can only be set at server start.
+       </p></dd><dt id="GUC-TRACK-COUNTS"><span class="term"><code class="varname">track_counts</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.2.3.3.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Enables collection of statistics on database activity.
+        This parameter is on by default, because the autovacuum
+        daemon needs the collected information.
+        Only superusers can change this setting.
+       </p></dd><dt id="GUC-TRACK-IO-TIMING"><span class="term"><code class="varname">track_io_timing</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.2.3.4.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Enables timing of database I/O calls.  This parameter is off by
+        default, as it will repeatedly query the operating system for
+        the current time, which may cause significant overhead on some
+        platforms.  You can use the <a class="xref" href="pgtesttiming.html" title="pg_test_timing"><span class="refentrytitle"><span class="application">pg_test_timing</span></span></a> tool to
+        measure the overhead of timing on your system.
+        I/O timing information is
+        displayed in <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-DATABASE-VIEW" title="28.2.13. pg_stat_database">
+        <code class="structname">pg_stat_database</code></a>, in the output of
+        <a class="xref" href="sql-explain.html" title="EXPLAIN"><span class="refentrytitle">EXPLAIN</span></a> when the <code class="literal">BUFFERS</code> option
+        is used, by autovacuum for auto-vacuums and auto-analyzes, when
+        <a class="xref" href="runtime-config-logging.html#GUC-LOG-AUTOVACUUM-MIN-DURATION">log_autovacuum_min_duration</a> is set and by
+        <a class="xref" href="pgstatstatements.html" title="F.30. pg_stat_statements">pg_stat_statements</a>.  Only superusers can change this
+        setting.
+       </p></dd><dt id="GUC-TRACK-WAL-IO-TIMING"><span class="term"><code class="varname">track_wal_io_timing</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.2.3.5.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Enables timing of WAL I/O calls. This parameter is off by default,
+        as it will repeatedly query the operating system for the current time,
+        which may cause significant overhead on some platforms.
+        You can use the <span class="application">pg_test_timing</span> tool to
+        measure the overhead of timing on your system.
+        I/O timing information is
+        displayed in <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-WAL-VIEW" title="28.2.12. pg_stat_wal">
+        <code class="structname">pg_stat_wal</code></a>.  Only superusers can
+        change this setting.
+       </p></dd><dt id="GUC-TRACK-FUNCTIONS"><span class="term"><code class="varname">track_functions</code> (<code class="type">enum</code>)
+      <a id="id-1.6.7.12.2.3.6.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Enables tracking of function call counts and time used. Specify
+        <code class="literal">pl</code> to track only procedural-language functions,
+        <code class="literal">all</code> to also track SQL and C language functions.
+        The default is <code class="literal">none</code>, which disables function
+        statistics tracking.  Only superusers can change this setting.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         SQL-language functions that are simple enough to be <span class="quote">“<span class="quote">inlined</span>”</span>
+         into the calling query will not be tracked, regardless of this
+         setting.
+        </p></div></dd><dt id="GUC-STATS-TEMP-DIRECTORY"><span class="term"><code class="varname">stats_temp_directory</code> (<code class="type">string</code>)
+      <a id="id-1.6.7.12.2.3.7.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Sets the directory to store temporary statistics data in. This can be
+        a path relative to the data directory or an absolute path. The default
+        is <code class="filename">pg_stat_tmp</code>. Pointing this at a RAM-based
+        file system will decrease physical I/O requirements and can lead to
+        improved performance.
+        This parameter can only be set in the <code class="filename">postgresql.conf</code>
+        file or on the server command line.
+       </p></dd></dl></div></div><div class="sect2" id="RUNTIME-CONFIG-STATISTICS-MONITOR"><div class="titlepage"><div><div><h3 class="title">20.9.2. Statistics Monitoring</h3></div></div></div><div class="variablelist"><dl class="variablelist"><dt id="GUC-COMPUTE-QUERY-ID"><span class="term"><code class="varname">compute_query_id</code> (<code class="type">enum</code>)
+      <a id="id-1.6.7.12.3.2.1.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Enables in-core computation of a query identifier.
+        Query identifiers can be displayed in the <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW" title="28.2.3. pg_stat_activity"><code class="structname">pg_stat_activity</code></a>
+        view, using <code class="command">EXPLAIN</code>, or emitted in the log if
+        configured via the <a class="xref" href="runtime-config-logging.html#GUC-LOG-LINE-PREFIX">log_line_prefix</a> parameter.
+        The <a class="xref" href="pgstatstatements.html" title="F.30. pg_stat_statements">pg_stat_statements</a> extension also requires a query
+        identifier to be computed.  Note that an external module can
+        alternatively be used if the in-core query identifier computation
+        method is not acceptable.  In this case, in-core computation
+        must be always disabled.
+        Valid values are <code class="literal">off</code> (always disabled),
+        <code class="literal">on</code> (always enabled), <code class="literal">auto</code>,
+        which lets modules such as <a class="xref" href="pgstatstatements.html" title="F.30. pg_stat_statements">pg_stat_statements</a>
+        automatically enable it, and <code class="literal">regress</code> which
+        has the same effect as <code class="literal">auto</code>, except that the
+        query identifier is not shown in the <code class="literal">EXPLAIN</code> output
+        in order to facilitate automated regression testing.
+        The default is <code class="literal">auto</code>.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         To ensure that only one query identifier is calculated and
+         displayed, extensions that calculate query identifiers should
+         throw an error if a query identifier has already been computed.
+        </p></div></dd><dt><span class="term"><code class="varname">log_statement_stats</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.3.2.2.1.3" class="indexterm"></a>
+      <br /></span><span class="term"><code class="varname">log_parser_stats</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.3.2.2.2.3" class="indexterm"></a>
+      <br /></span><span class="term"><code class="varname">log_planner_stats</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.3.2.2.3.3" class="indexterm"></a>
+      <br /></span><span class="term"><code class="varname">log_executor_stats</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.7.12.3.2.2.4.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        For each query, output performance statistics of the respective
+        module to the server log. This is a crude profiling
+        instrument, similar to the Unix <code class="function">getrusage()</code> operating
+        system facility.  <code class="varname">log_statement_stats</code> reports total
+        statement statistics, while the others report per-module statistics.
+        <code class="varname">log_statement_stats</code> cannot be enabled together with
+        any of the per-module options.  All of these options are disabled by
+        default.   Only superusers can change these settings.
+       </p></dd></dl></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="runtime-config-logging.html" title="20.8. Error Reporting and Logging">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime-config.html" title="Chapter 20. Server Configuration">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="runtime-config-autovacuum.html" title="20.10. Automatic Vacuuming">Next</a></td></tr><tr><td width="40%" align="left" valign="top">20.8. Error Reporting and Logging </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 20.10. Automatic Vacuuming</td></tr></table></div></body></html>

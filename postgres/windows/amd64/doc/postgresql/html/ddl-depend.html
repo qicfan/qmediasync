@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5.14. Dependency Tracking</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ddl-others.html" title="5.13. Other Database Objects" /><link rel="next" href="dml.html" title="Chapter 6. Data Manipulation" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">5.14. Dependency Tracking</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ddl-others.html" title="5.13. Other Database Objects">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><th width="60%" align="center">Chapter 5. Data Definition</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="dml.html" title="Chapter 6. Data Manipulation">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DDL-DEPEND"><div class="titlepage"><div><div><h2 class="title" style="clear: both">5.14. Dependency Tracking</h2></div></div></div><a id="id-1.5.4.16.2" class="indexterm"></a><a id="id-1.5.4.16.3" class="indexterm"></a><p>
+   When you create complex database structures involving many tables
+   with foreign key constraints, views, triggers, functions, etc. you
+   implicitly create a net of dependencies between the objects.
+   For instance, a table with a foreign key constraint depends on the
+   table it references.
+  </p><p>
+   To ensure the integrity of the entire database structure,
+   <span class="productname">PostgreSQL</span> makes sure that you cannot
+   drop objects that other objects still depend on.  For example,
+   attempting to drop the products table we considered in <a class="xref" href="ddl-constraints.html#DDL-CONSTRAINTS-FK" title="5.4.5. Foreign Keys">Section 5.4.5</a>, with the orders table depending on
+   it, would result in an error message like this:
+</p><pre class="screen">
+DROP TABLE products;
+
+ERROR:  cannot drop table products because other objects depend on it
+DETAIL:  constraint orders_product_no_fkey on table orders depends on table products
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+</pre><p>
+   The error message contains a useful hint: if you do not want to
+   bother deleting all the dependent objects individually, you can run:
+</p><pre class="screen">
+DROP TABLE products CASCADE;
+</pre><p>
+   and all the dependent objects will be removed, as will any objects
+   that depend on them, recursively.  In this case, it doesn't remove
+   the orders table, it only removes the foreign key constraint.
+   It stops there because nothing depends on the foreign key constraint.
+   (If you want to check what <code class="command">DROP ... CASCADE</code> will do,
+   run <code class="command">DROP</code> without <code class="literal">CASCADE</code> and read the
+   <code class="literal">DETAIL</code> output.)
+  </p><p>
+   Almost all <code class="command">DROP</code> commands in <span class="productname">PostgreSQL</span> support
+   specifying <code class="literal">CASCADE</code>.  Of course, the nature of
+   the possible dependencies varies with the type of the object.  You
+   can also write <code class="literal">RESTRICT</code> instead of
+   <code class="literal">CASCADE</code> to get the default behavior, which is to
+   prevent dropping objects that any other objects depend on.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    According to the SQL standard, specifying either
+    <code class="literal">RESTRICT</code> or <code class="literal">CASCADE</code> is
+    required in a <code class="command">DROP</code> command.  No database system actually
+    enforces that rule, but whether the default behavior
+    is <code class="literal">RESTRICT</code> or <code class="literal">CASCADE</code> varies
+    across systems.
+   </p></div><p>
+   If a <code class="command">DROP</code> command lists multiple
+   objects, <code class="literal">CASCADE</code> is only required when there are
+   dependencies outside the specified group.  For example, when saying
+   <code class="literal">DROP TABLE tab1, tab2</code> the existence of a foreign
+   key referencing <code class="literal">tab1</code> from <code class="literal">tab2</code> would not mean
+   that <code class="literal">CASCADE</code> is needed to succeed.
+  </p><p>
+   For a user-defined function or procedure whose body is defined as a string
+   literal, <span class="productname">PostgreSQL</span> tracks
+   dependencies associated with the function's externally-visible properties,
+   such as its argument and result types, but <span class="emphasis"><em>not</em></span> dependencies
+   that could only be known by examining the function body.  As an example,
+   consider this situation:
+
+</p><pre class="programlisting">
+CREATE TYPE rainbow AS ENUM ('red', 'orange', 'yellow',
+                             'green', 'blue', 'purple');
+
+CREATE TABLE my_colors (color rainbow, note text);
+
+CREATE FUNCTION get_color_note (rainbow) RETURNS text AS
+  'SELECT note FROM my_colors WHERE color = $1'
+  LANGUAGE SQL;
+</pre><p>
+
+   (See <a class="xref" href="xfunc-sql.html" title="38.5. Query Language (SQL) Functions">Section 38.5</a> for an explanation of SQL-language
+   functions.)  <span class="productname">PostgreSQL</span> will be aware that
+   the <code class="function">get_color_note</code> function depends on the <code class="type">rainbow</code>
+   type: dropping the type would force dropping the function, because its
+   argument type would no longer be defined.  But <span class="productname">PostgreSQL</span>
+   will not consider <code class="function">get_color_note</code> to depend on
+   the <code class="structname">my_colors</code> table, and so will not drop the function if
+   the table is dropped.  While there are disadvantages to this approach,
+   there are also benefits.  The function is still valid in some sense if the
+   table is missing, though executing it would cause an error; creating a new
+   table of the same name would allow the function to work again.
+  </p><p>
+   On the other hand, for a SQL-language function or procedure whose body
+   is written in SQL-standard style, the body is parsed at function
+   definition time and all dependencies recognized by the parser are
+   stored.  Thus, if we write the function above as
+
+</p><pre class="programlisting">
+CREATE FUNCTION get_color_note (rainbow) RETURNS text
+BEGIN ATOMIC
+  SELECT note FROM my_colors WHERE color = $1;
+END;
+</pre><p>
+
+   then the function's dependency on the <code class="structname">my_colors</code>
+   table will be known and enforced by <code class="command">DROP</code>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ddl-others.html" title="5.13. Other Database Objects">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="dml.html" title="Chapter 6. Data Manipulation">Next</a></td></tr><tr><td width="40%" align="left" valign="top">5.13. Other Database Objects </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 6. Data Manipulation</td></tr></table></div></body></html>

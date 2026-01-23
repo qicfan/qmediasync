@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>34.20. Behavior in Threaded Programs</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="libpq-ssl.html" title="34.19. SSL Support" /><link rel="next" href="libpq-build.html" title="34.21. Building libpq Programs" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">34.20. Behavior in Threaded Programs</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-ssl.html" title="34.19. SSL Support">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 34. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-build.html" title="34.21. Building libpq Programs">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-THREADING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">34.20. Behavior in Threaded Programs</h2></div></div></div><a id="id-1.7.3.27.2" class="indexterm"></a><p>
+   <span class="application">libpq</span> is reentrant and thread-safe by default.
+   You might need to use special compiler command-line
+   options when you compile your application code.  Refer to your
+   system's documentation for information about how to build
+   thread-enabled applications, or look in
+   <code class="filename">src/Makefile.global</code> for <code class="literal">PTHREAD_CFLAGS</code>
+   and <code class="literal">PTHREAD_LIBS</code>.  This function allows the querying of
+   <span class="application">libpq</span>'s thread-safe status:
+  </p><div class="variablelist"><dl class="variablelist"><dt id="LIBPQ-PQISTHREADSAFE"><span class="term"><code class="function">PQisthreadsafe</code><a id="id-1.7.3.27.4.1.1.2" class="indexterm"></a></span></dt><dd><p>
+      Returns the thread safety status of the
+      <span class="application">libpq</span> library.
+</p><pre class="synopsis">
+int PQisthreadsafe();
+</pre><p>
+     </p><p>
+      Returns 1 if the <span class="application">libpq</span> is thread-safe
+      and 0 if it is not.
+     </p></dd></dl></div><p>
+   One thread restriction is that no two threads attempt to manipulate
+   the same <code class="structname">PGconn</code> object at the same time. In particular,
+   you cannot issue concurrent commands from different threads through
+   the same connection object. (If you need to run concurrent commands,
+   use multiple connections.)
+  </p><p>
+   <code class="structname">PGresult</code> objects are normally read-only after creation,
+   and so can be passed around freely between threads.  However, if you use
+   any of the <code class="structname">PGresult</code>-modifying functions described in
+   <a class="xref" href="libpq-misc.html" title="34.12. Miscellaneous Functions">Section 34.12</a> or <a class="xref" href="libpq-events.html" title="34.14. Event System">Section 34.14</a>, it's up
+   to you to avoid concurrent operations on the same <code class="structname">PGresult</code>,
+   too.
+  </p><p>
+   The deprecated functions <a class="xref" href="libpq-cancel.html#LIBPQ-PQREQUESTCANCEL"><code class="function">PQrequestCancel</code></a> and
+   <a class="xref" href="libpq-exec.html#LIBPQ-PQOIDSTATUS"><code class="function">PQoidStatus</code></a> are not thread-safe and should not be
+   used in multithread programs.  <a class="xref" href="libpq-cancel.html#LIBPQ-PQREQUESTCANCEL"><code class="function">PQrequestCancel</code></a>
+   can be replaced by <a class="xref" href="libpq-cancel.html#LIBPQ-PQCANCEL"><code class="function">PQcancel</code></a>.
+   <a class="xref" href="libpq-exec.html#LIBPQ-PQOIDSTATUS"><code class="function">PQoidStatus</code></a> can be replaced by
+   <a class="xref" href="libpq-exec.html#LIBPQ-PQOIDVALUE"><code class="function">PQoidValue</code></a>.
+  </p><p>
+   If you are using Kerberos inside your application (in addition to inside
+   <span class="application">libpq</span>), you will need to do locking around
+   Kerberos calls because Kerberos functions are not thread-safe.  See
+   function <code class="function">PQregisterThreadLock</code> in the
+   <span class="application">libpq</span> source code for a way to do cooperative
+   locking between <span class="application">libpq</span> and your application.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-ssl.html" title="34.19. SSL Support">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-build.html" title="34.21. Building libpq Programs">Next</a></td></tr><tr><td width="40%" align="left" valign="top">34.19. SSL Support </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 34.21. Building <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> Programs</td></tr></table></div></body></html>

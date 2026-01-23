@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SPI_getbinval</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spi-spi-getvalue.html" title="SPI_getvalue" /><link rel="next" href="spi-spi-gettype.html" title="SPI_gettype" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SPI_getbinval</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spi-spi-getvalue.html" title="SPI_getvalue">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spi-interface-support.html" title="47.2. Interface Support Functions">Up</a></td><th width="60%" align="center">47.2. Interface Support Functions</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spi-spi-gettype.html" title="SPI_gettype">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SPI-SPI-GETBINVAL"><div class="titlepage"></div><a id="id-1.8.12.9.7.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SPI_getbinval</span></h2><p>SPI_getbinval — return the binary value of the specified column</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+Datum SPI_getbinval(HeapTuple <em class="parameter"><code>row</code></em>, TupleDesc <em class="parameter"><code>rowdesc</code></em>, int <em class="parameter"><code>colnumber</code></em>,
+                    bool * <em class="parameter"><code>isnull</code></em>)
+</pre></div><div class="refsect1" id="id-1.8.12.9.7.5"><h2>Description</h2><p>
+   <code class="function">SPI_getbinval</code> returns the value of the
+   specified column in the internal form (as type <code class="type">Datum</code>).
+  </p><p>
+   This function does not allocate new space for the datum.  In the
+   case of a pass-by-reference data type, the return value will be a
+   pointer into the passed row.
+  </p></div><div class="refsect1" id="id-1.8.12.9.7.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">HeapTuple <em class="parameter"><code>row</code></em></code></span></dt><dd><p>
+      input row to be examined
+     </p></dd><dt><span class="term"><code class="literal">TupleDesc <em class="parameter"><code>rowdesc</code></em></code></span></dt><dd><p>
+      input row description
+     </p></dd><dt><span class="term"><code class="literal">int <em class="parameter"><code>colnumber</code></em></code></span></dt><dd><p>
+      column number (count starts at 1)
+     </p></dd><dt><span class="term"><code class="literal">bool * <em class="parameter"><code>isnull</code></em></code></span></dt><dd><p>
+      flag for a null value in the column
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.8.12.9.7.7"><h2>Return Value</h2><p>
+   The binary value of the column is returned.  The variable pointed
+   to by <em class="parameter"><code>isnull</code></em> is set to true if the column is
+   null, else to false.
+  </p><p>
+   <code class="varname">SPI_result</code> is set to
+   <code class="symbol">SPI_ERROR_NOATTRIBUTE</code> on error.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spi-spi-getvalue.html" title="SPI_getvalue">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spi-interface-support.html" title="47.2. Interface Support Functions">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spi-spi-gettype.html" title="SPI_gettype">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SPI_getvalue </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SPI_gettype</td></tr></table></div></body></html>

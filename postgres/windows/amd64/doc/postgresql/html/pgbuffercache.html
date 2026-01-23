@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.25. pg_buffercache</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="passwordcheck.html" title="F.24. passwordcheck" /><link rel="next" href="pgcrypto.html" title="F.26. pgcrypto" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.25. pg_buffercache</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="passwordcheck.html" title="F.24. passwordcheck">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="pgcrypto.html" title="F.26. pgcrypto">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PGBUFFERCACHE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.25. pg_buffercache</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="pgbuffercache.html#id-1.11.7.34.7">F.25.1. The <code class="structname">pg_buffercache</code> View</a></span></dt><dt><span class="sect2"><a href="pgbuffercache.html#id-1.11.7.34.8">F.25.2. Sample Output</a></span></dt><dt><span class="sect2"><a href="pgbuffercache.html#id-1.11.7.34.9">F.25.3. Authors</a></span></dt></dl></div><a id="id-1.11.7.34.2" class="indexterm"></a><p>
+  The <code class="filename">pg_buffercache</code> module provides a means for
+  examining what's happening in the shared buffer cache in real time.
+ </p><a id="id-1.11.7.34.4" class="indexterm"></a><p>
+  The module provides a C function <code class="function">pg_buffercache_pages</code>
+  that returns a set of records, plus a view
+  <code class="structname">pg_buffercache</code> that wraps the function for
+  convenient use.
+ </p><p>
+  By default, use is restricted to superusers and members of the
+  <code class="literal">pg_monitor</code> role. Access may be granted to others
+  using <code class="command">GRANT</code>.
+ </p><div class="sect2" id="id-1.11.7.34.7"><div class="titlepage"><div><div><h3 class="title">F.25.1. The <code class="structname">pg_buffercache</code> View</h3></div></div></div><p>
+   The definitions of the columns exposed by the view are shown in <a class="xref" href="pgbuffercache.html#PGBUFFERCACHE-COLUMNS" title="Table F.15. pg_buffercache Columns">Table F.15</a>.
+  </p><div class="table" id="PGBUFFERCACHE-COLUMNS"><p class="title"><strong>Table F.15. <code class="structname">pg_buffercache</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_buffercache Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">bufferid</code> <code class="type">integer</code>
+      </p>
+      <p>
+       ID, in the range 1..<code class="varname">shared_buffers</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">relfilenode</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">relfilenode</code>)
+      </p>
+      <p>
+       Filenode number of the relation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">reltablespace</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-tablespace.html" title="52.54. pg_tablespace"><code class="structname">pg_tablespace</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Tablespace OID of the relation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">reldatabase</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-database.html" title="52.15. pg_database"><code class="structname">pg_database</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Database OID of the relation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">relforknumber</code> <code class="type">smallint</code>
+      </p>
+      <p>
+       Fork number within the relation;  see
+       <code class="filename">common/relpath.h</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">relblocknumber</code> <code class="type">bigint</code>
+      </p>
+      <p>
+       Page number within the relation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">isdirty</code> <code class="type">boolean</code>
+      </p>
+      <p>
+       Is the page dirty?
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">usagecount</code> <code class="type">smallint</code>
+      </p>
+      <p>
+       Clock-sweep access count
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pinning_backends</code> <code class="type">integer</code>
+      </p>
+      <p>
+       Number of backends pinning this buffer
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   There is one row for each buffer in the shared cache. Unused buffers are
+   shown with all fields null except <code class="structfield">bufferid</code>.  Shared system
+   catalogs are shown as belonging to database zero.
+  </p><p>
+   Because the cache is shared by all the databases, there will normally be
+   pages from relations not belonging to the current database.  This means
+   that there may not be matching join rows in <code class="structname">pg_class</code> for
+   some rows, or that there could even be incorrect joins.  If you are
+   trying to join against <code class="structname">pg_class</code>, it's a good idea to
+   restrict the join to rows having <code class="structfield">reldatabase</code> equal to
+   the current database's OID or zero.
+  </p><p>
+   Since buffer manager locks are not taken to copy the buffer state data that
+   the view will display, accessing <code class="structname">pg_buffercache</code> view
+   has less impact on normal buffer activity but it doesn't provide a consistent
+   set of results across all buffers.  However, we ensure that the information of
+   each buffer is self-consistent.
+  </p></div><div class="sect2" id="id-1.11.7.34.8"><div class="titlepage"><div><div><h3 class="title">F.25.2. Sample Output</h3></div></div></div><pre class="screen">
+regression=# SELECT n.nspname, c.relname, count(*) AS buffers
+             FROM pg_buffercache b JOIN pg_class c
+             ON b.relfilenode = pg_relation_filenode(c.oid) AND
+                b.reldatabase IN (0, (SELECT oid FROM pg_database
+                                      WHERE datname = current_database()))
+             JOIN pg_namespace n ON n.oid = c.relnamespace
+             GROUP BY n.nspname, c.relname
+             ORDER BY 3 DESC
+             LIMIT 10;
+
+  nspname   |        relname         | buffers
+------------+------------------------+---------
+ public     | delete_test_table      |     593
+ public     | delete_test_table_pkey |     494
+ pg_catalog | pg_attribute           |     472
+ public     | quad_poly_tbl          |     353
+ public     | tenk2                  |     349
+ public     | tenk1                  |     349
+ public     | gin_test_idx           |     306
+ pg_catalog | pg_largeobject         |     206
+ public     | gin_test_tbl           |     188
+ public     | spgist_text_tbl        |     182
+(10 rows)
+</pre></div><div class="sect2" id="id-1.11.7.34.9"><div class="titlepage"><div><div><h3 class="title">F.25.3. Authors</h3></div></div></div><p>
+   Mark Kirkwood <code class="email">&lt;<a class="email" href="mailto:markir@paradise.net.nz">markir@paradise.net.nz</a>&gt;</code>
+  </p><p>
+   Design suggestions: Neil Conway <code class="email">&lt;<a class="email" href="mailto:neilc@samurai.com">neilc@samurai.com</a>&gt;</code>
+  </p><p>
+   Debugging advice: Tom Lane <code class="email">&lt;<a class="email" href="mailto:tgl@sss.pgh.pa.us">tgl@sss.pgh.pa.us</a>&gt;</code>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="passwordcheck.html" title="F.24. passwordcheck">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="pgcrypto.html" title="F.26. pgcrypto">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.24. passwordcheck </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.26. pgcrypto</td></tr></table></div></body></html>

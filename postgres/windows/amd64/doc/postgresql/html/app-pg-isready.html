@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_isready</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-pg-dumpall.html" title="pg_dumpall" /><link rel="next" href="app-pgreceivewal.html" title="pg_receivewal" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_isready</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-pg-dumpall.html" title="pg_dumpall">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><th width="60%" align="center">PostgreSQL Client Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="app-pgreceivewal.html" title="pg_receivewal">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-PG-ISREADY"><div class="titlepage"></div><a id="id-1.9.4.15.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_isready</span></span></h2><p>pg_isready — check the connection status of a <span class="productname">PostgreSQL</span> server</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.4.15.4.1"><code class="command">pg_isready</code> [<em class="replaceable"><code>connection-option</code></em>...] [<em class="replaceable"><code>option</code></em>...]</p></div></div><div class="refsect1" id="APP-PG-ISREADY-DESCRIPTION"><h2>Description</h2><p>
+   <span class="application">pg_isready</span> is a utility for checking the connection
+   status of a <span class="productname">PostgreSQL</span> database server. The exit
+   status specifies the result of the connection check.
+  </p></div><div class="refsect1" id="APP-PG-ISREADY-OPTIONS"><h2>Options</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-d <em class="replaceable"><code>dbname</code></em></code><br /></span><span class="term"><code class="option">--dbname=<em class="replaceable"><code>dbname</code></em></code></span></dt><dd><p>
+       Specifies the name of the database to connect to. The
+       <em class="replaceable"><code>dbname</code></em> can be a <a class="link" href="libpq-connect.html#LIBPQ-CONNSTRING" title="34.1.1. Connection Strings">connection string</a>.  If so,
+       connection string parameters will override any conflicting command
+       line options.
+      </p></dd><dt><span class="term"><code class="option">-h <em class="replaceable"><code>hostname</code></em></code><br /></span><span class="term"><code class="option">--host=<em class="replaceable"><code>hostname</code></em></code></span></dt><dd><p>
+       Specifies the host name of the machine on which the
+       server is running. If the value begins
+       with a slash, it is used as the directory for the Unix-domain
+       socket.
+       </p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>port</code></em></code><br /></span><span class="term"><code class="option">--port=<em class="replaceable"><code>port</code></em></code></span></dt><dd><p>
+       Specifies the TCP port or the local Unix-domain
+       socket file extension on which the server is listening for
+       connections. Defaults to the value of the <code class="envar">PGPORT</code>
+       environment variable or, if not set, to the port specified at
+       compile time, usually 5432.
+       </p></dd><dt><span class="term"><code class="option">-q</code><br /></span><span class="term"><code class="option">--quiet</code></span></dt><dd><p>
+        Do not display status message. This is useful when scripting.
+       </p></dd><dt><span class="term"><code class="option">-t <em class="replaceable"><code>seconds</code></em></code><br /></span><span class="term"><code class="option">--timeout=<em class="replaceable"><code>seconds</code></em></code></span></dt><dd><p>
+        The maximum number of seconds to wait when attempting connection before
+        returning that the server is not responding. Setting to 0 disables. The
+        default is 3 seconds.
+       </p></dd><dt><span class="term"><code class="option">-U <em class="replaceable"><code>username</code></em></code><br /></span><span class="term"><code class="option">--username=<em class="replaceable"><code>username</code></em></code></span></dt><dd><p>
+       Connect to the database as the user <em class="replaceable"><code>username</code></em> instead of the default.
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+         Print the <span class="application">pg_isready</span> version and exit.
+        </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+        Show help about <span class="application">pg_isready</span> command line
+        arguments, and exit.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.9.4.15.7"><h2>Exit Status</h2><p>
+   <span class="application">pg_isready</span> returns <code class="literal">0</code> to the shell if the server
+   is accepting connections normally, <code class="literal">1</code> if the server is rejecting
+   connections (for example during startup), <code class="literal">2</code> if there was no response to the
+   connection attempt, and <code class="literal">3</code> if no attempt was made (for example due to invalid
+   parameters).
+  </p></div><div class="refsect1" id="id-1.9.4.15.8"><h2>Environment</h2><p>
+   <code class="command">pg_isready</code>, like most other <span class="productname">PostgreSQL</span>
+   utilities,
+   also uses the environment variables supported by <span class="application">libpq</span>
+   (see <a class="xref" href="libpq-envars.html" title="34.15. Environment Variables">Section 34.15</a>).
+  </p><p>
+   The environment variable <code class="envar">PG_COLOR</code> specifies whether to use
+   color in diagnostic messages. Possible values are
+   <code class="literal">always</code>, <code class="literal">auto</code> and
+   <code class="literal">never</code>.
+  </p></div><div class="refsect1" id="APP-PG-ISREADY-NOTES"><h2>Notes</h2><p>
+   It is not necessary to supply correct user name, password, or database
+   name values to obtain the server status; however, if incorrect values
+   are provided, the server will log a failed connection attempt.
+  </p></div><div class="refsect1" id="APP-PG-ISREADY-EXAMPLES"><h2>Examples</h2><p>
+   Standard Usage:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_isready</code></strong>
+<code class="computeroutput">/tmp:5432 - accepting connections</code>
+<code class="prompt">$</code> <strong class="userinput"><code>echo $?</code></strong>
+<code class="computeroutput">0</code>
+</pre><p>
+  </p><p>
+   Running with connection parameters to a <span class="productname">PostgreSQL</span> cluster in startup:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>pg_isready -h localhost -p 5433</code></strong>
+<code class="computeroutput">localhost:5433 - rejecting connections</code>
+<code class="prompt">$</code> <strong class="userinput"><code>echo $?</code></strong>
+<code class="computeroutput">1</code>
+</pre><p>
+  </p><p>
+   Running with connection parameters to a non-responsive <span class="productname">PostgreSQL</span> cluster:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>pg_isready -h someremotehost</code></strong>
+<code class="computeroutput">someremotehost:5432 - no response</code>
+<code class="prompt">$</code> <strong class="userinput"><code>echo $?</code></strong>
+<code class="computeroutput">2</code>
+</pre><p>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-pg-dumpall.html" title="pg_dumpall">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="app-pgreceivewal.html" title="pg_receivewal">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_dumpall</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_receivewal</span></td></tr></table></div></body></html>

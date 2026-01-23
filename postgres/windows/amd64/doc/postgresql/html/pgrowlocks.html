@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.29. pgrowlocks</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="pgprewarm.html" title="F.28. pg_prewarm" /><link rel="next" href="pgstatstatements.html" title="F.30. pg_stat_statements" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.29. pgrowlocks</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="pgprewarm.html" title="F.28. pg_prewarm">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="pgstatstatements.html" title="F.30. pg_stat_statements">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PGROWLOCKS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.29. pgrowlocks</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="pgrowlocks.html#id-1.11.7.38.5">F.29.1. Overview</a></span></dt><dt><span class="sect2"><a href="pgrowlocks.html#id-1.11.7.38.6">F.29.2. Sample Output</a></span></dt><dt><span class="sect2"><a href="pgrowlocks.html#id-1.11.7.38.7">F.29.3. Author</a></span></dt></dl></div><a id="id-1.11.7.38.2" class="indexterm"></a><p>
+  The <code class="filename">pgrowlocks</code> module provides a function to show row
+  locking information for a specified table.
+ </p><p>
+  By default use is restricted to superusers, members of the
+  <code class="literal">pg_stat_scan_tables</code> role, and users with
+  <code class="literal">SELECT</code> permissions on the table.
+ </p><div class="sect2" id="id-1.11.7.38.5"><div class="titlepage"><div><div><h3 class="title">F.29.1. Overview</h3></div></div></div><a id="id-1.11.7.38.5.2" class="indexterm"></a><pre class="synopsis">
+pgrowlocks(text) returns setof record
+</pre><p>
+   The parameter is the name of a table.  The result is a set of records,
+   with one row for each locked row within the table.  The output columns
+   are shown in <a class="xref" href="pgrowlocks.html#PGROWLOCKS-COLUMNS" title="Table F.20. pgrowlocks Output Columns">Table F.20</a>.
+  </p><div class="table" id="PGROWLOCKS-COLUMNS"><p class="title"><strong>Table F.20. <code class="function">pgrowlocks</code> Output Columns</strong></p><div class="table-contents"><table class="table" summary="pgrowlocks Output Columns" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="structfield">locked_row</code></td><td><code class="type">tid</code></td><td>Tuple ID (TID) of locked row</td></tr><tr><td><code class="structfield">locker</code></td><td><code class="type">xid</code></td><td>Transaction ID of locker, or multixact ID if multitransaction</td></tr><tr><td><code class="structfield">multi</code></td><td><code class="type">boolean</code></td><td>True if locker is a multitransaction</td></tr><tr><td><code class="structfield">xids</code></td><td><code class="type">xid[]</code></td><td>Transaction IDs of lockers (more than one if multitransaction)</td></tr><tr><td><code class="structfield">modes</code></td><td><code class="type">text[]</code></td><td>Lock mode of lockers (more than one if multitransaction),
+       an array of <code class="literal">Key Share</code>, <code class="literal">Share</code>,
+       <code class="literal">For No Key Update</code>, <code class="literal">No Key Update</code>,
+       <code class="literal">For Update</code>, <code class="literal">Update</code>.</td></tr><tr><td><code class="structfield">pids</code></td><td><code class="type">integer[]</code></td><td>Process IDs of locking backends (more than one if multitransaction)</td></tr></tbody></table></div></div><br class="table-break" /><p>
+   <code class="function">pgrowlocks</code> takes <code class="literal">AccessShareLock</code> for the
+   target table and reads each row one by one to collect the row locking
+   information.  This is not very speedy for a large table.  Note that:
+  </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>
+     If an <code class="literal">ACCESS EXCLUSIVE</code> lock is taken on the table,
+     <code class="function">pgrowlocks</code> will be blocked.
+    </p></li><li class="listitem"><p>
+     <code class="function">pgrowlocks</code> is not guaranteed to produce a
+     self-consistent snapshot.  It is possible that a new row lock is taken,
+     or an old lock is freed, during its execution.
+    </p></li></ol></div><p>
+   <code class="function">pgrowlocks</code> does not show the contents of locked
+   rows. If you want to take a look at the row contents at the same time, you
+   could do something like this:
+
+</p><pre class="programlisting">
+SELECT * FROM accounts AS a, pgrowlocks('accounts') AS p
+  WHERE p.locked_row = a.ctid;
+</pre><p>
+
+   Be aware however that such a query will be very inefficient.
+  </p></div><div class="sect2" id="id-1.11.7.38.6"><div class="titlepage"><div><div><h3 class="title">F.29.2. Sample Output</h3></div></div></div><pre class="screen">
+=# SELECT * FROM pgrowlocks('t1');
+ locked_row | locker | multi | xids  |     modes      |  pids
+------------+--------+-------+-------+----------------+--------
+ (0,1)      |    609 | f     | {609} | {"For Share"}  | {3161}
+ (0,2)      |    609 | f     | {609} | {"For Share"}  | {3161}
+ (0,3)      |    607 | f     | {607} | {"For Update"} | {3107}
+ (0,4)      |    607 | f     | {607} | {"For Update"} | {3107}
+(4 rows)
+</pre></div><div class="sect2" id="id-1.11.7.38.7"><div class="titlepage"><div><div><h3 class="title">F.29.3. Author</h3></div></div></div><p>
+   Tatsuo Ishii
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="pgprewarm.html" title="F.28. pg_prewarm">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="pgstatstatements.html" title="F.30. pg_stat_statements">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.28. pg_prewarm </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.30. pg_stat_statements</td></tr></table></div></body></html>

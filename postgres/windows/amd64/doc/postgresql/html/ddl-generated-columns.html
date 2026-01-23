@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5.3. Generated Columns</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ddl-default.html" title="5.2. Default Values" /><link rel="next" href="ddl-constraints.html" title="5.4. Constraints" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">5.3. Generated Columns</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ddl-default.html" title="5.2. Default Values">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><th width="60%" align="center">Chapter 5. Data Definition</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ddl-constraints.html" title="5.4. Constraints">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DDL-GENERATED-COLUMNS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">5.3. Generated Columns</h2></div></div></div><a id="id-1.5.4.5.2" class="indexterm"></a><p>
+   A generated column is a special column that is always computed from other
+   columns.  Thus, it is for columns what a view is for tables.  There are two
+   kinds of generated columns: stored and virtual.  A stored generated column
+   is computed when it is written (inserted or updated) and occupies storage
+   as if it were a normal column.  A virtual generated column occupies no
+   storage and is computed when it is read.  Thus, a virtual generated column
+   is similar to a view and a stored generated column is similar to a
+   materialized view (except that it is always updated automatically).
+   PostgreSQL currently implements only stored generated columns.
+  </p><p>
+   To create a generated column, use the <code class="literal">GENERATED ALWAYS
+   AS</code> clause in <code class="command">CREATE TABLE</code>, for example:
+</p><pre class="programlisting">
+CREATE TABLE people (
+    ...,
+    height_cm numeric,
+    height_in numeric <span class="emphasis"><strong>GENERATED ALWAYS AS (height_cm / 2.54) STORED</strong></span>
+);
+</pre><p>
+   The keyword <code class="literal">STORED</code> must be specified to choose the
+   stored kind of generated column.  See <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> for
+   more details.
+  </p><p>
+   A generated column cannot be written to directly.  In
+   <code class="command">INSERT</code> or <code class="command">UPDATE</code> commands, a value
+   cannot be specified for a generated column, but the keyword
+   <code class="literal">DEFAULT</code> may be specified.
+  </p><p>
+   Consider the differences between a column with a default and a generated
+   column.  The column default is evaluated once when the row is first
+   inserted if no other value was provided; a generated column is updated
+   whenever the row changes and cannot be overridden.  A column default may
+   not refer to other columns of the table; a generation expression would
+   normally do so.  A column default can use volatile functions, for example
+   <code class="literal">random()</code> or functions referring to the current time;
+   this is not allowed for generated columns.
+  </p><p>
+   Several restrictions apply to the definition of generated columns and
+   tables involving generated columns:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      The generation expression can only use immutable functions and cannot
+      use subqueries or reference anything other than the current row in any
+      way.
+     </p></li><li class="listitem"><p>
+      A generation expression cannot reference another generated column.
+     </p></li><li class="listitem"><p>
+      A generation expression cannot reference a system column, except
+      <code class="varname">tableoid</code>.
+     </p></li><li class="listitem"><p>
+      A generated column cannot have a column default or an identity definition.
+     </p></li><li class="listitem"><p>
+      A generated column cannot be part of a partition key.
+     </p></li><li class="listitem"><p>
+      Foreign tables can have generated columns.  See <a class="xref" href="sql-createforeigntable.html" title="CREATE FOREIGN TABLE"><span class="refentrytitle">CREATE FOREIGN TABLE</span></a> for details.
+     </p></li><li class="listitem"><p>For inheritance:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: circle; "><li class="listitem"><p>
+        If a parent column is a generated column, a child column must also be
+        a generated column using the same expression.  In the definition of
+        the child column, leave off the <code class="literal">GENERATED</code> clause,
+        as it will be copied from the parent.
+       </p></li><li class="listitem"><p>
+        In case of multiple inheritance, if one parent column is a generated
+        column, then all parent columns must be generated columns and with the
+        same expression.
+       </p></li><li class="listitem"><p>
+        If a parent column is not a generated column, a child column may be
+        defined to be a generated column or not.
+       </p></li></ul></div></li></ul></div><p>
+  </p><p>
+   Additional considerations apply to the use of generated columns.
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Generated columns maintain access privileges separately from their
+      underlying base columns.  So, it is possible to arrange it so that a
+      particular role can read from a generated column but not from the
+      underlying base columns.
+     </p></li><li class="listitem"><p>
+      Generated columns are, conceptually, updated after
+      <code class="literal">BEFORE</code> triggers have run.  Therefore, changes made to
+      base columns in a <code class="literal">BEFORE</code> trigger will be reflected in
+      generated columns.  But conversely, it is not allowed to access
+      generated columns in <code class="literal">BEFORE</code> triggers.
+     </p></li></ul></div><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ddl-default.html" title="5.2. Default Values">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ddl-constraints.html" title="5.4. Constraints">Next</a></td></tr><tr><td width="40%" align="left" valign="top">5.2. Default Values </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 5.4. Constraints</td></tr></table></div></body></html>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>createuser</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-createdb.html" title="createdb" /><link rel="next" href="app-dropdb.html" title="dropdb" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">createuser</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-createdb.html" title="createdb">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><th width="60%" align="center">PostgreSQL Client Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="app-dropdb.html" title="dropdb">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-CREATEUSER"><div class="titlepage"></div><a id="id-1.9.4.5.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">createuser</span></span></h2><p>createuser — define a new <span class="productname">PostgreSQL</span> user account</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.4.5.4.1"><code class="command">createuser</code> [<em class="replaceable"><code>connection-option</code></em>...] [<em class="replaceable"><code>option</code></em>...] [<em class="replaceable"><code>username</code></em>]</p></div></div><div class="refsect1" id="id-1.9.4.5.5"><h2>Description</h2><p>
+   <span class="application">createuser</span> creates a
+   new <span class="productname">PostgreSQL</span> user (or more precisely, a role).
+   Only superusers and users with <code class="literal">CREATEROLE</code> privilege can create
+   new users, so <span class="application">createuser</span> must be
+   invoked by someone who can connect as a superuser or a user with
+   <code class="literal">CREATEROLE</code> privilege.
+  </p><p>
+   If you wish to create a role with the <code class="literal">SUPERUSER</code>,
+   <code class="literal">REPLICATION</code>, or <code class="literal">BYPASSRLS</code> privilege,
+   you must connect as a superuser, not merely with
+   <code class="literal">CREATEROLE</code> privilege.
+   Being a superuser implies the ability to bypass all access permission
+   checks within the database, so superuser access should not be granted
+   lightly. <code class="literal">CREATEROLE</code> also conveys
+   <a class="link" href="role-attributes.html#ROLE-CREATION">very extensive privileges</a>.
+  </p><p>
+   <span class="application">createuser</span> is a wrapper around the
+   <acronym class="acronym">SQL</acronym> command <a class="link" href="sql-createrole.html" title="CREATE ROLE"><code class="command">CREATE ROLE</code></a>.
+   There is no effective difference between creating users via
+   this utility and via other methods for accessing the server.
+  </p></div><div class="refsect1" id="id-1.9.4.5.6"><h2>Options</h2><p>
+   <span class="application">createuser</span> accepts the following command-line arguments:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>username</code></em></span></dt><dd><p>
+        Specifies the name of the <span class="productname">PostgreSQL</span> user
+        to be created.
+        This name must be different from all existing roles in this
+        <span class="productname">PostgreSQL</span> installation.
+       </p></dd><dt><span class="term"><code class="option">-c <em class="replaceable"><code>number</code></em></code><br /></span><span class="term"><code class="option">--connection-limit=<em class="replaceable"><code>number</code></em></code></span></dt><dd><p>
+        Set a maximum number of connections for the new user.
+        The default is to set no limit.
+       </p></dd><dt><span class="term"><code class="option">-d</code><br /></span><span class="term"><code class="option">--createdb</code></span></dt><dd><p>
+        The new user will be allowed to create databases.
+       </p></dd><dt><span class="term"><code class="option">-D</code><br /></span><span class="term"><code class="option">--no-createdb</code></span></dt><dd><p>
+        The new user will not be allowed to create databases.  This is the
+        default.
+       </p></dd><dt><span class="term"><code class="option">-e</code><br /></span><span class="term"><code class="option">--echo</code></span></dt><dd><p>
+        Echo the commands that <span class="application">createuser</span> generates
+        and sends to the server.
+       </p></dd><dt><span class="term"><code class="option">-E</code><br /></span><span class="term"><code class="option">--encrypted</code></span></dt><dd><p>
+        This option is obsolete but still accepted for backward
+        compatibility.
+       </p></dd><dt><span class="term"><code class="option">-g <em class="replaceable"><code>role</code></em></code><br /></span><span class="term"><code class="option">--role=<em class="replaceable"><code>role</code></em></code></span></dt><dd><p>
+         Indicates role to which this role will be added immediately as a new
+         member. Multiple roles to which this role will be added as a member
+         can be specified by writing multiple
+         <code class="option">-g</code> switches.
+         </p></dd><dt><span class="term"><code class="option">-i</code><br /></span><span class="term"><code class="option">--inherit</code></span></dt><dd><p>
+        The new role will automatically inherit privileges of roles
+        it is a member of.
+        This is the default.
+       </p></dd><dt><span class="term"><code class="option">-I</code><br /></span><span class="term"><code class="option">--no-inherit</code></span></dt><dd><p>
+        The new role will not automatically inherit privileges of roles
+        it is a member of.
+       </p></dd><dt><span class="term"><code class="option">--interactive</code></span></dt><dd><p>
+        Prompt for the user name if none is specified on the command line, and
+        also prompt for whichever of the options
+        <code class="option">-d</code>/<code class="option">-D</code>,
+        <code class="option">-r</code>/<code class="option">-R</code>,
+        <code class="option">-s</code>/<code class="option">-S</code> is not specified on the command
+        line.  (This was the default behavior up to PostgreSQL 9.1.)
+       </p></dd><dt><span class="term"><code class="option">-l</code><br /></span><span class="term"><code class="option">--login</code></span></dt><dd><p>
+        The new user will be allowed to log in (that is, the user name
+        can be used as the initial session user identifier).
+        This is the default.
+       </p></dd><dt><span class="term"><code class="option">-L</code><br /></span><span class="term"><code class="option">--no-login</code></span></dt><dd><p>
+        The new user will not be allowed to log in.
+        (A role without login privilege is still useful as a means of
+        managing database permissions.)
+       </p></dd><dt><span class="term"><code class="option">-P</code><br /></span><span class="term"><code class="option">--pwprompt</code></span></dt><dd><p>
+       If given, <span class="application">createuser</span> will issue a prompt for
+       the password of the new user. This is not necessary if you do not plan
+       on using password authentication.
+       </p></dd><dt><span class="term"><code class="option">-r</code><br /></span><span class="term"><code class="option">--createrole</code></span></dt><dd><p>
+        The new user will be allowed to create, alter, drop, comment on,
+        change the security label for, and grant or revoke membership in
+        other roles; that is,
+        this user will have <code class="literal">CREATEROLE</code> privilege.
+        See <a class="xref" href="role-attributes.html#ROLE-CREATION">role creation</a> for more details about what
+        capabilities are conferred by this privilege.
+       </p></dd><dt><span class="term"><code class="option">-R</code><br /></span><span class="term"><code class="option">--no-createrole</code></span></dt><dd><p>
+        The new user will not be allowed to create new roles.  This is the
+        default.
+       </p></dd><dt><span class="term"><code class="option">-s</code><br /></span><span class="term"><code class="option">--superuser</code></span></dt><dd><p>
+        The new user will be a superuser.
+       </p></dd><dt><span class="term"><code class="option">-S</code><br /></span><span class="term"><code class="option">--no-superuser</code></span></dt><dd><p>
+        The new user will not be a superuser.  This is the default.
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+       Print the <span class="application">createuser</span> version and exit.
+       </p></dd><dt><span class="term"><code class="option">--replication</code></span></dt><dd><p>
+        The new user will have the <code class="literal">REPLICATION</code> privilege,
+        which is described more fully in the documentation for <a class="xref" href="sql-createrole.html" title="CREATE ROLE"><span class="refentrytitle">CREATE ROLE</span></a>.
+       </p></dd><dt><span class="term"><code class="option">--no-replication</code></span></dt><dd><p>
+        The new user will not have the <code class="literal">REPLICATION</code>
+        privilege, which is described more fully in the documentation for <a class="xref" href="sql-createrole.html" title="CREATE ROLE"><span class="refentrytitle">CREATE ROLE</span></a>.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+       Show help about <span class="application">createuser</span> command line
+       arguments, and exit.
+       </p></dd></dl></div><p>
+  </p><p>
+   <span class="application">createuser</span> also accepts the following
+   command-line arguments for connection parameters:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-h <em class="replaceable"><code>host</code></em></code><br /></span><span class="term"><code class="option">--host=<em class="replaceable"><code>host</code></em></code></span></dt><dd><p>
+        Specifies the host name of the machine on which the
+        server
+        is running.  If the value begins with a slash, it is used
+        as the directory for the Unix domain socket.
+       </p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>port</code></em></code><br /></span><span class="term"><code class="option">--port=<em class="replaceable"><code>port</code></em></code></span></dt><dd><p>
+        Specifies the TCP port or local Unix domain socket file
+        extension on which the server
+        is listening for connections.
+       </p></dd><dt><span class="term"><code class="option">-U <em class="replaceable"><code>username</code></em></code><br /></span><span class="term"><code class="option">--username=<em class="replaceable"><code>username</code></em></code></span></dt><dd><p>
+        User name to connect as (not the user name to create).
+       </p></dd><dt><span class="term"><code class="option">-w</code><br /></span><span class="term"><code class="option">--no-password</code></span></dt><dd><p>
+        Never issue a password prompt.  If the server requires
+        password authentication and a password is not available by
+        other means such as a <code class="filename">.pgpass</code> file, the
+        connection attempt will fail.  This option can be useful in
+        batch jobs and scripts where no user is present to enter a
+        password.
+       </p></dd><dt><span class="term"><code class="option">-W</code><br /></span><span class="term"><code class="option">--password</code></span></dt><dd><p>
+        Force <span class="application">createuser</span> to prompt for a
+        password (for connecting to the server, not for the
+        password of the new user).
+       </p><p>
+        This option is never essential, since
+        <span class="application">createuser</span> will automatically prompt
+        for a password if the server demands password authentication.
+        However, <span class="application">createuser</span> will waste a
+        connection attempt finding out that the server wants a password.
+        In some cases it is worth typing <code class="option">-W</code> to avoid the extra
+        connection attempt.
+       </p></dd></dl></div><p>
+  </p></div><div class="refsect1" id="id-1.9.4.5.7"><h2>Environment</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="envar">PGHOST</code><br /></span><span class="term"><code class="envar">PGPORT</code><br /></span><span class="term"><code class="envar">PGUSER</code></span></dt><dd><p>
+      Default connection parameters
+     </p></dd><dt><span class="term"><code class="envar">PG_COLOR</code></span></dt><dd><p>
+      Specifies whether to use color in diagnostic messages. Possible values
+      are <code class="literal">always</code>, <code class="literal">auto</code> and
+      <code class="literal">never</code>.
+     </p></dd></dl></div><p>
+   This utility, like most other <span class="productname">PostgreSQL</span> utilities,
+   also uses the environment variables supported by <span class="application">libpq</span>
+   (see <a class="xref" href="libpq-envars.html" title="34.15. Environment Variables">Section 34.15</a>).
+  </p></div><div class="refsect1" id="id-1.9.4.5.8"><h2>Diagnostics</h2><p>
+   In case of difficulty, see <a class="xref" href="sql-createrole.html" title="CREATE ROLE"><span class="refentrytitle">CREATE ROLE</span></a>
+   and <a class="xref" href="app-psql.html" title="psql"><span class="refentrytitle"><span class="application">psql</span></span></a> for
+   discussions of potential problems and error messages.
+   The database server must be running at the
+   targeted host.  Also, any default connection settings and environment
+   variables used by the <span class="application">libpq</span> front-end
+   library will apply.
+  </p></div><div class="refsect1" id="id-1.9.4.5.9"><h2>Examples</h2><p>
+    To create a user <code class="literal">joe</code> on the default database
+    server:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>createuser joe</code></strong>
+</pre><p>
+   </p><p>
+    To create a user <code class="literal">joe</code> on the default database
+    server with prompting for some additional attributes:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>createuser --interactive joe</code></strong>
+<code class="computeroutput">Shall the new role be a superuser? (y/n) </code><strong class="userinput"><code>n</code></strong>
+<code class="computeroutput">Shall the new role be allowed to create databases? (y/n) </code><strong class="userinput"><code>n</code></strong>
+<code class="computeroutput">Shall the new role be allowed to create more new roles? (y/n) </code><strong class="userinput"><code>n</code></strong>
+</pre><p>
+   </p><p>
+    To create the same user <code class="literal">joe</code> using the
+    server on host <code class="literal">eden</code>, port 5000, with attributes explicitly specified,
+    taking a look at the underlying command:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>createuser -h eden -p 5000 -S -D -R -e joe</code></strong>
+<code class="computeroutput">CREATE ROLE joe NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;</code>
+</pre><p>
+   </p><p>
+    To create the user <code class="literal">joe</code> as a superuser,
+    and assign a password immediately:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>createuser -P -s -e joe</code></strong>
+<code class="computeroutput">Enter password for new role: </code><strong class="userinput"><code>xyzzy</code></strong>
+<code class="computeroutput">Enter it again: </code><strong class="userinput"><code>xyzzy</code></strong>
+<code class="computeroutput">CREATE ROLE joe PASSWORD 'md5b5f5ba1a423792b526f799ae4eb3d59e' SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;</code>
+</pre><p>
+    In the above example, the new password isn't actually echoed when typed,
+    but we show what was typed for clarity.  As you see, the password is
+    encrypted before it is sent to the client.
+   </p></div><div class="refsect1" id="id-1.9.4.5.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="app-dropuser.html" title="dropuser"><span class="refentrytitle"><span class="application">dropuser</span></span></a>, <a class="xref" href="sql-createrole.html" title="CREATE ROLE"><span class="refentrytitle">CREATE ROLE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-createdb.html" title="createdb">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="app-dropdb.html" title="dropdb">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">createdb</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">dropdb</span></td></tr></table></div></body></html>

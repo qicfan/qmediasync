@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.4. Binary Data Types</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-character.html" title="8.3. Character Types" /><link rel="next" href="datatype-datetime.html" title="8.5. Date/Time Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.4. Binary Data Types</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-character.html" title="8.3. Character Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datatype-datetime.html" title="8.5. Date/Time Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATATYPE-BINARY"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.4. Binary Data Types</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="datatype-binary.html#id-1.5.7.12.9">8.4.1. <code class="type">bytea</code> Hex Format</a></span></dt><dt><span class="sect2"><a href="datatype-binary.html#id-1.5.7.12.10">8.4.2. <code class="type">bytea</code> Escape Format</a></span></dt></dl></div><a id="id-1.5.7.12.2" class="indexterm"></a><a id="id-1.5.7.12.3" class="indexterm"></a><p>
+    The <code class="type">bytea</code> data type allows storage of binary strings;
+    see <a class="xref" href="datatype-binary.html#DATATYPE-BINARY-TABLE" title="Table 8.6. Binary Data Types">Table 8.6</a>.
+   </p><div class="table" id="DATATYPE-BINARY-TABLE"><p class="title"><strong>Table 8.6. Binary Data Types</strong></p><div class="table-contents"><table class="table" summary="Binary Data Types" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /></colgroup><thead><tr><th>Name</th><th>Storage Size</th><th>Description</th></tr></thead><tbody><tr><td><code class="type">bytea</code></td><td>1 or 4 bytes plus the actual binary string</td><td>variable-length binary string</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    A binary string is a sequence of octets (or bytes).  Binary
+    strings are distinguished from character strings in two
+    ways.  First, binary strings specifically allow storing
+    octets of value zero and other <span class="quote">“<span class="quote">non-printable</span>”</span>
+    octets (usually, octets outside the decimal range 32 to 126).
+    Character strings disallow zero octets, and also disallow any
+    other octet values and sequences of octet values that are invalid
+    according to the database's selected character set encoding.
+    Second, operations on binary strings process the actual bytes,
+    whereas the processing of character strings depends on locale settings.
+    In short, binary strings are appropriate for storing data that the
+    programmer thinks of as <span class="quote">“<span class="quote">raw bytes</span>”</span>, whereas character
+    strings are appropriate for storing text.
+   </p><p>
+    The <code class="type">bytea</code> type supports two
+    formats for input and output: <span class="quote">“<span class="quote">hex</span>”</span> format
+    and <span class="productname">PostgreSQL</span>'s historical
+    <span class="quote">“<span class="quote">escape</span>”</span> format.  Both
+    of these are always accepted on input.  The output format depends
+    on the configuration parameter <a class="xref" href="runtime-config-client.html#GUC-BYTEA-OUTPUT">bytea_output</a>;
+    the default is hex.  (Note that the hex format was introduced in
+    <span class="productname">PostgreSQL</span> 9.0; earlier versions and some
+    tools don't understand it.)
+   </p><p>
+    The <acronym class="acronym">SQL</acronym> standard defines a different binary
+    string type, called <code class="type">BLOB</code> or <code class="type">BINARY LARGE
+    OBJECT</code>.  The input format is different from
+    <code class="type">bytea</code>, but the provided functions and operators are
+    mostly the same.
+   </p><div class="sect2" id="id-1.5.7.12.9"><div class="titlepage"><div><div><h3 class="title">8.4.1. <code class="type">bytea</code> Hex Format</h3></div></div></div><p>
+    The <span class="quote">“<span class="quote">hex</span>”</span> format encodes binary data as 2 hexadecimal digits
+    per byte, most significant nibble first.  The entire string is
+    preceded by the sequence <code class="literal">\x</code> (to distinguish it
+    from the escape format).  In some contexts, the initial backslash may
+    need to be escaped by doubling it
+    (see <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-STRINGS" title="4.1.2.1. String Constants">Section 4.1.2.1</a>).
+    For input, the hexadecimal digits can
+    be either upper or lower case, and whitespace is permitted between
+    digit pairs (but not within a digit pair nor in the starting
+    <code class="literal">\x</code> sequence).
+    The hex format is compatible with a wide
+    range of external applications and protocols, and it tends to be
+    faster to convert than the escape format, so its use is preferred.
+   </p><p>
+    Example:
+</p><pre class="programlisting">
+SET bytea_output = 'hex';
+
+SELECT '\xDEADBEEF'::bytea;
+   bytea
+------------
+ \xdeadbeef
+</pre><p>
+   </p></div><div class="sect2" id="id-1.5.7.12.10"><div class="titlepage"><div><div><h3 class="title">8.4.2. <code class="type">bytea</code> Escape Format</h3></div></div></div><p>
+    The <span class="quote">“<span class="quote">escape</span>”</span> format is the traditional
+    <span class="productname">PostgreSQL</span> format for the <code class="type">bytea</code>
+    type.  It
+    takes the approach of representing a binary string as a sequence
+    of ASCII characters, while converting those bytes that cannot be
+    represented as an ASCII character into special escape sequences.
+    If, from the point of view of the application, representing bytes
+    as characters makes sense, then this representation can be
+    convenient.  But in practice it is usually confusing because it
+    fuzzes up the distinction between binary strings and character
+    strings, and also the particular escape mechanism that was chosen is
+    somewhat unwieldy.  Therefore, this format should probably be avoided
+    for most new applications.
+   </p><p>
+    When entering <code class="type">bytea</code> values in escape format,
+    octets of certain
+    values <span class="emphasis"><em>must</em></span> be escaped, while all octet
+    values <span class="emphasis"><em>can</em></span> be escaped.  In
+    general, to escape an octet, convert it into its three-digit
+    octal value and precede it by a backslash.
+    Backslash itself (octet decimal value 92) can alternatively be represented by
+    double backslashes.
+    <a class="xref" href="datatype-binary.html#DATATYPE-BINARY-SQLESC" title="Table 8.7. bytea Literal Escaped Octets">Table 8.7</a>
+    shows the characters that must be escaped, and gives the alternative
+    escape sequences where applicable.
+   </p><div class="table" id="DATATYPE-BINARY-SQLESC"><p class="title"><strong>Table 8.7. <code class="type">bytea</code> Literal Escaped Octets</strong></p><div class="table-contents"><table class="table" summary="bytea Literal Escaped Octets" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /><col class="col4" /><col class="col5" /></colgroup><thead><tr><th>Decimal Octet Value</th><th>Description</th><th>Escaped Input Representation</th><th>Example</th><th>Hex Representation</th></tr></thead><tbody><tr><td>0</td><td>zero octet</td><td><code class="literal">'\000'</code></td><td><code class="literal">'\000'::bytea</code></td><td><code class="literal">\x00</code></td></tr><tr><td>39</td><td>single quote</td><td><code class="literal">''''</code> or <code class="literal">'\047'</code></td><td><code class="literal">''''::bytea</code></td><td><code class="literal">\x27</code></td></tr><tr><td>92</td><td>backslash</td><td><code class="literal">'\\'</code> or <code class="literal">'\134'</code></td><td><code class="literal">'\\'::bytea</code></td><td><code class="literal">\x5c</code></td></tr><tr><td>0 to 31 and 127 to 255</td><td><span class="quote">“<span class="quote">non-printable</span>”</span> octets</td><td><code class="literal">'\<em class="replaceable"><code>xxx'</code></em></code> (octal value)</td><td><code class="literal">'\001'::bytea</code></td><td><code class="literal">\x01</code></td></tr></tbody></table></div></div><br class="table-break" /><p>
+    The requirement to escape <span class="emphasis"><em>non-printable</em></span> octets
+    varies depending on locale settings. In some instances you can get away
+    with leaving them unescaped.
+   </p><p>
+    The reason that single quotes must be doubled, as shown
+    in <a class="xref" href="datatype-binary.html#DATATYPE-BINARY-SQLESC" title="Table 8.7. bytea Literal Escaped Octets">Table 8.7</a>, is that this
+    is true for any string literal in an SQL command.  The generic
+    string-literal parser consumes the outermost single quotes
+    and reduces any pair of single quotes to one data character.
+    What the <code class="type">bytea</code> input function sees is just one
+    single quote, which it treats as a plain data character.
+    However, the <code class="type">bytea</code> input function treats
+    backslashes as special, and the other behaviors shown in
+    <a class="xref" href="datatype-binary.html#DATATYPE-BINARY-SQLESC" title="Table 8.7. bytea Literal Escaped Octets">Table 8.7</a> are implemented by
+    that function.
+   </p><p>
+    In some contexts, backslashes must be doubled compared to what is
+    shown above, because the generic string-literal parser will also
+    reduce pairs of backslashes to one data character;
+    see <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-STRINGS" title="4.1.2.1. String Constants">Section 4.1.2.1</a>.
+   </p><p>
+    <code class="type">Bytea</code> octets are output in <code class="literal">hex</code>
+    format by default.  If you change <a class="xref" href="runtime-config-client.html#GUC-BYTEA-OUTPUT">bytea_output</a>
+    to <code class="literal">escape</code>,
+    <span class="quote">“<span class="quote">non-printable</span>”</span> octets are converted to their
+    equivalent three-digit octal value and preceded by one backslash.
+    Most <span class="quote">“<span class="quote">printable</span>”</span> octets are output by their standard
+    representation in the client character set, e.g.:
+
+</p><pre class="programlisting">
+SET bytea_output = 'escape';
+
+SELECT 'abc \153\154\155 \052\251\124'::bytea;
+     bytea
+----------------
+ abc klm *\251T
+</pre><p>
+
+    The octet with decimal value 92 (backslash) is doubled in the output.
+    Details are in <a class="xref" href="datatype-binary.html#DATATYPE-BINARY-RESESC" title="Table 8.8. bytea Output Escaped Octets">Table 8.8</a>.
+   </p><div class="table" id="DATATYPE-BINARY-RESESC"><p class="title"><strong>Table 8.8. <code class="type">bytea</code> Output Escaped Octets</strong></p><div class="table-contents"><table class="table" summary="bytea Output Escaped Octets" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /><col class="col4" /><col class="col5" /></colgroup><thead><tr><th>Decimal Octet Value</th><th>Description</th><th>Escaped Output Representation</th><th>Example</th><th>Output Result</th></tr></thead><tbody><tr><td>92</td><td>backslash</td><td><code class="literal">\\</code></td><td><code class="literal">'\134'::bytea</code></td><td><code class="literal">\\</code></td></tr><tr><td>0 to 31 and 127 to 255</td><td><span class="quote">“<span class="quote">non-printable</span>”</span> octets</td><td><code class="literal">\<em class="replaceable"><code>xxx</code></em></code> (octal value)</td><td><code class="literal">'\001'::bytea</code></td><td><code class="literal">\001</code></td></tr><tr><td>32 to 126</td><td><span class="quote">“<span class="quote">printable</span>”</span> octets</td><td>client character set representation</td><td><code class="literal">'\176'::bytea</code></td><td><code class="literal">~</code></td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Depending on the front end to <span class="productname">PostgreSQL</span> you use,
+    you might have additional work to do in terms of escaping and
+    unescaping <code class="type">bytea</code> strings. For example, you might also
+    have to escape line feeds and carriage returns if your interface
+    automatically translates these.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-character.html" title="8.3. Character Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datatype-datetime.html" title="8.5. Date/Time Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.3. Character Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.5. Date/Time Types</td></tr></table></div></body></html>

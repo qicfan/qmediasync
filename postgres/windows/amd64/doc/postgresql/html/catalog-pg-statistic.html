@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.49. pg_statistic</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-shseclabel.html" title="52.48. pg_shseclabel" /><link rel="next" href="catalog-pg-statistic-ext.html" title="52.50. pg_statistic_ext" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.49. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_statistic</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-shseclabel.html" title="52.48. pg_shseclabel">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-statistic-ext.html" title="52.50. pg_statistic_ext">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-STATISTIC"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.49. <code class="structname">pg_statistic</code></h2></div></div></div><a id="id-1.10.4.51.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_statistic</code> stores
+   statistical data about the contents of the database.  Entries are
+   created by <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a>
+   and subsequently used by the query planner.  Note that all the
+   statistical data is inherently approximate, even assuming that it
+   is up-to-date.
+  </p><p>
+   Normally there is one entry, with <code class="structfield">stainherit</code> =
+   <code class="literal">false</code>, for each table column that has been analyzed.
+   If the table has inheritance children, a second entry with
+   <code class="structfield">stainherit</code> = <code class="literal">true</code> is also created.  This row
+   represents the column's statistics over the inheritance tree, i.e.,
+   statistics for the data you'd see with
+   <code class="literal">SELECT <em class="replaceable"><code>column</code></em> FROM <em class="replaceable"><code>table</code></em>*</code>,
+   whereas the <code class="structfield">stainherit</code> = <code class="literal">false</code> row represents
+   the results of
+   <code class="literal">SELECT <em class="replaceable"><code>column</code></em> FROM ONLY <em class="replaceable"><code>table</code></em></code>.
+  </p><p>
+   <code class="structname">pg_statistic</code> also stores statistical data about
+   the values of index expressions.  These are described as if they were
+   actual data columns; in particular, <code class="structfield">starelid</code>
+   references the index.  No entry is made for an ordinary non-expression
+   index column, however, since it would be redundant with the entry
+   for the underlying table column.  Currently, entries for index expressions
+   always have <code class="structfield">stainherit</code> = <code class="literal">false</code>.
+  </p><p>
+   Since different kinds of statistics might be appropriate for different
+   kinds of data, <code class="structname">pg_statistic</code> is designed not
+   to assume very much about what sort of statistics it stores.  Only
+   extremely general statistics (such as nullness) are given dedicated
+   columns in <code class="structname">pg_statistic</code>.  Everything else
+   is stored in <span class="quote">“<span class="quote">slots</span>”</span>, which are groups of associated columns
+   whose content is identified by a code number in one of the slot's columns.
+   For more information see
+   <code class="filename">src/include/catalog/pg_statistic.h</code>.
+  </p><p>
+   <code class="structname">pg_statistic</code> should not be readable by the
+   public, since even statistical information about a table's contents
+   might be considered sensitive.  (Example: minimum and maximum values
+   of a salary column might be quite interesting.)
+   <a class="link" href="view-pg-stats.html" title="52.89. pg_stats"><code class="structname">pg_stats</code></a>
+   is a publicly readable view on
+   <code class="structname">pg_statistic</code> that only exposes information
+   about those tables that are readable by the current user.
+  </p><div class="table" id="id-1.10.4.51.8"><p class="title"><strong>Table 52.49. <code class="structname">pg_statistic</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_statistic Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">starelid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The table or index that the described column belongs to
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">staattnum</code> <code class="type">int2</code>
+       (references <a class="link" href="catalog-pg-attribute.html" title="52.7. pg_attribute"><code class="structname">pg_attribute</code></a>.<code class="structfield">attnum</code>)
+      </p>
+      <p>
+       The number of the described column
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stainherit</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, the stats include inheritance child columns, not just the
+       values in the specified relation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stanullfrac</code> <code class="type">float4</code>
+      </p>
+      <p>
+       The fraction of the column's entries that are null
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stawidth</code> <code class="type">int4</code>
+      </p>
+      <p>
+       The average stored width, in bytes, of nonnull entries
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stadistinct</code> <code class="type">float4</code>
+      </p>
+      <p>
+       The number of distinct nonnull data values in the column.
+       A value greater than zero is the actual number of distinct values.
+       A value less than zero is the negative of a multiplier for the number
+       of rows in the table; for example, a column in which about 80% of the
+       values are nonnull and each nonnull value appears about twice on
+       average could be represented by <code class="structfield">stadistinct</code> = -0.4.
+       A zero value means the number of distinct values is unknown.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stakind<em class="replaceable"><code>N</code></em></code> <code class="type">int2</code>
+      </p>
+      <p>
+       A code number indicating the kind of statistics stored in the
+       <em class="replaceable"><code>N</code></em>th <span class="quote">“<span class="quote">slot</span>”</span> of the
+       <code class="structname">pg_statistic</code> row.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">staop<em class="replaceable"><code>N</code></em></code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-operator.html" title="52.34. pg_operator"><code class="structname">pg_operator</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       An operator used to derive the statistics stored in the
+       <em class="replaceable"><code>N</code></em>th <span class="quote">“<span class="quote">slot</span>”</span>.  For example, a
+       histogram slot would show the <code class="literal">&lt;</code> operator
+       that defines the sort order of the data.
+       Zero if the statistics kind does not require an operator.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stacoll<em class="replaceable"><code>N</code></em></code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-collation.html" title="52.12. pg_collation"><code class="structname">pg_collation</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The collation used to derive the statistics stored in the
+       <em class="replaceable"><code>N</code></em>th <span class="quote">“<span class="quote">slot</span>”</span>.  For example, a
+       histogram slot for a collatable column would show the collation that
+       defines the sort order of the data.  Zero for noncollatable data.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stanumbers<em class="replaceable"><code>N</code></em></code> <code class="type">float4[]</code>
+      </p>
+      <p>
+       Numerical statistics of the appropriate kind for the
+       <em class="replaceable"><code>N</code></em>th <span class="quote">“<span class="quote">slot</span>”</span>, or null if the slot
+       kind does not involve numerical values
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">stavalues<em class="replaceable"><code>N</code></em></code> <code class="type">anyarray</code>
+      </p>
+      <p>
+       Column data values of the appropriate kind for the
+       <em class="replaceable"><code>N</code></em>th <span class="quote">“<span class="quote">slot</span>”</span>, or null if the slot
+       kind does not store any data values.  Each array's element
+       values are actually of the specific column's data type, or a related
+       type such as an array's element type, so there is no way to define
+       these columns' type more specifically than <code class="type">anyarray</code>.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-shseclabel.html" title="52.48. pg_shseclabel">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-statistic-ext.html" title="52.50. pg_statistic_ext">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.48. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_shseclabel</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.50. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_statistic_ext</code></td></tr></table></div></body></html>

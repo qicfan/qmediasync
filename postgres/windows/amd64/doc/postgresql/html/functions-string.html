@@ -1,0 +1,1092 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.4. String Functions and Operators</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-math.html" title="9.3. Mathematical Functions and Operators" /><link rel="next" href="functions-binarystring.html" title="9.5. Binary String Functions and Operators" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.4. String Functions and Operators</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-math.html" title="9.3. Mathematical Functions and Operators">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-binarystring.html" title="9.5. Binary String Functions and Operators">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-STRING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.4. String Functions and Operators</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="functions-string.html#FUNCTIONS-STRING-FORMAT">9.4.1. <code class="function">format</code></a></span></dt></dl></div><p>
+    This section describes functions and operators for examining and
+    manipulating string values.  Strings in this context include values
+    of the types <code class="type">character</code>, <code class="type">character varying</code>,
+    and <code class="type">text</code>.  Except where noted, these functions and operators
+    are declared to accept and return type <code class="type">text</code>.  They will
+    interchangeably accept <code class="type">character varying</code> arguments.
+    Values of type <code class="type">character</code> will be converted
+    to <code class="type">text</code> before the function or operator is applied, resulting
+    in stripping any trailing spaces in the <code class="type">character</code> value.
+   </p><p>
+    <acronym class="acronym">SQL</acronym> defines some string functions that use
+    key words, rather than commas, to separate
+    arguments.  Details are in
+    <a class="xref" href="functions-string.html#FUNCTIONS-STRING-SQL" title="Table 9.9. SQL String Functions and Operators">Table 9.9</a>.
+    <span class="productname">PostgreSQL</span> also provides versions of these functions
+    that use the regular function invocation syntax
+    (see <a class="xref" href="functions-string.html#FUNCTIONS-STRING-OTHER" title="Table 9.10. Other String Functions">Table 9.10</a>).
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     The string concatenation operator (<code class="literal">||</code>) will accept
+     non-string input, so long as at least one input is of string type, as shown
+     in <a class="xref" href="functions-string.html#FUNCTIONS-STRING-SQL" title="Table 9.9. SQL String Functions and Operators">Table 9.9</a>.  For other cases, inserting an
+     explicit coercion to <code class="type">text</code> can be used to have non-string input
+     accepted.
+    </p></div><div class="table" id="FUNCTIONS-STRING-SQL"><p class="title"><strong>Table 9.9. <acronym class="acronym">SQL</acronym> String Functions and Operators</strong></p><div class="table-contents"><table class="table" summary="SQL String Functions and Operators" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function/Operator
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="type">text</code> <code class="literal">||</code> <code class="type">text</code>
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Concatenates the two strings.
+       </p>
+       <p>
+        <code class="literal">'Post' || 'greSQL'</code>
+        → <code class="returnvalue">PostgreSQL</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">text</code> <code class="literal">||</code> <code class="type">anynonarray</code>
+        → <code class="returnvalue">text</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">anynonarray</code> <code class="literal">||</code> <code class="type">text</code>
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the non-string input to text, then concatenates the two
+        strings.  (The non-string input cannot be of an array type, because
+        that would create ambiguity with the array <code class="literal">||</code>
+        operators.  If you want to concatenate an array's text equivalent,
+        cast it to <code class="type">text</code> explicitly.)
+       </p>
+       <p>
+        <code class="literal">'Value: ' || 42</code>
+        → <code class="returnvalue">Value: 42</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.3.1.1.1" class="indexterm"></a>
+        <a id="id-1.5.8.10.5.2.2.3.1.1.2" class="indexterm"></a>
+         <code class="type">text</code> <code class="literal">IS</code> [<span class="optional"><code class="literal">NOT</code></span>] [<span class="optional"><em class="parameter"><code>form</code></em></span>] <code class="literal">NORMALIZED</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Checks whether the string is in the specified Unicode normalization
+        form.  The optional <em class="parameter"><code>form</code></em> key word specifies the
+        form: <code class="literal">NFC</code> (the default), <code class="literal">NFD</code>,
+        <code class="literal">NFKC</code>, or <code class="literal">NFKD</code>.  This expression can
+        only be used when the server encoding is <code class="literal">UTF8</code>.  Note
+        that checking for normalization using this expression is often faster
+        than normalizing possibly already normalized strings.
+       </p>
+       <p>
+        <code class="literal">U&amp;'\0061\0308bc' IS NFD NORMALIZED</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">bit_length</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns number of bits in the string (8
+        times the <code class="function">octet_length</code>).
+       </p>
+       <p>
+        <code class="literal">bit_length('jose')</code>
+        → <code class="returnvalue">32</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.5.1.1.1" class="indexterm"></a>
+        <a id="id-1.5.8.10.5.2.2.5.1.1.2" class="indexterm"></a>
+        <a id="id-1.5.8.10.5.2.2.5.1.1.3" class="indexterm"></a>
+        <code class="function">char_length</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.5.1.2.1" class="indexterm"></a>
+        <code class="function">character_length</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns number of characters in the string.
+       </p>
+       <p>
+        <code class="literal">char_length('josé')</code>
+        → <code class="returnvalue">4</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.6.1.1.1" class="indexterm"></a>
+        <code class="function">lower</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the string to all lower case, according to the rules of the
+        database's locale.
+       </p>
+       <p>
+        <code class="literal">lower('TOM')</code>
+        → <code class="returnvalue">tom</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.7.1.1.1" class="indexterm"></a>
+        <a id="id-1.5.8.10.5.2.2.7.1.1.2" class="indexterm"></a>
+        <code class="function">normalize</code> ( <code class="type">text</code>
+        [<span class="optional">, <em class="parameter"><code>form</code></em> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the string to the specified Unicode
+        normalization form.  The optional <em class="parameter"><code>form</code></em> key word
+        specifies the form: <code class="literal">NFC</code> (the default),
+        <code class="literal">NFD</code>, <code class="literal">NFKC</code>, or
+        <code class="literal">NFKD</code>.  This function can only be used when the
+        server encoding is <code class="literal">UTF8</code>.
+       </p>
+       <p>
+        <code class="literal">normalize(U&amp;'\0061\0308bc', NFC)</code>
+        → <code class="returnvalue">U&amp;'\00E4bc'</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.8.1.1.1" class="indexterm"></a>
+        <code class="function">octet_length</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns number of bytes in the string.
+       </p>
+       <p>
+        <code class="literal">octet_length('josé')</code>
+        → <code class="returnvalue">5</code> (if server encoding is UTF8)
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.9.1.1.1" class="indexterm"></a>
+        <code class="function">octet_length</code> ( <code class="type">character</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns number of bytes in the string.  Since this version of the
+        function accepts type <code class="type">character</code> directly, it will not
+        strip trailing spaces.
+       </p>
+       <p>
+        <code class="literal">octet_length('abc '::character(4))</code>
+        → <code class="returnvalue">4</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.10.1.1.1" class="indexterm"></a>
+        <code class="function">overlay</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code> <code class="literal">PLACING</code> <em class="parameter"><code>newsubstring</code></em> <code class="type">text</code> <code class="literal">FROM</code> <em class="parameter"><code>start</code></em> <code class="type">integer</code> [<span class="optional"> <code class="literal">FOR</code> <em class="parameter"><code>count</code></em> <code class="type">integer</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Replaces the substring of <em class="parameter"><code>string</code></em> that starts at
+        the <em class="parameter"><code>start</code></em>'th character and extends
+        for <em class="parameter"><code>count</code></em> characters
+        with <em class="parameter"><code>newsubstring</code></em>.
+        If <em class="parameter"><code>count</code></em> is omitted, it defaults to the length
+        of <em class="parameter"><code>newsubstring</code></em>.
+       </p>
+       <p>
+        <code class="literal">overlay('Txxxxas' placing 'hom' from 2 for 4)</code>
+        → <code class="returnvalue">Thomas</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.11.1.1.1" class="indexterm"></a>
+        <code class="function">position</code> ( <em class="parameter"><code>substring</code></em> <code class="type">text</code> <code class="literal">IN</code> <em class="parameter"><code>string</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns first starting index of the specified
+        <em class="parameter"><code>substring</code></em> within
+        <em class="parameter"><code>string</code></em>, or zero if it's not present.
+       </p>
+       <p>
+        <code class="literal">position('om' in 'Thomas')</code>
+        → <code class="returnvalue">3</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.12.1.1.1" class="indexterm"></a>
+        <code class="function">substring</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code> [<span class="optional"> <code class="literal">FROM</code> <em class="parameter"><code>start</code></em> <code class="type">integer</code> </span>] [<span class="optional"> <code class="literal">FOR</code> <em class="parameter"><code>count</code></em> <code class="type">integer</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Extracts the substring of <em class="parameter"><code>string</code></em> starting at
+        the <em class="parameter"><code>start</code></em>'th character if that is specified,
+        and stopping after <em class="parameter"><code>count</code></em> characters if that is
+        specified.  Provide at least one of <em class="parameter"><code>start</code></em>
+        and <em class="parameter"><code>count</code></em>.
+       </p>
+       <p>
+        <code class="literal">substring('Thomas' from 2 for 3)</code>
+        → <code class="returnvalue">hom</code>
+       </p>
+       <p>
+        <code class="literal">substring('Thomas' from 3)</code>
+        → <code class="returnvalue">omas</code>
+       </p>
+       <p>
+        <code class="literal">substring('Thomas' for 2)</code>
+        → <code class="returnvalue">Th</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">substring</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code> <code class="literal">FROM</code> <em class="parameter"><code>pattern</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Extracts the first substring matching POSIX regular expression; see
+        <a class="xref" href="functions-matching.html#FUNCTIONS-POSIX-REGEXP" title="9.7.3. POSIX Regular Expressions">Section 9.7.3</a>.
+       </p>
+       <p>
+        <code class="literal">substring('Thomas' from '...$')</code>
+        → <code class="returnvalue">mas</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">substring</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code> <code class="literal">SIMILAR</code> <em class="parameter"><code>pattern</code></em> <code class="type">text</code> <code class="literal">ESCAPE</code> <em class="parameter"><code>escape</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p class="func_signature">
+        <code class="function">substring</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code> <code class="literal">FROM</code> <em class="parameter"><code>pattern</code></em> <code class="type">text</code> <code class="literal">FOR</code> <em class="parameter"><code>escape</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Extracts the first substring matching <acronym class="acronym">SQL</acronym> regular expression;
+        see <a class="xref" href="functions-matching.html#FUNCTIONS-SIMILARTO-REGEXP" title="9.7.2. SIMILAR TO Regular Expressions">Section 9.7.2</a>.  The first form has
+        been specified since SQL:2003; the second form was only in SQL:1999
+        and should be considered obsolete.
+       </p>
+       <p>
+        <code class="literal">substring('Thomas' similar '%#"o_a#"_' escape '#')</code>
+        → <code class="returnvalue">oma</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.15.1.1.1" class="indexterm"></a>
+        <code class="function">trim</code> ( [<span class="optional"> <code class="literal">LEADING</code> | <code class="literal">TRAILING</code> | <code class="literal">BOTH</code> </span>]
+        [<span class="optional"> <em class="parameter"><code>characters</code></em> <code class="type">text</code> </span>] <code class="literal">FROM</code>
+        <em class="parameter"><code>string</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Removes the longest string containing only characters in
+        <em class="parameter"><code>characters</code></em> (a space by default) from the
+        start, end, or both ends (<code class="literal">BOTH</code> is the default)
+        of <em class="parameter"><code>string</code></em>.
+       </p>
+       <p>
+        <code class="literal">trim(both 'xyz' from 'yxTomxx')</code>
+        → <code class="returnvalue">Tom</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">trim</code> ( [<span class="optional"> <code class="literal">LEADING</code> | <code class="literal">TRAILING</code> | <code class="literal">BOTH</code> </span>] [<span class="optional"> <code class="literal">FROM</code> </span>]
+        <em class="parameter"><code>string</code></em> <code class="type">text</code> [<span class="optional">,
+        <em class="parameter"><code>characters</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        This is a non-standard syntax for <code class="function">trim()</code>.
+       </p>
+       <p>
+        <code class="literal">trim(both from 'yxTomxx', 'xyz')</code>
+        → <code class="returnvalue">Tom</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.5.2.2.17.1.1.1" class="indexterm"></a>
+        <code class="function">upper</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the string to all upper case, according to the rules of the
+        database's locale.
+       </p>
+       <p>
+        <code class="literal">upper('tom')</code>
+        → <code class="returnvalue">TOM</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Additional string manipulation functions are available and are
+    listed in <a class="xref" href="functions-string.html#FUNCTIONS-STRING-OTHER" title="Table 9.10. Other String Functions">Table 9.10</a>.  Some of them are used internally to implement the
+    <acronym class="acronym">SQL</acronym>-standard string functions listed in <a class="xref" href="functions-string.html#FUNCTIONS-STRING-SQL" title="Table 9.9. SQL String Functions and Operators">Table 9.9</a>.
+   </p><div class="table" id="FUNCTIONS-STRING-OTHER"><p class="title"><strong>Table 9.10. Other String Functions</strong></p><div class="table-contents"><table class="table" summary="Other String Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">ascii</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the numeric code of the first character of the argument.
+        In <acronym class="acronym">UTF8</acronym> encoding, returns the Unicode code point
+        of the character.  In other multibyte encodings, the argument must
+        be an <acronym class="acronym">ASCII</acronym> character.
+       </p>
+       <p>
+        <code class="literal">ascii('x')</code>
+        → <code class="returnvalue">120</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">btrim</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>
+        [<span class="optional">, <em class="parameter"><code>characters</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Removes the longest string containing only characters
+        in <em class="parameter"><code>characters</code></em> (a space by default)
+        from the start and end of <em class="parameter"><code>string</code></em>.
+       </p>
+       <p>
+        <code class="literal">btrim('xyxtrimyyx', 'xyz')</code>
+        → <code class="returnvalue">trim</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">chr</code> ( <code class="type">integer</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Returns the character with the given code. In <acronym class="acronym">UTF8</acronym>
+        encoding the argument is treated as a Unicode code point. In other
+        multibyte encodings the argument must designate
+        an <acronym class="acronym">ASCII</acronym> character.  <code class="literal">chr(0)</code> is
+        disallowed because text data types cannot store that character.
+      </p>
+      <p>
+        <code class="literal">chr(65)</code>
+        → <code class="returnvalue">A</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">concat</code> ( <em class="parameter"><code>val1</code></em> <code class="type">"any"</code>
+         [, <em class="parameter"><code>val2</code></em> <code class="type">"any"</code> [, ...] ] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Concatenates the text representations of all the arguments.
+        NULL arguments are ignored.
+       </p>
+       <p>
+        <code class="literal">concat('abcde', 2, NULL, 22)</code>
+        → <code class="returnvalue">abcde222</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.5.1.1.1" class="indexterm"></a>
+        <code class="function">concat_ws</code> ( <em class="parameter"><code>sep</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>val1</code></em> <code class="type">"any"</code>
+        [, <em class="parameter"><code>val2</code></em> <code class="type">"any"</code> [, ...] ] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Concatenates all but the first argument, with separators. The first
+        argument is used as the separator string, and should not be NULL.
+        Other NULL arguments are ignored.
+       </p>
+       <p>
+        <code class="literal">concat_ws(',', 'abcde', 2, NULL, 22)</code>
+        → <code class="returnvalue">abcde,2,22</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.6.1.1.1" class="indexterm"></a>
+        <code class="function">format</code> ( <em class="parameter"><code>formatstr</code></em> <code class="type">text</code>
+        [, <em class="parameter"><code>formatarg</code></em> <code class="type">"any"</code> [, ...] ] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+         Formats arguments according to a format string;
+         see <a class="xref" href="functions-string.html#FUNCTIONS-STRING-FORMAT" title="9.4.1. format">Section 9.4.1</a>.
+         This function is similar to the C function <code class="function">sprintf</code>.
+       </p>
+       <p>
+        <code class="literal">format('Hello %s, %1$s', 'World')</code>
+        → <code class="returnvalue">Hello World, World</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.7.1.1.1" class="indexterm"></a>
+        <code class="function">initcap</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the first letter of each word to upper case and the
+        rest to lower case. Words are sequences of alphanumeric
+        characters separated by non-alphanumeric characters.
+       </p>
+       <p>
+        <code class="literal">initcap('hi THOMAS')</code>
+        → <code class="returnvalue">Hi Thomas</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.8.1.1.1" class="indexterm"></a>
+        <code class="function">left</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>n</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Returns first <em class="parameter"><code>n</code></em> characters in the
+        string, or when <em class="parameter"><code>n</code></em> is negative, returns
+        all but last |<em class="parameter"><code>n</code></em>| characters.
+       </p>
+       <p>
+        <code class="literal">left('abcde', 2)</code>
+        → <code class="returnvalue">ab</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.9.1.1.1" class="indexterm"></a>
+        <code class="function">length</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the number of characters in the string.
+       </p>
+       <p>
+        <code class="literal">length('jose')</code>
+        → <code class="returnvalue">4</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.10.1.1.1" class="indexterm"></a>
+        <code class="function">lpad</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>length</code></em> <code class="type">integer</code>
+        [<span class="optional">, <em class="parameter"><code>fill</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Extends the <em class="parameter"><code>string</code></em> to length
+        <em class="parameter"><code>length</code></em> by prepending the characters
+        <em class="parameter"><code>fill</code></em> (a space by default).  If the
+        <em class="parameter"><code>string</code></em> is already longer than
+        <em class="parameter"><code>length</code></em> then it is truncated (on the right).
+       </p>
+       <p>
+        <code class="literal">lpad('hi', 5, 'xy')</code>
+        → <code class="returnvalue">xyxhi</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.11.1.1.1" class="indexterm"></a>
+        <code class="function">ltrim</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>
+        [<span class="optional">, <em class="parameter"><code>characters</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Removes the longest string containing only characters in
+        <em class="parameter"><code>characters</code></em> (a space by default) from the start of
+        <em class="parameter"><code>string</code></em>.
+       </p>
+       <p>
+        <code class="literal">ltrim('zzzytest', 'xyz')</code>
+        → <code class="returnvalue">test</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.12.1.1.1" class="indexterm"></a>
+        <code class="function">md5</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Computes the MD5 <a class="link" href="functions-binarystring.html#FUNCTIONS-HASH-NOTE">hash</a> of
+        the argument, with the result written in hexadecimal.
+       </p>
+       <p>
+        <code class="literal">md5('abc')</code>
+        → <code class="returnvalue">900150983cd24fb0​d6963f7d28e17f72</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.13.1.1.1" class="indexterm"></a>
+        <code class="function">parse_ident</code> ( <em class="parameter"><code>qualified_identifier</code></em> <code class="type">text</code>
+        [, <em class="parameter"><code>strict_mode</code></em> <code class="type">boolean</code> <code class="literal">DEFAULT</code> <code class="literal">true</code> ] )
+        → <code class="returnvalue">text[]</code>
+       </p>
+       <p>
+        Splits <em class="parameter"><code>qualified_identifier</code></em> into an array of
+        identifiers, removing any quoting of individual identifiers.  By
+        default, extra characters after the last identifier are considered an
+        error; but if the second parameter is <code class="literal">false</code>, then such
+        extra characters are ignored. (This behavior is useful for parsing
+        names for objects like functions.) Note that this function does not
+        truncate over-length identifiers. If you want truncation you can cast
+        the result to <code class="type">name[]</code>.
+       </p>
+       <p>
+        <code class="literal">parse_ident('"SomeSchema".someTable')</code>
+        → <code class="returnvalue">{SomeSchema,sometable}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.14.1.1.1" class="indexterm"></a>
+        <code class="function">pg_client_encoding</code> ( )
+        → <code class="returnvalue">name</code>
+       </p>
+       <p>
+        Returns current client encoding name.
+       </p>
+       <p>
+        <code class="literal">pg_client_encoding()</code>
+        → <code class="returnvalue">UTF8</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.15.1.1.1" class="indexterm"></a>
+        <code class="function">quote_ident</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Returns the given string suitably quoted to be used as an identifier
+        in an <acronym class="acronym">SQL</acronym> statement string.
+        Quotes are added only if necessary (i.e., if the string contains
+        non-identifier characters or would be case-folded).
+        Embedded quotes are properly doubled.
+        See also <a class="xref" href="plpgsql-statements.html#PLPGSQL-QUOTE-LITERAL-EXAMPLE" title="Example 43.1. Quoting Values in Dynamic Queries">Example 43.1</a>.
+       </p>
+       <p>
+        <code class="literal">quote_ident('Foo bar')</code>
+        → <code class="returnvalue">"Foo bar"</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.16.1.1.1" class="indexterm"></a>
+        <code class="function">quote_literal</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Returns the given string suitably quoted to be used as a string literal
+        in an <acronym class="acronym">SQL</acronym> statement string.
+        Embedded single-quotes and backslashes are properly doubled.
+        Note that <code class="function">quote_literal</code> returns null on null
+        input; if the argument might be null,
+        <code class="function">quote_nullable</code> is often more suitable.
+        See also <a class="xref" href="plpgsql-statements.html#PLPGSQL-QUOTE-LITERAL-EXAMPLE" title="Example 43.1. Quoting Values in Dynamic Queries">Example 43.1</a>.
+       </p>
+       <p>
+        <code class="literal">quote_literal(E'O\'Reilly')</code>
+        → <code class="returnvalue">'O''Reilly'</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">quote_literal</code> ( <code class="type">anyelement</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the given value to text and then quotes it as a literal.
+        Embedded single-quotes and backslashes are properly doubled.
+       </p>
+       <p>
+        <code class="literal">quote_literal(42.5)</code>
+        → <code class="returnvalue">'42.5'</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.18.1.1.1" class="indexterm"></a>
+        <code class="function">quote_nullable</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Returns the given string suitably quoted to be used as a string literal
+        in an <acronym class="acronym">SQL</acronym> statement string; or, if the argument
+        is null, returns <code class="literal">NULL</code>.
+        Embedded single-quotes and backslashes are properly doubled.
+        See also <a class="xref" href="plpgsql-statements.html#PLPGSQL-QUOTE-LITERAL-EXAMPLE" title="Example 43.1. Quoting Values in Dynamic Queries">Example 43.1</a>.
+       </p>
+       <p>
+        <code class="literal">quote_nullable(NULL)</code>
+        → <code class="returnvalue">NULL</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">quote_nullable</code> ( <code class="type">anyelement</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the given value to text and then quotes it as a literal;
+        or, if the argument is null, returns <code class="literal">NULL</code>.
+        Embedded single-quotes and backslashes are properly doubled.
+       </p>
+       <p>
+        <code class="literal">quote_nullable(42.5)</code>
+        → <code class="returnvalue">'42.5'</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.20.1.1.1" class="indexterm"></a>
+        <code class="function">regexp_match</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>pattern</code></em> <code class="type">text</code> [, <em class="parameter"><code>flags</code></em> <code class="type">text</code> ] )
+        → <code class="returnvalue">text[]</code>
+       </p>
+       <p>
+        Returns captured substrings resulting from the first match of a POSIX
+        regular expression to the <em class="parameter"><code>string</code></em>; see
+        <a class="xref" href="functions-matching.html#FUNCTIONS-POSIX-REGEXP" title="9.7.3. POSIX Regular Expressions">Section 9.7.3</a>.
+       </p>
+       <p>
+        <code class="literal">regexp_match('foobarbequebaz', '(bar)(beque)')</code>
+        → <code class="returnvalue">{bar,beque}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.21.1.1.1" class="indexterm"></a>
+        <code class="function">regexp_matches</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>pattern</code></em> <code class="type">text</code> [, <em class="parameter"><code>flags</code></em> <code class="type">text</code> ] )
+        → <code class="returnvalue">setof text[]</code>
+       </p>
+       <p>
+        Returns captured substrings resulting from the first match of a
+        POSIX regular expression to the <em class="parameter"><code>string</code></em>,
+        or multiple matches if the <code class="literal">g</code> flag is used;
+        see <a class="xref" href="functions-matching.html#FUNCTIONS-POSIX-REGEXP" title="9.7.3. POSIX Regular Expressions">Section 9.7.3</a>.
+       </p>
+       <p>
+        <code class="literal">regexp_matches('foobarbequebaz', 'ba.', 'g')</code>
+        → <code class="returnvalue"></code>
+</p><pre class="programlisting">
+ {bar}
+ {baz}
+</pre><p>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.22.1.1.1" class="indexterm"></a>
+        <code class="function">regexp_replace</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>pattern</code></em> <code class="type">text</code>, <em class="parameter"><code>replacement</code></em> <code class="type">text</code> [, <em class="parameter"><code>flags</code></em> <code class="type">text</code> ] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Replaces substrings resulting from the first match of a
+        POSIX regular expression, or multiple substring matches
+        if the <code class="literal">g</code> flag is used; see <a class="xref" href="functions-matching.html#FUNCTIONS-POSIX-REGEXP" title="9.7.3. POSIX Regular Expressions">Section 9.7.3</a>.
+       </p>
+       <p>
+        <code class="literal">regexp_replace('Thomas', '.[mN]a.', 'M')</code>
+        → <code class="returnvalue">ThM</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.23.1.1.1" class="indexterm"></a>
+        <code class="function">regexp_split_to_array</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>pattern</code></em> <code class="type">text</code> [, <em class="parameter"><code>flags</code></em> <code class="type">text</code> ] )
+        → <code class="returnvalue">text[]</code>
+       </p>
+       <p>
+        Splits <em class="parameter"><code>string</code></em> using a POSIX regular
+        expression as the delimiter, producing an array of results; see
+        <a class="xref" href="functions-matching.html#FUNCTIONS-POSIX-REGEXP" title="9.7.3. POSIX Regular Expressions">Section 9.7.3</a>.
+       </p>
+       <p>
+        <code class="literal">regexp_split_to_array('hello world', '\s+')</code>
+        → <code class="returnvalue">{hello,world}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.24.1.1.1" class="indexterm"></a>
+        <code class="function">regexp_split_to_table</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>pattern</code></em> <code class="type">text</code> [, <em class="parameter"><code>flags</code></em> <code class="type">text</code> ] )
+        → <code class="returnvalue">setof text</code>
+       </p>
+       <p>
+        Splits <em class="parameter"><code>string</code></em> using a POSIX regular
+        expression as the delimiter, producing a set of results; see
+        <a class="xref" href="functions-matching.html#FUNCTIONS-POSIX-REGEXP" title="9.7.3. POSIX Regular Expressions">Section 9.7.3</a>.
+       </p>
+       <p>
+        <code class="literal">regexp_split_to_table('hello world', '\s+')</code>
+        → <code class="returnvalue"></code>
+</p><pre class="programlisting">
+ hello
+ world
+</pre><p>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.25.1.1.1" class="indexterm"></a>
+        <code class="function">repeat</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>number</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Repeats <em class="parameter"><code>string</code></em> the specified
+        <em class="parameter"><code>number</code></em> of times.
+       </p>
+       <p>
+        <code class="literal">repeat('Pg', 4)</code>
+        → <code class="returnvalue">PgPgPgPg</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.26.1.1.1" class="indexterm"></a>
+        <code class="function">replace</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>from</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>to</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Replaces all occurrences in <em class="parameter"><code>string</code></em> of
+        substring <em class="parameter"><code>from</code></em> with
+        substring <em class="parameter"><code>to</code></em>.
+       </p>
+       <p>
+        <code class="literal">replace('abcdefabcdef', 'cd', 'XX')</code>
+        → <code class="returnvalue">abXXefabXXef</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.27.1.1.1" class="indexterm"></a>
+        <code class="function">reverse</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Reverses the order of the characters in the string.
+       </p>
+       <p>
+        <code class="literal">reverse('abcde')</code>
+        → <code class="returnvalue">edcba</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.28.1.1.1" class="indexterm"></a>
+        <code class="function">right</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+         <em class="parameter"><code>n</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Returns last <em class="parameter"><code>n</code></em> characters in the string,
+        or when <em class="parameter"><code>n</code></em> is negative, returns all but
+        first |<em class="parameter"><code>n</code></em>| characters.
+       </p>
+       <p>
+        <code class="literal">right('abcde', 2)</code>
+        → <code class="returnvalue">de</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.29.1.1.1" class="indexterm"></a>
+        <code class="function">rpad</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>length</code></em> <code class="type">integer</code>
+        [<span class="optional">, <em class="parameter"><code>fill</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Extends the <em class="parameter"><code>string</code></em> to length
+        <em class="parameter"><code>length</code></em> by appending the characters
+        <em class="parameter"><code>fill</code></em> (a space by default).  If the
+        <em class="parameter"><code>string</code></em> is already longer than
+        <em class="parameter"><code>length</code></em> then it is truncated.
+       </p>
+       <p>
+        <code class="literal">rpad('hi', 5, 'xy')</code>
+        → <code class="returnvalue">hixyx</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.30.1.1.1" class="indexterm"></a>
+        <code class="function">rtrim</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>
+         [<span class="optional">, <em class="parameter"><code>characters</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Removes the longest string containing only characters in
+        <em class="parameter"><code>characters</code></em> (a space by default) from the end of
+        <em class="parameter"><code>string</code></em>.
+       </p>
+       <p>
+        <code class="literal">rtrim('testxxzx', 'xyz')</code>
+        → <code class="returnvalue">test</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.31.1.1.1" class="indexterm"></a>
+        <code class="function">split_part</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>delimiter</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>n</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Splits <em class="parameter"><code>string</code></em> at occurrences
+        of <em class="parameter"><code>delimiter</code></em> and returns
+        the <em class="parameter"><code>n</code></em>'th field (counting from one),
+        or when <em class="parameter"><code>n</code></em> is negative, returns
+        the |<em class="parameter"><code>n</code></em>|'th-from-last field.
+       </p>
+       <p>
+        <code class="literal">split_part('abc~@~def~@~ghi', '~@~', 2)</code>
+        → <code class="returnvalue">def</code>
+       </p>
+       <p>
+        <code class="literal">split_part('abc,def,ghi,jkl', ',', -2)</code>
+        → <code class="returnvalue">ghi</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.32.1.1.1" class="indexterm"></a>
+        <code class="function">strpos</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>substring</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns first starting index of the specified <em class="parameter"><code>substring</code></em>
+        within <em class="parameter"><code>string</code></em>, or zero if it's not present.
+        (Same as <code class="literal">position(<em class="parameter"><code>substring</code></em> in
+        <em class="parameter"><code>string</code></em>)</code>, but note the reversed
+        argument order.)
+       </p>
+       <p>
+        <code class="literal">strpos('high', 'ig')</code>
+        → <code class="returnvalue">2</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.33.1.1.1" class="indexterm"></a>
+        <code class="function">substr</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>start</code></em> <code class="type">integer</code> [<span class="optional">, <em class="parameter"><code>count</code></em> <code class="type">integer</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Extracts the substring of <em class="parameter"><code>string</code></em> starting at
+        the <em class="parameter"><code>start</code></em>'th character,
+        and extending for <em class="parameter"><code>count</code></em> characters if that is
+        specified.  (Same
+        as <code class="literal">substring(<em class="parameter"><code>string</code></em>
+        from <em class="parameter"><code>start</code></em>
+        for <em class="parameter"><code>count</code></em>)</code>.)
+       </p>
+       <p>
+        <code class="literal">substr('alphabet', 3)</code>
+        → <code class="returnvalue">phabet</code>
+       </p>
+       <p>
+        <code class="literal">substr('alphabet', 3, 2)</code>
+        → <code class="returnvalue">ph</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.34.1.1.1" class="indexterm"></a>
+        <code class="function">starts_with</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>prefix</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Returns true if <em class="parameter"><code>string</code></em> starts
+        with <em class="parameter"><code>prefix</code></em>.
+       </p>
+       <p>
+        <code class="literal">starts_with('alphabet', 'alph')</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.35.1.1.1" class="indexterm"></a>
+        <code class="function">string_to_array</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>delimiter</code></em> <code class="type">text</code> [<span class="optional">, <em class="parameter"><code>null_string</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text[]</code>
+       </p>
+       <p>
+        Splits the <em class="parameter"><code>string</code></em> at occurrences
+        of <em class="parameter"><code>delimiter</code></em> and forms the resulting fields
+        into a <code class="type">text</code> array.
+        If <em class="parameter"><code>delimiter</code></em> is <code class="literal">NULL</code>,
+        each character in the <em class="parameter"><code>string</code></em> will become a
+        separate element in the array.
+        If <em class="parameter"><code>delimiter</code></em> is an empty string, then
+        the <em class="parameter"><code>string</code></em> is treated as a single field.
+        If <em class="parameter"><code>null_string</code></em> is supplied and is
+        not <code class="literal">NULL</code>, fields matching that string are
+        replaced by <code class="literal">NULL</code>.
+       </p>
+       <p>
+        <code class="literal">string_to_array('xx~~yy~~zz', '~~', 'yy')</code>
+        → <code class="returnvalue">{xx,NULL,zz}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.36.1.1.1" class="indexterm"></a>
+        <code class="function">string_to_table</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>, <em class="parameter"><code>delimiter</code></em> <code class="type">text</code> [<span class="optional">, <em class="parameter"><code>null_string</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">setof text</code>
+       </p>
+       <p>
+        Splits the <em class="parameter"><code>string</code></em> at occurrences
+        of <em class="parameter"><code>delimiter</code></em> and returns the resulting fields
+        as a set of <code class="type">text</code> rows.
+        If <em class="parameter"><code>delimiter</code></em> is <code class="literal">NULL</code>,
+        each character in the <em class="parameter"><code>string</code></em> will become a
+        separate row of the result.
+        If <em class="parameter"><code>delimiter</code></em> is an empty string, then
+        the <em class="parameter"><code>string</code></em> is treated as a single field.
+        If <em class="parameter"><code>null_string</code></em> is supplied and is
+        not <code class="literal">NULL</code>, fields matching that string are
+        replaced by <code class="literal">NULL</code>.
+       </p>
+       <p>
+        <code class="literal">string_to_table('xx~^~yy~^~zz', '~^~', 'yy')</code>
+        → <code class="returnvalue"></code>
+</p><pre class="programlisting">
+ xx
+ NULL
+ zz
+</pre><p>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.37.1.1.1" class="indexterm"></a>
+        <code class="function">to_ascii</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p class="func_signature">
+        <code class="function">to_ascii</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>encoding</code></em> <code class="type">name</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p class="func_signature">
+        <code class="function">to_ascii</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>encoding</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts <em class="parameter"><code>string</code></em> to <acronym class="acronym">ASCII</acronym>
+        from another encoding, which may be identified by name or number.
+        If <em class="parameter"><code>encoding</code></em> is omitted the database encoding
+        is assumed (which in practice is the only useful case).
+        The conversion consists primarily of dropping accents.
+        Conversion is only supported
+        from <code class="literal">LATIN1</code>, <code class="literal">LATIN2</code>,
+        <code class="literal">LATIN9</code>, and <code class="literal">WIN1250</code> encodings.
+        (See the <a class="xref" href="unaccent.html" title="F.45. unaccent">unaccent</a> module for another, more flexible
+        solution.)
+       </p>
+       <p>
+        <code class="literal">to_ascii('Karél')</code>
+        → <code class="returnvalue">Karel</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.38.1.1.1" class="indexterm"></a>
+        <code class="function">to_hex</code> ( <code class="type">integer</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p class="func_signature">
+        <code class="function">to_hex</code> ( <code class="type">bigint</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts the number to its equivalent hexadecimal representation.
+       </p>
+       <p>
+        <code class="literal">to_hex(2147483647)</code>
+        → <code class="returnvalue">7fffffff</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.39.1.1.1" class="indexterm"></a>
+        <code class="function">translate</code> ( <em class="parameter"><code>string</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>from</code></em> <code class="type">text</code>,
+        <em class="parameter"><code>to</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Replaces each character in <em class="parameter"><code>string</code></em> that
+        matches a character in the <em class="parameter"><code>from</code></em> set with the
+        corresponding character in the <em class="parameter"><code>to</code></em>
+        set. If <em class="parameter"><code>from</code></em> is longer than
+        <em class="parameter"><code>to</code></em>, occurrences of the extra characters in
+        <em class="parameter"><code>from</code></em> are deleted.
+       </p>
+       <p>
+        <code class="literal">translate('12345', '143', 'ax')</code>
+        → <code class="returnvalue">a2x5</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.10.7.2.2.40.1.1.1" class="indexterm"></a>
+        <code class="function">unistr</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Evaluate escaped Unicode characters in the argument.  Unicode characters
+        can be specified as
+        <code class="literal">\<em class="replaceable"><code>XXXX</code></em></code> (4 hexadecimal
+        digits), <code class="literal">\+<em class="replaceable"><code>XXXXXX</code></em></code> (6
+        hexadecimal digits),
+        <code class="literal">\u<em class="replaceable"><code>XXXX</code></em></code> (4 hexadecimal
+        digits), or <code class="literal">\U<em class="replaceable"><code>XXXXXXXX</code></em></code>
+        (8 hexadecimal digits).  To specify a backslash, write two
+        backslashes.  All other characters are taken literally.
+       </p>
+
+       <p>
+        If the server encoding is not UTF-8, the Unicode code point identified
+        by one of these escape sequences is converted to the actual server
+        encoding; an error is reported if that's not possible.
+       </p>
+
+       <p>
+        This function provides a (non-standard) alternative to string
+        constants with Unicode escapes (see <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-UESCAPE" title="4.1.2.3. String Constants with Unicode Escapes">Section 4.1.2.3</a>).
+       </p>
+
+       <p>
+        <code class="literal">unistr('d\0061t\+000061')</code>
+        → <code class="returnvalue">data</code>
+       </p>
+       <p>
+        <code class="literal">unistr('d\u0061t\U00000061')</code>
+        → <code class="returnvalue">data</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+    The <code class="function">concat</code>, <code class="function">concat_ws</code> and
+    <code class="function">format</code> functions are variadic, so it is possible to
+    pass the values to be concatenated or formatted as an array marked with
+    the <code class="literal">VARIADIC</code> keyword (see <a class="xref" href="xfunc-sql.html#XFUNC-SQL-VARIADIC-FUNCTIONS" title="38.5.6. SQL Functions with Variable Numbers of Arguments">Section 38.5.6</a>).  The array's elements are
+    treated as if they were separate ordinary arguments to the function.
+    If the variadic array argument is NULL, <code class="function">concat</code>
+    and <code class="function">concat_ws</code> return NULL, but
+    <code class="function">format</code> treats a NULL as a zero-element array.
+   </p><p>
+    See also the aggregate function <code class="function">string_agg</code> in
+    <a class="xref" href="functions-aggregate.html" title="9.21. Aggregate Functions">Section 9.21</a>, and the functions for
+    converting between strings and the <code class="type">bytea</code> type in
+    <a class="xref" href="functions-binarystring.html#FUNCTIONS-BINARYSTRING-CONVERSIONS" title="Table 9.13. Text/Binary String Conversion Functions">Table 9.13</a>.
+   </p><div class="sect2" id="FUNCTIONS-STRING-FORMAT"><div class="titlepage"><div><div><h3 class="title">9.4.1. <code class="function">format</code></h3></div></div></div><a id="id-1.5.8.10.10.2" class="indexterm"></a><p>
+     The function <code class="function">format</code> produces output formatted according to
+     a format string, in a style similar to the C function
+     <code class="function">sprintf</code>.
+    </p><p>
+</p><pre class="synopsis">
+<code class="function">format</code>(<em class="parameter"><code>formatstr</code></em> <code class="type">text</code> [, <em class="parameter"><code>formatarg</code></em> <code class="type">"any"</code> [, ...] ])
+</pre><p>
+     <em class="parameter"><code>formatstr</code></em> is a format string that specifies how the
+     result should be formatted.  Text in the format string is copied
+     directly to the result, except where <em class="firstterm">format specifiers</em> are
+     used.  Format specifiers act as placeholders in the string, defining how
+     subsequent function arguments should be formatted and inserted into the
+     result.  Each <em class="parameter"><code>formatarg</code></em> argument is converted to text
+     according to the usual output rules for its data type, and then formatted
+     and inserted into the result string according to the format specifier(s).
+    </p><p>
+     Format specifiers are introduced by a <code class="literal">%</code> character and have
+     the form
+</p><pre class="synopsis">
+%[<em class="parameter"><code>position</code></em>][<em class="parameter"><code>flags</code></em>][<em class="parameter"><code>width</code></em>]<em class="parameter"><code>type</code></em>
+</pre><p>
+     where the component fields are:
+
+     </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="parameter"><code>position</code></em> (optional)</span></dt><dd><p>
+         A string of the form <code class="literal"><em class="parameter"><code>n</code></em>$</code> where
+         <em class="parameter"><code>n</code></em> is the index of the argument to print.
+         Index 1 means the first argument after
+         <em class="parameter"><code>formatstr</code></em>.  If the <em class="parameter"><code>position</code></em> is
+         omitted, the default is to use the next argument in sequence.
+        </p></dd><dt><span class="term"><em class="parameter"><code>flags</code></em> (optional)</span></dt><dd><p>
+         Additional options controlling how the format specifier's output is
+         formatted.  Currently the only supported flag is a minus sign
+         (<code class="literal">-</code>) which will cause the format specifier's output to be
+         left-justified.  This has no effect unless the <em class="parameter"><code>width</code></em>
+         field is also specified.
+        </p></dd><dt><span class="term"><em class="parameter"><code>width</code></em> (optional)</span></dt><dd><p>
+         Specifies the <span class="emphasis"><em>minimum</em></span> number of characters to use to
+         display the format specifier's output.  The output is padded on the
+         left or right (depending on the <code class="literal">-</code> flag) with spaces as
+         needed to fill the width.  A too-small width does not cause
+         truncation of the output, but is simply ignored.  The width may be
+         specified using any of the following: a positive integer; an
+         asterisk (<code class="literal">*</code>) to use the next function argument as the
+         width; or a string of the form <code class="literal">*<em class="parameter"><code>n</code></em>$</code> to
+         use the <em class="parameter"><code>n</code></em>th function argument as the width.
+        </p><p>
+         If the width comes from a function argument, that argument is
+         consumed before the argument that is used for the format specifier's
+         value.  If the width argument is negative, the result is left
+         aligned (as if the <code class="literal">-</code> flag had been specified) within a
+         field of length <code class="function">abs</code>(<em class="parameter"><code>width</code></em>).
+        </p></dd><dt><span class="term"><em class="parameter"><code>type</code></em> (required)</span></dt><dd><p>
+         The type of format conversion to use to produce the format
+         specifier's output.  The following types are supported:
+         </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+            <code class="literal">s</code> formats the argument value as a simple
+            string.  A null value is treated as an empty string.
+           </p></li><li class="listitem"><p>
+            <code class="literal">I</code> treats the argument value as an SQL
+            identifier, double-quoting it if necessary.
+            It is an error for the value to be null (equivalent to
+            <code class="function">quote_ident</code>).
+           </p></li><li class="listitem"><p>
+            <code class="literal">L</code> quotes the argument value as an SQL literal.
+            A null value is displayed as the string <code class="literal">NULL</code>, without
+            quotes (equivalent to <code class="function">quote_nullable</code>).
+           </p></li></ul></div><p>
+        </p></dd></dl></div><p>
+    </p><p>
+     In addition to the format specifiers described above, the special sequence
+     <code class="literal">%%</code> may be used to output a literal <code class="literal">%</code> character.
+    </p><p>
+     Here are some examples of the basic format conversions:
+
+</p><pre class="screen">
+SELECT format('Hello %s', 'World');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">Hello World</code>
+
+SELECT format('Testing %s, %s, %s, %%', 'one', 'two', 'three');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">Testing one, two, three, %</code>
+
+SELECT format('INSERT INTO %I VALUES(%L)', 'Foo bar', E'O\'Reilly');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">INSERT INTO "Foo bar" VALUES('O''Reilly')</code>
+
+SELECT format('INSERT INTO %I VALUES(%L)', 'locations', 'C:\Program Files');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">INSERT INTO locations VALUES('C:\Program Files')</code>
+</pre><p>
+    </p><p>
+     Here are examples using <em class="parameter"><code>width</code></em> fields
+     and the <code class="literal">-</code> flag:
+
+</p><pre class="screen">
+SELECT format('|%10s|', 'foo');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|       foo|</code>
+
+SELECT format('|%-10s|', 'foo');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|foo       |</code>
+
+SELECT format('|%*s|', 10, 'foo');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|       foo|</code>
+
+SELECT format('|%*s|', -10, 'foo');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|foo       |</code>
+
+SELECT format('|%-*s|', 10, 'foo');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|foo       |</code>
+
+SELECT format('|%-*s|', -10, 'foo');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|foo       |</code>
+</pre><p>
+    </p><p>
+     These examples show use of <em class="parameter"><code>position</code></em> fields:
+
+</p><pre class="screen">
+SELECT format('Testing %3$s, %2$s, %1$s', 'one', 'two', 'three');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">Testing three, two, one</code>
+
+SELECT format('|%*2$s|', 'foo', 10, 'bar');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|       bar|</code>
+
+SELECT format('|%1$*2$s|', 'foo', 10, 'bar');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">|       foo|</code>
+</pre><p>
+    </p><p>
+     Unlike the standard C function <code class="function">sprintf</code>,
+     <span class="productname">PostgreSQL</span>'s <code class="function">format</code> function allows format
+     specifiers with and without <em class="parameter"><code>position</code></em> fields to be mixed
+     in the same format string.  A format specifier without a
+     <em class="parameter"><code>position</code></em> field always uses the next argument after the
+     last argument consumed.
+     In addition, the <code class="function">format</code> function does not require all
+     function arguments to be used in the format string.
+     For example:
+
+</p><pre class="screen">
+SELECT format('Testing %3$s, %2$s, %s', 'one', 'two', 'three');
+<em class="lineannotation"><span class="lineannotation">Result: </span></em><code class="computeroutput">Testing three, two, three</code>
+</pre><p>
+    </p><p>
+     The <code class="literal">%I</code> and <code class="literal">%L</code> format specifiers are particularly
+     useful for safely constructing dynamic SQL statements.  See
+     <a class="xref" href="plpgsql-statements.html#PLPGSQL-QUOTE-LITERAL-EXAMPLE" title="Example 43.1. Quoting Values in Dynamic Queries">Example 43.1</a>.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-math.html" title="9.3. Mathematical Functions and Operators">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-binarystring.html" title="9.5. Binary String Functions and Operators">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.3. Mathematical Functions and Operators </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.5. Binary String Functions and Operators</td></tr></table></div></body></html>

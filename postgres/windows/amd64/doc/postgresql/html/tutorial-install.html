@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>1.1. Installation</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="tutorial-start.html" title="Chapter 1. Getting Started" /><link rel="next" href="tutorial-arch.html" title="1.2. Architectural Fundamentals" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">1.1. Installation</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="tutorial-start.html" title="Chapter 1. Getting Started">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="tutorial-start.html" title="Chapter 1. Getting Started">Up</a></td><th width="60%" align="center">Chapter 1. Getting Started</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="tutorial-arch.html" title="1.2. Architectural Fundamentals">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TUTORIAL-INSTALL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">1.1. Installation</h2></div></div></div><p>
+    Before you can use <span class="productname">PostgreSQL</span> you need
+    to install it, of course.  It is possible that
+    <span class="productname">PostgreSQL</span> is already installed at your
+    site, either because it was included in your operating system
+    distribution or because the system administrator already installed
+    it.  If that is the case, you should obtain information from the
+    operating system documentation or your system administrator about
+    how to access <span class="productname">PostgreSQL</span>.
+   </p><p>
+    If you are not sure whether <span class="productname">PostgreSQL</span>
+    is already available or whether you can use it for your
+    experimentation then you can install it yourself.  Doing so is not
+    hard and it can be a good exercise.
+    <span class="productname">PostgreSQL</span> can be installed by any
+    unprivileged user; no superuser (<span class="systemitem">root</span>)
+    access is required.
+   </p><p>
+    If you are installing <span class="productname">PostgreSQL</span>
+    yourself, then refer to <a class="xref" href="installation.html" title="Chapter 17. Installation from Source Code">Chapter 17</a>
+    for instructions on installation, and return to
+    this guide when the installation is complete.  Be sure to follow
+    closely the section about setting up the appropriate environment
+    variables.
+   </p><p>
+    If your site administrator has not set things up in the default
+    way, you might have some more work to do.  For example, if the
+    database server machine is a remote machine, you will need to set
+    the <code class="envar">PGHOST</code> environment variable to the name of the
+    database server machine.  The environment variable
+    <code class="envar">PGPORT</code> might also have to be set.  The bottom line is
+    this: if you try to start an application program and it complains
+    that it cannot connect to the database, you should consult your
+    site administrator or, if that is you, the documentation to make
+    sure that your environment is properly set up.  If you did not
+    understand the preceding paragraph then read the next section.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tutorial-start.html" title="Chapter 1. Getting Started">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="tutorial-start.html" title="Chapter 1. Getting Started">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="tutorial-arch.html" title="1.2. Architectural Fundamentals">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 1. Getting Started </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 1.2. Architectural Fundamentals</td></tr></table></div></body></html>

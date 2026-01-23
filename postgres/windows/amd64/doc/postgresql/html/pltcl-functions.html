@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>44.2. PL/Tcl Functions and Arguments</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="pltcl-overview.html" title="44.1. Overview" /><link rel="next" href="pltcl-data.html" title="44.3. Data Values in PL/Tcl" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">44.2. PL/Tcl Functions and Arguments</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="pltcl-overview.html" title="44.1. Overview">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="pltcl.html" title="Chapter 44. PL/Tcl — Tcl Procedural Language">Up</a></td><th width="60%" align="center">Chapter 44. PL/Tcl — Tcl Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="pltcl-data.html" title="44.3. Data Values in PL/Tcl">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLTCL-FUNCTIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">44.2. PL/Tcl Functions and Arguments</h2></div></div></div><p>
+     To create a function in the <span class="application">PL/Tcl</span> language, use
+     the standard <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> syntax:
+
+</p><pre class="programlisting">
+CREATE FUNCTION <em class="replaceable"><code>funcname</code></em> (<em class="replaceable"><code>argument-types</code></em>) RETURNS <em class="replaceable"><code>return-type</code></em> AS $$
+    # PL/Tcl function body
+$$ LANGUAGE pltcl;
+</pre><p>
+
+     <span class="application">PL/TclU</span> is the same, except that the language has to be specified as
+     <code class="literal">pltclu</code>.
+    </p><p>
+     The body of the function is simply a piece of Tcl script.
+     When the function is called, the argument values are passed to the
+     Tcl script as variables named <code class="literal">1</code>
+     ... <code class="literal"><em class="replaceable"><code>n</code></em></code>.  The result is
+     returned from the Tcl code in the usual way, with
+     a <code class="literal">return</code> statement.  In a procedure, the return value
+     from the Tcl code is ignored.
+    </p><p>
+     For example, a function
+     returning the greater of two integer values could be defined as:
+
+</p><pre class="programlisting">
+CREATE FUNCTION tcl_max(integer, integer) RETURNS integer AS $$
+    if {$1 &gt; $2} {return $1}
+    return $2
+$$ LANGUAGE pltcl STRICT;
+</pre><p>
+
+     Note the clause <code class="literal">STRICT</code>, which saves us from
+     having to think about null input values: if a null value is passed, the
+     function will not be called at all, but will just return a null
+     result automatically.
+    </p><p>
+     In a nonstrict function,
+     if the actual value of an argument is null, the corresponding
+     <code class="literal">$<em class="replaceable"><code>n</code></em></code> variable will be set to an empty string.
+     To detect whether a particular argument is null, use the function
+     <code class="literal">argisnull</code>.  For example, suppose that we wanted <code class="function">tcl_max</code>
+     with one null and one nonnull argument to return the nonnull
+     argument, rather than null:
+
+</p><pre class="programlisting">
+CREATE FUNCTION tcl_max(integer, integer) RETURNS integer AS $$
+    if {[argisnull 1]} {
+        if {[argisnull 2]} { return_null }
+        return $2
+    }
+    if {[argisnull 2]} { return $1 }
+    if {$1 &gt; $2} {return $1}
+    return $2
+$$ LANGUAGE pltcl;
+</pre><p>
+    </p><p>
+     As shown above,
+     to return a null value from a PL/Tcl function, execute
+     <code class="literal">return_null</code>.  This can be done whether the
+     function is strict or not.
+    </p><p>
+     Composite-type arguments are passed to the function as Tcl
+     arrays.  The element names of the array are the attribute names
+     of the composite type. If an attribute in the passed row has the
+     null value, it will not appear in the array. Here is an example:
+
+</p><pre class="programlisting">
+CREATE TABLE employee (
+    name text,
+    salary integer,
+    age integer
+);
+
+CREATE FUNCTION overpaid(employee) RETURNS boolean AS $$
+    if {200000.0 &lt; $1(salary)} {
+        return "t"
+    }
+    if {$1(age) &lt; 30 &amp;&amp; 100000.0 &lt; $1(salary)} {
+        return "t"
+    }
+    return "f"
+$$ LANGUAGE pltcl;
+</pre><p>
+    </p><p>
+     PL/Tcl functions can return composite-type results, too.  To do this,
+     the Tcl code must return a list of column name/value pairs matching
+     the expected result type.  Any column names omitted from the list
+     are returned as nulls, and an error is raised if there are unexpected
+     column names.  Here is an example:
+
+</p><pre class="programlisting">
+CREATE FUNCTION square_cube(in int, out squared int, out cubed int) AS $$
+    return [list squared [expr {$1 * $1}] cubed [expr {$1 * $1 * $1}]]
+$$ LANGUAGE pltcl;
+</pre><p>
+    </p><p>
+     Output arguments of procedures are returned in the same way, for example:
+
+</p><pre class="programlisting">
+CREATE PROCEDURE tcl_triple(INOUT a integer, INOUT b integer) AS $$
+    return [list a [expr {$1 * 3}] b [expr {$2 * 3}]]
+$$ LANGUAGE pltcl;
+
+CALL tcl_triple(5, 10);
+</pre><p>
+    </p><div class="tip"><h3 class="title">Tip</h3><p>
+      The result list can be made from an array representation of the
+      desired tuple with the <code class="literal">array get</code> Tcl command.  For example:
+
+</p><pre class="programlisting">
+CREATE FUNCTION raise_pay(employee, delta int) RETURNS employee AS $$
+    set 1(salary) [expr {$1(salary) + $2}]
+    return [array get 1]
+$$ LANGUAGE pltcl;
+</pre><p>
+     </p></div><p>
+     PL/Tcl functions can return sets.  To do this, the Tcl code should
+     call <code class="function">return_next</code> once per row to be returned,
+     passing either the appropriate value when returning a scalar type,
+     or a list of column name/value pairs when returning a composite type.
+     Here is an example returning a scalar type:
+
+</p><pre class="programlisting">
+CREATE FUNCTION sequence(int, int) RETURNS SETOF int AS $$
+    for {set i $1} {$i &lt; $2} {incr i} {
+        return_next $i
+    }
+$$ LANGUAGE pltcl;
+</pre><p>
+
+     and here is one returning a composite type:
+
+</p><pre class="programlisting">
+CREATE FUNCTION table_of_squares(int, int) RETURNS TABLE (x int, x2 int) AS $$
+    for {set i $1} {$i &lt; $2} {incr i} {
+        return_next [list x $i x2 [expr {$i * $i}]]
+    }
+$$ LANGUAGE pltcl;
+</pre><p>
+    </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="pltcl-overview.html" title="44.1. Overview">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="pltcl.html" title="Chapter 44. PL/Tcl — Tcl Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="pltcl-data.html" title="44.3. Data Values in PL/Tcl">Next</a></td></tr><tr><td width="40%" align="left" valign="top">44.1. Overview </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 44.3. Data Values in PL/Tcl</td></tr></table></div></body></html>

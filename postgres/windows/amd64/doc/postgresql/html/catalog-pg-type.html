@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.62. pg_type</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-ts-template.html" title="52.61. pg_ts_template" /><link rel="next" href="catalog-pg-user-mapping.html" title="52.63. pg_user_mapping" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.62. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_type</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-ts-template.html" title="52.61. pg_ts_template">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-user-mapping.html" title="52.63. pg_user_mapping">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-TYPE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.62. <code class="structname">pg_type</code></h2></div></div></div><a id="id-1.10.4.64.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_type</code> stores information about data
+   types.  Base types and enum types (scalar types) are created with
+   <a class="link" href="sql-createtype.html" title="CREATE TYPE"><code class="command">CREATE TYPE</code></a>, and
+   domains with
+   <a class="link" href="sql-createdomain.html" title="CREATE DOMAIN"><code class="command">CREATE DOMAIN</code></a>.
+   A composite type is automatically created for each table in the database, to
+   represent the row structure of the table.  It is also possible to create
+   composite types with <code class="command">CREATE TYPE AS</code>.
+  </p><div class="table" id="id-1.10.4.64.4"><p class="title"><strong>Table 52.62. <code class="structname">pg_type</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_type Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Data type name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typnamespace</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-namespace.html" title="52.32. pg_namespace"><code class="structname">pg_namespace</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The OID of the namespace that contains this type
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typowner</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the type
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typlen</code> <code class="type">int2</code>
+      </p>
+      <p>
+       For a fixed-size type, <code class="structfield">typlen</code> is the number
+       of bytes in the internal representation of the type.  But for a
+       variable-length type, <code class="structfield">typlen</code> is negative.
+       -1 indicates a <span class="quote">“<span class="quote">varlena</span>”</span> type (one that has a length word),
+       -2 indicates a null-terminated C string.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typbyval</code> <code class="type">bool</code>
+      </p>
+      <p>
+       <code class="structfield">typbyval</code> determines whether internal
+       routines pass a value of this type by value or by reference.
+       <code class="structfield">typbyval</code> had better be false if
+       <code class="structfield">typlen</code> is not 1, 2, or 4 (or 8 on machines
+       where Datum is 8 bytes).
+       Variable-length types are always passed by reference. Note that
+       <code class="structfield">typbyval</code> can be false even if the
+       length would allow pass-by-value.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typtype</code> <code class="type">char</code>
+      </p>
+      <p>
+       <code class="structfield">typtype</code> is
+       <code class="literal">b</code> for a base type,
+       <code class="literal">c</code> for a composite type (e.g., a table's row type),
+       <code class="literal">d</code> for a domain,
+       <code class="literal">e</code> for an enum type,
+       <code class="literal">p</code> for a pseudo-type,
+       <code class="literal">r</code> for a range type, or
+       <code class="literal">m</code> for a multirange type.
+       See also <code class="structfield">typrelid</code> and
+       <code class="structfield">typbasetype</code>.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typcategory</code> <code class="type">char</code>
+      </p>
+      <p>
+       <code class="structfield">typcategory</code> is an arbitrary classification
+       of data types that is used by the parser to determine which implicit
+       casts should be <span class="quote">“<span class="quote">preferred</span>”</span>.
+       See <a class="xref" href="catalog-pg-type.html#CATALOG-TYPCATEGORY-TABLE" title="Table 52.63. typcategory Codes">Table 52.63</a>.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typispreferred</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if the type is a preferred cast target within its
+       <code class="structfield">typcategory</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typisdefined</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if the type is defined, false if this is a placeholder
+       entry for a not-yet-defined type.  When
+       <code class="structfield">typisdefined</code> is false, nothing
+       except the type name, namespace, and OID can be relied on.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typdelim</code> <code class="type">char</code>
+      </p>
+      <p>
+       Character that separates two values of this type when parsing
+       array input.  Note that the delimiter is associated with the array
+       element data type, not the array data type.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typrelid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       If this is a composite type (see
+       <code class="structfield">typtype</code>), then this column points to
+       the <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a> entry that defines the
+       corresponding table.  (For a free-standing composite type, the
+       <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a> entry doesn't really represent
+       a table, but it is needed anyway for the type's
+       <a class="link" href="catalog-pg-attribute.html" title="52.7. pg_attribute"><code class="structname">pg_attribute</code></a> entries to link to.)
+       Zero for non-composite types.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typsubscript</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Subscripting handler function's OID, or zero if this type doesn't
+       support subscripting.  Types that are <span class="quote">“<span class="quote">true</span>”</span> array
+       types have <code class="structfield">typsubscript</code>
+       = <code class="function">array_subscript_handler</code>, but other types may
+       have other handler functions to implement specialized subscripting
+       behavior.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typelem</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-type.html" title="52.62. pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       If <code class="structfield">typelem</code> is not zero then it
+       identifies another row in <code class="structname">pg_type</code>,
+       defining the type yielded by subscripting.  This should be zero
+       if <code class="structfield">typsubscript</code> is zero.  However, it can
+       be zero when <code class="structfield">typsubscript</code> isn't zero, if the
+       handler doesn't need <code class="structfield">typelem</code> to
+       determine the subscripting result type.
+       Note that a <code class="structfield">typelem</code> dependency is
+       considered to imply physical containment of the element type in
+       this type; so DDL changes on the element type might be restricted
+       by the presence of this type.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typarray</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-type.html" title="52.62. pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       If <code class="structfield">typarray</code> is not zero then it
+       identifies another row in <code class="structname">pg_type</code>, which
+       is the <span class="quote">“<span class="quote">true</span>”</span> array type having this type as element
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typinput</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Input conversion function (text format)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typoutput</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Output conversion function (text format)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typreceive</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Input conversion function (binary format), or zero if none
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typsend</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Output conversion function (binary format), or zero if none
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typmodin</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Type modifier input function, or zero if type does not support modifiers
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typmodout</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Type modifier output function, or zero to use the standard format
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typanalyze</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Custom <a class="xref" href="sql-analyze.html" title="ANALYZE"><span class="refentrytitle">ANALYZE</span></a> function,
+       or zero to use the standard function
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typalign</code> <code class="type">char</code>
+      </p>
+      <p>
+       <code class="structfield">typalign</code> is the alignment required
+       when storing a value of this type.  It applies to storage on
+       disk as well as most representations of the value inside
+       <span class="productname">PostgreSQL</span>.
+       When multiple values are stored consecutively, such
+       as in the representation of a complete row on disk, padding is
+       inserted before a datum of this type so that it begins on the
+       specified boundary.  The alignment reference is the beginning
+       of the first datum in the sequence.
+       Possible values are:
+       </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="literal">c</code> = <code class="type">char</code> alignment, i.e., no alignment needed.</p></li><li class="listitem"><p><code class="literal">s</code> = <code class="type">short</code> alignment (2 bytes on most machines).</p></li><li class="listitem"><p><code class="literal">i</code> = <code class="type">int</code> alignment (4 bytes on most machines).</p></li><li class="listitem"><p><code class="literal">d</code> = <code class="type">double</code> alignment (8 bytes on many machines, but by no means all).</p></li></ul></div><p>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typstorage</code> <code class="type">char</code>
+      </p>
+      <p>
+       <code class="structfield">typstorage</code> tells for varlena
+       types (those with <code class="structfield">typlen</code> = -1) if
+       the type is prepared for toasting and what the default strategy
+       for attributes of this type should be.
+       Possible values are:
+       </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+          <code class="literal">p</code> (plain): Values must always be stored plain
+          (non-varlena types always use this value).
+         </p></li><li class="listitem"><p>
+          <code class="literal">e</code> (external): Values can be stored in a
+          secondary <span class="quote">“<span class="quote">TOAST</span>”</span> relation (if relation has one, see
+          <code class="literal">pg_class.reltoastrelid</code>).
+         </p></li><li class="listitem"><p>
+          <code class="literal">m</code> (main): Values can be compressed and stored
+          inline.
+         </p></li><li class="listitem"><p>
+          <code class="literal">x</code> (extended): Values can be compressed and/or
+          moved to a secondary relation.
+         </p></li></ul></div><p>
+       <code class="literal">x</code> is the usual choice for toast-able types.
+       Note that <code class="literal">m</code> values can also be moved out to
+       secondary storage, but only as a last resort (<code class="literal">e</code>
+       and <code class="literal">x</code> values are moved first).
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typnotnull</code> <code class="type">bool</code>
+      </p>
+      <p>
+       <code class="structfield">typnotnull</code> represents a not-null
+       constraint on a type.  Used for domains only.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typbasetype</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-type.html" title="52.62. pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       If this is a domain (see <code class="structfield">typtype</code>), then
+       <code class="structfield">typbasetype</code> identifies the type that this
+       one is based on.  Zero if this type is not a domain.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typtypmod</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Domains use <code class="structfield">typtypmod</code> to record the <code class="literal">typmod</code>
+       to be applied to their base type (-1 if base type does not use a
+       <code class="literal">typmod</code>).  -1 if this type is not a domain.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typndims</code> <code class="type">int4</code>
+      </p>
+      <p>
+       <code class="structfield">typndims</code> is the number of array dimensions
+       for a domain over an array (that is, <code class="structfield">typbasetype</code> is
+       an array type).
+       Zero for types other than domains over array types.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typcollation</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-collation.html" title="52.12. pg_collation"><code class="structname">pg_collation</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       <code class="structfield">typcollation</code> specifies the collation
+       of the type.  If the type does not support collations, this will
+       be zero.  A base type that supports collations will have a nonzero
+       value here, typically <code class="symbol">DEFAULT_COLLATION_OID</code>.
+       A domain over a collatable type can have a collation OID different
+       from its base type's, if one was specified for the domain.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typdefaultbin</code> <code class="type">pg_node_tree</code>
+      </p>
+      <p>
+       If <code class="structfield">typdefaultbin</code> is not null, it is the
+       <code class="function">nodeToString()</code>
+       representation of a default expression for the type.  This is
+       only used for domains.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typdefault</code> <code class="type">text</code>
+      </p>
+      <p>
+       <code class="structfield">typdefault</code> is null if the type has no associated
+       default value. If <code class="structfield">typdefaultbin</code> is not null,
+       <code class="structfield">typdefault</code> must contain a human-readable version of the
+       default expression represented by <code class="structfield">typdefaultbin</code>.  If
+       <code class="structfield">typdefaultbin</code> is null and <code class="structfield">typdefault</code> is
+       not, then <code class="structfield">typdefault</code> is the external representation of
+       the type's default value, which can be fed to the type's input
+       converter to produce a constant.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">typacl</code> <code class="type">aclitem[]</code>
+      </p>
+      <p>
+       Access privileges; see <a class="xref" href="ddl-priv.html" title="5.7. Privileges">Section 5.7</a> for details
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><div class="note"><h3 class="title">Note</h3><p>
+    For fixed-width types used in system tables, it is critical that the size
+    and alignment defined in <code class="structname">pg_type</code>
+    agree with the way that the compiler will lay out the column in
+    a structure representing a table row.
+   </p></div><p>
+   <a class="xref" href="catalog-pg-type.html#CATALOG-TYPCATEGORY-TABLE" title="Table 52.63. typcategory Codes">Table 52.63</a> lists the system-defined values
+   of <code class="structfield">typcategory</code>.  Any future additions to this list will
+   also be upper-case ASCII letters.  All other ASCII characters are reserved
+   for user-defined categories.
+  </p><div class="table" id="CATALOG-TYPCATEGORY-TABLE"><p class="title"><strong>Table 52.63. <code class="structfield">typcategory</code> Codes</strong></p><div class="table-contents"><table class="table" summary="typcategory Codes" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Code</th><th>Category</th></tr></thead><tbody><tr><td><code class="literal">A</code></td><td>Array types</td></tr><tr><td><code class="literal">B</code></td><td>Boolean types</td></tr><tr><td><code class="literal">C</code></td><td>Composite types</td></tr><tr><td><code class="literal">D</code></td><td>Date/time types</td></tr><tr><td><code class="literal">E</code></td><td>Enum types</td></tr><tr><td><code class="literal">G</code></td><td>Geometric types</td></tr><tr><td><code class="literal">I</code></td><td>Network address types</td></tr><tr><td><code class="literal">N</code></td><td>Numeric types</td></tr><tr><td><code class="literal">P</code></td><td>Pseudo-types</td></tr><tr><td><code class="literal">R</code></td><td>Range types</td></tr><tr><td><code class="literal">S</code></td><td>String types</td></tr><tr><td><code class="literal">T</code></td><td>Timespan types</td></tr><tr><td><code class="literal">U</code></td><td>User-defined types</td></tr><tr><td><code class="literal">V</code></td><td>Bit-string types</td></tr><tr><td><code class="literal">X</code></td><td><code class="type">unknown</code> type</td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-ts-template.html" title="52.61. pg_ts_template">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-user-mapping.html" title="52.63. pg_user_mapping">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.61. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_ts_template</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.63. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_user_mapping</code></td></tr></table></div></body></html>

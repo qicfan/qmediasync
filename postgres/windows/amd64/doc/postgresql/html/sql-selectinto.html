@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SELECT INTO</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-select.html" title="SELECT" /><link rel="next" href="sql-set.html" title="SET" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SELECT INTO</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-select.html" title="SELECT">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-set.html" title="SET">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-SELECTINTO"><div class="titlepage"></div><a id="id-1.9.3.172.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SELECT INTO</span></h2><p>SELECT INTO — define a new table from the results of a query</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+[ WITH [ RECURSIVE ] <em class="replaceable"><code>with_query</code></em> [, ...] ]
+SELECT [ ALL | DISTINCT [ ON ( <em class="replaceable"><code>expression</code></em> [, ...] ) ] ]
+    * | <em class="replaceable"><code>expression</code></em> [ [ AS ] <em class="replaceable"><code>output_name</code></em> ] [, ...]
+    INTO [ TEMPORARY | TEMP | UNLOGGED ] [ TABLE ] <em class="replaceable"><code>new_table</code></em>
+    [ FROM <em class="replaceable"><code>from_item</code></em> [, ...] ]
+    [ WHERE <em class="replaceable"><code>condition</code></em> ]
+    [ GROUP BY <em class="replaceable"><code>expression</code></em> [, ...] ]
+    [ HAVING <em class="replaceable"><code>condition</code></em> ]
+    [ WINDOW <em class="replaceable"><code>window_name</code></em> AS ( <em class="replaceable"><code>window_definition</code></em> ) [, ...] ]
+    [ { UNION | INTERSECT | EXCEPT } [ ALL | DISTINCT ] <em class="replaceable"><code>select</code></em> ]
+    [ ORDER BY <em class="replaceable"><code>expression</code></em> [ ASC | DESC | USING <em class="replaceable"><code>operator</code></em> ] [ NULLS { FIRST | LAST } ] [, ...] ]
+    [ LIMIT { <em class="replaceable"><code>count</code></em> | ALL } ]
+    [ OFFSET <em class="replaceable"><code>start</code></em> [ ROW | ROWS ] ]
+    [ FETCH { FIRST | NEXT } [ <em class="replaceable"><code>count</code></em> ] { ROW | ROWS } ONLY ]
+    [ FOR { UPDATE | SHARE } [ OF <em class="replaceable"><code>table_name</code></em> [, ...] ] [ NOWAIT ] [...] ]
+</pre></div><div class="refsect1" id="id-1.9.3.172.5"><h2>Description</h2><p>
+   <code class="command">SELECT INTO</code> creates a new table and fills it
+   with data computed by a query.  The data is not returned to the
+   client, as it is with a normal <code class="command">SELECT</code>.  The new
+   table's columns have the names and data types associated with the
+   output columns of the <code class="command">SELECT</code>.
+  </p></div><div class="refsect1" id="id-1.9.3.172.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">TEMPORARY</code> or <code class="literal">TEMP</code></span></dt><dd><p>
+     If specified, the table is created as a temporary table.  Refer
+     to <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> for details.
+    </p></dd><dt><span class="term"><code class="literal">UNLOGGED</code></span></dt><dd><p>
+     If specified, the table is created as an unlogged table.  Refer
+     to <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> for details.
+    </p></dd><dt><span class="term"><em class="replaceable"><code>new_table</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of the table to be created.
+     </p></dd></dl></div><p>
+   All other parameters are described in detail under <a class="xref" href="sql-select.html" title="SELECT"><span class="refentrytitle">SELECT</span></a>.
+  </p></div><div class="refsect1" id="id-1.9.3.172.7"><h2>Notes</h2><p>
+   <a class="link" href="sql-createtableas.html" title="CREATE TABLE AS"><code class="command">CREATE TABLE AS</code></a> is functionally similar to
+   <code class="command">SELECT INTO</code>.  <code class="command">CREATE TABLE AS</code>
+   is the recommended syntax, since this form of <code class="command">SELECT
+   INTO</code> is not available in <span class="application">ECPG</span>
+   or <span class="application">PL/pgSQL</span>, because they interpret the
+   <code class="literal">INTO</code> clause differently. Furthermore,
+   <code class="command">CREATE TABLE AS</code> offers a superset of the
+   functionality provided by <code class="command">SELECT INTO</code>.
+  </p><p>
+   In contrast to <code class="command">CREATE TABLE AS</code>, <code class="command">SELECT
+   INTO</code> does not allow specifying properties like a table's access
+   method with <a class="xref" href="sql-createtable.html#SQL-CREATETABLE-METHOD"><code class="literal">USING <em class="replaceable"><code>method</code></em></code></a> or the table's
+   tablespace with <a class="xref" href="sql-createtable.html#SQL-CREATETABLE-TABLESPACE"><code class="literal">TABLESPACE <em class="replaceable"><code>tablespace_name</code></em></code></a>. Use
+   <code class="command">CREATE TABLE AS</code> if necessary.  Therefore, the default table
+   access method is chosen for the new table. See <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLE-ACCESS-METHOD">default_table_access_method</a> for more information.
+  </p></div><div class="refsect1" id="id-1.9.3.172.8"><h2>Examples</h2><p>
+   Create a new table <code class="literal">films_recent</code> consisting of only
+   recent entries from the table <code class="literal">films</code>:
+
+</p><pre class="programlisting">
+SELECT * INTO films_recent FROM films WHERE date_prod &gt;= '2002-01-01';
+</pre></div><div class="refsect1" id="id-1.9.3.172.9"><h2>Compatibility</h2><p>
+   The SQL standard uses <code class="command">SELECT INTO</code> to
+   represent selecting values into scalar variables of a host program,
+   rather than creating a new table.  This indeed is the usage found
+   in <span class="application">ECPG</span> (see <a class="xref" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Chapter 36</a>) and
+   <span class="application">PL/pgSQL</span> (see <a class="xref" href="plpgsql.html" title="Chapter 43. PL/pgSQL — SQL Procedural Language">Chapter 43</a>).
+   The <span class="productname">PostgreSQL</span> usage of <code class="command">SELECT
+   INTO</code> to represent table creation is historical.  Some other SQL
+   implementations also use <code class="command">SELECT INTO</code> in this way (but
+   most SQL implementations support <code class="command">CREATE TABLE AS</code>
+   instead).  Apart from such compatibility considerations, it is best to use
+   <code class="command">CREATE TABLE AS</code> for this purpose in new code.
+  </p></div><div class="refsect1" id="id-1.9.3.172.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createtableas.html" title="CREATE TABLE AS"><span class="refentrytitle">CREATE TABLE AS</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-select.html" title="SELECT">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-set.html" title="SET">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SELECT </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SET</td></tr></table></div></body></html>

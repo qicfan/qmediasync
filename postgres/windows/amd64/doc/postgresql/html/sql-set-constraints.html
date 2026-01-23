@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SET CONSTRAINTS</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-set.html" title="SET" /><link rel="next" href="sql-set-role.html" title="SET ROLE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SET CONSTRAINTS</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-set.html" title="SET">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-set-role.html" title="SET ROLE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-SET-CONSTRAINTS"><div class="titlepage"></div><a id="id-1.9.3.174.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SET CONSTRAINTS</span></h2><p>SET CONSTRAINTS — set constraint check timing for the current transaction</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+SET CONSTRAINTS { ALL | <em class="replaceable"><code>name</code></em> [, ...] } { DEFERRED | IMMEDIATE }
+</pre></div><div class="refsect1" id="id-1.9.3.174.5"><h2>Description</h2><p>
+   <code class="command">SET CONSTRAINTS</code> sets the behavior of constraint
+   checking within the current transaction. <code class="literal">IMMEDIATE</code>
+   constraints are checked at the end of each
+   statement. <code class="literal">DEFERRED</code> constraints are not checked until
+   transaction commit.  Each constraint has its own
+   <code class="literal">IMMEDIATE</code> or <code class="literal">DEFERRED</code> mode.
+  </p><p>
+   Upon creation, a constraint is given one of three
+   characteristics: <code class="literal">DEFERRABLE INITIALLY DEFERRED</code>,
+   <code class="literal">DEFERRABLE INITIALLY IMMEDIATE</code>, or
+   <code class="literal">NOT DEFERRABLE</code>. The third
+   class is always <code class="literal">IMMEDIATE</code> and is not affected by the
+   <code class="command">SET CONSTRAINTS</code> command.  The first two classes start
+   every transaction in the indicated mode, but their behavior can be changed
+   within a transaction by <code class="command">SET CONSTRAINTS</code>.
+  </p><p>
+   <code class="command">SET CONSTRAINTS</code> with a list of constraint names changes
+   the mode of just those constraints (which must all be deferrable).  Each
+   constraint name can be schema-qualified.  The
+   current schema search path is used to find the first matching name if
+   no schema name is specified.  <code class="command">SET CONSTRAINTS ALL</code>
+   changes the mode of all deferrable constraints.
+  </p><p>
+   When <code class="command">SET CONSTRAINTS</code> changes the mode of a constraint
+   from <code class="literal">DEFERRED</code>
+   to <code class="literal">IMMEDIATE</code>, the new mode takes effect
+   retroactively: any outstanding data modifications that would have
+   been checked at the end of the transaction are instead checked during the
+   execution of the <code class="command">SET CONSTRAINTS</code> command.
+   If any such constraint is violated, the <code class="command">SET CONSTRAINTS</code>
+   fails (and does not change the constraint mode).  Thus, <code class="command">SET
+   CONSTRAINTS</code> can be used to force checking of constraints to
+   occur at a specific point in a transaction.
+  </p><p>
+   Currently, only <code class="literal">UNIQUE</code>, <code class="literal">PRIMARY KEY</code>,
+   <code class="literal">REFERENCES</code> (foreign key), and <code class="literal">EXCLUDE</code>
+   constraints are affected by this setting.
+   <code class="literal">NOT NULL</code> and <code class="literal">CHECK</code> constraints are
+   always checked immediately when a row is inserted or modified
+   (<span class="emphasis"><em>not</em></span> at the end of the statement).
+   Uniqueness and exclusion constraints that have not been declared
+   <code class="literal">DEFERRABLE</code> are also checked immediately.
+  </p><p>
+   The firing of triggers that are declared as <span class="quote">“<span class="quote">constraint triggers</span>”</span>
+   is also controlled by this setting — they fire at the same time
+   that the associated constraint should be checked.
+  </p></div><div class="refsect1" id="id-1.9.3.174.6"><h2>Notes</h2><p>
+   Because <span class="productname">PostgreSQL</span> does not require constraint
+   names to be unique within a schema (but only per-table), it is possible
+   that there is more than one match for a specified constraint name.
+   In this case <code class="command">SET CONSTRAINTS</code> will act on all matches.
+   For a non-schema-qualified name, once a match or matches have been found in
+   some schema in the search path, schemas appearing later in the path are not
+   searched.
+  </p><p>
+   This command only alters the behavior of constraints within the
+   current transaction.  Issuing this outside of a transaction block
+   emits a warning and otherwise has no effect.
+  </p></div><div class="refsect1" id="id-1.9.3.174.7"><h2>Compatibility</h2><p>
+   This command complies with the behavior defined in the SQL
+   standard, except for the limitation that, in
+   <span class="productname">PostgreSQL</span>, it does not apply to
+   <code class="literal">NOT NULL</code> and <code class="literal">CHECK</code> constraints.
+   Also, <span class="productname">PostgreSQL</span> checks non-deferrable
+   uniqueness constraints immediately, not at end of statement as the
+   standard would suggest.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-set.html" title="SET">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-set-role.html" title="SET ROLE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SET </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SET ROLE</td></tr></table></div></body></html>

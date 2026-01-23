@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CLOSE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-checkpoint.html" title="CHECKPOINT" /><link rel="next" href="sql-cluster.html" title="CLUSTER" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CLOSE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-checkpoint.html" title="CHECKPOINT">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-cluster.html" title="CLUSTER">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CLOSE"><div class="titlepage"></div><a id="id-1.9.3.50.1" class="indexterm"></a><a id="id-1.9.3.50.2" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CLOSE</span></h2><p>CLOSE — close a cursor</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CLOSE { <em class="replaceable"><code>name</code></em> | ALL }
+</pre></div><div class="refsect1" id="id-1.9.3.50.6"><h2>Description</h2><p>
+   <code class="command">CLOSE</code> frees the resources associated with an open cursor.
+   After the cursor is closed, no subsequent operations
+   are allowed on it. A cursor should be closed when it is
+   no longer needed.
+  </p><p>
+   Every non-holdable open cursor is implicitly closed when a
+   transaction is terminated by <code class="command">COMMIT</code> or
+   <code class="command">ROLLBACK</code>.  A holdable cursor is implicitly
+   closed if the transaction that created it aborts via
+   <code class="command">ROLLBACK</code>.  If the creating transaction
+   successfully commits, the holdable cursor remains open until an
+   explicit <code class="command">CLOSE</code> is executed, or the client
+   disconnects.
+  </p></div><div class="refsect1" id="id-1.9.3.50.7"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of an open cursor to close.
+     </p></dd><dt><span class="term"><code class="literal">ALL</code></span></dt><dd><p>
+      Close all open cursors.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.50.8"><h2>Notes</h2><p>
+   <span class="productname">PostgreSQL</span> does not have an explicit
+   <code class="command">OPEN</code> cursor statement; a cursor is considered
+   open when it is declared.  Use the
+   <a class="link" href="sql-declare.html" title="DECLARE"><code class="command">DECLARE</code></a>
+   statement to declare a cursor.
+  </p><p>
+   You can see all available cursors by querying the <a class="link" href="view-pg-cursors.html" title="52.69. pg_cursors"><code class="structname">pg_cursors</code></a> system view.
+  </p><p>
+   If a cursor is closed after a savepoint which is later rolled back,
+   the <code class="command">CLOSE</code> is not rolled back; that is, the cursor
+   remains closed.
+  </p></div><div class="refsect1" id="id-1.9.3.50.9"><h2>Examples</h2><p>
+   Close the cursor <code class="literal">liahona</code>:
+</p><pre class="programlisting">
+CLOSE liahona;
+</pre></div><div class="refsect1" id="id-1.9.3.50.10"><h2>Compatibility</h2><p>
+   <code class="command">CLOSE</code> is fully conforming with the SQL
+   standard. <code class="command">CLOSE ALL</code> is a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.50.11"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-declare.html" title="DECLARE"><span class="refentrytitle">DECLARE</span></a>, <a class="xref" href="sql-fetch.html" title="FETCH"><span class="refentrytitle">FETCH</span></a>, <a class="xref" href="sql-move.html" title="MOVE"><span class="refentrytitle">MOVE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-checkpoint.html" title="CHECKPOINT">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-cluster.html" title="CLUSTER">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CHECKPOINT </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CLUSTER</td></tr></table></div></body></html>

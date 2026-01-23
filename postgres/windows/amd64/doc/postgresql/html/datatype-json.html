@@ -1,0 +1,731 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.14. JSON Types</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-xml.html" title="8.13. XML Type" /><link rel="next" href="arrays.html" title="8.15. Arrays" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.14. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">JSON</acronym> Types</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-xml.html" title="8.13. XML Type">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="arrays.html" title="8.15. Arrays">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATATYPE-JSON"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.14. <acronym class="acronym">JSON</acronym> Types</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="datatype-json.html#JSON-KEYS-ELEMENTS">8.14.1. JSON Input and Output Syntax</a></span></dt><dt><span class="sect2"><a href="datatype-json.html#JSON-DOC-DESIGN">8.14.2. Designing JSON Documents</a></span></dt><dt><span class="sect2"><a href="datatype-json.html#JSON-CONTAINMENT">8.14.3. <code class="type">jsonb</code> Containment and Existence</a></span></dt><dt><span class="sect2"><a href="datatype-json.html#JSON-INDEXING">8.14.4. <code class="type">jsonb</code> Indexing</a></span></dt><dt><span class="sect2"><a href="datatype-json.html#JSONB-SUBSCRIPTING">8.14.5. <code class="type">jsonb</code> Subscripting</a></span></dt><dt><span class="sect2"><a href="datatype-json.html#id-1.5.7.22.20">8.14.6. Transforms</a></span></dt><dt><span class="sect2"><a href="datatype-json.html#DATATYPE-JSONPATH">8.14.7. jsonpath Type</a></span></dt></dl></div><a id="id-1.5.7.22.2" class="indexterm"></a><a id="id-1.5.7.22.3" class="indexterm"></a><p>
+  JSON data types are for storing JSON (JavaScript Object Notation)
+  data, as specified in <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc7159" target="_top">RFC
+  7159</a>. Such data can also be stored as <code class="type">text</code>, but
+  the JSON data types have the advantage of enforcing that each
+  stored value is valid according to the JSON rules.  There are also
+  assorted JSON-specific functions and operators available for data stored
+  in these data types; see <a class="xref" href="functions-json.html" title="9.16. JSON Functions and Operators">Section 9.16</a>.
+ </p><p>
+  <span class="productname">PostgreSQL</span> offers two types for storing JSON
+  data: <code class="type">json</code> and <code class="type">jsonb</code>. To implement efficient query
+  mechanisms for these data types, <span class="productname">PostgreSQL</span>
+  also provides the <code class="type">jsonpath</code> data type described in
+  <a class="xref" href="datatype-json.html#DATATYPE-JSONPATH" title="8.14.7. jsonpath Type">Section 8.14.7</a>.
+ </p><p>
+  The <code class="type">json</code> and <code class="type">jsonb</code> data types
+  accept <span class="emphasis"><em>almost</em></span> identical sets of values as
+  input.  The major practical difference is one of efficiency.  The
+  <code class="type">json</code> data type stores an exact copy of the input text,
+  which processing functions must reparse on each execution; while
+  <code class="type">jsonb</code> data is stored in a decomposed binary format that
+  makes it slightly slower to input due to added conversion
+  overhead, but significantly faster to process, since no reparsing
+  is needed.  <code class="type">jsonb</code> also supports indexing, which can be a
+  significant advantage.
+ </p><p>
+  Because the <code class="type">json</code> type stores an exact copy of the input text, it
+  will preserve semantically-insignificant white space between tokens, as
+  well as the order of keys within JSON objects. Also, if a JSON object
+  within the value contains the same key more than once, all the key/value
+  pairs are kept.  (The processing functions consider the last value as the
+  operative one.)  By contrast, <code class="type">jsonb</code> does not preserve white
+  space, does not preserve the order of object keys, and does not keep
+  duplicate object keys.  If duplicate keys are specified in the input,
+  only the last value is kept.
+ </p><p>
+  In general, most applications should prefer to store JSON data as
+  <code class="type">jsonb</code>, unless there are quite specialized needs, such as
+  legacy assumptions about ordering of object keys.
+ </p><p>
+  <acronym class="acronym">RFC</acronym> 7159 specifies that JSON strings should be encoded in UTF8.
+  It is therefore not possible for the JSON
+  types to conform rigidly to the JSON specification unless the database
+  encoding is UTF8. Attempts to directly include characters that
+  cannot be represented in the database encoding will fail; conversely,
+  characters that can be represented in the database encoding but not
+  in UTF8 will be allowed.
+ </p><p>
+  <acronym class="acronym">RFC</acronym> 7159 permits JSON strings to contain Unicode escape sequences
+  denoted by <code class="literal">\u<em class="replaceable"><code>XXXX</code></em></code>.  In the input
+  function for the <code class="type">json</code> type, Unicode escapes are allowed
+  regardless of the database encoding, and are checked only for syntactic
+  correctness (that is, that four hex digits follow <code class="literal">\u</code>).
+  However, the input function for <code class="type">jsonb</code> is stricter: it disallows
+  Unicode escapes for characters that cannot be represented in the database
+  encoding.  The <code class="type">jsonb</code> type also
+  rejects <code class="literal">\u0000</code> (because that cannot be represented in
+  <span class="productname">PostgreSQL</span>'s <code class="type">text</code> type), and it insists
+  that any use of Unicode surrogate pairs to designate characters outside
+  the Unicode Basic Multilingual Plane be correct.  Valid Unicode escapes
+  are converted to the equivalent single character for storage;
+  this includes folding surrogate pairs into a single character.
+ </p><div class="note"><h3 class="title">Note</h3><p>
+   Many of the JSON processing functions described
+   in <a class="xref" href="functions-json.html" title="9.16. JSON Functions and Operators">Section 9.16</a> will convert Unicode escapes to
+   regular characters, and will therefore throw the same types of errors
+   just described even if their input is of type <code class="type">json</code>
+   not <code class="type">jsonb</code>. The fact that the <code class="type">json</code> input function does
+   not make these checks may be considered a historical artifact, although
+   it does allow for simple storage (without processing) of JSON Unicode
+   escapes in a database encoding that does not support the represented
+   characters.
+  </p></div><p>
+  When converting textual JSON input into <code class="type">jsonb</code>, the primitive
+  types described by <acronym class="acronym">RFC</acronym> 7159 are effectively mapped onto
+  native <span class="productname">PostgreSQL</span> types, as shown
+  in <a class="xref" href="datatype-json.html#JSON-TYPE-MAPPING-TABLE" title="Table 8.23. JSON Primitive Types and Corresponding PostgreSQL Types">Table 8.23</a>.
+  Therefore, there are some minor additional constraints on what
+  constitutes valid <code class="type">jsonb</code> data that do not apply to
+  the <code class="type">json</code> type, nor to JSON in the abstract, corresponding
+  to limits on what can be represented by the underlying data type.
+  Notably, <code class="type">jsonb</code> will reject numbers that are outside the
+  range of the <span class="productname">PostgreSQL</span> <code class="type">numeric</code> data
+  type, while <code class="type">json</code> will not.  Such implementation-defined
+  restrictions are permitted by <acronym class="acronym">RFC</acronym> 7159.  However, in
+  practice such problems are far more likely to occur in other
+  implementations, as it is common to represent JSON's <code class="type">number</code>
+  primitive type as IEEE 754 double precision floating point
+  (which <acronym class="acronym">RFC</acronym> 7159 explicitly anticipates and allows for).
+  When using JSON as an interchange format with such systems, the danger
+  of losing numeric precision compared to data originally stored
+  by <span class="productname">PostgreSQL</span> should be considered.
+ </p><p>
+  Conversely, as noted in the table there are some minor restrictions on
+  the input format of JSON primitive types that do not apply to
+  the corresponding <span class="productname">PostgreSQL</span> types.
+ </p><div class="table" id="JSON-TYPE-MAPPING-TABLE"><p class="title"><strong>Table 8.23. JSON Primitive Types and Corresponding <span class="productname">PostgreSQL</span> Types</strong></p><div class="table-contents"><table class="table" summary="JSON Primitive Types and Corresponding PostgreSQL Types" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /></colgroup><thead><tr><th>JSON primitive type</th><th><span class="productname">PostgreSQL</span> type</th><th>Notes</th></tr></thead><tbody><tr><td><code class="type">string</code></td><td><code class="type">text</code></td><td><code class="literal">\u0000</code> is disallowed, as are Unicode escapes
+         representing characters not available in the database encoding</td></tr><tr><td><code class="type">number</code></td><td><code class="type">numeric</code></td><td><code class="literal">NaN</code> and <code class="literal">infinity</code> values are disallowed</td></tr><tr><td><code class="type">boolean</code></td><td><code class="type">boolean</code></td><td>Only lowercase <code class="literal">true</code> and <code class="literal">false</code> spellings are accepted</td></tr><tr><td><code class="type">null</code></td><td>(none)</td><td>SQL <code class="literal">NULL</code> is a different concept</td></tr></tbody></table></div></div><br class="table-break" /><div class="sect2" id="JSON-KEYS-ELEMENTS"><div class="titlepage"><div><div><h3 class="title">8.14.1. JSON Input and Output Syntax</h3></div></div></div><p>
+   The input/output syntax for the JSON data types is as specified in
+   <acronym class="acronym">RFC</acronym> 7159.
+  </p><p>
+   The following are all valid <code class="type">json</code> (or <code class="type">jsonb</code>) expressions:
+</p><pre class="programlisting">
+-- Simple scalar/primitive value
+-- Primitive values can be numbers, quoted strings, true, false, or null
+SELECT '5'::json;
+
+-- Array of zero or more elements (elements need not be of same type)
+SELECT '[1, 2, "foo", null]'::json;
+
+-- Object containing pairs of keys and values
+-- Note that object keys must always be quoted strings
+SELECT '{"bar": "baz", "balance": 7.77, "active": false}'::json;
+
+-- Arrays and objects can be nested arbitrarily
+SELECT '{"foo": [true, "bar"], "tags": {"a": 1, "b": null}}'::json;
+</pre><p>
+  </p><p>
+   As previously stated, when a JSON value is input and then printed without
+   any additional processing, <code class="type">json</code> outputs the same text that was
+   input, while <code class="type">jsonb</code> does not preserve semantically-insignificant
+   details such as whitespace.  For example, note the differences here:
+</p><pre class="programlisting">
+SELECT '{"bar": "baz", "balance": 7.77, "active":false}'::json;
+                      json                       
+-------------------------------------------------
+ {"bar": "baz", "balance": 7.77, "active":false}
+(1 row)
+
+SELECT '{"bar": "baz", "balance": 7.77, "active":false}'::jsonb;
+                      jsonb                       
+--------------------------------------------------
+ {"bar": "baz", "active": false, "balance": 7.77}
+(1 row)
+</pre><p>
+   One semantically-insignificant detail worth noting is that
+   in <code class="type">jsonb</code>, numbers will be printed according to the behavior of the
+   underlying <code class="type">numeric</code> type.  In practice this means that numbers
+   entered with <code class="literal">E</code> notation will be printed without it, for
+   example:
+</p><pre class="programlisting">
+SELECT '{"reading": 1.230e-5}'::json, '{"reading": 1.230e-5}'::jsonb;
+         json          |          jsonb          
+-----------------------+-------------------------
+ {"reading": 1.230e-5} | {"reading": 0.00001230}
+(1 row)
+</pre><p>
+   However, <code class="type">jsonb</code> will preserve trailing fractional zeroes, as seen
+   in this example, even though those are semantically insignificant for
+   purposes such as equality checks.
+  </p><p>
+    For the list of built-in functions and operators available for
+    constructing and processing JSON values, see <a class="xref" href="functions-json.html" title="9.16. JSON Functions and Operators">Section 9.16</a>.
+  </p></div><div class="sect2" id="JSON-DOC-DESIGN"><div class="titlepage"><div><div><h3 class="title">8.14.2. Designing JSON Documents</h3></div></div></div><p>
+   Representing data as JSON can be considerably more flexible than
+   the traditional relational data model, which is compelling in
+   environments where requirements are fluid.  It is quite possible
+   for both approaches to co-exist and complement each other within
+   the same application.  However, even for applications where maximal
+   flexibility is desired, it is still recommended that JSON documents
+   have a somewhat fixed structure.  The structure is typically
+   unenforced (though enforcing some business rules declaratively is
+   possible), but having a predictable structure makes it easier to write
+   queries that usefully summarize a set of <span class="quote">“<span class="quote">documents</span>”</span> (datums)
+   in a table.
+  </p><p>
+   JSON data is subject to the same concurrency-control
+   considerations as any other data type when stored in a table.
+   Although storing large documents is practicable, keep in mind that
+   any update acquires a row-level lock on the whole row.
+   Consider limiting JSON documents to a
+   manageable size in order to decrease lock contention among updating
+   transactions.  Ideally, JSON documents should each
+   represent an atomic datum that business rules dictate cannot
+   reasonably be further subdivided into smaller datums that
+   could be modified independently.
+  </p></div><div class="sect2" id="JSON-CONTAINMENT"><div class="titlepage"><div><div><h3 class="title">8.14.3. <code class="type">jsonb</code> Containment and Existence</h3></div></div></div><a id="id-1.5.7.22.17.2" class="indexterm"></a><a id="id-1.5.7.22.17.3" class="indexterm"></a><p>
+    Testing <em class="firstterm">containment</em> is an important capability of
+    <code class="type">jsonb</code>.  There is no parallel set of facilities for the
+    <code class="type">json</code> type.  Containment tests whether
+    one <code class="type">jsonb</code> document has contained within it another one.
+    These examples return true except as noted:
+  </p><pre class="programlisting">
+-- Simple scalar/primitive values contain only the identical value:
+SELECT '"foo"'::jsonb @&gt; '"foo"'::jsonb;
+
+-- The array on the right side is contained within the one on the left:
+SELECT '[1, 2, 3]'::jsonb @&gt; '[1, 3]'::jsonb;
+
+-- Order of array elements is not significant, so this is also true:
+SELECT '[1, 2, 3]'::jsonb @&gt; '[3, 1]'::jsonb;
+
+-- Duplicate array elements don't matter either:
+SELECT '[1, 2, 3]'::jsonb @&gt; '[1, 2, 2]'::jsonb;
+
+-- The object with a single pair on the right side is contained
+-- within the object on the left side:
+SELECT '{"product": "PostgreSQL", "version": 9.4, "jsonb": true}'::jsonb @&gt; '{"version": 9.4}'::jsonb;
+
+-- The array on the right side is <span class="emphasis"><strong>not</strong></span> considered contained within the
+-- array on the left, even though a similar array is nested within it:
+SELECT '[1, 2, [1, 3]]'::jsonb @&gt; '[1, 3]'::jsonb;  -- yields false
+
+-- But with a layer of nesting, it is contained:
+SELECT '[1, 2, [1, 3]]'::jsonb @&gt; '[[1, 3]]'::jsonb;
+
+-- Similarly, containment is not reported here:
+SELECT '{"foo": {"bar": "baz"}}'::jsonb @&gt; '{"bar": "baz"}'::jsonb;  -- yields false
+
+-- A top-level key and an empty object is contained:
+SELECT '{"foo": {"bar": "baz"}}'::jsonb @&gt; '{"foo": {}}'::jsonb;
+</pre><p>
+   The general principle is that the contained object must match the
+   containing object as to structure and data contents, possibly after
+   discarding some non-matching array elements or object key/value pairs
+   from the containing object.
+   But remember that the order of array elements is not significant when
+   doing a containment match, and duplicate array elements are effectively
+   considered only once.
+  </p><p>
+   As a special exception to the general principle that the structures
+   must match, an array may contain a primitive value:
+  </p><pre class="programlisting">
+-- This array contains the primitive string value:
+SELECT '["foo", "bar"]'::jsonb @&gt; '"bar"'::jsonb;
+
+-- This exception is not reciprocal -- non-containment is reported here:
+SELECT '"bar"'::jsonb @&gt; '["bar"]'::jsonb;  -- yields false
+</pre><p>
+    <code class="type">jsonb</code> also has an <em class="firstterm">existence</em> operator, which is
+    a variation on the theme of containment: it tests whether a string
+    (given as a <code class="type">text</code> value) appears as an object key or array
+    element at the top level of the <code class="type">jsonb</code> value.
+    These examples return true except as noted:
+  </p><pre class="programlisting">
+-- String exists as array element:
+SELECT '["foo", "bar", "baz"]'::jsonb ? 'bar';
+
+-- String exists as object key:
+SELECT '{"foo": "bar"}'::jsonb ? 'foo';
+
+-- Object values are not considered:
+SELECT '{"foo": "bar"}'::jsonb ? 'bar';  -- yields false
+
+-- As with containment, existence must match at the top level:
+SELECT '{"foo": {"bar": "baz"}}'::jsonb ? 'bar'; -- yields false
+
+-- A string is considered to exist if it matches a primitive JSON string:
+SELECT '"foo"'::jsonb ? 'foo';
+</pre><p>
+    JSON objects are better suited than arrays for testing containment or
+    existence when there are many keys or elements involved, because
+    unlike arrays they are internally optimized for searching, and do not
+    need to be searched linearly.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    Because JSON containment is nested, an appropriate query can skip
+    explicit selection of sub-objects.  As an example, suppose that we have
+    a <code class="structfield">doc</code> column containing objects at the top level, with
+    most objects containing <code class="literal">tags</code> fields that contain arrays of
+    sub-objects.  This query finds entries in which sub-objects containing
+    both <code class="literal">"term":"paris"</code> and <code class="literal">"term":"food"</code> appear,
+    while ignoring any such keys outside the <code class="literal">tags</code> array:
+</p><pre class="programlisting">
+SELECT doc-&gt;'site_name' FROM websites
+  WHERE doc @&gt; '{"tags":[{"term":"paris"}, {"term":"food"}]}';
+</pre><p>
+    One could accomplish the same thing with, say,
+</p><pre class="programlisting">
+SELECT doc-&gt;'site_name' FROM websites
+  WHERE doc-&gt;'tags' @&gt; '[{"term":"paris"}, {"term":"food"}]';
+</pre><p>
+    but that approach is less flexible, and often less efficient as well.
+   </p><p>
+    On the other hand, the JSON existence operator is not nested: it will
+    only look for the specified key or array element at top level of the
+    JSON value.
+   </p></div><p>
+    The various containment and existence operators, along with all other
+    JSON operators and functions are documented
+    in <a class="xref" href="functions-json.html" title="9.16. JSON Functions and Operators">Section 9.16</a>.
+  </p></div><div class="sect2" id="JSON-INDEXING"><div class="titlepage"><div><div><h3 class="title">8.14.4. <code class="type">jsonb</code> Indexing</h3></div></div></div><a id="id-1.5.7.22.18.2" class="indexterm"></a><p>
+    GIN indexes can be used to efficiently search for
+    keys or key/value pairs occurring within a large number of
+    <code class="type">jsonb</code> documents (datums).
+    Two GIN <span class="quote">“<span class="quote">operator classes</span>”</span> are provided, offering different
+    performance and flexibility trade-offs.
+  </p><p>
+    The default GIN operator class for <code class="type">jsonb</code> supports queries with
+    the key-exists operators <code class="literal">?</code>, <code class="literal">?|</code>
+    and <code class="literal">?&amp;</code>, the containment operator
+    <code class="literal">@&gt;</code>, and the <code class="type">jsonpath</code> match
+    operators <code class="literal">@?</code> and <code class="literal">@@</code>.
+    (For details of the semantics that these operators
+    implement, see <a class="xref" href="functions-json.html#FUNCTIONS-JSONB-OP-TABLE" title="Table 9.45. Additional jsonb Operators">Table 9.45</a>.)
+    An example of creating an index with this operator class is:
+</p><pre class="programlisting">
+CREATE INDEX idxgin ON api USING GIN (jdoc);
+</pre><p>
+    The non-default GIN operator class <code class="literal">jsonb_path_ops</code>
+    does not support the key-exists operators, but it does support
+    <code class="literal">@&gt;</code>, <code class="literal">@?</code> and <code class="literal">@@</code>.
+    An example of creating an index with this operator class is:
+</p><pre class="programlisting">
+CREATE INDEX idxginp ON api USING GIN (jdoc jsonb_path_ops);
+</pre><p>
+  </p><p>
+    Consider the example of a table that stores JSON documents
+    retrieved from a third-party web service, with a documented schema
+    definition.  A typical document is:
+</p><pre class="programlisting">
+{
+    "guid": "9c36adc1-7fb5-4d5b-83b4-90356a46061a",
+    "name": "Angela Barton",
+    "is_active": true,
+    "company": "Magnafone",
+    "address": "178 Howard Place, Gulf, Washington, 702",
+    "registered": "2009-11-07T08:53:22 +08:00",
+    "latitude": 19.793713,
+    "longitude": 86.513373,
+    "tags": [
+        "enim",
+        "aliquip",
+        "qui"
+    ]
+}
+</pre><p>
+    We store these documents in a table named <code class="structname">api</code>,
+    in a <code class="type">jsonb</code> column named <code class="structfield">jdoc</code>.
+    If a GIN index is created on this column,
+    queries like the following can make use of the index:
+</p><pre class="programlisting">
+-- Find documents in which the key "company" has value "Magnafone"
+SELECT jdoc-&gt;'guid', jdoc-&gt;'name' FROM api WHERE jdoc @&gt; '{"company": "Magnafone"}';
+</pre><p>
+    However, the index could not be used for queries like the
+    following, because though the operator <code class="literal">?</code> is indexable,
+    it is not applied directly to the indexed column <code class="structfield">jdoc</code>:
+</p><pre class="programlisting">
+-- Find documents in which the key "tags" contains key or array element "qui"
+SELECT jdoc-&gt;'guid', jdoc-&gt;'name' FROM api WHERE jdoc -&gt; 'tags' ? 'qui';
+</pre><p>
+    Still, with appropriate use of expression indexes, the above
+    query can use an index.  If querying for particular items within
+    the <code class="literal">"tags"</code> key is common, defining an index like this
+    may be worthwhile:
+</p><pre class="programlisting">
+CREATE INDEX idxgintags ON api USING GIN ((jdoc -&gt; 'tags'));
+</pre><p>
+    Now, the <code class="literal">WHERE</code> clause <code class="literal">jdoc -&gt; 'tags' ? 'qui'</code>
+    will be recognized as an application of the indexable
+    operator <code class="literal">?</code> to the indexed
+    expression <code class="literal">jdoc -&gt; 'tags'</code>.
+    (More information on expression indexes can be found in <a class="xref" href="indexes-expressional.html" title="11.7. Indexes on Expressions">Section 11.7</a>.)
+  </p><p>
+    Another approach to querying is to exploit containment, for example:
+</p><pre class="programlisting">
+-- Find documents in which the key "tags" contains array element "qui"
+SELECT jdoc-&gt;'guid', jdoc-&gt;'name' FROM api WHERE jdoc @&gt; '{"tags": ["qui"]}';
+</pre><p>
+    A simple GIN index on the <code class="structfield">jdoc</code> column can support this
+    query.  But note that such an index will store copies of every key and
+    value in the <code class="structfield">jdoc</code> column, whereas the expression index
+    of the previous example stores only data found under
+    the <code class="literal">tags</code> key.  While the simple-index approach is far more
+    flexible (since it supports queries about any key), targeted expression
+    indexes are likely to be smaller and faster to search than a simple
+    index.
+  </p><p>
+    GIN indexes also support the <code class="literal">@?</code>
+    and <code class="literal">@@</code> operators, which
+    perform <code class="type">jsonpath</code> matching.  Examples are
+</p><pre class="programlisting">
+SELECT jdoc-&gt;'guid', jdoc-&gt;'name' FROM api WHERE jdoc @? '$.tags[*] ? (@ == "qui")';
+</pre><p>
+</p><pre class="programlisting">
+SELECT jdoc-&gt;'guid', jdoc-&gt;'name' FROM api WHERE jdoc @@ '$.tags[*] == "qui"';
+</pre><p>
+    For these operators, a GIN index extracts clauses of the form
+    <code class="literal"><em class="replaceable"><code>accessors_chain</code></em>
+    = <em class="replaceable"><code>constant</code></em></code> out of
+    the <code class="type">jsonpath</code> pattern, and does the index search based on
+    the keys and values mentioned in these clauses.  The accessors chain
+    may include <code class="literal">.<em class="replaceable"><code>key</code></em></code>,
+    <code class="literal">[*]</code>,
+    and <code class="literal">[<em class="replaceable"><code>index</code></em>]</code> accessors.
+    The <code class="literal">jsonb_ops</code> operator class also
+    supports <code class="literal">.*</code> and <code class="literal">.**</code> accessors,
+    but the <code class="literal">jsonb_path_ops</code> operator class does not.
+  </p><p>
+    Although the <code class="literal">jsonb_path_ops</code> operator class supports
+    only queries with the <code class="literal">@&gt;</code>, <code class="literal">@?</code>
+    and <code class="literal">@@</code> operators, it has notable
+    performance advantages over the default operator
+    class <code class="literal">jsonb_ops</code>.  A <code class="literal">jsonb_path_ops</code>
+    index is usually much smaller than a <code class="literal">jsonb_ops</code>
+    index over the same data, and the specificity of searches is better,
+    particularly when queries contain keys that appear frequently in the
+    data.  Therefore search operations typically perform better
+    than with the default operator class.
+  </p><p>
+    The technical difference between a <code class="literal">jsonb_ops</code>
+    and a <code class="literal">jsonb_path_ops</code> GIN index is that the former
+    creates independent index items for each key and value in the data,
+    while the latter creates index items only for each value in the
+    data.
+    <a href="#ftn.id-1.5.7.22.18.9.3" class="footnote"><sup class="footnote" id="id-1.5.7.22.18.9.3">[7]</sup></a>
+    Basically, each <code class="literal">jsonb_path_ops</code> index item is
+    a hash of the value and the key(s) leading to it; for example to index
+    <code class="literal">{"foo": {"bar": "baz"}}</code>, a single index item would
+    be created incorporating all three of <code class="literal">foo</code>, <code class="literal">bar</code>,
+    and <code class="literal">baz</code> into the hash value.  Thus a containment query
+    looking for this structure would result in an extremely specific index
+    search; but there is no way at all to find out whether <code class="literal">foo</code>
+    appears as a key.  On the other hand, a <code class="literal">jsonb_ops</code>
+    index would create three index items representing <code class="literal">foo</code>,
+    <code class="literal">bar</code>, and <code class="literal">baz</code> separately; then to do the
+    containment query, it would look for rows containing all three of
+    these items.  While GIN indexes can perform such an AND search fairly
+    efficiently, it will still be less specific and slower than the
+    equivalent <code class="literal">jsonb_path_ops</code> search, especially if
+    there are a very large number of rows containing any single one of the
+    three index items.
+  </p><p>
+    A disadvantage of the <code class="literal">jsonb_path_ops</code> approach is
+    that it produces no index entries for JSON structures not containing
+    any values, such as <code class="literal">{"a": {}}</code>.  If a search for
+    documents containing such a structure is requested, it will require a
+    full-index scan, which is quite slow.  <code class="literal">jsonb_path_ops</code> is
+    therefore ill-suited for applications that often perform such searches.
+  </p><p>
+    <code class="type">jsonb</code> also supports <code class="literal">btree</code> and <code class="literal">hash</code>
+    indexes.  These are usually useful only if it's important to check
+    equality of complete JSON documents.
+    The <code class="literal">btree</code> ordering for <code class="type">jsonb</code> datums is seldom
+    of great interest, but for completeness it is:
+</p><pre class="synopsis">
+<em class="replaceable"><code>Object</code></em> &gt; <em class="replaceable"><code>Array</code></em> &gt; <em class="replaceable"><code>Boolean</code></em> &gt; <em class="replaceable"><code>Number</code></em> &gt; <em class="replaceable"><code>String</code></em> &gt; <em class="replaceable"><code>Null</code></em>
+
+<em class="replaceable"><code>Object with n pairs</code></em> &gt; <em class="replaceable"><code>object with n - 1 pairs</code></em>
+
+<em class="replaceable"><code>Array with n elements</code></em> &gt; <em class="replaceable"><code>array with n - 1 elements</code></em>
+</pre><p>
+      Objects with equal numbers of pairs are compared in the order:
+</p><pre class="synopsis">
+<em class="replaceable"><code>key-1</code></em>, <em class="replaceable"><code>value-1</code></em>, <em class="replaceable"><code>key-2</code></em> ...
+</pre><p>
+      Note that object keys are compared in their storage order;
+      in particular, since shorter keys are stored before longer keys, this
+      can lead to results that might be unintuitive, such as:
+</p><pre class="programlisting">
+{ "aa": 1, "c": 1} &gt; {"b": 1, "d": 1}
+</pre><p>
+      Similarly, arrays with equal numbers of elements are compared in the
+      order:
+</p><pre class="synopsis">
+<em class="replaceable"><code>element-1</code></em>, <em class="replaceable"><code>element-2</code></em> ...
+</pre><p>
+      Primitive JSON values are compared using the same
+      comparison rules as for the underlying
+      <span class="productname">PostgreSQL</span> data type.  Strings are
+      compared using the default database collation.
+  </p></div><div class="sect2" id="JSONB-SUBSCRIPTING"><div class="titlepage"><div><div><h3 class="title">8.14.5. <code class="type">jsonb</code> Subscripting</h3></div></div></div><p>
+   The <code class="type">jsonb</code> data type supports array-style subscripting expressions
+   to extract and modify elements. Nested values can be indicated by chaining
+   subscripting expressions, following the same rules as the <code class="literal">path</code>
+   argument in the <code class="literal">jsonb_set</code> function. If a <code class="type">jsonb</code>
+   value is an array, numeric subscripts start at zero, and negative integers count
+   backwards from the last element of the array. Slice expressions are not supported.
+   The result of a subscripting expression is always of the jsonb data type.
+  </p><p>
+   <code class="command">UPDATE</code> statements may use subscripting in the
+   <code class="literal">SET</code> clause to modify <code class="type">jsonb</code> values. Subscript
+   paths must be traversable for all affected values insofar as they exist. For
+   instance, the path <code class="literal">val['a']['b']['c']</code> can be traversed all
+   the way to <code class="literal">c</code> if every <code class="literal">val</code>,
+   <code class="literal">val['a']</code>, and <code class="literal">val['a']['b']</code> is an
+   object. If any <code class="literal">val['a']</code> or <code class="literal">val['a']['b']</code>
+   is not defined, it will be created as an empty object and filled as
+   necessary. However, if any <code class="literal">val</code> itself or one of the
+   intermediary values is defined as a non-object such as a string, number, or
+   <code class="literal">jsonb</code> <code class="literal">null</code>, traversal cannot proceed so
+   an error is raised and the transaction aborted.
+  </p><p>
+   An example of subscripting syntax:
+
+</p><pre class="programlisting">
+
+-- Extract object value by key
+SELECT ('{"a": 1}'::jsonb)['a'];
+
+-- Extract nested object value by key path
+SELECT ('{"a": {"b": {"c": 1}}}'::jsonb)['a']['b']['c'];
+
+-- Extract array element by index
+SELECT ('[1, "2", null]'::jsonb)[1];
+
+-- Update object value by key. Note the quotes around '1': the assigned
+-- value must be of the jsonb type as well
+UPDATE table_name SET jsonb_field['key'] = '1';
+
+-- This will raise an error if any record's jsonb_field['a']['b'] is something
+-- other than an object. For example, the value {"a": 1} has a numeric value
+-- of the key 'a'.
+UPDATE table_name SET jsonb_field['a']['b']['c'] = '1';
+
+-- Filter records using a WHERE clause with subscripting. Since the result of
+-- subscripting is jsonb, the value we compare it against must also be jsonb.
+-- The double quotes make "value" also a valid jsonb string.
+SELECT * FROM table_name WHERE jsonb_field['key'] = '"value"';
+</pre><p>
+
+   <code class="type">jsonb</code> assignment via subscripting handles a few edge cases
+   differently from <code class="literal">jsonb_set</code>. When a source <code class="type">jsonb</code>
+   value is <code class="literal">NULL</code>, assignment via subscripting will proceed
+   as if it was an empty JSON value of the type (object or array) implied by the
+   subscript key:
+
+</p><pre class="programlisting">
+-- Where jsonb_field was NULL, it is now {"a": 1}
+UPDATE table_name SET jsonb_field['a'] = '1';
+
+-- Where jsonb_field was NULL, it is now [1]
+UPDATE table_name SET jsonb_field[0] = '1';
+</pre><p>
+
+   If an index is specified for an array containing too few elements,
+   <code class="literal">NULL</code> elements will be appended until the index is reachable
+   and the value can be set.
+
+</p><pre class="programlisting">
+-- Where jsonb_field was [], it is now [null, null, 2];
+-- where jsonb_field was [0], it is now [0, null, 2]
+UPDATE table_name SET jsonb_field[2] = '2';
+</pre><p>
+
+   A <code class="type">jsonb</code> value will accept assignments to nonexistent subscript
+   paths as long as the last existing element to be traversed is an object or
+   array, as implied by the corresponding subscript (the element indicated by
+   the last subscript in the path is not traversed and may be anything). Nested
+   array and object structures will be created, and in the former case
+   <code class="literal">null</code>-padded, as specified by the subscript path until the
+   assigned value can be placed.
+
+</p><pre class="programlisting">
+-- Where jsonb_field was {}, it is now {"a": [{"b": 1}]}
+UPDATE table_name SET jsonb_field['a'][0]['b'] = '1';
+
+-- Where jsonb_field was [], it is now [null, {"a": 1}]
+UPDATE table_name SET jsonb_field[1]['a'] = '1';
+</pre><p>
+
+  </p></div><div class="sect2" id="id-1.5.7.22.20"><div class="titlepage"><div><div><h3 class="title">8.14.6. Transforms</h3></div></div></div><p>
+   Additional extensions are available that implement transforms for the
+   <code class="type">jsonb</code> type for different procedural languages.
+  </p><p>
+   The extensions for PL/Perl are called <code class="literal">jsonb_plperl</code> and
+   <code class="literal">jsonb_plperlu</code>.  If you use them, <code class="type">jsonb</code>
+   values are mapped to Perl arrays, hashes, and scalars, as appropriate.
+  </p><p>
+   The extensions for PL/Python are called <code class="literal">jsonb_plpythonu</code>,
+   <code class="literal">jsonb_plpython2u</code>, and
+   <code class="literal">jsonb_plpython3u</code> (see <a class="xref" href="plpython-python23.html" title="46.1. Python 2 vs. Python 3">Section 46.1</a> for the PL/Python naming convention).  If you
+   use them, <code class="type">jsonb</code> values are mapped to Python dictionaries,
+   lists, and scalars, as appropriate.
+  </p><p>
+   Of these extensions, <code class="literal">jsonb_plperl</code> is
+   considered <span class="quote">“<span class="quote">trusted</span>”</span>, that is, it can be installed by
+   non-superusers who have <code class="literal">CREATE</code> privilege on the
+   current database.  The rest require superuser privilege to install.
+  </p></div><div class="sect2" id="DATATYPE-JSONPATH"><div class="titlepage"><div><div><h3 class="title">8.14.7. jsonpath Type</h3></div></div></div><a id="id-1.5.7.22.21.2" class="indexterm"></a><p>
+   The <code class="type">jsonpath</code> type implements support for the SQL/JSON path language
+   in <span class="productname">PostgreSQL</span> to efficiently query JSON data.
+   It provides a binary representation of the parsed SQL/JSON path
+   expression that specifies the items to be retrieved by the path
+   engine from the JSON data for further processing with the
+   SQL/JSON query functions.
+  </p><p>
+   The semantics of SQL/JSON path predicates and operators generally follow SQL.
+   At the same time, to provide a natural way of working with JSON data,
+   SQL/JSON path syntax uses some JavaScript conventions:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     Dot (<code class="literal">.</code>) is used for member access.
+    </p></li><li class="listitem"><p>
+     Square brackets (<code class="literal">[]</code>) are used for array access.
+    </p></li><li class="listitem"><p>
+     SQL/JSON arrays are 0-relative, unlike regular SQL arrays that start from 1.
+    </p></li></ul></div><p>
+   An SQL/JSON path expression is typically written in an SQL query as an
+   SQL character string literal, so it must be enclosed in single quotes,
+   and any single quotes desired within the value must be doubled
+   (see <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-STRINGS" title="4.1.2.1. String Constants">Section 4.1.2.1</a>).
+   Some forms of path expressions require string literals within them.
+   These embedded string literals follow JavaScript/ECMAScript conventions:
+   they must be surrounded by double quotes, and backslash escapes may be
+   used within them to represent otherwise-hard-to-type characters.
+   In particular, the way to write a double quote within an embedded string
+   literal is <code class="literal">\"</code>, and to write a backslash itself, you
+   must write <code class="literal">\\</code>.  Other special backslash sequences
+   include those recognized in JavaScript strings:
+   <code class="literal">\b</code>,
+   <code class="literal">\f</code>,
+   <code class="literal">\n</code>,
+   <code class="literal">\r</code>,
+   <code class="literal">\t</code>,
+   <code class="literal">\v</code>
+   for various ASCII control characters,
+   <code class="literal">\x<em class="replaceable"><code>NN</code></em></code> for a character code
+   written with only two hex digits,
+   <code class="literal">\u<em class="replaceable"><code>NNNN</code></em></code> for a Unicode
+   character identified by its 4-hex-digit code point, and
+   <code class="literal">\u{<em class="replaceable"><code>N...</code></em>}</code> for a Unicode
+   character code point written with 1 to 6 hex digits.
+  </p><p>
+   A path expression consists of a sequence of path elements,
+   which can be any of the following:
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Path literals of JSON primitive types:
+      Unicode text, numeric, true, false, or null.
+     </p></li><li class="listitem"><p>
+      Path variables listed in <a class="xref" href="datatype-json.html#TYPE-JSONPATH-VARIABLES" title="Table 8.24. jsonpath Variables">Table 8.24</a>.
+     </p></li><li class="listitem"><p>
+      Accessor operators listed in <a class="xref" href="datatype-json.html#TYPE-JSONPATH-ACCESSORS" title="Table 8.25. jsonpath Accessors">Table 8.25</a>.
+     </p></li><li class="listitem"><p>
+      <code class="type">jsonpath</code> operators and methods listed
+      in <a class="xref" href="functions-json.html#FUNCTIONS-SQLJSON-PATH-OPERATORS" title="9.16.2.2. SQL/JSON Path Operators and Methods">Section 9.16.2.2</a>.
+     </p></li><li class="listitem"><p>
+      Parentheses, which can be used to provide filter expressions
+      or define the order of path evaluation.
+     </p></li></ul></div><p>
+  </p><p>
+   For details on using <code class="type">jsonpath</code> expressions with SQL/JSON
+   query functions, see <a class="xref" href="functions-json.html#FUNCTIONS-SQLJSON-PATH" title="9.16.2. The SQL/JSON Path Language">Section 9.16.2</a>.
+  </p><div class="table" id="TYPE-JSONPATH-VARIABLES"><p class="title"><strong>Table 8.24. <code class="type">jsonpath</code> Variables</strong></p><div class="table-contents"><table class="table" summary="jsonpath Variables" border="1"><colgroup><col class="col1" /><col class="col2" /></colgroup><thead><tr><th>Variable</th><th>Description</th></tr></thead><tbody><tr><td><code class="literal">$</code></td><td>A variable representing the JSON value being queried
+      (the <em class="firstterm">context item</em>).
+      </td></tr><tr><td><code class="literal">$varname</code></td><td>
+        A named variable. Its value can be set by the parameter
+        <em class="parameter"><code>vars</code></em> of several JSON processing functions;
+        see <a class="xref" href="functions-json.html#FUNCTIONS-JSON-PROCESSING-TABLE" title="Table 9.47. JSON Processing Functions">Table 9.47</a> for details.
+        
+      </td></tr><tr><td><code class="literal">@</code></td><td>A variable representing the result of path evaluation
+      in filter expressions.
+      </td></tr></tbody></table></div></div><br class="table-break" /><div class="table" id="TYPE-JSONPATH-ACCESSORS"><p class="title"><strong>Table 8.25. <code class="type">jsonpath</code> Accessors</strong></p><div class="table-contents"><table class="table" summary="jsonpath Accessors" border="1"><colgroup><col class="col1" /><col class="col2" /></colgroup><thead><tr><th>Accessor Operator</th><th>Description</th></tr></thead><tbody><tr><td>
+       <p>
+        <code class="literal">.<em class="replaceable"><code>key</code></em></code>
+       </p>
+       <p>
+        <code class="literal">."$<em class="replaceable"><code>varname</code></em>"</code>
+       </p>
+      </td><td>
+       <p>
+        Member accessor that returns an object member with
+        the specified key. If the key name matches some named variable
+        starting with <code class="literal">$</code> or does not meet the
+        JavaScript rules for an identifier, it must be enclosed in
+        double quotes to make it a string literal.
+       </p>
+      </td></tr><tr><td>
+       <p>
+        <code class="literal">.*</code>
+       </p>
+      </td><td>
+       <p>
+        Wildcard member accessor that returns the values of all
+        members located at the top level of the current object.
+       </p>
+      </td></tr><tr><td>
+       <p>
+        <code class="literal">.**</code>
+       </p>
+      </td><td>
+       <p>
+        Recursive wildcard member accessor that processes all levels
+        of the JSON hierarchy of the current object and returns all
+        the member values, regardless of their nesting level. This
+        is a <span class="productname">PostgreSQL</span> extension of
+        the SQL/JSON standard.
+       </p>
+      </td></tr><tr><td>
+       <p>
+        <code class="literal">.**{<em class="replaceable"><code>level</code></em>}</code>
+       </p>
+       <p>
+        <code class="literal">.**{<em class="replaceable"><code>start_level</code></em> to
+        <em class="replaceable"><code>end_level</code></em>}</code>
+       </p>
+      </td><td>
+       <p>
+        Like <code class="literal">.**</code>, but selects only the specified
+        levels of the JSON hierarchy. Nesting levels are specified as integers.
+        Level zero corresponds to the current object. To access the lowest
+        nesting level, you can use the <code class="literal">last</code> keyword.
+        This is a <span class="productname">PostgreSQL</span> extension of
+        the SQL/JSON standard.
+       </p>
+      </td></tr><tr><td>
+       <p>
+        <code class="literal">[<em class="replaceable"><code>subscript</code></em>, ...]</code>
+       </p>
+      </td><td>
+       <p>
+        Array element accessor.
+        <code class="literal"><em class="replaceable"><code>subscript</code></em></code> can be
+        given in two forms: <code class="literal"><em class="replaceable"><code>index</code></em></code>
+        or <code class="literal"><em class="replaceable"><code>start_index</code></em> to <em class="replaceable"><code>end_index</code></em></code>.
+        The first form returns a single array element by its index. The second
+        form returns an array slice by the range of indexes, including the
+        elements that correspond to the provided
+        <em class="replaceable"><code>start_index</code></em> and <em class="replaceable"><code>end_index</code></em>.
+       </p>
+       <p>
+        The specified <em class="replaceable"><code>index</code></em> can be an integer, as
+        well as an expression returning a single numeric value, which is
+        automatically cast to integer. Index zero corresponds to the first
+        array element. You can also use the <code class="literal">last</code> keyword
+        to denote the last array element, which is useful for handling arrays
+        of unknown length.
+       </p>
+      </td></tr><tr><td>
+       <p>
+        <code class="literal">[*]</code>
+       </p>
+      </td><td>
+       <p>
+        Wildcard array element accessor that returns all array elements.
+       </p>
+      </td></tr></tbody></table></div></div><br class="table-break" /></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.id-1.5.7.22.18.9.3" class="footnote"><p><a href="#id-1.5.7.22.18.9.3" class="para"><sup class="para">[7] </sup></a>
+      For this purpose, the term <span class="quote">“<span class="quote">value</span>”</span> includes array elements,
+      though JSON terminology sometimes considers array elements distinct
+      from values within objects.
+     </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-xml.html" title="8.13. XML Type">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="arrays.html" title="8.15. Arrays">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.13. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">XML</acronym> Type </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.15. Arrays</td></tr></table></div></body></html>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER SYSTEM</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altersubscription.html" title="ALTER SUBSCRIPTION" /><link rel="next" href="sql-altertable.html" title="ALTER TABLE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER SYSTEM</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altersubscription.html" title="ALTER SUBSCRIPTION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-altertable.html" title="ALTER TABLE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERSYSTEM"><div class="titlepage"></div><a id="id-1.9.3.34.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER SYSTEM</span></h2><p>ALTER SYSTEM — change a server configuration parameter</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER SYSTEM SET <em class="replaceable"><code>configuration_parameter</code></em> { TO | = } { <em class="replaceable"><code>value</code></em> [, ...] | DEFAULT }
+
+ALTER SYSTEM RESET <em class="replaceable"><code>configuration_parameter</code></em>
+ALTER SYSTEM RESET ALL
+</pre></div><div class="refsect1" id="id-1.9.3.34.5"><h2>Description</h2><p>
+   <code class="command">ALTER SYSTEM</code> is used for changing server configuration
+   parameters across the entire database cluster.  It can be more convenient
+   than the traditional method of manually editing
+   the <code class="filename">postgresql.conf</code> file.
+   <code class="command">ALTER SYSTEM</code> writes the given parameter setting to
+   the <code class="filename">postgresql.auto.conf</code> file, which is read in
+   addition to <code class="filename">postgresql.conf</code>.
+   Setting a parameter to <code class="literal">DEFAULT</code>, or using the
+   <code class="command">RESET</code> variant, removes that configuration entry from the
+   <code class="filename">postgresql.auto.conf</code> file. Use <code class="literal">RESET
+   ALL</code> to remove all such configuration entries.
+  </p><p>
+   Values set with <code class="command">ALTER SYSTEM</code> will be effective after
+   the next server configuration reload, or after the next server restart
+   in the case of parameters that can only be changed at server start.
+   A server configuration reload can be commanded by calling the SQL
+   function <code class="function">pg_reload_conf()</code>, running <code class="literal">pg_ctl reload</code>,
+   or sending a <span class="systemitem">SIGHUP</span> signal to the main server process.
+  </p><p>
+   Only superusers can use <code class="command">ALTER SYSTEM</code>.  Also, since
+   this command acts directly on the file system and cannot be rolled back,
+   it is not allowed inside a transaction block or function.
+  </p></div><div class="refsect1" id="id-1.9.3.34.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>configuration_parameter</code></em></span></dt><dd><p>
+      Name of a settable configuration parameter.  Available parameters are
+      documented in <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a>.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>value</code></em></span></dt><dd><p>
+      New value of the parameter.  Values can be specified as string
+      constants, identifiers, numbers, or comma-separated lists of
+      these, as appropriate for the particular parameter.
+      Values that are neither numbers nor valid identifiers must be quoted.
+      <code class="literal">DEFAULT</code> can be written to specify removing the
+      parameter and its value from <code class="filename">postgresql.auto.conf</code>.
+     </p><p>
+      For some list-accepting parameters, quoted values will produce
+      double-quoted output to preserve whitespace and commas; for others,
+      double-quotes must be used inside single-quoted strings to get
+      this effect.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.34.7"><h2>Notes</h2><p>
+   This command can't be used to set <a class="xref" href="runtime-config-file-locations.html#GUC-DATA-DIRECTORY">data_directory</a>,
+   nor parameters that are not allowed in <code class="filename">postgresql.conf</code>
+   (e.g., <a class="link" href="runtime-config-preset.html" title="20.15. Preset Options">preset options</a>).
+  </p><p>
+   See <a class="xref" href="config-setting.html" title="20.1. Setting Parameters">Section 20.1</a> for other ways to set the parameters.
+  </p></div><div class="refsect1" id="id-1.9.3.34.8"><h2>Examples</h2><p>
+   Set the <code class="literal">wal_level</code>:
+</p><pre class="programlisting">
+ALTER SYSTEM SET wal_level = replica;
+</pre><p>
+  </p><p>
+   Undo that, restoring whatever setting was effective
+   in <code class="filename">postgresql.conf</code>:
+</p><pre class="programlisting">
+ALTER SYSTEM RESET wal_level;
+</pre></div><div class="refsect1" id="id-1.9.3.34.9"><h2>Compatibility</h2><p>
+   The <code class="command">ALTER SYSTEM</code> statement is a
+   <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.34.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a>, <a class="xref" href="sql-show.html" title="SHOW"><span class="refentrytitle">SHOW</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altersubscription.html" title="ALTER SUBSCRIPTION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-altertable.html" title="ALTER TABLE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER SUBSCRIPTION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER TABLE</td></tr></table></div></body></html>

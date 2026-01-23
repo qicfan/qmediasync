@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>7.7. VALUES Lists</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="queries-limit.html" title="7.6. LIMIT and OFFSET" /><link rel="next" href="queries-with.html" title="7.8. WITH Queries (Common Table Expressions)" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">7.7. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">VALUES</code> Lists</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="queries-limit.html" title="7.6. LIMIT and OFFSET">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="queries.html" title="Chapter 7. Queries">Up</a></td><th width="60%" align="center">Chapter 7. Queries</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="queries-with.html" title="7.8. WITH Queries (Common Table Expressions)">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="QUERIES-VALUES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">7.7. <code class="literal">VALUES</code> Lists</h2></div></div></div><a id="id-1.5.6.11.2" class="indexterm"></a><p>
+   <code class="literal">VALUES</code> provides a way to generate a <span class="quote">“<span class="quote">constant table</span>”</span>
+   that can be used in a query without having to actually create and populate
+   a table on-disk.  The syntax is
+</p><pre class="synopsis">
+VALUES ( <em class="replaceable"><code>expression</code></em> [, ...] ) [, ...]
+</pre><p>
+   Each parenthesized list of expressions generates a row in the table.
+   The lists must all have the same number of elements (i.e., the number
+   of columns in the table), and corresponding entries in each list must
+   have compatible data types.  The actual data type assigned to each column
+   of the result is determined using the same rules as for <code class="literal">UNION</code>
+   (see <a class="xref" href="typeconv-union-case.html" title="10.5. UNION, CASE, and Related Constructs">Section 10.5</a>).
+  </p><p>
+   As an example:
+</p><pre class="programlisting">
+VALUES (1, 'one'), (2, 'two'), (3, 'three');
+</pre><p>
+
+   will return a table of two columns and three rows.  It's effectively
+   equivalent to:
+</p><pre class="programlisting">
+SELECT 1 AS column1, 'one' AS column2
+UNION ALL
+SELECT 2, 'two'
+UNION ALL
+SELECT 3, 'three';
+</pre><p>
+
+   By default, <span class="productname">PostgreSQL</span> assigns the names
+   <code class="literal">column1</code>, <code class="literal">column2</code>, etc. to the columns of a
+   <code class="literal">VALUES</code> table.  The column names are not specified by the
+   SQL standard and different database systems do it differently, so
+   it's usually better to override the default names with a table alias
+   list, like this:
+</p><pre class="programlisting">
+=&gt; SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three')) AS t (num,letter);
+ num | letter
+-----+--------
+   1 | one
+   2 | two
+   3 | three
+(3 rows)
+</pre><p>
+  </p><p>
+   Syntactically, <code class="literal">VALUES</code> followed by expression lists is
+   treated as equivalent to:
+</p><pre class="synopsis">
+SELECT <em class="replaceable"><code>select_list</code></em> FROM <em class="replaceable"><code>table_expression</code></em>
+</pre><p>
+   and can appear anywhere a <code class="literal">SELECT</code> can.  For example, you can
+   use it as part of a <code class="literal">UNION</code>, or attach a
+   <em class="replaceable"><code>sort_specification</code></em> (<code class="literal">ORDER BY</code>,
+   <code class="literal">LIMIT</code>, and/or <code class="literal">OFFSET</code>) to it.  <code class="literal">VALUES</code>
+   is most commonly used as the data source in an <code class="command">INSERT</code> command,
+   and next most commonly as a subquery.
+  </p><p>
+   For more information see <a class="xref" href="sql-values.html" title="VALUES"><span class="refentrytitle">VALUES</span></a>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="queries-limit.html" title="7.6. LIMIT and OFFSET">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="queries.html" title="Chapter 7. Queries">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="queries-with.html" title="7.8. WITH Queries (Common Table Expressions)">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.6. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">LIMIT</code> and <code xmlns="http://www.w3.org/1999/xhtml" class="literal">OFFSET</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 7.8. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">WITH</code> Queries (Common Table Expressions)</td></tr></table></div></body></html>

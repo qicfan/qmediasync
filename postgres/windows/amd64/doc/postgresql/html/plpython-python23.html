@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>46.1. Python 2 vs. Python 3</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="plpython.html" title="Chapter 46. PL/Python — Python Procedural Language" /><link rel="next" href="plpython-funcs.html" title="46.2. PL/Python Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">46.1. Python 2 vs. Python 3</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="plpython.html" title="Chapter 46. PL/Python — Python Procedural Language">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="plpython.html" title="Chapter 46. PL/Python — Python Procedural Language">Up</a></td><th width="60%" align="center">Chapter 46. PL/Python — Python Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="plpython-funcs.html" title="46.2. PL/Python Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLPYTHON-PYTHON23"><div class="titlepage"><div><div><h2 class="title" style="clear: both">46.1. Python 2 vs. Python 3</h2></div></div></div><p>
+   PL/Python supports both the Python 2 and Python 3 language
+   variants.  (The PostgreSQL installation instructions might contain
+   more precise information about the exact supported minor versions
+   of Python.)  Because the Python 2 and Python 3 language variants
+   are incompatible in some important aspects, the following naming
+   and transitioning scheme is used by PL/Python to avoid mixing them:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      The PostgreSQL language named <code class="literal">plpython2u</code>
+      implements PL/Python based on the Python 2 language variant.
+     </p></li><li class="listitem"><p>
+      The PostgreSQL language named <code class="literal">plpython3u</code>
+      implements PL/Python based on the Python 3 language variant.
+     </p></li><li class="listitem"><p>
+      The language named <code class="literal">plpythonu</code> implements
+      PL/Python based on the default Python language variant, which is
+      currently Python 2.  (This default is independent of what any
+      local Python installations might consider to be
+      their <span class="quote">“<span class="quote">default</span>”</span>, for example,
+      what <code class="filename">/usr/bin/python</code> might be.)  The
+      default will probably be changed to Python 3 in a distant future
+      release of PostgreSQL, depending on the progress of the
+      migration to Python 3 in the Python community.
+     </p></li></ul></div><p>
+
+   This scheme is analogous to the recommendations in <a class="ulink" href="https://www.python.org/dev/peps/pep-0394/" target="_top">PEP 394</a> regarding the
+   naming and transitioning of the <code class="command">python</code> command.
+  </p><p>
+   It depends on the build configuration or the installed packages
+   whether PL/Python for Python 2 or Python 3 or both are available.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    The built variant depends on which Python version was found during
+    the installation or which version was explicitly set using
+    the <code class="envar">PYTHON</code> environment variable;
+    see <a class="xref" href="install-procedure.html" title="17.4. Installation Procedure">Section 17.4</a>.  To make both variants of
+    PL/Python available in one installation, the source tree has to be
+    configured and built twice.
+   </p></div><p>
+   This results in the following usage and migration strategy:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Existing users and users who are currently not interested in
+      Python 3 use the language name <code class="literal">plpythonu</code> and
+      don't have to change anything for the foreseeable future.  It is
+      recommended to gradually <span class="quote">“<span class="quote">future-proof</span>”</span> the code
+      via migration to Python 2.6/2.7 to simplify the eventual
+      migration to Python 3.
+     </p><p>
+      In practice, many PL/Python functions will migrate to Python 3
+      with few or no changes.
+     </p></li><li class="listitem"><p>
+      Users who know that they have heavily Python 2 dependent code
+      and don't plan to ever change it can make use of
+      the <code class="literal">plpython2u</code> language name.  This will
+      continue to work into the very distant future, until Python 2
+      support might be completely dropped by PostgreSQL.
+     </p></li><li class="listitem"><p>
+      Users who want to dive into Python 3 can use
+      the <code class="literal">plpython3u</code> language name, which will keep
+      working forever by today's standards.  In the distant future,
+      when Python 3 might become the default, they might like to
+      remove the <span class="quote">“<span class="quote">3</span>”</span> for aesthetic reasons.
+     </p></li><li class="listitem"><p>
+      Daredevils, who want to build a Python-3-only operating system
+      environment, can change the contents of
+      <code class="literal">plpythonu</code>'s extension control and script files
+      to make <code class="literal">plpythonu</code> be equivalent
+      to <code class="literal">plpython3u</code>, keeping in mind that this
+      would make their installation incompatible with most of the rest
+      of the world.
+     </p></li></ul></div><p>
+  </p><p>
+   See also the
+   document <a class="ulink" href="https://docs.python.org/3/whatsnew/3.0.html" target="_top">What's
+   New In Python 3.0</a> for more information about porting to
+   Python 3.
+  </p><p>
+   It is not allowed to use PL/Python based on Python 2 and PL/Python
+   based on Python 3 in the same session, because the symbols in the
+   dynamic modules would clash, which could result in crashes of the
+   PostgreSQL server process.  There is a check that prevents mixing
+   Python major versions in a session, which will abort the session if
+   a mismatch is detected.  It is possible, however, to use both
+   PL/Python variants in the same database, from separate sessions.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="plpython.html" title="Chapter 46. PL/Python — Python Procedural Language">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="plpython.html" title="Chapter 46. PL/Python — Python Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="plpython-funcs.html" title="46.2. PL/Python Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 46. PL/Python — Python Procedural Language </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 46.2. PL/Python Functions</td></tr></table></div></body></html>

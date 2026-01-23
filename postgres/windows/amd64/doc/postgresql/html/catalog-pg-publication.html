@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.39. pg_publication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-proc.html" title="52.38. pg_proc" /><link rel="next" href="catalog-pg-publication-rel.html" title="52.40. pg_publication_rel" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.39. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_publication</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-proc.html" title="52.38. pg_proc">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-publication-rel.html" title="52.40. pg_publication_rel">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-PUBLICATION"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.39. <code class="structname">pg_publication</code></h2></div></div></div><a id="id-1.10.4.41.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_publication</code> contains all
+   publications created in the database.  For more on publications see
+   <a class="xref" href="logical-replication-publication.html" title="31.1. Publication">Section 31.1</a>.
+  </p><div class="table" id="id-1.10.4.41.4"><p class="title"><strong>Table 52.39. <code class="structname">pg_publication</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_publication Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pubname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Name of the publication
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pubowner</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the publication
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">puballtables</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, this publication automatically includes all tables
+       in the database, including any that will be created in the future.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pubinsert</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, <a class="xref" href="sql-insert.html" title="INSERT"><span class="refentrytitle">INSERT</span></a> operations are replicated for
+       tables in the publication.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pubupdate</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, <a class="xref" href="sql-update.html" title="UPDATE"><span class="refentrytitle">UPDATE</span></a> operations are replicated for
+       tables in the publication.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pubdelete</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, <a class="xref" href="sql-delete.html" title="DELETE"><span class="refentrytitle">DELETE</span></a> operations are replicated for
+       tables in the publication.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pubtruncate</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, <a class="xref" href="sql-truncate.html" title="TRUNCATE"><span class="refentrytitle">TRUNCATE</span></a> operations are replicated for
+       tables in the publication.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pubviaroot</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, operations on a leaf partition are replicated using the
+       identity and schema of its topmost partitioned ancestor mentioned in the
+       publication instead of its own.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-proc.html" title="52.38. pg_proc">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-publication-rel.html" title="52.40. pg_publication_rel">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.38. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_proc</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.40. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_publication_rel</code></td></tr></table></div></body></html>

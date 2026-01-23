@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>dblink_fetch</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="contrib-dblink-open.html" title="dblink_open" /><link rel="next" href="contrib-dblink-close.html" title="dblink_close" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">dblink_fetch</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="contrib-dblink-open.html" title="dblink_open">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="dblink.html" title="F.10. dblink">Up</a></td><th width="60%" align="center">F.10. dblink</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="contrib-dblink-close.html" title="dblink_close">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="CONTRIB-DBLINK-FETCH"><div class="titlepage"></div><a id="id-1.11.7.19.11.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">dblink_fetch</span></h2><p>dblink_fetch — returns rows from an open cursor in a remote database</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+dblink_fetch(text cursorname, int howmany [, bool fail_on_error]) returns setof record
+dblink_fetch(text connname, text cursorname, int howmany [, bool fail_on_error]) returns setof record
+</pre></div><div class="refsect1" id="id-1.11.7.19.11.5"><h2>Description</h2><p>
+    <code class="function">dblink_fetch</code> fetches rows from a cursor previously
+    established by <code class="function">dblink_open</code>.
+   </p></div><div class="refsect1" id="id-1.11.7.19.11.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="parameter"><code>connname</code></em></span></dt><dd><p>
+       Name of the connection to use; omit this parameter to use the
+       unnamed connection.
+      </p></dd><dt><span class="term"><em class="parameter"><code>cursorname</code></em></span></dt><dd><p>
+       The name of the cursor to fetch from.
+      </p></dd><dt><span class="term"><em class="parameter"><code>howmany</code></em></span></dt><dd><p>
+       The maximum number of rows to retrieve. The next <em class="parameter"><code>howmany</code></em>
+       rows are fetched, starting at the current cursor position, moving
+       forward. Once the cursor has reached its end, no more rows are produced.
+      </p></dd><dt><span class="term"><em class="parameter"><code>fail_on_error</code></em></span></dt><dd><p>
+       If true (the default when omitted) then an error thrown on the
+       remote side of the connection causes an error to also be thrown
+       locally. If false, the remote error is locally reported as a NOTICE,
+       and the function returns no rows.
+      </p></dd></dl></div></div><div class="refsect1" id="id-1.11.7.19.11.7"><h2>Return Value</h2><p>
+    The function returns the row(s) fetched from the cursor.  To use this
+    function, you will need to specify the expected set of columns,
+    as previously discussed for <code class="function">dblink</code>.
+   </p></div><div class="refsect1" id="id-1.11.7.19.11.8"><h2>Notes</h2><p>
+    On a mismatch between the number of return columns specified in the
+    <code class="literal">FROM</code> clause, and the actual number of columns returned by the
+    remote cursor, an error will be thrown. In this event, the remote cursor
+    is still advanced by as many rows as it would have been if the error had
+    not occurred.  The same is true for any other error occurring in the local
+    query after the remote <code class="command">FETCH</code> has been done.
+   </p></div><div class="refsect1" id="id-1.11.7.19.11.9"><h2>Examples</h2><pre class="screen">
+SELECT dblink_connect('dbname=postgres options=-csearch_path=');
+ dblink_connect
+----------------
+ OK
+(1 row)
+
+SELECT dblink_open('foo', 'select proname, prosrc from pg_proc where proname like ''bytea%''');
+ dblink_open
+-------------
+ OK
+(1 row)
+
+SELECT * FROM dblink_fetch('foo', 5) AS (funcname name, source text);
+ funcname |  source
+----------+----------
+ byteacat | byteacat
+ byteacmp | byteacmp
+ byteaeq  | byteaeq
+ byteage  | byteage
+ byteagt  | byteagt
+(5 rows)
+
+SELECT * FROM dblink_fetch('foo', 5) AS (funcname name, source text);
+ funcname  |  source
+-----------+-----------
+ byteain   | byteain
+ byteale   | byteale
+ bytealike | bytealike
+ bytealt   | bytealt
+ byteane   | byteane
+(5 rows)
+
+SELECT * FROM dblink_fetch('foo', 5) AS (funcname name, source text);
+  funcname  |   source
+------------+------------
+ byteanlike | byteanlike
+ byteaout   | byteaout
+(2 rows)
+
+SELECT * FROM dblink_fetch('foo', 5) AS (funcname name, source text);
+ funcname | source
+----------+--------
+(0 rows)
+</pre></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="contrib-dblink-open.html" title="dblink_open">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="dblink.html" title="F.10. dblink">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="contrib-dblink-close.html" title="dblink_close">Next</a></td></tr><tr><td width="40%" align="left" valign="top">dblink_open </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> dblink_close</td></tr></table></div></body></html>

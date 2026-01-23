@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>22.6. Function Security</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="predefined-roles.html" title="22.5. Predefined Roles" /><link rel="next" href="managing-databases.html" title="Chapter 23. Managing Databases" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">22.6. Function Security</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="predefined-roles.html" title="22.5. Predefined Roles">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="user-manag.html" title="Chapter 22. Database Roles">Up</a></td><th width="60%" align="center">Chapter 22. Database Roles</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="managing-databases.html" title="Chapter 23. Managing Databases">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PERM-FUNCTIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">22.6. Function Security</h2></div></div></div><p>
+   Functions, triggers and row-level security policies allow users to insert
+   code into the backend server that other users might execute
+   unintentionally. Hence, these mechanisms permit users to <span class="quote">“<span class="quote">Trojan
+   horse</span>”</span> others with relative ease. The strongest protection is tight
+   control over who can define objects. Where that is infeasible, write
+   queries referring only to objects having trusted owners.  Remove
+   from <code class="varname">search_path</code> the public schema and any other schemas
+   that permit untrusted users to create objects.
+  </p><p>
+   Functions run inside the backend
+   server process with the operating system permissions of the
+   database server daemon.  If the programming language
+   used for the function allows unchecked memory accesses, it is
+   possible to change the server's internal data structures.
+   Hence, among many other things, such functions can circumvent any
+   system access controls.  Function languages that allow such access
+   are considered <span class="quote">“<span class="quote">untrusted</span>”</span>, and
+   <span class="productname">PostgreSQL</span> allows only superusers to
+   create functions written in those languages.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="predefined-roles.html" title="22.5. Predefined Roles">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="user-manag.html" title="Chapter 22. Database Roles">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="managing-databases.html" title="Chapter 23. Managing Databases">Next</a></td></tr><tr><td width="40%" align="left" valign="top">22.5. Predefined Roles </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 23. Managing Databases</td></tr></table></div></body></html>

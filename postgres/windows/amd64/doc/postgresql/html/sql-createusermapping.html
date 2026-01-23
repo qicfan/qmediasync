@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE USER MAPPING</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createuser.html" title="CREATE USER" /><link rel="next" href="sql-createview.html" title="CREATE VIEW" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE USER MAPPING</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createuser.html" title="CREATE USER">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createview.html" title="CREATE VIEW">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATEUSERMAPPING"><div class="titlepage"></div><a id="id-1.9.3.96.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE USER MAPPING</span></h2><p>CREATE USER MAPPING — define a new mapping of a user to a foreign server</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE USER MAPPING [ IF NOT EXISTS ] FOR { <em class="replaceable"><code>user_name</code></em> | USER | CURRENT_ROLE | CURRENT_USER | PUBLIC }
+    SERVER <em class="replaceable"><code>server_name</code></em>
+    [ OPTIONS ( <em class="replaceable"><code>option</code></em> '<em class="replaceable"><code>value</code></em>' [ , ... ] ) ]
+</pre></div><div class="refsect1" id="id-1.9.3.96.5"><h2>Description</h2><p>
+   <code class="command">CREATE USER MAPPING</code> defines a mapping of a user
+   to a foreign server.  A user mapping typically encapsulates
+   connection information that a foreign-data wrapper uses together
+   with the information encapsulated by a foreign server to access an
+   external data resource.
+  </p><p>
+   The owner of a foreign server can create user mappings for that
+   server for any user.  Also, a user can create a user mapping for
+   their own user name if <code class="literal">USAGE</code> privilege on the server has
+   been granted to the user.
+  </p></div><div class="refsect1" id="id-1.9.3.96.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">IF NOT EXISTS</code></span></dt><dd><p>
+      Do not throw an error if a mapping of the given user to the given foreign
+      server already exists. A notice is issued in this case.  Note that there
+      is no guarantee that the existing user mapping is anything like the one
+      that would have been created.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>user_name</code></em></span></dt><dd><p>
+      The name of an existing user that is mapped to foreign server.
+      <code class="literal">CURRENT_ROLE</code>, <code class="literal">CURRENT_USER</code>, and <code class="literal">USER</code> match the name of
+      the current user.  When <code class="literal">PUBLIC</code> is specified, a
+      so-called public mapping is created that is used when no
+      user-specific mapping is applicable.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>server_name</code></em></span></dt><dd><p>
+      The name of an existing server for which the user mapping is
+      to be created.
+     </p></dd><dt><span class="term"><code class="literal">OPTIONS ( <em class="replaceable"><code>option</code></em> '<em class="replaceable"><code>value</code></em>' [, ... ] )</code></span></dt><dd><p>
+      This clause specifies the options of the user mapping.  The
+      options typically define the actual user name and password of
+      the mapping.  Option names must be unique.  The allowed option
+      names and values are specific to the server's foreign-data wrapper.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.96.7"><h2>Examples</h2><p>
+   Create a user mapping for user <code class="literal">bob</code>, server <code class="literal">foo</code>:
+</p><pre class="programlisting">
+CREATE USER MAPPING FOR bob SERVER foo OPTIONS (user 'bob', password 'secret');
+</pre></div><div class="refsect1" id="id-1.9.3.96.8"><h2>Compatibility</h2><p>
+   <code class="command">CREATE USER MAPPING</code> conforms to ISO/IEC 9075-9 (SQL/MED).
+  </p></div><div class="refsect1" id="id-1.9.3.96.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-alterusermapping.html" title="ALTER USER MAPPING"><span class="refentrytitle">ALTER USER MAPPING</span></a>, <a class="xref" href="sql-dropusermapping.html" title="DROP USER MAPPING"><span class="refentrytitle">DROP USER MAPPING</span></a>, <a class="xref" href="sql-createforeigndatawrapper.html" title="CREATE FOREIGN DATA WRAPPER"><span class="refentrytitle">CREATE FOREIGN DATA WRAPPER</span></a>, <a class="xref" href="sql-createserver.html" title="CREATE SERVER"><span class="refentrytitle">CREATE SERVER</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createuser.html" title="CREATE USER">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createview.html" title="CREATE VIEW">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE USER </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE VIEW</td></tr></table></div></body></html>

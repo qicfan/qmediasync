@@ -474,9 +474,17 @@ func (t *tvShowScrapeImpl) GenerateTvShowNfo(mediaFile *models.ScrapeMediaFile, 
 	for _, genre := range mediaFile.Media.Genres {
 		genres = append(genres, genre.Name)
 	}
+	has, result := helpers.ChineseToPinyin(mediaFile.Media.Name)
+	originalTitle := mediaFile.Media.OriginalName
+	SortTitle := mediaFile.Media.Name
+	if has {
+		originalTitle = fmt.Sprintf("%s #(%s)", mediaFile.Media.Name, result)
+		SortTitle = fmt.Sprintf("%s #(%s)", result, mediaFile.Media.Name)
+	}
 	tv := &helpers.TVShow{
 		Title:         mediaFile.Media.Name,
-		OriginalTitle: mediaFile.Media.OriginalName,
+		OriginalTitle: originalTitle,
+		SortTitle:     SortTitle,
 		Ratings: struct {
 			Rating []helpers.Rating `xml:"rating,omitempty"`
 		}{

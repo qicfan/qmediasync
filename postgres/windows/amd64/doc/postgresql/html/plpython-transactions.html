@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>46.9. Transaction Management</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="plpython-subtransaction.html" title="46.8. Explicit Subtransactions" /><link rel="next" href="plpython-util.html" title="46.10. Utility Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">46.9. Transaction Management</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="plpython-subtransaction.html" title="46.8. Explicit Subtransactions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="plpython.html" title="Chapter 46. PL/Python — Python Procedural Language">Up</a></td><th width="60%" align="center">Chapter 46. PL/Python — Python Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="plpython-util.html" title="46.10. Utility Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLPYTHON-TRANSACTIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">46.9. Transaction Management</h2></div></div></div><p>
+   In a procedure called from the top level or an anonymous code block
+   (<code class="command">DO</code> command) called from the top level it is possible to
+   control transactions.  To commit the current transaction, call
+   <code class="literal">plpy.commit()</code>.  To roll back the current transaction,
+   call <code class="literal">plpy.rollback()</code>.  (Note that it is not possible to
+   run the SQL commands <code class="command">COMMIT</code> or
+   <code class="command">ROLLBACK</code> via <code class="function">plpy.execute</code> or
+   similar.  It has to be done using these functions.)  After a transaction is
+   ended, a new transaction is automatically started, so there is no separate
+   function for that.
+  </p><p>
+   Here is an example:
+</p><pre class="programlisting">
+CREATE PROCEDURE transaction_test1()
+LANGUAGE plpythonu
+AS $$
+for i in range(0, 10):
+    plpy.execute("INSERT INTO test1 (a) VALUES (%d)" % i)
+    if i % 2 == 0:
+        plpy.commit()
+    else:
+        plpy.rollback()
+$$;
+
+CALL transaction_test1();
+</pre><p>
+  </p><p>
+   Transactions cannot be ended when an explicit subtransaction is active.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="plpython-subtransaction.html" title="46.8. Explicit Subtransactions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="plpython.html" title="Chapter 46. PL/Python — Python Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="plpython-util.html" title="46.10. Utility Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">46.8. Explicit Subtransactions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 46.10. Utility Functions</td></tr></table></div></body></html>

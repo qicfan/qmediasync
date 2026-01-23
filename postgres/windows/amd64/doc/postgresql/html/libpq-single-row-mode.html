@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>34.6. Retrieving Query Results Row-by-Row</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="libpq-pipeline-mode.html" title="34.5. Pipeline Mode" /><link rel="next" href="libpq-cancel.html" title="34.7. Canceling Queries in Progress" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">34.6. Retrieving Query Results Row-by-Row</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-pipeline-mode.html" title="34.5. Pipeline Mode">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 34. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-cancel.html" title="34.7. Canceling Queries in Progress">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-SINGLE-ROW-MODE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">34.6. Retrieving Query Results Row-by-Row</h2></div></div></div><a id="id-1.7.3.13.2" class="indexterm"></a><p>
+   Ordinarily, <span class="application">libpq</span> collects an SQL command's
+   entire result and returns it to the application as a single
+   <code class="structname">PGresult</code>.  This can be unworkable for commands
+   that return a large number of rows.  For such cases, applications can use
+   <a class="xref" href="libpq-async.html#LIBPQ-PQSENDQUERY"><code class="function">PQsendQuery</code></a> and <a class="xref" href="libpq-async.html#LIBPQ-PQGETRESULT"><code class="function">PQgetResult</code></a> in
+   <em class="firstterm">single-row mode</em>.  In this mode, the result row(s) are
+   returned to the application one at a time, as they are received from the
+   server.
+  </p><p>
+   To enter single-row mode, call <a class="xref" href="libpq-single-row-mode.html#LIBPQ-PQSETSINGLEROWMODE"><code class="function">PQsetSingleRowMode</code></a>
+   immediately after a successful call of <a class="xref" href="libpq-async.html#LIBPQ-PQSENDQUERY"><code class="function">PQsendQuery</code></a>
+   (or a sibling function).  This mode selection is effective only for the
+   currently executing query.  Then call <a class="xref" href="libpq-async.html#LIBPQ-PQGETRESULT"><code class="function">PQgetResult</code></a>
+   repeatedly, until it returns null, as documented in <a class="xref" href="libpq-async.html" title="34.4. Asynchronous Command Processing">Section 34.4</a>.  If the query returns any rows, they are returned
+   as individual <code class="structname">PGresult</code> objects, which look like
+   normal query results except for having status code
+   <code class="literal">PGRES_SINGLE_TUPLE</code> instead of
+   <code class="literal">PGRES_TUPLES_OK</code>.  After the last row, or immediately if
+   the query returns zero rows, a zero-row object with status
+   <code class="literal">PGRES_TUPLES_OK</code> is returned; this is the signal that no
+   more rows will arrive.  (But note that it is still necessary to continue
+   calling <a class="xref" href="libpq-async.html#LIBPQ-PQGETRESULT"><code class="function">PQgetResult</code></a> until it returns null.)  All of
+   these <code class="structname">PGresult</code> objects will contain the same row
+   description data (column names, types, etc) that an ordinary
+   <code class="structname">PGresult</code> object for the query would have.
+   Each object should be freed with <a class="xref" href="libpq-exec.html#LIBPQ-PQCLEAR"><code class="function">PQclear</code></a> as usual.
+  </p><p>
+   When using pipeline mode, single-row mode needs to be activated for each
+   query in the pipeline before retrieving results for that query
+   with <code class="function">PQgetResult</code>.
+   See <a class="xref" href="libpq-pipeline-mode.html" title="34.5. Pipeline Mode">Section 34.5</a> for more information.
+  </p><p>
+   </p><div class="variablelist"><dl class="variablelist"><dt id="LIBPQ-PQSETSINGLEROWMODE"><span class="term"><code class="function">PQsetSingleRowMode</code><a id="id-1.7.3.13.6.1.1.1.2" class="indexterm"></a></span></dt><dd><p>
+       Select single-row mode for the currently-executing query.
+
+</p><pre class="synopsis">
+int PQsetSingleRowMode(PGconn *conn);
+</pre><p>
+      </p><p>
+       This function can only be called immediately after
+       <a class="xref" href="libpq-async.html#LIBPQ-PQSENDQUERY"><code class="function">PQsendQuery</code></a> or one of its sibling functions,
+       before any other operation on the connection such as
+       <a class="xref" href="libpq-async.html#LIBPQ-PQCONSUMEINPUT"><code class="function">PQconsumeInput</code>
+     </a> or
+       <a class="xref" href="libpq-async.html#LIBPQ-PQGETRESULT"><code class="function">PQgetResult</code></a>.  If called at the correct time,
+       the function activates single-row mode for the current query and
+       returns 1.  Otherwise the mode stays unchanged and the function
+       returns 0.  In any case, the mode reverts to normal after
+       completion of the current query.
+      </p></dd></dl></div><p>
+  </p><div class="caution"><h3 class="title">Caution</h3><p>
+    While processing a query, the server may return some rows and then
+    encounter an error, causing the query to be aborted.  Ordinarily,
+    <span class="application">libpq</span> discards any such rows and reports only the
+    error.  But in single-row mode, those rows will have already been
+    returned to the application.  Hence, the application will see some
+    <code class="literal">PGRES_SINGLE_TUPLE</code> <code class="structname">PGresult</code>
+    objects followed by a <code class="literal">PGRES_FATAL_ERROR</code> object.  For
+    proper transactional behavior, the application must be designed to
+    discard or undo whatever has been done with the previously-processed
+    rows, if the query ultimately fails.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-pipeline-mode.html" title="34.5. Pipeline Mode">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-cancel.html" title="34.7. Canceling Queries in Progress">Next</a></td></tr><tr><td width="40%" align="left" valign="top">34.5. Pipeline Mode </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 34.7. Canceling Queries in Progress</td></tr></table></div></body></html>

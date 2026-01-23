@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.19. Array Functions and Operators</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-conditional.html" title="9.18. Conditional Expressions" /><link rel="next" href="functions-range.html" title="9.20. Range/Multirange Functions and Operators" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.19. Array Functions and Operators</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-conditional.html" title="9.18. Conditional Expressions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-range.html" title="9.20. Range/Multirange Functions and Operators">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-ARRAY"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.19. Array Functions and Operators</h2></div></div></div><p>
+   <a class="xref" href="functions-array.html#ARRAY-OPERATORS-TABLE" title="Table 9.51. Array Operators">Table 9.51</a> shows the specialized operators
+   available for array types.
+   In addition to those, the usual comparison operators shown in <a class="xref" href="functions-comparison.html#FUNCTIONS-COMPARISON-OP-TABLE" title="Table 9.1. Comparison Operators">Table 9.1</a> are available for
+   arrays.  The comparison operators compare the array contents
+   element-by-element, using the default B-tree comparison function for
+   the element data type, and sort based on the first difference.
+   In multidimensional arrays the elements are visited in row-major order
+   (last subscript varies most rapidly).
+   If the contents of two arrays are equal but the dimensionality is
+   different, the first difference in the dimensionality information
+   determines the sort order.
+  </p><div class="table" id="ARRAY-OPERATORS-TABLE"><p class="title"><strong>Table 9.51. Array Operators</strong></p><div class="table-contents"><table class="table" summary="Array Operators" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Operator
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyarray</code> <code class="literal">@&gt;</code> <code class="type">anyarray</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the first array contain the second, that is, does each element
+        appearing in the second array equal some element of the first array?
+        (Duplicates are not treated specially,
+        thus <code class="literal">ARRAY[1]</code> and <code class="literal">ARRAY[1,1]</code> are
+        each considered to contain the other.)
+       </p>
+       <p>
+        <code class="literal">ARRAY[1,4,3] @&gt; ARRAY[3,1,3]</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyarray</code> <code class="literal">&lt;@</code> <code class="type">anyarray</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the first array contained by the second?
+       </p>
+       <p>
+        <code class="literal">ARRAY[2,2,7] &lt;@ ARRAY[1,7,4,2,6]</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyarray</code> <code class="literal">&amp;&amp;</code> <code class="type">anyarray</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Do the arrays overlap, that is, have any elements in common?
+       </p>
+       <p>
+        <code class="literal">ARRAY[1,4,3] &amp;&amp; ARRAY[2,1]</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anycompatiblearray</code> <code class="literal">||</code> <code class="type">anycompatiblearray</code>
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Concatenates the two arrays.  Concatenating a null or empty array is a
+        no-op; otherwise the arrays must have the same number of dimensions
+        (as illustrated by the first example) or differ in number of
+        dimensions by one (as illustrated by the second).
+        If the arrays are not of identical element types, they will be coerced
+        to a common type (see <a class="xref" href="typeconv-union-case.html" title="10.5. UNION, CASE, and Related Constructs">Section 10.5</a>).
+       </p>
+       <p>
+        <code class="literal">ARRAY[1,2,3] || ARRAY[4,5,6,7]</code>
+        → <code class="returnvalue">{1,2,3,4,5,6,7}</code>
+       </p>
+       <p>
+        <code class="literal">ARRAY[1,2,3] || ARRAY[[4,5,6],[7,8,9.9]]</code>
+        → <code class="returnvalue">{{1,2,3},{4,5,6},{7,8,9.9}}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anycompatible</code> <code class="literal">||</code> <code class="type">anycompatiblearray</code>
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Concatenates an element onto the front of an array (which must be
+        empty or one-dimensional).
+       </p>
+       <p>
+        <code class="literal">3 || ARRAY[4,5,6]</code>
+        → <code class="returnvalue">{3,4,5,6}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anycompatiblearray</code> <code class="literal">||</code> <code class="type">anycompatible</code>
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Concatenates an element onto the end of an array (which must be
+        empty or one-dimensional).
+       </p>
+       <p>
+        <code class="literal">ARRAY[4,5,6] || 7</code>
+        → <code class="returnvalue">{4,5,6,7}</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   See <a class="xref" href="arrays.html" title="8.15. Arrays">Section 8.15</a> for more details about array operator
+   behavior.  See <a class="xref" href="indexes-types.html" title="11.2. Index Types">Section 11.2</a> for more details about
+   which operators support indexed operations.
+  </p><p>
+   <a class="xref" href="functions-array.html#ARRAY-FUNCTIONS-TABLE" title="Table 9.52. Array Functions">Table 9.52</a> shows the functions
+   available for use with array types. See <a class="xref" href="arrays.html" title="8.15. Arrays">Section 8.15</a>
+   for more information  and examples of the use of these functions.
+  </p><div class="table" id="ARRAY-FUNCTIONS-TABLE"><p class="title"><strong>Table 9.52. Array Functions</strong></p><div class="table-contents"><table class="table" summary="Array Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">array_append</code> ( <code class="type">anycompatiblearray</code>, <code class="type">anycompatible</code> )
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Appends an element to the end of an array (same as
+        the <code class="type">anycompatiblearray</code> <code class="literal">||</code> <code class="type">anycompatible</code>
+        operator).
+       </p>
+       <p>
+        <code class="literal">array_append(ARRAY[1,2], 3)</code>
+        → <code class="returnvalue">{1,2,3}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">array_cat</code> ( <code class="type">anycompatiblearray</code>, <code class="type">anycompatiblearray</code> )
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Concatenates two arrays (same as
+        the <code class="type">anycompatiblearray</code> <code class="literal">||</code> <code class="type">anycompatiblearray</code>
+        operator).
+       </p>
+       <p>
+        <code class="literal">array_cat(ARRAY[1,2,3], ARRAY[4,5])</code>
+        → <code class="returnvalue">{1,2,3,4,5}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">array_dims</code> ( <code class="type">anyarray</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Returns a text representation of the array's dimensions.
+       </p>
+       <p>
+        <code class="literal">array_dims(ARRAY[[1,2,3], [4,5,6]])</code>
+        → <code class="returnvalue">[1:2][1:3]</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">array_fill</code> ( <code class="type">anyelement</code>, <code class="type">integer[]</code>
+          [<span class="optional">, <code class="type">integer[]</code> </span>] )
+        → <code class="returnvalue">anyarray</code>
+       </p>
+       <p>
+        Returns an array filled with copies of the given value, having
+        dimensions of the lengths specified by the second argument.
+        The optional third argument supplies lower-bound values for each
+        dimension (which default to all <code class="literal">1</code>).
+       </p>
+       <p>
+        <code class="literal">array_fill(11, ARRAY[2,3])</code>
+        → <code class="returnvalue">{{11,11,11},{11,11,11}}</code>
+       </p>
+       <p>
+        <code class="literal">array_fill(7, ARRAY[3], ARRAY[2])</code>
+        → <code class="returnvalue">[2:4]={7,7,7}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.5.1.1.1" class="indexterm"></a>
+        <code class="function">array_length</code> ( <code class="type">anyarray</code>, <code class="type">integer</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the length of the requested array dimension.
+        (Produces NULL instead of 0 for empty or missing array dimensions.)
+       </p>
+       <p>
+        <code class="literal">array_length(array[1,2,3], 1)</code>
+        → <code class="returnvalue">3</code>
+       </p>
+       <p>
+        <code class="literal">array_length(array[]::int[], 1)</code>
+        → <code class="returnvalue">NULL</code>
+       </p>
+       <p>
+        <code class="literal">array_length(array['text'], 2)</code>
+        → <code class="returnvalue">NULL</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.6.1.1.1" class="indexterm"></a>
+        <code class="function">array_lower</code> ( <code class="type">anyarray</code>, <code class="type">integer</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the lower bound of the requested array dimension.
+       </p>
+       <p>
+        <code class="literal">array_lower('[0:2]={1,2,3}'::integer[], 1)</code>
+        → <code class="returnvalue">0</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.7.1.1.1" class="indexterm"></a>
+        <code class="function">array_ndims</code> ( <code class="type">anyarray</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the number of dimensions of the array.
+       </p>
+       <p>
+        <code class="literal">array_ndims(ARRAY[[1,2,3], [4,5,6]])</code>
+        → <code class="returnvalue">2</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.8.1.1.1" class="indexterm"></a>
+        <code class="function">array_position</code> ( <code class="type">anycompatiblearray</code>, <code class="type">anycompatible</code> [<span class="optional">, <code class="type">integer</code> </span>] )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the subscript of the first occurrence of the second argument
+        in the array, or <code class="literal">NULL</code> if it's not present.
+        If the third argument is given, the search begins at that subscript.
+        The array must be one-dimensional.
+        Comparisons are done using <code class="literal">IS NOT DISTINCT FROM</code>
+        semantics, so it is possible to search for <code class="literal">NULL</code>.
+       </p>
+       <p>
+        <code class="literal">array_position(ARRAY['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'], 'mon')</code>
+        → <code class="returnvalue">2</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.9.1.1.1" class="indexterm"></a>
+        <code class="function">array_positions</code> ( <code class="type">anycompatiblearray</code>, <code class="type">anycompatible</code> )
+        → <code class="returnvalue">integer[]</code>
+       </p>
+       <p>
+        Returns an array of the subscripts of all occurrences of the second
+        argument in the array given as first argument.
+        The array must be one-dimensional.
+        Comparisons are done using <code class="literal">IS NOT DISTINCT FROM</code>
+        semantics, so it is possible to search for <code class="literal">NULL</code>.
+        <code class="literal">NULL</code> is returned only if the array
+        is <code class="literal">NULL</code>; if the value is not found in the array, an
+        empty array is returned.
+       </p>
+       <p>
+        <code class="literal">array_positions(ARRAY['A','A','B','A'], 'A')</code>
+        → <code class="returnvalue">{1,2,4}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.10.1.1.1" class="indexterm"></a>
+        <code class="function">array_prepend</code> ( <code class="type">anycompatible</code>, <code class="type">anycompatiblearray</code> )
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Prepends an element to the beginning of an array (same as
+        the <code class="type">anycompatible</code> <code class="literal">||</code> <code class="type">anycompatiblearray</code>
+        operator).
+       </p>
+       <p>
+        <code class="literal">array_prepend(1, ARRAY[2,3])</code>
+        → <code class="returnvalue">{1,2,3}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.11.1.1.1" class="indexterm"></a>
+        <code class="function">array_remove</code> ( <code class="type">anycompatiblearray</code>, <code class="type">anycompatible</code> )
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Removes all elements equal to the given value from the array.
+        The array must be one-dimensional.
+        Comparisons are done using <code class="literal">IS NOT DISTINCT FROM</code>
+        semantics, so it is possible to remove <code class="literal">NULL</code>s.
+       </p>
+       <p>
+        <code class="literal">array_remove(ARRAY[1,2,3,2], 2)</code>
+        → <code class="returnvalue">{1,3}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.12.1.1.1" class="indexterm"></a>
+        <code class="function">array_replace</code> ( <code class="type">anycompatiblearray</code>, <code class="type">anycompatible</code>, <code class="type">anycompatible</code> )
+        → <code class="returnvalue">anycompatiblearray</code>
+       </p>
+       <p>
+        Replaces each array element equal to the second argument with the
+        third argument.
+       </p>
+       <p>
+        <code class="literal">array_replace(ARRAY[1,2,5,4], 5, 3)</code>
+        → <code class="returnvalue">{1,2,3,4}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.13.1.1.1" class="indexterm"></a>
+        <code class="function">array_to_string</code> ( <em class="parameter"><code>array</code></em> <code class="type">anyarray</code>, <em class="parameter"><code>delimiter</code></em> <code class="type">text</code> [<span class="optional">, <em class="parameter"><code>null_string</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Converts each array element to its text representation, and
+        concatenates those separated by
+        the <em class="parameter"><code>delimiter</code></em> string.
+        If <em class="parameter"><code>null_string</code></em> is given and is
+        not <code class="literal">NULL</code>, then <code class="literal">NULL</code> array
+        entries are represented by that string; otherwise, they are omitted.
+       </p>
+       <p>
+        <code class="literal">array_to_string(ARRAY[1, 2, 3, NULL, 5], ',', '*')</code>
+        → <code class="returnvalue">1,2,3,*,5</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.14.1.1.1" class="indexterm"></a>
+        <code class="function">array_upper</code> ( <code class="type">anyarray</code>, <code class="type">integer</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the upper bound of the requested array dimension.
+       </p>
+       <p>
+        <code class="literal">array_upper(ARRAY[1,8,3,7], 1)</code>
+        → <code class="returnvalue">4</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.15.1.1.1" class="indexterm"></a>
+        <code class="function">cardinality</code> ( <code class="type">anyarray</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns the total number of elements in the array, or 0 if the array
+        is empty.
+       </p>
+       <p>
+        <code class="literal">cardinality(ARRAY[[1,2],[3,4]])</code>
+        → <code class="returnvalue">4</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.16.1.1.1" class="indexterm"></a>
+        <code class="function">trim_array</code> ( <em class="parameter"><code>array</code></em> <code class="type">anyarray</code>, <em class="parameter"><code>n</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">anyarray</code>
+       </p>
+       <p>
+        Trims an array by removing the last <em class="parameter"><code>n</code></em> elements.
+        If the array is multidimensional, only the first dimension is trimmed.
+       </p>
+       <p>
+        <code class="literal">trim_array(ARRAY[1,2,3,4,5,6], 2)</code>
+        → <code class="returnvalue">{1,2,3,4}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.25.6.2.2.17.1.1.1" class="indexterm"></a>
+        <code class="function">unnest</code> ( <code class="type">anyarray</code> )
+        → <code class="returnvalue">setof anyelement</code>
+       </p>
+       <p>
+        Expands an array into a set of rows.
+        The array's elements are read out in storage order.
+       </p>
+       <p>
+        <code class="literal">unnest(ARRAY[1,2])</code>
+        → <code class="returnvalue"></code>
+</p><pre class="programlisting">
+ 1
+ 2
+</pre><p>
+       </p>
+       <p>
+        <code class="literal">unnest(ARRAY[['foo','bar'],['baz','quux']])</code>
+        → <code class="returnvalue"></code>
+</p><pre class="programlisting">
+ foo
+ bar
+ baz
+ quux
+</pre><p>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">unnest</code> ( <code class="type">anyarray</code>, <code class="type">anyarray</code> [<span class="optional">, ... </span>] )
+        → <code class="returnvalue">setof anyelement, anyelement [, ... ]</code>
+       </p>
+       <p>
+        Expands multiple arrays (possibly of different data types) into a set of
+        rows.  If the arrays are not all the same length then the shorter ones
+        are padded with <code class="literal">NULL</code>s.  This form is only allowed
+        in a query's FROM clause; see <a class="xref" href="queries-table-expressions.html#QUERIES-TABLEFUNCTIONS" title="7.2.1.4. Table Functions">Section 7.2.1.4</a>.
+       </p>
+       <p>
+        <code class="literal">select * from unnest(ARRAY[1,2], ARRAY['foo','bar','baz']) as x(a,b)</code>
+        → <code class="returnvalue"></code>
+</p><pre class="programlisting">
+ a |  b
+---+-----
+ 1 | foo
+ 2 | bar
+   | baz
+</pre><p>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><div class="note"><h3 class="title">Note</h3><p>
+     There are two differences in the behavior of <code class="function">string_to_array</code>
+     from pre-9.1 versions of <span class="productname">PostgreSQL</span>.
+     First, it will return an empty (zero-element) array rather
+     than <code class="literal">NULL</code> when the input string is of zero length.
+     Second, if the delimiter string is <code class="literal">NULL</code>, the function
+     splits the input into individual characters, rather than
+     returning <code class="literal">NULL</code> as before.
+    </p></div><p>
+    See also <a class="xref" href="functions-aggregate.html" title="9.21. Aggregate Functions">Section 9.21</a> about the aggregate
+    function <code class="function">array_agg</code> for use with arrays.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-conditional.html" title="9.18. Conditional Expressions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-range.html" title="9.20. Range/Multirange Functions and Operators">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.18. Conditional Expressions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.20. Range/Multirange Functions and Operators</td></tr></table></div></body></html>

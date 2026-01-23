@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SPI_returntuple</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spi-spi-copytuple.html" title="SPI_copytuple" /><link rel="next" href="spi-spi-modifytuple.html" title="SPI_modifytuple" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SPI_returntuple</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spi-spi-copytuple.html" title="SPI_copytuple">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spi-memory.html" title="47.3. Memory Management">Up</a></td><th width="60%" align="center">47.3. Memory Management</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spi-spi-modifytuple.html" title="SPI_modifytuple">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SPI-SPI-RETURNTUPLE"><div class="titlepage"></div><a id="id-1.8.12.10.10.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SPI_returntuple</span></h2><p>SPI_returntuple — prepare to return a tuple as a Datum</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+HeapTupleHeader SPI_returntuple(HeapTuple <em class="parameter"><code>row</code></em>, TupleDesc <em class="parameter"><code>rowdesc</code></em>)
+</pre></div><div class="refsect1" id="id-1.8.12.10.10.5"><h2>Description</h2><p>
+   <code class="function">SPI_returntuple</code> makes a copy of a row in
+   the upper executor context, returning it in the form of a row type <code class="type">Datum</code>.
+   The returned pointer need only be converted to <code class="type">Datum</code> via <code class="function">PointerGetDatum</code>
+   before returning.
+  </p><p>
+   This function can only be used while connected to SPI.
+   Otherwise, it returns NULL and sets <code class="varname">SPI_result</code> to
+   <code class="symbol">SPI_ERROR_UNCONNECTED</code>.
+  </p><p>
+   Note that this should be used for functions that are declared to return
+   composite types.  It is not used for triggers; use
+   <code class="function">SPI_copytuple</code> for returning a modified row in a trigger.
+  </p></div><div class="refsect1" id="id-1.8.12.10.10.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">HeapTuple <em class="parameter"><code>row</code></em></code></span></dt><dd><p>
+      row to be copied
+     </p></dd><dt><span class="term"><code class="literal">TupleDesc <em class="parameter"><code>rowdesc</code></em></code></span></dt><dd><p>
+      descriptor for row (pass the same descriptor each time for most
+      effective caching)
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.8.12.10.10.7"><h2>Return Value</h2><p>
+   <code class="type">HeapTupleHeader</code> pointing to copied row,
+   or <code class="symbol">NULL</code> on error
+   (see <code class="varname">SPI_result</code> for an error indication)
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spi-spi-copytuple.html" title="SPI_copytuple">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spi-memory.html" title="47.3. Memory Management">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spi-spi-modifytuple.html" title="SPI_modifytuple">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SPI_copytuple </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SPI_modifytuple</td></tr></table></div></body></html>

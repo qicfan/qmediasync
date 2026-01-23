@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.20. pg_lsn Type</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-oid.html" title="8.19. Object Identifier Types" /><link rel="next" href="datatype-pseudo.html" title="8.21. Pseudo-Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.20. <code xmlns="http://www.w3.org/1999/xhtml" class="type">pg_lsn</code> Type</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-oid.html" title="8.19. Object Identifier Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datatype-pseudo.html" title="8.21. Pseudo-Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATATYPE-PG-LSN"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.20. <code class="type">pg_lsn</code> Type</h2></div></div></div><a id="id-1.5.7.28.2" class="indexterm"></a><p>
+    The <code class="type">pg_lsn</code> data type can be used to store LSN (Log Sequence
+    Number) data which is a pointer to a location in the WAL. This type is a
+    representation of <code class="type">XLogRecPtr</code> and an internal system type of
+    <span class="productname">PostgreSQL</span>.
+   </p><p>
+    Internally, an LSN is a 64-bit integer, representing a byte position in
+    the write-ahead log stream.  It is printed as two hexadecimal numbers of
+    up to 8 digits each, separated by a slash; for example,
+    <code class="literal">16/B374D848</code>.  The <code class="type">pg_lsn</code> type supports the
+    standard comparison operators, like <code class="literal">=</code> and
+    <code class="literal">&gt;</code>.  Two LSNs can be subtracted using the
+    <code class="literal">-</code> operator; the result is the number of bytes separating
+    those write-ahead log locations.  Also the number of bytes can be
+    added into and subtracted from LSN using the
+    <code class="literal">+(pg_lsn,numeric)</code> and
+    <code class="literal">-(pg_lsn,numeric)</code> operators, respectively. Note that
+    the calculated LSN should be in the range of <code class="type">pg_lsn</code> type,
+    i.e., between <code class="literal">0/0</code> and
+    <code class="literal">FFFFFFFF/FFFFFFFF</code>.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-oid.html" title="8.19. Object Identifier Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datatype-pseudo.html" title="8.21. Pseudo-Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.19. Object Identifier Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.21. Pseudo-Types</td></tr></table></div></body></html>

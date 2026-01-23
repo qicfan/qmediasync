@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>37.2. Data Types</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="infoschema-schema.html" title="37.1. The Schema" /><link rel="next" href="infoschema-information-schema-catalog-name.html" title="37.3. information_schema_catalog_name" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">37.2. Data Types</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="infoschema-schema.html" title="37.1. The Schema">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><th width="60%" align="center">Chapter 37. The Information Schema</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="infoschema-information-schema-catalog-name.html" title="37.3. information_schema_catalog_name">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INFOSCHEMA-DATATYPES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">37.2. Data Types</h2></div></div></div><p>
+   The columns of the information schema views use special data types
+   that are defined in the information schema.  These are defined as
+   simple domains over ordinary built-in types.  You should not use
+   these types for work outside the information schema, but your
+   applications must be prepared for them if they select from the
+   information schema.
+  </p><p>
+   These types are:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="type">cardinal_number</code></span></dt><dd><p>
+       A nonnegative integer.
+      </p></dd><dt><span class="term"><code class="type">character_data</code></span></dt><dd><p>
+       A character string (without specific maximum length).
+      </p></dd><dt><span class="term"><code class="type">sql_identifier</code></span></dt><dd><p>
+       A character string.  This type is used for SQL identifiers, the
+       type <code class="type">character_data</code> is used for any other kind of
+       text data.
+      </p></dd><dt><span class="term"><code class="type">time_stamp</code></span></dt><dd><p>
+       A domain over the type <code class="type">timestamp with time zone</code>
+      </p></dd><dt><span class="term"><code class="type">yes_or_no</code></span></dt><dd><p>
+       A character string domain that contains
+       either <code class="literal">YES</code> or <code class="literal">NO</code>.  This
+       is used to represent Boolean (true/false) data in the
+       information schema.  (The information schema was invented
+       before the type <code class="type">boolean</code> was added to the SQL
+       standard, so this convention is necessary to keep the
+       information schema backward compatible.)
+      </p></dd></dl></div><p>
+
+   Every column in the information schema has one of these five types.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="infoschema-schema.html" title="37.1. The Schema">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="infoschema-information-schema-catalog-name.html" title="37.3. information_schema_catalog_name">Next</a></td></tr><tr><td width="40%" align="left" valign="top">37.1. The Schema </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 37.3. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">information_schema_catalog_name</code></td></tr></table></div></body></html>

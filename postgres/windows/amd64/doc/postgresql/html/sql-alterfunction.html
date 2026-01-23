@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER FUNCTION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-alterforeigntable.html" title="ALTER FOREIGN TABLE" /><link rel="next" href="sql-altergroup.html" title="ALTER GROUP" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER FUNCTION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-alterforeigntable.html" title="ALTER FOREIGN TABLE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-altergroup.html" title="ALTER GROUP">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERFUNCTION"><div class="titlepage"></div><a id="id-1.9.3.14.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER FUNCTION</span></h2><p>ALTER FUNCTION — change the definition of a function</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER FUNCTION <em class="replaceable"><code>name</code></em> [ ( [ [ <em class="replaceable"><code>argmode</code></em> ] [ <em class="replaceable"><code>argname</code></em> ] <em class="replaceable"><code>argtype</code></em> [, ...] ] ) ]
+    <em class="replaceable"><code>action</code></em> [ ... ] [ RESTRICT ]
+ALTER FUNCTION <em class="replaceable"><code>name</code></em> [ ( [ [ <em class="replaceable"><code>argmode</code></em> ] [ <em class="replaceable"><code>argname</code></em> ] <em class="replaceable"><code>argtype</code></em> [, ...] ] ) ]
+    RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER FUNCTION <em class="replaceable"><code>name</code></em> [ ( [ [ <em class="replaceable"><code>argmode</code></em> ] [ <em class="replaceable"><code>argname</code></em> ] <em class="replaceable"><code>argtype</code></em> [, ...] ] ) ]
+    OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER FUNCTION <em class="replaceable"><code>name</code></em> [ ( [ [ <em class="replaceable"><code>argmode</code></em> ] [ <em class="replaceable"><code>argname</code></em> ] <em class="replaceable"><code>argtype</code></em> [, ...] ] ) ]
+    SET SCHEMA <em class="replaceable"><code>new_schema</code></em>
+ALTER FUNCTION <em class="replaceable"><code>name</code></em> [ ( [ [ <em class="replaceable"><code>argmode</code></em> ] [ <em class="replaceable"><code>argname</code></em> ] <em class="replaceable"><code>argtype</code></em> [, ...] ] ) ]
+    [ NO ] DEPENDS ON EXTENSION <em class="replaceable"><code>extension_name</code></em>
+
+<span class="phrase">where <em class="replaceable"><code>action</code></em> is one of:</span>
+
+    CALLED ON NULL INPUT | RETURNS NULL ON NULL INPUT | STRICT
+    IMMUTABLE | STABLE | VOLATILE
+    [ NOT ] LEAKPROOF
+    [ EXTERNAL ] SECURITY INVOKER | [ EXTERNAL ] SECURITY DEFINER
+    PARALLEL { UNSAFE | RESTRICTED | SAFE }
+    COST <em class="replaceable"><code>execution_cost</code></em>
+    ROWS <em class="replaceable"><code>result_rows</code></em>
+    SUPPORT <em class="replaceable"><code>support_function</code></em>
+    SET <em class="replaceable"><code>configuration_parameter</code></em> { TO | = } { <em class="replaceable"><code>value</code></em> | DEFAULT }
+    SET <em class="replaceable"><code>configuration_parameter</code></em> FROM CURRENT
+    RESET <em class="replaceable"><code>configuration_parameter</code></em>
+    RESET ALL
+</pre></div><div class="refsect1" id="id-1.9.3.14.5"><h2>Description</h2><p>
+   <code class="command">ALTER FUNCTION</code> changes the definition of a
+   function.
+  </p><p>
+   You must own the function to use <code class="command">ALTER FUNCTION</code>.
+   To change a function's schema, you must also have <code class="literal">CREATE</code>
+   privilege on the new schema.
+   To alter the owner, you must also be a direct or indirect member of the new
+   owning role, and that role must have <code class="literal">CREATE</code> privilege on
+   the function's schema.  (These restrictions enforce that altering the owner
+   doesn't do anything you couldn't do by dropping and recreating the function.
+   However, a superuser can alter ownership of any function anyway.)
+  </p></div><div class="refsect1" id="id-1.9.3.14.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of an existing function.  If no
+      argument list is specified, the name must be unique in its schema.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>argmode</code></em></span></dt><dd><p>
+      The mode of an argument: <code class="literal">IN</code>, <code class="literal">OUT</code>,
+      <code class="literal">INOUT</code>, or <code class="literal">VARIADIC</code>.
+      If omitted, the default is <code class="literal">IN</code>.
+      Note that <code class="command">ALTER FUNCTION</code> does not actually pay
+      any attention to <code class="literal">OUT</code> arguments, since only the input
+      arguments are needed to determine the function's identity.
+      So it is sufficient to list the <code class="literal">IN</code>, <code class="literal">INOUT</code>,
+      and <code class="literal">VARIADIC</code> arguments.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>argname</code></em></span></dt><dd><p>
+      The name of an argument.
+      Note that <code class="command">ALTER FUNCTION</code> does not actually pay
+      any attention to argument names, since only the argument data
+      types are needed to determine the function's identity.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>argtype</code></em></span></dt><dd><p>
+      The data type(s) of the function's arguments (optionally
+      schema-qualified), if any.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name of the function.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The new owner of the function.  Note that if the function is
+      marked <code class="literal">SECURITY DEFINER</code>, it will subsequently
+      execute as the new owner.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_schema</code></em></span></dt><dd><p>
+      The new schema for the function.
+     </p></dd><dt><span class="term"><code class="literal">DEPENDS ON EXTENSION <em class="replaceable"><code>extension_name</code></em></code><br /></span><span class="term"><code class="literal">NO DEPENDS ON EXTENSION <em class="replaceable"><code>extension_name</code></em></code></span></dt><dd><p>
+      This form marks the function as dependent on the extension, or no longer
+      dependent on that extension if <code class="literal">NO</code> is specified.
+      A function that's marked as dependent on an extension is dropped when the
+      extension is dropped, even if <code class="literal">CASCADE</code> is not specified.
+      A function can depend upon multiple extensions, and will be dropped when
+      any one of those extensions is dropped.
+     </p></dd><dt><span class="term"><code class="literal">CALLED ON NULL INPUT</code><br /></span><span class="term"><code class="literal">RETURNS NULL ON NULL INPUT</code><br /></span><span class="term"><code class="literal">STRICT</code></span></dt><dd><p><code class="literal">CALLED ON NULL INPUT</code> changes the function so
+       that it will be invoked when some or all of its arguments are
+       null. <code class="literal">RETURNS NULL ON NULL INPUT</code> or
+       <code class="literal">STRICT</code> changes the function so that it is not
+       invoked if any of its arguments are null; instead, a null result
+       is assumed automatically.  See <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a>
+       for more information.
+      </p></dd><dt><span class="term"><code class="literal">IMMUTABLE</code><br /></span><span class="term"><code class="literal">STABLE</code><br /></span><span class="term"><code class="literal">VOLATILE</code></span></dt><dd><p>
+       Change the volatility of the function to the specified setting.
+       See <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> for details.
+      </p></dd><dt><span class="term"><code class="literal">[<span class="optional"> EXTERNAL </span>] SECURITY INVOKER</code><br /></span><span class="term"><code class="literal">[<span class="optional"> EXTERNAL </span>] SECURITY DEFINER</code></span></dt><dd><p>
+      Change whether the function is a security definer or not. The
+      key word <code class="literal">EXTERNAL</code> is ignored for SQL
+      conformance. See <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> for more information about
+      this capability.
+     </p></dd><dt><span class="term"><code class="literal">PARALLEL</code></span></dt><dd><p>
+      Change whether the function is deemed safe for parallelism.
+      See <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> for details.
+     </p></dd><dt><span class="term"><code class="literal">LEAKPROOF</code></span></dt><dd><p>
+      Change whether the function is considered leakproof or not.
+      See <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> for more information about
+      this capability.
+     </p></dd><dt><span class="term"><code class="literal">COST</code> <em class="replaceable"><code>execution_cost</code></em></span></dt><dd><p>
+       Change the estimated execution cost of the function.
+       See <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> for more information.
+      </p></dd><dt><span class="term"><code class="literal">ROWS</code> <em class="replaceable"><code>result_rows</code></em></span></dt><dd><p>
+       Change the estimated number of rows returned by a set-returning
+       function.  See <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> for more information.
+      </p></dd><dt><span class="term"><code class="literal">SUPPORT</code> <em class="replaceable"><code>support_function</code></em></span></dt><dd><p>
+      Set or change the planner support function to use for this function.
+      See <a class="xref" href="xfunc-optimization.html" title="38.11. Function Optimization Information">Section 38.11</a> for details.  You must be
+      superuser to use this option.
+     </p><p>
+      This option cannot be used to remove the support function altogether,
+      since it must name a new support function.  Use <code class="command">CREATE OR
+      REPLACE FUNCTION</code> if you need to do that.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>configuration_parameter</code></em><br /></span><span class="term"><em class="replaceable"><code>value</code></em></span></dt><dd><p>
+        Add or change the assignment to be made to a configuration parameter
+        when the function is called.  If
+        <em class="replaceable"><code>value</code></em> is <code class="literal">DEFAULT</code>
+        or, equivalently, <code class="literal">RESET</code> is used, the function-local
+        setting is removed, so that the function executes with the value
+        present in its environment.  Use <code class="literal">RESET
+        ALL</code> to clear all function-local settings.
+        <code class="literal">SET FROM CURRENT</code> saves the value of the parameter that
+        is current when <code class="command">ALTER FUNCTION</code> is executed as the value
+        to be applied when the function is entered.
+       </p><p>
+        See <a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a> and
+        <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a>
+        for more information about allowed parameter names and values.
+       </p></dd><dt><span class="term"><code class="literal">RESTRICT</code></span></dt><dd><p>
+      Ignored for conformance with the SQL standard.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.14.7"><h2>Examples</h2><p>
+   To rename the function <code class="literal">sqrt</code> for type
+   <code class="type">integer</code> to <code class="literal">square_root</code>:
+</p><pre class="programlisting">
+ALTER FUNCTION sqrt(integer) RENAME TO square_root;
+</pre><p>
+  </p><p>
+   To change the owner of the function <code class="literal">sqrt</code> for type
+   <code class="type">integer</code> to <code class="literal">joe</code>:
+</p><pre class="programlisting">
+ALTER FUNCTION sqrt(integer) OWNER TO joe;
+</pre><p>
+  </p><p>
+   To change the schema of the function <code class="literal">sqrt</code> for type
+   <code class="type">integer</code> to <code class="literal">maths</code>:
+</p><pre class="programlisting">
+ALTER FUNCTION sqrt(integer) SET SCHEMA maths;
+</pre><p>
+  </p><p>
+   To mark the function <code class="literal">sqrt</code> for type
+   <code class="type">integer</code> as being dependent on the extension
+   <code class="literal">mathlib</code>:
+</p><pre class="programlisting">
+ALTER FUNCTION sqrt(integer) DEPENDS ON EXTENSION mathlib;
+</pre><p>
+  </p><p>
+   To adjust the search path that is automatically set for a function:
+</p><pre class="programlisting">
+ALTER FUNCTION check_password(text) SET search_path = admin, pg_temp;
+</pre><p>
+  </p><p>
+   To disable automatic setting of <code class="varname">search_path</code> for a function:
+</p><pre class="programlisting">
+ALTER FUNCTION check_password(text) RESET search_path;
+</pre><p>
+   The function will now execute with whatever search path is used by its
+   caller.
+  </p></div><div class="refsect1" id="id-1.9.3.14.8"><h2>Compatibility</h2><p>
+   This statement is partially compatible with the <code class="command">ALTER
+   FUNCTION</code> statement in the SQL standard. The standard allows more
+   properties of a function to be modified, but does not provide the
+   ability to rename a function, make a function a security definer,
+   attach configuration parameter values to a function,
+   or change the owner, schema, or volatility of a function. The standard also
+   requires the <code class="literal">RESTRICT</code> key word, which is optional in
+   <span class="productname">PostgreSQL</span>.
+  </p></div><div class="refsect1" id="id-1.9.3.14.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a>, <a class="xref" href="sql-dropfunction.html" title="DROP FUNCTION"><span class="refentrytitle">DROP FUNCTION</span></a>, <a class="xref" href="sql-alterprocedure.html" title="ALTER PROCEDURE"><span class="refentrytitle">ALTER PROCEDURE</span></a>, <a class="xref" href="sql-alterroutine.html" title="ALTER ROUTINE"><span class="refentrytitle">ALTER ROUTINE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-alterforeigntable.html" title="ALTER FOREIGN TABLE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-altergroup.html" title="ALTER GROUP">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER FOREIGN TABLE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER GROUP</td></tr></table></div></body></html>

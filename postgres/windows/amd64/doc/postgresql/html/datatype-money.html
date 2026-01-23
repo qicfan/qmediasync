@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.2. Monetary Types</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-numeric.html" title="8.1. Numeric Types" /><link rel="next" href="datatype-character.html" title="8.3. Character Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.2. Monetary Types</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-numeric.html" title="8.1. Numeric Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datatype-character.html" title="8.3. Character Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATATYPE-MONEY"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.2. Monetary Types</h2></div></div></div><p>
+    The <code class="type">money</code> type stores a currency amount with a fixed
+    fractional precision; see <a class="xref" href="datatype-money.html#DATATYPE-MONEY-TABLE" title="Table 8.3. Monetary Types">Table 8.3</a>.  The fractional precision is
+    determined by the database's <a class="xref" href="runtime-config-client.html#GUC-LC-MONETARY">lc_monetary</a> setting.
+    The range shown in the table assumes there are two fractional digits.
+    Input is accepted in a variety of formats, including integer and
+    floating-point literals, as well as typical
+    currency formatting, such as <code class="literal">'$1,000.00'</code>.
+    Output is generally in the latter form but depends on the locale.
+   </p><div class="table" id="DATATYPE-MONEY-TABLE"><p class="title"><strong>Table 8.3. Monetary Types</strong></p><div class="table-contents"><table class="table" summary="Monetary Types" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /><col class="col4" /></colgroup><thead><tr><th>Name</th><th>Storage Size</th><th>Description</th><th>Range</th></tr></thead><tbody><tr><td><code class="type">money</code></td><td>8 bytes</td><td>currency amount</td><td>-92233720368547758.08 to +92233720368547758.07</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Since the output of this data type is locale-sensitive, it might not
+    work to load <code class="type">money</code> data into a database that has a different
+    setting of <code class="varname">lc_monetary</code>.  To avoid problems, before
+    restoring a dump into a new database make sure <code class="varname">lc_monetary</code> has
+    the same or equivalent value as in the database that was dumped.
+   </p><p>
+    Values of the <code class="type">numeric</code>, <code class="type">int</code>, and
+    <code class="type">bigint</code> data types can be cast to <code class="type">money</code>.
+    Conversion from the <code class="type">real</code> and <code class="type">double precision</code>
+    data types can be done by casting to <code class="type">numeric</code> first, for
+    example:
+</p><pre class="programlisting">
+SELECT '12.34'::float8::numeric::money;
+</pre><p>
+    However, this is not recommended.  Floating point numbers should not be
+    used to handle money due to the potential for rounding errors.
+   </p><p>
+    A <code class="type">money</code> value can be cast to <code class="type">numeric</code> without
+    loss of precision. Conversion to other types could potentially lose
+    precision, and must also be done in two stages:
+</p><pre class="programlisting">
+SELECT '52093.89'::money::numeric::float8;
+</pre><p>
+   </p><p>
+    Division of a <code class="type">money</code> value by an integer value is performed
+    with truncation of the fractional part towards zero.  To get a rounded
+    result, divide by a floating-point value, or cast the <code class="type">money</code>
+    value to <code class="type">numeric</code> before dividing and back to <code class="type">money</code>
+    afterwards.  (The latter is preferable to avoid risking precision loss.)
+    When a <code class="type">money</code> value is divided by another <code class="type">money</code>
+    value, the result is <code class="type">double precision</code> (i.e., a pure number,
+    not money); the currency units cancel each other out in the division.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-numeric.html" title="8.1. Numeric Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datatype-character.html" title="8.3. Character Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.1. Numeric Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.3. Character Types</td></tr></table></div></body></html>

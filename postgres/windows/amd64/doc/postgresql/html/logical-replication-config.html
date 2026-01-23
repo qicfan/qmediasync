@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>31.8. Configuration Settings</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="logical-replication-security.html" title="31.7. Security" /><link rel="next" href="logical-replication-quick-setup.html" title="31.9. Quick Setup" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">31.8. Configuration Settings</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="logical-replication-security.html" title="31.7. Security">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="logical-replication.html" title="Chapter 31. Logical Replication">Up</a></td><th width="60%" align="center">Chapter 31. Logical Replication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="logical-replication-quick-setup.html" title="31.9. Quick Setup">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LOGICAL-REPLICATION-CONFIG"><div class="titlepage"><div><div><h2 class="title" style="clear: both">31.8. Configuration Settings</h2></div></div></div><p>
+   Logical replication requires several configuration options to be set.
+  </p><p>
+   On the publisher side, <code class="varname">wal_level</code> must be set to
+   <code class="literal">logical</code>, and <code class="varname">max_replication_slots</code>
+   must be set to at least the number of subscriptions expected to connect,
+   plus some reserve for table synchronization.  And
+   <code class="varname">max_wal_senders</code> should be set to at least the same as
+   <code class="varname">max_replication_slots</code> plus the number of physical
+   replicas that are connected at the same time.
+  </p><p>
+   <code class="varname">max_replication_slots</code> must also be set on the subscriber.
+   It should be set to at least the number of subscriptions that will be added
+   to the subscriber, plus some reserve for table synchronization.
+   <code class="varname">max_logical_replication_workers</code> must be set to at least
+   the number of subscriptions, again plus some reserve for the table
+   synchronization.  Additionally the <code class="varname">max_worker_processes</code>
+   may need to be adjusted to accommodate for replication workers, at least
+   (<code class="varname">max_logical_replication_workers</code>
+   + <code class="literal">1</code>).  Note that some extensions and parallel queries
+   also take worker slots from <code class="varname">max_worker_processes</code>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="logical-replication-security.html" title="31.7. Security">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="logical-replication.html" title="Chapter 31. Logical Replication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="logical-replication-quick-setup.html" title="31.9. Quick Setup">Next</a></td></tr><tr><td width="40%" align="left" valign="top">31.7. Security </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 31.9. Quick Setup</td></tr></table></div></body></html>

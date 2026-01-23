@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.15. pg_database</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-conversion.html" title="52.14. pg_conversion" /><link rel="next" href="catalog-pg-db-role-setting.html" title="52.16. pg_db_role_setting" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.15. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_database</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-conversion.html" title="52.14. pg_conversion">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-db-role-setting.html" title="52.16. pg_db_role_setting">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-DATABASE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.15. <code class="structname">pg_database</code></h2></div></div></div><a id="id-1.10.4.17.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_database</code> stores information about
+   the available databases.  Databases are created with the <a class="link" href="sql-createdatabase.html" title="CREATE DATABASE"><code class="command">CREATE DATABASE</code></a> command.
+   Consult <a class="xref" href="managing-databases.html" title="Chapter 23. Managing Databases">Chapter 23</a> for details about the meaning
+   of some of the parameters.
+  </p><p>
+   Unlike most system catalogs, <code class="structname">pg_database</code>
+   is shared across all databases of a cluster: there is only one
+   copy of <code class="structname">pg_database</code> per cluster, not
+   one per database.
+  </p><div class="table" id="id-1.10.4.17.5"><p class="title"><strong>Table 52.15. <code class="structname">pg_database</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_database Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Database name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datdba</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the database, usually the user who created it
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">encoding</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Character encoding for this database
+       (<code class="function">pg_encoding_to_char()</code> can translate
+       this number to the encoding name)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datcollate</code> <code class="type">name</code>
+      </p>
+      <p>
+       LC_COLLATE for this database
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datctype</code> <code class="type">name</code>
+      </p>
+      <p>
+       LC_CTYPE for this database
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datistemplate</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If true, then this database can be cloned by
+       any user with <code class="literal">CREATEDB</code> privileges;
+       if false, then only superusers or the owner of
+       the database can clone it.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datallowconn</code> <code class="type">bool</code>
+      </p>
+      <p>
+       If false then no one can connect to this database.  This is
+       used to protect the <code class="literal">template0</code> database from being altered.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datconnlimit</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Sets maximum number of concurrent connections that can be made
+       to this database.  -1 means no limit, -2 indicates the database is
+       invalid.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datlastsysoid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Last system OID in the database; useful
+       particularly to <span class="application">pg_dump</span>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datfrozenxid</code> <code class="type">xid</code>
+      </p>
+      <p>
+       All transaction IDs before this one have been replaced with a permanent
+       (<span class="quote">“<span class="quote">frozen</span>”</span>) transaction ID in this database.  This is used to
+       track whether the database needs to be vacuumed in order to prevent
+       transaction ID wraparound or to allow <code class="literal">pg_xact</code> to be shrunk.
+       It is the minimum of the per-table
+       <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">relfrozenxid</code> values.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datminmxid</code> <code class="type">xid</code>
+      </p>
+      <p>
+       All multixact IDs before this one have been replaced with a
+       transaction ID in this database.  This is used to
+       track whether the database needs to be vacuumed in order to prevent
+       multixact ID wraparound or to allow <code class="literal">pg_multixact</code> to be shrunk.
+       It is the minimum of the per-table
+       <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">relminmxid</code> values.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">dattablespace</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-tablespace.html" title="52.54. pg_tablespace"><code class="structname">pg_tablespace</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The default tablespace for the database.
+       Within this database, all tables for which
+       <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">reltablespace</code> is zero
+       will be stored in this tablespace; in particular, all the non-shared
+       system catalogs will be there.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datacl</code> <code class="type">aclitem[]</code>
+      </p>
+      <p>
+       Access privileges; see <a class="xref" href="ddl-priv.html" title="5.7. Privileges">Section 5.7</a> for details
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-conversion.html" title="52.14. pg_conversion">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-db-role-setting.html" title="52.16. pg_db_role_setting">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.14. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_conversion</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.16. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_db_role_setting</code></td></tr></table></div></body></html>

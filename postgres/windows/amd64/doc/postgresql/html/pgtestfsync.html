@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_test_fsync</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-pgrewind.html" title="pg_rewind" /><link rel="next" href="pgtesttiming.html" title="pg_test_timing" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_test_fsync</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-pgrewind.html" title="pg_rewind">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><th width="60%" align="center">PostgreSQL Server Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="pgtesttiming.html" title="pg_test_timing">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="PGTESTFSYNC"><div class="titlepage"></div><a id="id-1.9.5.10.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_test_fsync</span></span></h2><p>pg_test_fsync — determine fastest <code class="varname">wal_sync_method</code> for <span class="productname">PostgreSQL</span></p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.5.10.4.1"><code class="command">pg_test_fsync</code> [<em class="replaceable"><code>option</code></em>...]</p></div></div><div class="refsect1" id="id-1.9.5.10.5"><h2>Description</h2><p>
+  <span class="application">pg_test_fsync</span> is intended to give you a reasonable
+  idea of what the fastest <a class="xref" href="runtime-config-wal.html#GUC-WAL-SYNC-METHOD">wal_sync_method</a> is on your
+  specific system,
+  as well as supplying diagnostic information in the event of an identified I/O
+  problem.  However, differences shown by
+  <span class="application">pg_test_fsync</span> might not make any significant
+  difference in real database throughput, especially since many database servers
+  are not speed-limited by their write-ahead logs.
+  <span class="application">pg_test_fsync</span> reports average file sync operation
+  time in microseconds for each <code class="literal">wal_sync_method</code>, which can also be used to
+  inform efforts to optimize the value of <a class="xref" href="runtime-config-wal.html#GUC-COMMIT-DELAY">commit_delay</a>.
+ </p></div><div class="refsect1" id="id-1.9.5.10.6"><h2>Options</h2><p>
+    <span class="application">pg_test_fsync</span> accepts the following
+    command-line options:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-f</code><br /></span><span class="term"><code class="option">--filename</code></span></dt><dd><p>
+        Specifies the file name to write test data in.
+        This file should be in the same file system that the
+        <code class="filename">pg_wal</code> directory is or will be placed in.
+        (<code class="filename">pg_wal</code> contains the <acronym class="acronym">WAL</acronym> files.)
+        The default is <code class="filename">pg_test_fsync.out</code> in the current
+        directory.
+       </p></dd><dt><span class="term"><code class="option">-s</code><br /></span><span class="term"><code class="option">--secs-per-test</code></span></dt><dd><p>
+        Specifies the number of seconds for each test.  The more time
+        per test, the greater the test's accuracy, but the longer it takes
+        to run.  The default is 5 seconds, which allows the program to
+        complete in under 2 minutes.
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+        Print the <span class="application">pg_test_fsync</span> version and exit.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+        Show help about <span class="application">pg_test_fsync</span> command line
+        arguments, and exit.
+       </p></dd></dl></div><p>
+   </p></div><div class="refsect1" id="id-1.9.5.10.7"><h2>Environment</h2><p>
+   The environment variable <code class="envar">PG_COLOR</code> specifies whether to use
+   color in diagnostic messages. Possible values are
+   <code class="literal">always</code>, <code class="literal">auto</code> and
+   <code class="literal">never</code>.
+  </p></div><div class="refsect1" id="id-1.9.5.10.8"><h2>See Also</h2><span class="simplelist"><a class="xref" href="app-postgres.html" title="postgres"><span class="refentrytitle"><span class="application">postgres</span></span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-pgrewind.html" title="pg_rewind">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="pgtesttiming.html" title="pg_test_timing">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_rewind</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_test_timing</span></td></tr></table></div></body></html>

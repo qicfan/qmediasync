@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.19. isn</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="intarray.html" title="F.18. intarray" /><link rel="next" href="lo.html" title="F.20. lo" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.19. isn</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="intarray.html" title="F.18. intarray">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="lo.html" title="F.20. lo">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ISN"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.19. isn</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="isn.html#id-1.11.7.28.5">F.19.1. Data Types</a></span></dt><dt><span class="sect2"><a href="isn.html#id-1.11.7.28.6">F.19.2. Casts</a></span></dt><dt><span class="sect2"><a href="isn.html#id-1.11.7.28.7">F.19.3. Functions and Operators</a></span></dt><dt><span class="sect2"><a href="isn.html#id-1.11.7.28.8">F.19.4. Examples</a></span></dt><dt><span class="sect2"><a href="isn.html#id-1.11.7.28.9">F.19.5. Bibliography</a></span></dt><dt><span class="sect2"><a href="isn.html#id-1.11.7.28.10">F.19.6. Author</a></span></dt></dl></div><a id="id-1.11.7.28.2" class="indexterm"></a><p>
+  The <code class="filename">isn</code> module provides data types for the following
+  international product numbering standards: EAN13, UPC, ISBN (books), ISMN
+  (music), and ISSN (serials).  Numbers are validated on input according to a
+  hard-coded list of prefixes; this list of prefixes is also used to hyphenate
+  numbers on output.  Since new prefixes are assigned from time to time, the
+  list of prefixes may be out of date.  It is hoped that a future version of
+  this module will obtain the prefix list from one or more tables that
+  can be easily updated by users as needed; however, at present, the
+  list can only be updated by modifying the source code and recompiling.
+  Alternatively, prefix validation and hyphenation support may be
+  dropped from a future version of this module.
+ </p><p>
+  This module is considered <span class="quote">“<span class="quote">trusted</span>”</span>, that is, it can be
+  installed by non-superusers who have <code class="literal">CREATE</code> privilege
+  on the current database.
+ </p><div class="sect2" id="id-1.11.7.28.5"><div class="titlepage"><div><div><h3 class="title">F.19.1. Data Types</h3></div></div></div><p>
+   <a class="xref" href="isn.html#ISN-DATATYPES" title="Table F.11. isn Data Types">Table F.11</a> shows the data types provided by
+   the <code class="filename">isn</code> module.
+  </p><div class="table" id="ISN-DATATYPES"><p class="title"><strong>Table F.11. <code class="filename">isn</code> Data Types</strong></p><div class="table-contents"><table class="table" summary="isn Data Types" border="1"><colgroup><col class="col1" /><col class="col2" /></colgroup><thead><tr><th>Data Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="type">EAN13</code></td><td>
+       European Article Numbers, always displayed in the EAN13 display format
+      </td></tr><tr><td><code class="type">ISBN13</code></td><td>
+       International Standard Book Numbers to be displayed in
+       the new EAN13 display format
+      </td></tr><tr><td><code class="type">ISMN13</code></td><td>
+       International Standard Music Numbers to be displayed in
+       the new EAN13 display format
+      </td></tr><tr><td><code class="type">ISSN13</code></td><td>
+       International Standard Serial Numbers to be displayed in the new
+       EAN13 display format
+      </td></tr><tr><td><code class="type">ISBN</code></td><td>
+       International Standard Book Numbers to be displayed in the old
+       short display format
+      </td></tr><tr><td><code class="type">ISMN</code></td><td>
+       International Standard Music Numbers to be displayed in the
+       old short display format
+      </td></tr><tr><td><code class="type">ISSN</code></td><td>
+       International Standard Serial Numbers to be displayed in the
+       old short display format
+      </td></tr><tr><td><code class="type">UPC</code></td><td>
+       Universal Product Codes
+      </td></tr></tbody></table></div></div><br class="table-break" /><p>
+   Some notes:
+  </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>ISBN13, ISMN13, ISSN13 numbers are all EAN13 numbers.</p></li><li class="listitem"><p>EAN13 numbers aren't always ISBN13, ISMN13 or ISSN13 (some
+    are).</p></li><li class="listitem"><p>Some ISBN13 numbers can be displayed as ISBN.</p></li><li class="listitem"><p>Some ISMN13 numbers can be displayed as ISMN.</p></li><li class="listitem"><p>Some ISSN13 numbers can be displayed as ISSN.</p></li><li class="listitem"><p>UPC numbers are a subset of the EAN13 numbers (they are basically
+    EAN13 without the first <code class="literal">0</code> digit).</p></li><li class="listitem"><p>All UPC, ISBN, ISMN and ISSN numbers can be represented as EAN13
+    numbers.</p></li></ol></div><p>
+   Internally, all these types use the same representation (a 64-bit
+   integer), and all are interchangeable.  Multiple types are provided
+   to control display formatting and to permit tighter validity checking
+   of input that is supposed to denote one particular type of number.
+  </p><p>
+   The <code class="type">ISBN</code>, <code class="type">ISMN</code>, and <code class="type">ISSN</code> types will display the
+   short version of the number (ISxN 10) whenever it's possible, and will show
+   ISxN 13 format for numbers that do not fit in the short version.
+   The <code class="type">EAN13</code>, <code class="type">ISBN13</code>, <code class="type">ISMN13</code> and
+   <code class="type">ISSN13</code> types will always display the long version of the ISxN
+   (EAN13).
+  </p></div><div class="sect2" id="id-1.11.7.28.6"><div class="titlepage"><div><div><h3 class="title">F.19.2. Casts</h3></div></div></div><p>
+   The <code class="filename">isn</code> module provides the following pairs of type casts:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     ISBN13 &lt;=&gt; EAN13
+    </p></li><li class="listitem"><p>
+     ISMN13 &lt;=&gt; EAN13
+    </p></li><li class="listitem"><p>
+     ISSN13 &lt;=&gt; EAN13
+    </p></li><li class="listitem"><p>
+     ISBN &lt;=&gt; EAN13
+    </p></li><li class="listitem"><p>
+     ISMN &lt;=&gt; EAN13
+    </p></li><li class="listitem"><p>
+     ISSN &lt;=&gt; EAN13
+    </p></li><li class="listitem"><p>
+     UPC  &lt;=&gt; EAN13
+    </p></li><li class="listitem"><p>
+     ISBN &lt;=&gt; ISBN13
+    </p></li><li class="listitem"><p>
+     ISMN &lt;=&gt; ISMN13
+    </p></li><li class="listitem"><p>
+     ISSN &lt;=&gt; ISSN13
+    </p></li></ul></div><p>
+   When casting from <code class="type">EAN13</code> to another type, there is a run-time
+   check that the value is within the domain of the other type, and an error
+   is thrown if not.  The other casts are simply relabelings that will
+   always succeed.
+  </p></div><div class="sect2" id="id-1.11.7.28.7"><div class="titlepage"><div><div><h3 class="title">F.19.3. Functions and Operators</h3></div></div></div><p>
+   The <code class="filename">isn</code> module provides the standard comparison operators,
+   plus B-tree and hash indexing support for all these data types.  In
+   addition there are several specialized functions; shown in <a class="xref" href="isn.html#ISN-FUNCTIONS" title="Table F.12. isn Functions">Table F.12</a>.
+   In this table,
+   <code class="type">isn</code> means any one of the module's data types.
+  </p><div class="table" id="ISN-FUNCTIONS"><p class="title"><strong>Table F.12. <code class="filename">isn</code> Functions</strong></p><div class="table-contents"><table class="table" summary="isn Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.28.7.3.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">isn_weak</code> ( <code class="type">boolean</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Sets the weak input mode, and returns new setting.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">isn_weak</code> ()
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Returns the current status of the weak mode.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.28.7.3.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">make_valid</code> ( <code class="type">isn</code> )
+        → <code class="returnvalue">isn</code>
+       </p>
+       <p>
+        Validates an invalid number (clears the invalid flag).
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.28.7.3.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">is_valid</code> ( <code class="type">isn</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Checks for the presence of the invalid flag.
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   <em class="firstterm">Weak</em> mode is used to be able to insert invalid data
+   into a table. Invalid means the check digit is wrong, not that there are
+   missing numbers.
+  </p><p>
+   Why would you want to use the weak mode? Well, it could be that
+   you have a huge collection of ISBN numbers, and that there are so many of
+   them that for weird reasons some have the wrong check digit (perhaps the
+   numbers were scanned from a printed list and the OCR got the numbers wrong,
+   perhaps the numbers were manually captured... who knows). Anyway, the point
+   is you might want to clean the mess up, but you still want to be able to
+   have all the numbers in your database and maybe use an external tool to
+   locate the invalid numbers in the database so you can verify the
+   information and validate it more easily; so for example you'd want to
+   select all the invalid numbers in the table.
+  </p><p>
+   When you insert invalid numbers in a table using the weak mode, the number
+   will be inserted with the corrected check digit, but it will be displayed
+   with an exclamation mark (<code class="literal">!</code>) at the end, for example
+   <code class="literal">0-11-000322-5!</code>.  This invalid marker can be checked with
+   the <code class="function">is_valid</code> function and cleared with the
+   <code class="function">make_valid</code> function.
+  </p><p>
+   You can also force the insertion of invalid numbers even when not in the
+   weak mode, by appending the <code class="literal">!</code> character at the end of the
+   number.
+  </p><p>
+   Another special feature is that during input, you can write
+   <code class="literal">?</code> in place of the check digit, and the correct check digit
+   will be inserted automatically.
+  </p></div><div class="sect2" id="id-1.11.7.28.8"><div class="titlepage"><div><div><h3 class="title">F.19.4. Examples</h3></div></div></div><pre class="programlisting">
+--Using the types directly:
+SELECT isbn('978-0-393-04002-9');
+SELECT isbn13('0901690546');
+SELECT issn('1436-4522');
+
+--Casting types:
+-- note that you can only cast from ean13 to another type when the
+-- number would be valid in the realm of the target type;
+-- thus, the following will NOT work: select isbn(ean13('0220356483481'));
+-- but these will:
+SELECT upc(ean13('0220356483481'));
+SELECT ean13(upc('220356483481'));
+
+--Create a table with a single column to hold ISBN numbers:
+CREATE TABLE test (id isbn);
+INSERT INTO test VALUES('9780393040029');
+
+--Automatically calculate check digits (observe the '?'):
+INSERT INTO test VALUES('220500896?');
+INSERT INTO test VALUES('978055215372?');
+
+SELECT issn('3251231?');
+SELECT ismn('979047213542?');
+
+--Using the weak mode:
+SELECT isn_weak(true);
+INSERT INTO test VALUES('978-0-11-000533-4');
+INSERT INTO test VALUES('9780141219307');
+INSERT INTO test VALUES('2-205-00876-X');
+SELECT isn_weak(false);
+
+SELECT id FROM test WHERE NOT is_valid(id);
+UPDATE test SET id = make_valid(id) WHERE id = '2-205-00876-X!';
+
+SELECT * FROM test;
+
+SELECT isbn13(id) FROM test;
+</pre></div><div class="sect2" id="id-1.11.7.28.9"><div class="titlepage"><div><div><h3 class="title">F.19.5. Bibliography</h3></div></div></div><p>
+   The information to implement this module was collected from
+   several sites, including:
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><a class="ulink" href="https://www.isbn-international.org/" target="_top">https://www.isbn-international.org/</a></p></li><li class="listitem"><p><a class="ulink" href="https://www.issn.org/" target="_top">https://www.issn.org/</a></p></li><li class="listitem"><p><a class="ulink" href="https://www.ismn-international.org/" target="_top">https://www.ismn-international.org/</a></p></li><li class="listitem"><p><a class="ulink" href="https://www.wikipedia.org/" target="_top">https://www.wikipedia.org/</a></p></li></ul></div><p>
+
+   The prefixes used for hyphenation were also compiled from:
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><a class="ulink" href="https://www.gs1.org/standards/id-keys" target="_top">https://www.gs1.org/standards/id-keys</a></p></li><li class="listitem"><p><a class="ulink" href="https://en.wikipedia.org/wiki/List_of_ISBN_identifier_groups" target="_top">https://en.wikipedia.org/wiki/List_of_ISBN_identifier_groups</a></p></li><li class="listitem"><p><a class="ulink" href="https://www.isbn-international.org/content/isbn-users-manual" target="_top">https://www.isbn-international.org/content/isbn-users-manual</a></p></li><li class="listitem"><p><a class="ulink" href="https://en.wikipedia.org/wiki/International_Standard_Music_Number" target="_top">https://en.wikipedia.org/wiki/International_Standard_Music_Number</a></p></li><li class="listitem"><p><a class="ulink" href="https://www.ismn-international.org/ranges.html" target="_top">https://www.ismn-international.org/ranges.html</a></p></li></ul></div><p>
+
+   Care was taken during the creation of the algorithms and they
+   were meticulously verified against the suggested algorithms
+   in the official ISBN, ISMN, ISSN User Manuals.
+  </p></div><div class="sect2" id="id-1.11.7.28.10"><div class="titlepage"><div><div><h3 class="title">F.19.6. Author</h3></div></div></div><p>
+   Germán Méndez Bravo (Kronuz), 2004–2006
+  </p><p>
+   This module was inspired by Garrett A. Wollman's
+   <code class="filename">isbn_issn</code> code.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="intarray.html" title="F.18. intarray">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="lo.html" title="F.20. lo">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.18. intarray </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.20. lo</td></tr></table></div></body></html>

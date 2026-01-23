@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.28. pg_init_privs</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-inherits.html" title="52.27. pg_inherits" /><link rel="next" href="catalog-pg-language.html" title="52.29. pg_language" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.28. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_init_privs</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-inherits.html" title="52.27. pg_inherits">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-language.html" title="52.29. pg_language">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-INIT-PRIVS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.28. <code class="structname">pg_init_privs</code></h2></div></div></div><a id="id-1.10.4.30.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_init_privs</code> records information about
+   the initial privileges of objects in the system.  There is one entry
+   for each object in the database which has a non-default (non-NULL)
+   initial set of privileges.
+  </p><p>
+   Objects can have initial privileges either by having those privileges set
+   when the system is initialized (by <span class="application">initdb</span>) or when the
+   object is created during a <a class="link" href="sql-createextension.html" title="CREATE EXTENSION"><code class="command">CREATE EXTENSION</code></a> and the
+   extension script sets initial privileges using the <a class="link" href="sql-grant.html" title="GRANT"><code class="command">GRANT</code></a>
+   system.  Note that the system will automatically handle recording of the
+   privileges during the extension script and that extension authors need
+   only use the <code class="command">GRANT</code> and <code class="command">REVOKE</code>
+   statements in their script to have the privileges recorded.  The
+   <code class="literal">privtype</code> column indicates if the initial privilege was
+   set by <span class="application">initdb</span> or during a
+   <code class="command">CREATE EXTENSION</code> command.
+  </p><p>
+   Objects which have initial privileges set by <span class="application">initdb</span> will
+   have entries where <code class="literal">privtype</code> is
+   <code class="literal">'i'</code>, while objects which have initial privileges set
+   by <code class="command">CREATE EXTENSION</code> will have entries where
+   <code class="literal">privtype</code> is <code class="literal">'e'</code>.
+  </p><div class="table" id="id-1.10.4.30.6"><p class="title"><strong>Table 52.28. <code class="structname">pg_init_privs</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_init_privs Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">objoid</code> <code class="type">oid</code>
+       (references any OID column)
+      </p>
+      <p>
+       The OID of the specific object
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">classoid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The OID of the system catalog the object is in
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">objsubid</code> <code class="type">int4</code>
+      </p>
+      <p>
+       For a table column, this is the column number (the
+       <code class="structfield">objoid</code> and <code class="structfield">classoid</code> refer to the
+       table itself).  For all other object types, this column is
+       zero.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">privtype</code> <code class="type">char</code>
+      </p>
+      <p>
+       A code defining the type of initial privilege of this object; see text
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">initprivs</code> <code class="type">aclitem[]</code>
+      </p>
+      <p>
+       The initial access privileges; see
+       <a class="xref" href="ddl-priv.html" title="5.7. Privileges">Section 5.7</a> for details
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-inherits.html" title="52.27. pg_inherits">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-language.html" title="52.29. pg_language">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.27. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_inherits</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.29. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_language</code></td></tr></table></div></body></html>

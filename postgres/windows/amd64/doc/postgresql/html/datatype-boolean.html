@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.6. Boolean Type</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-datetime.html" title="8.5. Date/Time Types" /><link rel="next" href="datatype-enum.html" title="8.7. Enumerated Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.6. Boolean Type</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-datetime.html" title="8.5. Date/Time Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datatype-enum.html" title="8.7. Enumerated Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATATYPE-BOOLEAN"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.6. Boolean Type</h2></div></div></div><a id="id-1.5.7.14.2" class="indexterm"></a><a id="id-1.5.7.14.3" class="indexterm"></a><a id="id-1.5.7.14.4" class="indexterm"></a><p>
+    <span class="productname">PostgreSQL</span> provides the
+    standard <acronym class="acronym">SQL</acronym> type <code class="type">boolean</code>;
+    see <a class="xref" href="datatype-boolean.html#DATATYPE-BOOLEAN-TABLE" title="Table 8.19. Boolean Data Type">Table 8.19</a>.
+    The <code class="type">boolean</code> type can have several states:
+    <span class="quote">“<span class="quote">true</span>”</span>, <span class="quote">“<span class="quote">false</span>”</span>, and a third state,
+    <span class="quote">“<span class="quote">unknown</span>”</span>, which is represented by the
+    <acronym class="acronym">SQL</acronym> null value.
+   </p><div class="table" id="DATATYPE-BOOLEAN-TABLE"><p class="title"><strong>Table 8.19. Boolean Data Type</strong></p><div class="table-contents"><table class="table" summary="Boolean Data Type" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Name</th><th>Storage Size</th><th>Description</th></tr></thead><tbody><tr><td><code class="type">boolean</code></td><td>1 byte</td><td>state of true or false</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Boolean constants can be represented in SQL queries by the SQL
+    key words <code class="literal">TRUE</code>, <code class="literal">FALSE</code>,
+    and <code class="literal">NULL</code>.
+   </p><p>
+    The datatype input function for type <code class="type">boolean</code> accepts these
+    string representations for the <span class="quote">“<span class="quote">true</span>”</span> state:
+    </p><table border="0" summary="Simple list" class="simplelist"><tr><td><code class="literal">true</code></td></tr><tr><td><code class="literal">yes</code></td></tr><tr><td><code class="literal">on</code></td></tr><tr><td><code class="literal">1</code></td></tr></table><p>
+    and these representations for the <span class="quote">“<span class="quote">false</span>”</span> state:
+    </p><table border="0" summary="Simple list" class="simplelist"><tr><td><code class="literal">false</code></td></tr><tr><td><code class="literal">no</code></td></tr><tr><td><code class="literal">off</code></td></tr><tr><td><code class="literal">0</code></td></tr></table><p>
+    Unique prefixes of these strings are also accepted, for
+    example <code class="literal">t</code> or <code class="literal">n</code>.
+    Leading or trailing whitespace is ignored, and case does not matter.
+   </p><p>
+    The datatype output function for type <code class="type">boolean</code> always emits
+    either <code class="literal">t</code> or <code class="literal">f</code>, as shown in
+    <a class="xref" href="datatype-boolean.html#DATATYPE-BOOLEAN-EXAMPLE" title="Example 8.2. Using the boolean Type">Example 8.2</a>.
+   </p><div class="example" id="DATATYPE-BOOLEAN-EXAMPLE"><p class="title"><strong>Example 8.2. Using the <code class="type">boolean</code> Type</strong></p><div class="example-contents"><pre class="programlisting">
+CREATE TABLE test1 (a boolean, b text);
+INSERT INTO test1 VALUES (TRUE, 'sic est');
+INSERT INTO test1 VALUES (FALSE, 'non est');
+SELECT * FROM test1;
+ a |    b
+---+---------
+ t | sic est
+ f | non est
+
+SELECT * FROM test1 WHERE a;
+ a |    b
+---+---------
+ t | sic est
+</pre></div></div><br class="example-break" /><p>
+    The key words <code class="literal">TRUE</code> and <code class="literal">FALSE</code> are
+    the preferred (<acronym class="acronym">SQL</acronym>-compliant) method for writing
+    Boolean constants in SQL queries.  But you can also use the string
+    representations by following the generic string-literal constant syntax
+    described in <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-CONSTANTS-GENERIC" title="4.1.2.7. Constants of Other Types">Section 4.1.2.7</a>, for
+    example <code class="literal">'yes'::boolean</code>.
+   </p><p>
+    Note that the parser automatically understands
+    that <code class="literal">TRUE</code> and <code class="literal">FALSE</code> are of
+    type <code class="type">boolean</code>, but this is not so
+    for <code class="literal">NULL</code> because that can have any type.
+    So in some contexts you might have to cast <code class="literal">NULL</code>
+    to <code class="type">boolean</code> explicitly, for
+    example <code class="literal">NULL::boolean</code>.  Conversely, the cast can be
+    omitted from a string-literal Boolean value in contexts where the parser
+    can deduce that the literal must be of type <code class="type">boolean</code>.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-datetime.html" title="8.5. Date/Time Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datatype-enum.html" title="8.7. Enumerated Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.5. Date/Time Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.7. Enumerated Types</td></tr></table></div></body></html>

@@ -3,6 +3,7 @@ package models
 import (
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
+	"Q115-STRM/internal/notificationmanager"
 	"Q115-STRM/internal/openlist"
 	"Q115-STRM/internal/v115open"
 	"context"
@@ -28,6 +29,17 @@ type Account struct {
 
 func (account *Account) TableName() string {
 	return "account"
+}
+
+func (account *Account) GetAppId() string {
+	switch account.AppId {
+	case "Q115-STRM":
+		return helpers.GlobalConfig.Open115AppId
+	case "MQ的媒体库":
+		return helpers.GlobalConfig.Open115TestAppId
+	default:
+		return account.AppId
+	}
 }
 
 // 更新token和refreshToken
@@ -73,7 +85,8 @@ func (account *Account) Get115Client(normal bool) *v115open.OpenClient {
 	if normal {
 		qps = 0
 	}
-	return v115open.GetClient(qps, account.ID, account.AppId, account.Token, account.RefreshToken)
+	appId := account.GetAppId()
+	return v115open.GetClient(qps, account.ID, appId, account.Token, account.RefreshToken)
 }
 
 func (account *Account) GetOpenListClient() *openlist.Client {
@@ -308,7 +321,19 @@ func HandleV115TokenInvalid(event helpers.Event) helpers.EventResult {
 		}
 	}
 	account.ClearToken(eventData["reason"].(string))
-	helpers.GlobalNotificationManager.SendSystemNotification("115开放平台访问凭证已失效，请重新授权", fmt.Sprintf("账号ID：%d, 115用户名：%s", int(account.ID), account.Username))
+	ctx := context.Background()
+	notif := &Notification{
+		Type:      SystemAlert,
+		Title:     "🔐 115开放平台访问凭证已失效",
+		Content:   fmt.Sprintf("账号ID：%d\n用户名：%s\n请重新授权\n⏰ 时间: %s", int(account.ID), account.Username, time.Now().Format("2006-01-02 15:04:05")),
+		Timestamp: time.Now(),
+		Priority:  HighPriority,
+	}
+	if notificationmanager.GlobalEnhancedNotificationManager != nil {
+		if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+			helpers.AppLogger.Errorf("发送访问凭证失效通知失败: %v", err)
+		}
+	}
 	return helpers.EventResult{
 		Success: true,
 		Error:   nil,

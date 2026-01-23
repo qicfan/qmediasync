@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.29. pg_language</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-init-privs.html" title="52.28. pg_init_privs" /><link rel="next" href="catalog-pg-largeobject.html" title="52.30. pg_largeobject" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.29. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_language</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-init-privs.html" title="52.28. pg_init_privs">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-largeobject.html" title="52.30. pg_largeobject">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-LANGUAGE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.29. <code class="structname">pg_language</code></h2></div></div></div><a id="id-1.10.4.31.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_language</code> registers
+   languages in which you can write functions or stored procedures.
+   See <a class="xref" href="sql-createlanguage.html" title="CREATE LANGUAGE"><span class="refentrytitle">CREATE LANGUAGE</span></a>
+   and <a class="xref" href="xplang.html" title="Chapter 42. Procedural Languages">Chapter 42</a> for more information about language handlers.
+  </p><div class="table" id="id-1.10.4.31.4"><p class="title"><strong>Table 52.29. <code class="structname">pg_language</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_language Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">lanname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Name of the language
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">lanowner</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the language
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">lanispl</code> <code class="type">bool</code>
+      </p>
+      <p>
+       This is false for internal languages (such as
+       <acronym class="acronym">SQL</acronym>) and true for user-defined languages.
+       Currently, <span class="application">pg_dump</span> still uses this
+       to determine which languages need to be dumped, but this might be
+       replaced by a different mechanism in the future.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">lanpltrusted</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if this is a trusted language, which means that it is believed
+       not to grant access to anything outside the normal SQL execution
+       environment.  Only superusers can create functions in untrusted
+       languages.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">lanplcallfoid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       For noninternal languages this references the language
+       handler, which is a special function that is responsible for
+       executing all functions that are written in the particular
+       language. Zero for internal languages.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">laninline</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       This references a function that is responsible for executing
+       <span class="quote">“<span class="quote">inline</span>”</span> anonymous code blocks
+       (<a class="xref" href="sql-do.html" title="DO"><span class="refentrytitle">DO</span></a> blocks).
+       Zero if inline blocks are not supported.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">lanvalidator</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       This references a language validator function that is responsible
+       for checking the syntax and validity of new functions when they
+       are created.  Zero if no validator is provided.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">lanacl</code> <code class="type">aclitem[]</code>
+      </p>
+      <p>
+       Access privileges; see <a class="xref" href="ddl-priv.html" title="5.7. Privileges">Section 5.7</a> for details
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-init-privs.html" title="52.28. pg_init_privs">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-largeobject.html" title="52.30. pg_largeobject">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.28. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_init_privs</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.30. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_largeobject</code></td></tr></table></div></body></html>

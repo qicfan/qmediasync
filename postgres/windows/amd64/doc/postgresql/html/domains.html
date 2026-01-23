@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.18. Domain Types</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="rangetypes.html" title="8.17. Range Types" /><link rel="next" href="datatype-oid.html" title="8.19. Object Identifier Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.18. Domain Types</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="rangetypes.html" title="8.17. Range Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datatype-oid.html" title="8.19. Object Identifier Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DOMAINS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.18. Domain Types</h2></div></div></div><a id="id-1.5.7.26.2" class="indexterm"></a><a id="id-1.5.7.26.3" class="indexterm"></a><p>
+    A <em class="firstterm">domain</em> is a user-defined data type that is
+    based on another <em class="firstterm">underlying type</em>.  Optionally,
+    it can have constraints that restrict its valid values to a subset of
+    what the underlying type would allow.  Otherwise it behaves like the
+    underlying type — for example, any operator or function that
+    can be applied to the underlying type will work on the domain type.
+    The underlying type can be any built-in or user-defined base type,
+    enum type, array type, composite type, range type, or another domain.
+   </p><p>
+    For example, we could create a domain over integers that accepts only
+    positive integers:
+</p><pre class="programlisting">
+CREATE DOMAIN posint AS integer CHECK (VALUE &gt; 0);
+CREATE TABLE mytable (id posint);
+INSERT INTO mytable VALUES(1);   -- works
+INSERT INTO mytable VALUES(-1);  -- fails
+</pre><p>
+   </p><p>
+    When an operator or function of the underlying type is applied to a
+    domain value, the domain is automatically down-cast to the underlying
+    type.  Thus, for example, the result of <code class="literal">mytable.id - 1</code>
+    is considered to be of type <code class="type">integer</code> not <code class="type">posint</code>.
+    We could write <code class="literal">(mytable.id - 1)::posint</code> to cast the
+    result back to <code class="type">posint</code>, causing the domain's constraints
+    to be rechecked.  In this case, that would result in an error if the
+    expression had been applied to an <code class="structfield">id</code> value of
+    1.  Assigning a value of the underlying type to a field or variable of
+    the domain type is allowed without writing an explicit cast, but the
+    domain's constraints will be checked.
+   </p><p>
+    For additional information see <a class="xref" href="sql-createdomain.html" title="CREATE DOMAIN"><span class="refentrytitle">CREATE DOMAIN</span></a>.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="rangetypes.html" title="8.17. Range Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datatype-oid.html" title="8.19. Object Identifier Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.17. Range Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.19. Object Identifier Types</td></tr></table></div></body></html>

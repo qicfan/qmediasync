@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>37.53. table_privileges</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="infoschema-table-constraints.html" title="37.52. table_constraints" /><link rel="next" href="infoschema-tables.html" title="37.54. tables" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">37.53. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">table_privileges</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="infoschema-table-constraints.html" title="37.52. table_constraints">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><th width="60%" align="center">Chapter 37. The Information Schema</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="infoschema-tables.html" title="37.54. tables">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INFOSCHEMA-TABLE-PRIVILEGES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">37.53. <code class="literal">table_privileges</code></h2></div></div></div><p>
+   The view <code class="literal">table_privileges</code> identifies all
+   privileges granted on tables or views to a currently enabled role
+   or by a currently enabled role.  There is one row for each
+   combination of table, grantor, and grantee.
+  </p><div class="table" id="id-1.7.6.57.3"><p class="title"><strong>Table 37.51. <code class="structname">table_privileges</code> Columns</strong></p><div class="table-contents"><table class="table" summary="table_privileges Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">grantor</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the role that granted the privilege
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">grantee</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the role that the privilege was granted to
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">table_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database that contains the table (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">table_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema that contains the table
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">table_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the table
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">privilege_type</code> <code class="type">character_data</code>
+      </p>
+      <p>
+       Type of the privilege: <code class="literal">SELECT</code>,
+       <code class="literal">INSERT</code>, <code class="literal">UPDATE</code>,
+       <code class="literal">DELETE</code>, <code class="literal">TRUNCATE</code>,
+       <code class="literal">REFERENCES</code>, or <code class="literal">TRIGGER</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">is_grantable</code> <code class="type">yes_or_no</code>
+      </p>
+      <p>
+       <code class="literal">YES</code> if the privilege is grantable, <code class="literal">NO</code> if not
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">with_hierarchy</code> <code class="type">yes_or_no</code>
+      </p>
+      <p>
+       In the SQL standard, <code class="literal">WITH HIERARCHY OPTION</code>
+       is a separate (sub-)privilege allowing certain operations on
+       table inheritance hierarchies.  In PostgreSQL, this is included
+       in the <code class="literal">SELECT</code> privilege, so this column
+       shows <code class="literal">YES</code> if the privilege
+       is <code class="literal">SELECT</code>, else <code class="literal">NO</code>.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="infoschema-table-constraints.html" title="37.52. table_constraints">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="infoschema-tables.html" title="37.54. tables">Next</a></td></tr><tr><td width="40%" align="left" valign="top">37.52. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">table_constraints</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 37.54. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">tables</code></td></tr></table></div></body></html>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>38.9. Internal Functions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="xfunc-pl.html" title="38.8. Procedural Language Functions" /><link rel="next" href="xfunc-c.html" title="38.10. C-Language Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">38.9. Internal Functions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="xfunc-pl.html" title="38.8. Procedural Language Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><th width="60%" align="center">Chapter 38. Extending <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym></th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="xfunc-c.html" title="38.10. C-Language Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="XFUNC-INTERNAL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">38.9. Internal Functions</h2></div></div></div><a id="id-1.8.3.12.2" class="indexterm"></a><p>
+    Internal functions are functions written in C that have been statically
+    linked into the <span class="productname">PostgreSQL</span> server.
+    The <span class="quote">“<span class="quote">body</span>”</span> of the function definition
+    specifies the C-language name of the function, which need not be the
+    same as the name being declared for SQL use.
+    (For reasons of backward compatibility, an empty body
+    is accepted as meaning that the C-language function name is the
+    same as the SQL name.)
+   </p><p>
+    Normally, all internal functions present in the
+    server are declared during the initialization of the database cluster
+    (see <a class="xref" href="creating-cluster.html" title="19.2. Creating a Database Cluster">Section 19.2</a>),
+    but a user could use <code class="command">CREATE FUNCTION</code>
+    to create additional alias names for an internal function.
+    Internal functions are declared in <code class="command">CREATE FUNCTION</code>
+    with language name <code class="literal">internal</code>.  For instance, to
+    create an alias for the <code class="function">sqrt</code> function:
+</p><pre class="programlisting">
+CREATE FUNCTION square_root(double precision) RETURNS double precision
+    AS 'dsqrt'
+    LANGUAGE internal
+    STRICT;
+</pre><p>
+    (Most internal functions expect to be declared <span class="quote">“<span class="quote">strict</span>”</span>.)
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     Not all <span class="quote">“<span class="quote">predefined</span>”</span> functions are
+     <span class="quote">“<span class="quote">internal</span>”</span> in the above sense.  Some predefined
+     functions are written in SQL.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="xfunc-pl.html" title="38.8. Procedural Language Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="xfunc-c.html" title="38.10. C-Language Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">38.8. Procedural Language Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 38.10. C-Language Functions</td></tr></table></div></body></html>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.6. pg_attrdef</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-amproc.html" title="52.5. pg_amproc" /><link rel="next" href="catalog-pg-attribute.html" title="52.7. pg_attribute" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.6. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_attrdef</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-amproc.html" title="52.5. pg_amproc">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-attribute.html" title="52.7. pg_attribute">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-ATTRDEF"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.6. <code class="structname">pg_attrdef</code></h2></div></div></div><a id="id-1.10.4.8.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_attrdef</code> stores column default
+   values.  The main information about columns is stored in
+   <a class="link" href="catalog-pg-attribute.html" title="52.7. pg_attribute"><code class="structname">pg_attribute</code></a>.
+   Only columns for which a default value has been explicitly set will have
+   an entry here.
+  </p><div class="table" id="id-1.10.4.8.4"><p class="title"><strong>Table 52.6. <code class="structname">pg_attrdef</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_attrdef Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">adrelid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The table this column belongs to
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">adnum</code> <code class="type">int2</code>
+       (references <a class="link" href="catalog-pg-attribute.html" title="52.7. pg_attribute"><code class="structname">pg_attribute</code></a>.<code class="structfield">attnum</code>)
+      </p>
+      <p>
+       The number of the column
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">adbin</code> <code class="type">pg_node_tree</code>
+      </p>
+      <p>
+       The column default value, in <code class="function">nodeToString()</code>
+       representation.  Use <code class="literal">pg_get_expr(adbin, adrelid)</code> to
+       convert it to an SQL expression.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-amproc.html" title="52.5. pg_amproc">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-attribute.html" title="52.7. pg_attribute">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.5. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_amproc</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.7. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_attribute</code></td></tr></table></div></body></html>

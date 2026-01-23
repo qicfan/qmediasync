@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.23. Subquery Expressions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-window.html" title="9.22. Window Functions" /><link rel="next" href="functions-comparisons.html" title="9.24. Row and Array Comparisons" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.23. Subquery Expressions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-window.html" title="9.22. Window Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-comparisons.html" title="9.24. Row and Array Comparisons">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-SUBQUERY"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.23. Subquery Expressions</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="functions-subquery.html#FUNCTIONS-SUBQUERY-EXISTS">9.23.1. <code class="literal">EXISTS</code></a></span></dt><dt><span class="sect2"><a href="functions-subquery.html#FUNCTIONS-SUBQUERY-IN">9.23.2. <code class="literal">IN</code></a></span></dt><dt><span class="sect2"><a href="functions-subquery.html#FUNCTIONS-SUBQUERY-NOTIN">9.23.3. <code class="literal">NOT IN</code></a></span></dt><dt><span class="sect2"><a href="functions-subquery.html#FUNCTIONS-SUBQUERY-ANY-SOME">9.23.4. <code class="literal">ANY</code>/<code class="literal">SOME</code></a></span></dt><dt><span class="sect2"><a href="functions-subquery.html#FUNCTIONS-SUBQUERY-ALL">9.23.5. <code class="literal">ALL</code></a></span></dt><dt><span class="sect2"><a href="functions-subquery.html#id-1.5.8.29.15">9.23.6. Single-Row Comparison</a></span></dt></dl></div><a id="id-1.5.8.29.2" class="indexterm"></a><a id="id-1.5.8.29.3" class="indexterm"></a><a id="id-1.5.8.29.4" class="indexterm"></a><a id="id-1.5.8.29.5" class="indexterm"></a><a id="id-1.5.8.29.6" class="indexterm"></a><a id="id-1.5.8.29.7" class="indexterm"></a><a id="id-1.5.8.29.8" class="indexterm"></a><p>
+   This section describes the <acronym class="acronym">SQL</acronym>-compliant subquery
+   expressions available in <span class="productname">PostgreSQL</span>.
+   All of the expression forms documented in this section return
+   Boolean (true/false) results.
+  </p><div class="sect2" id="FUNCTIONS-SUBQUERY-EXISTS"><div class="titlepage"><div><div><h3 class="title">9.23.1. <code class="literal">EXISTS</code></h3></div></div></div><pre class="synopsis">
+EXISTS (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The argument of <code class="token">EXISTS</code> is an arbitrary <code class="command">SELECT</code> statement,
+   or <em class="firstterm">subquery</em>.  The
+   subquery is evaluated to determine whether it returns any rows.
+   If it returns at least one row, the result of <code class="token">EXISTS</code> is
+   <span class="quote">“<span class="quote">true</span>”</span>; if the subquery returns no rows, the result of <code class="token">EXISTS</code>
+   is <span class="quote">“<span class="quote">false</span>”</span>.
+  </p><p>
+   The subquery can refer to variables from the surrounding query,
+   which will act as constants during any one evaluation of the subquery.
+  </p><p>
+   The subquery will generally only be executed long enough to determine
+   whether at least one row is returned, not all the way to completion.
+   It is unwise to write a subquery that has side effects (such as
+   calling sequence functions); whether the side effects occur
+   might be unpredictable.
+  </p><p>
+   Since the result depends only on whether any rows are returned,
+   and not on the contents of those rows, the output list of the
+   subquery is normally unimportant.  A common coding convention is
+   to write all <code class="literal">EXISTS</code> tests in the form
+   <code class="literal">EXISTS(SELECT 1 WHERE ...)</code>.  There are exceptions to
+   this rule however, such as subqueries that use <code class="token">INTERSECT</code>.
+  </p><p>
+   This simple example is like an inner join on <code class="literal">col2</code>, but
+   it produces at most one output row for each <code class="literal">tab1</code> row,
+   even if there are several matching <code class="literal">tab2</code> rows:
+</p><pre class="screen">
+SELECT col1
+FROM tab1
+WHERE EXISTS (SELECT 1 FROM tab2 WHERE col2 = tab1.col2);
+</pre><p>
+  </p></div><div class="sect2" id="FUNCTIONS-SUBQUERY-IN"><div class="titlepage"><div><div><h3 class="title">9.23.2. <code class="literal">IN</code></h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> IN (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The right-hand side is a parenthesized
+   subquery, which must return exactly one column.  The left-hand expression
+   is evaluated and compared to each row of the subquery result.
+   The result of <code class="token">IN</code> is <span class="quote">“<span class="quote">true</span>”</span> if any equal subquery row is found.
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if no equal row is found (including the
+   case where the subquery returns no rows).
+  </p><p>
+   Note that if the left-hand expression yields null, or if there are
+   no equal right-hand values and at least one right-hand row yields
+   null, the result of the <code class="token">IN</code> construct will be null, not false.
+   This is in accordance with SQL's normal rules for Boolean combinations
+   of null values.
+  </p><p>
+   As with <code class="token">EXISTS</code>, it's unwise to assume that the subquery will
+   be evaluated completely.
+  </p><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> IN (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The left-hand side of this form of <code class="token">IN</code> is a row constructor,
+   as described in <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS" title="4.2.13. Row Constructors">Section 4.2.13</a>.
+   The right-hand side is a parenthesized
+   subquery, which must return exactly as many columns as there are
+   expressions in the left-hand row.  The left-hand expressions are
+   evaluated and compared row-wise to each row of the subquery result.
+   The result of <code class="token">IN</code> is <span class="quote">“<span class="quote">true</span>”</span> if any equal subquery row is found.
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if no equal row is found (including the
+   case where the subquery returns no rows).
+  </p><p>
+   As usual, null values in the rows are combined per
+   the normal rules of SQL Boolean expressions.  Two rows are considered
+   equal if all their corresponding members are non-null and equal; the rows
+   are unequal if any corresponding members are non-null and unequal;
+   otherwise the result of that row comparison is unknown (null).
+   If all the per-row results are either unequal or null, with at least one
+   null, then the result of <code class="token">IN</code> is null.
+  </p></div><div class="sect2" id="FUNCTIONS-SUBQUERY-NOTIN"><div class="titlepage"><div><div><h3 class="title">9.23.3. <code class="literal">NOT IN</code></h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> NOT IN (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The right-hand side is a parenthesized
+   subquery, which must return exactly one column.  The left-hand expression
+   is evaluated and compared to each row of the subquery result.
+   The result of <code class="token">NOT IN</code> is <span class="quote">“<span class="quote">true</span>”</span> if only unequal subquery rows
+   are found (including the case where the subquery returns no rows).
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if any equal row is found.
+  </p><p>
+   Note that if the left-hand expression yields null, or if there are
+   no equal right-hand values and at least one right-hand row yields
+   null, the result of the <code class="token">NOT IN</code> construct will be null, not true.
+   This is in accordance with SQL's normal rules for Boolean combinations
+   of null values.
+  </p><p>
+   As with <code class="token">EXISTS</code>, it's unwise to assume that the subquery will
+   be evaluated completely.
+  </p><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> NOT IN (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The left-hand side of this form of <code class="token">NOT IN</code> is a row constructor,
+   as described in <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS" title="4.2.13. Row Constructors">Section 4.2.13</a>.
+   The right-hand side is a parenthesized
+   subquery, which must return exactly as many columns as there are
+   expressions in the left-hand row.  The left-hand expressions are
+   evaluated and compared row-wise to each row of the subquery result.
+   The result of <code class="token">NOT IN</code> is <span class="quote">“<span class="quote">true</span>”</span> if only unequal subquery rows
+   are found (including the case where the subquery returns no rows).
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if any equal row is found.
+  </p><p>
+   As usual, null values in the rows are combined per
+   the normal rules of SQL Boolean expressions.  Two rows are considered
+   equal if all their corresponding members are non-null and equal; the rows
+   are unequal if any corresponding members are non-null and unequal;
+   otherwise the result of that row comparison is unknown (null).
+   If all the per-row results are either unequal or null, with at least one
+   null, then the result of <code class="token">NOT IN</code> is null.
+  </p></div><div class="sect2" id="FUNCTIONS-SUBQUERY-ANY-SOME"><div class="titlepage"><div><div><h3 class="title">9.23.4. <code class="literal">ANY</code>/<code class="literal">SOME</code></h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> <em class="replaceable"><code>operator</code></em> ANY (<em class="replaceable"><code>subquery</code></em>)
+<em class="replaceable"><code>expression</code></em> <em class="replaceable"><code>operator</code></em> SOME (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The right-hand side is a parenthesized
+   subquery, which must return exactly one column.  The left-hand expression
+   is evaluated and compared to each row of the subquery result using the
+   given <em class="replaceable"><code>operator</code></em>, which must yield a Boolean
+   result.
+   The result of <code class="token">ANY</code> is <span class="quote">“<span class="quote">true</span>”</span> if any true result is obtained.
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if no true result is found (including the
+   case where the subquery returns no rows).
+  </p><p>
+   <code class="token">SOME</code> is a synonym for <code class="token">ANY</code>.
+   <code class="token">IN</code> is equivalent to <code class="literal">= ANY</code>.
+  </p><p>
+   Note that if there are no successes and at least one right-hand row yields
+   null for the operator's result, the result of the <code class="token">ANY</code> construct
+   will be null, not false.
+   This is in accordance with SQL's normal rules for Boolean combinations
+   of null values.
+  </p><p>
+   As with <code class="token">EXISTS</code>, it's unwise to assume that the subquery will
+   be evaluated completely.
+  </p><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> <em class="replaceable"><code>operator</code></em> ANY (<em class="replaceable"><code>subquery</code></em>)
+<em class="replaceable"><code>row_constructor</code></em> <em class="replaceable"><code>operator</code></em> SOME (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The left-hand side of this form of <code class="token">ANY</code> is a row constructor,
+   as described in <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS" title="4.2.13. Row Constructors">Section 4.2.13</a>.
+   The right-hand side is a parenthesized
+   subquery, which must return exactly as many columns as there are
+   expressions in the left-hand row.  The left-hand expressions are
+   evaluated and compared row-wise to each row of the subquery result,
+   using the given <em class="replaceable"><code>operator</code></em>.
+   The result of <code class="token">ANY</code> is <span class="quote">“<span class="quote">true</span>”</span> if the comparison
+   returns true for any subquery row.
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if the comparison returns false for every
+   subquery row (including the case where the subquery returns no
+   rows).
+   The result is NULL if no comparison with a subquery row returns true,
+   and at least one comparison returns NULL.
+  </p><p>
+   See <a class="xref" href="functions-comparisons.html#ROW-WISE-COMPARISON" title="9.24.5. Row Constructor Comparison">Section 9.24.5</a> for details about the meaning
+   of a row constructor comparison.
+  </p></div><div class="sect2" id="FUNCTIONS-SUBQUERY-ALL"><div class="titlepage"><div><div><h3 class="title">9.23.5. <code class="literal">ALL</code></h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> <em class="replaceable"><code>operator</code></em> ALL (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The right-hand side is a parenthesized
+   subquery, which must return exactly one column.  The left-hand expression
+   is evaluated and compared to each row of the subquery result using the
+   given <em class="replaceable"><code>operator</code></em>, which must yield a Boolean
+   result.
+   The result of <code class="token">ALL</code> is <span class="quote">“<span class="quote">true</span>”</span> if all rows yield true
+   (including the case where the subquery returns no rows).
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if any false result is found.
+   The result is NULL if no comparison with a subquery row returns false,
+   and at least one comparison returns NULL.
+  </p><p>
+   <code class="token">NOT IN</code> is equivalent to <code class="literal">&lt;&gt; ALL</code>.
+  </p><p>
+   As with <code class="token">EXISTS</code>, it's unwise to assume that the subquery will
+   be evaluated completely.
+  </p><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> <em class="replaceable"><code>operator</code></em> ALL (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The left-hand side of this form of <code class="token">ALL</code> is a row constructor,
+   as described in <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS" title="4.2.13. Row Constructors">Section 4.2.13</a>.
+   The right-hand side is a parenthesized
+   subquery, which must return exactly as many columns as there are
+   expressions in the left-hand row.  The left-hand expressions are
+   evaluated and compared row-wise to each row of the subquery result,
+   using the given <em class="replaceable"><code>operator</code></em>.
+   The result of <code class="token">ALL</code> is <span class="quote">“<span class="quote">true</span>”</span> if the comparison
+   returns true for all subquery rows (including the
+   case where the subquery returns no rows).
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if the comparison returns false for any
+   subquery row.
+   The result is NULL if no comparison with a subquery row returns false,
+   and at least one comparison returns NULL.
+  </p><p>
+   See <a class="xref" href="functions-comparisons.html#ROW-WISE-COMPARISON" title="9.24.5. Row Constructor Comparison">Section 9.24.5</a> for details about the meaning
+   of a row constructor comparison.
+  </p></div><div class="sect2" id="id-1.5.8.29.15"><div class="titlepage"><div><div><h3 class="title">9.23.6. Single-Row Comparison</h3></div></div></div><a id="id-1.5.8.29.15.2" class="indexterm"></a><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> <em class="replaceable"><code>operator</code></em> (<em class="replaceable"><code>subquery</code></em>)
+</pre><p>
+   The left-hand side is a row constructor,
+   as described in <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS" title="4.2.13. Row Constructors">Section 4.2.13</a>.
+   The right-hand side is a parenthesized subquery, which must return exactly
+   as many columns as there are expressions in the left-hand row. Furthermore,
+   the subquery cannot return more than one row.  (If it returns zero rows,
+   the result is taken to be null.)  The left-hand side is evaluated and
+   compared row-wise to the single subquery result row.
+  </p><p>
+   See <a class="xref" href="functions-comparisons.html#ROW-WISE-COMPARISON" title="9.24.5. Row Constructor Comparison">Section 9.24.5</a> for details about the meaning
+   of a row constructor comparison.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-window.html" title="9.22. Window Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-comparisons.html" title="9.24. Row and Array Comparisons">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.22. Window Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.24. Row and Array Comparisons</td></tr></table></div></body></html>

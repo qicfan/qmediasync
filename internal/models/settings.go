@@ -4,6 +4,7 @@ import (
 	"Q115-STRM/emby302/config"
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
+	"Q115-STRM/internal/notificationmanager"
 	"encoding/json"
 	"strings"
 )
@@ -202,19 +203,17 @@ func LoadSettings() {
 }
 
 func InitNotificationManager() {
-	enable := false
-	if SettingsGlobal.UseTelegram == 1 {
-		enable = true
+	// 初始化增强通知管理器
+	// 传入代理获取回调函数，避免循环依赖
+	enhancedManager := notificationmanager.NewEnhancedNotificationManager(db.Db, func() string {
+		helpers.AppLogger.Infof("获取HTTP代理: %+v", SettingsGlobal.HttpProxy)
+		if SettingsGlobal != nil {
+			return SettingsGlobal.HttpProxy
+		}
+		return ""
+	})
+	if err := enhancedManager.LoadChannels(); err != nil {
+		helpers.AppLogger.Warnf("加载通知渠道失败: %v", err)
 	}
-	telegramEnabled := enable
-	telegramToken := SettingsGlobal.TelegramBotToken
-	telegramChatID := SettingsGlobal.TelegramChatId
-	proxyURL := SettingsGlobal.HttpProxy
-	meoWName := SettingsGlobal.MeoWName
-
-	if proxyURL != "" {
-		helpers.GlobalNotificationManager = helpers.NewNotificationManagerWithProxy(telegramEnabled, telegramToken, telegramChatID, proxyURL, meoWName)
-	} else {
-		helpers.GlobalNotificationManager = helpers.NewNotificationManager(telegramEnabled, telegramToken, telegramChatID, meoWName)
-	}
+	notificationmanager.GlobalEnhancedNotificationManager = enhancedManager
 }

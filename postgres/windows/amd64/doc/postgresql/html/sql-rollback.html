@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ROLLBACK</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-revoke.html" title="REVOKE" /><link rel="next" href="sql-rollback-prepared.html" title="ROLLBACK PREPARED" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ROLLBACK</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-revoke.html" title="REVOKE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-rollback-prepared.html" title="ROLLBACK PREPARED">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ROLLBACK"><div class="titlepage"></div><a id="id-1.9.3.166.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ROLLBACK</span></h2><p>ROLLBACK — abort the current transaction</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ROLLBACK [ WORK | TRANSACTION ] [ AND [ NO ] CHAIN ]
+</pre></div><div class="refsect1" id="id-1.9.3.166.5"><h2>Description</h2><p>
+   <code class="command">ROLLBACK</code> rolls back the current transaction and causes
+   all the updates made by the transaction to be discarded.
+  </p></div><div class="refsect1" id="id-1.9.3.166.6"><h2>Parameters</h2><a id="id-1.9.3.166.6.2" class="indexterm"></a><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">WORK</code><br /></span><span class="term"><code class="literal">TRANSACTION</code></span></dt><dd><p>
+      Optional key words. They have no effect.
+     </p></dd><dt id="SQL-ROLLBACK-CHAIN"><span class="term"><code class="literal">AND CHAIN</code></span></dt><dd><p>
+      If <code class="literal">AND CHAIN</code> is specified, a new transaction is
+      immediately started with the same transaction characteristics (see <a class="xref" href="sql-set-transaction.html" title="SET TRANSACTION"><span class="refentrytitle">SET TRANSACTION</span></a>) as the just finished one.  Otherwise,
+      no new transaction is started.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.166.7"><h2>Notes</h2><p>
+   Use <a class="link" href="sql-commit.html" title="COMMIT"><code class="command">COMMIT</code></a> to
+   successfully terminate a transaction.
+  </p><p>
+   Issuing <code class="command">ROLLBACK</code> outside of a transaction
+   block emits a warning and otherwise has no effect.  <code class="command">ROLLBACK AND
+   CHAIN</code> outside of a transaction block is an error.
+  </p></div><div class="refsect1" id="id-1.9.3.166.8"><h2>Examples</h2><p>
+   To abort all changes:
+</p><pre class="programlisting">
+ROLLBACK;
+</pre></div><div class="refsect1" id="id-1.9.3.166.9"><h2>Compatibility</h2><p>
+   The command <code class="command">ROLLBACK</code> conforms to the SQL standard.  The
+   form <code class="literal">ROLLBACK TRANSACTION</code> is a PostgreSQL extension.
+  </p></div><div class="refsect1" id="id-1.9.3.166.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-begin.html" title="BEGIN"><span class="refentrytitle">BEGIN</span></a>, <a class="xref" href="sql-commit.html" title="COMMIT"><span class="refentrytitle">COMMIT</span></a>, <a class="xref" href="sql-rollback-to.html" title="ROLLBACK TO SAVEPOINT"><span class="refentrytitle">ROLLBACK TO SAVEPOINT</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-revoke.html" title="REVOKE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-rollback-prepared.html" title="ROLLBACK PREPARED">Next</a></td></tr><tr><td width="40%" align="left" valign="top">REVOKE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ROLLBACK PREPARED</td></tr></table></div></body></html>

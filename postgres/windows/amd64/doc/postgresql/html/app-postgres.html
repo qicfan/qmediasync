@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>postgres</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="pgwaldump.html" title="pg_waldump" /><link rel="next" href="app-postmaster.html" title="postmaster" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">postgres</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="pgwaldump.html" title="pg_waldump">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><th width="60%" align="center">PostgreSQL Server Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="app-postmaster.html" title="postmaster">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-POSTGRES"><div class="titlepage"></div><a id="id-1.9.5.14.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">postgres</span></span></h2><p>postgres — <span class="productname">PostgreSQL</span> database server</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.5.14.4.1"><code class="command">postgres</code> [<em class="replaceable"><code>option</code></em>...]</p></div></div><div class="refsect1" id="id-1.9.5.14.5"><h2>Description</h2><p>
+   <code class="command">postgres</code> is the
+   <span class="productname">PostgreSQL</span> database server.  In order
+   for a client application to access a database it connects (over a
+   network or locally) to a running <code class="command">postgres</code> instance.
+   The <code class="command">postgres</code> instance then starts a separate server
+   process to handle the connection.
+  </p><p>
+   One <code class="command">postgres</code> instance always manages the data of
+   exactly one database cluster.  A database cluster is a collection
+   of databases that is stored at a common file system location (the
+   <span class="quote">“<span class="quote">data area</span>”</span>).  More than one
+   <code class="command">postgres</code> instance can run on a system at one
+   time, so long as they use different data areas and different
+   communication ports (see below).  When
+   <code class="command">postgres</code> starts it needs to know the location
+   of the data area.  The location must be specified by the
+   <code class="option">-D</code> option or the <code class="envar">PGDATA</code> environment
+   variable; there is no default.  Typically, <code class="option">-D</code> or
+   <code class="envar">PGDATA</code> points directly to the data area directory
+   created by <a class="xref" href="app-initdb.html" title="initdb"><span class="refentrytitle"><span class="application">initdb</span></span></a>.  Other possible file layouts are
+   discussed in <a class="xref" href="runtime-config-file-locations.html" title="20.2. File Locations">Section 20.2</a>.
+  </p><p>
+   By default <code class="command">postgres</code> starts in the
+   foreground and prints log messages to the standard error stream.  In
+   practical applications <code class="command">postgres</code>
+   should be started as a background process, perhaps at boot time.
+  </p><p>
+   The <code class="command">postgres</code> command can also be called in
+   single-user mode.  The primary use for this mode is during
+   bootstrapping by <a class="xref" href="app-initdb.html" title="initdb"><span class="refentrytitle"><span class="application">initdb</span></span></a>.  Sometimes it is used
+   for debugging or disaster recovery;  note that running a single-user
+   server is not truly suitable for debugging the server, since no
+   realistic interprocess communication and locking will happen.
+   When invoked in single-user
+   mode from the shell, the user can enter queries and the results
+   will be printed to the screen, but in a form that is more useful
+   for developers than end users.  In the single-user mode,
+   the session user will be set to the user with ID 1, and implicit
+   superuser powers are granted to this user.
+   This user does not actually have to exist, so the single-user mode
+   can be used to manually recover from certain
+   kinds of accidental damage to the system catalogs.
+  </p></div><div class="refsect1" id="APP-POSTGRES-OPTIONS"><h2>Options</h2><p>
+    <code class="command">postgres</code> accepts the following command-line
+    arguments.  For a detailed discussion of the options consult <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a>.  You can save typing most of these
+    options by setting up a configuration file.  Some (safe) options
+    can also be set from the connecting client in an
+    application-dependent way to apply only for that session.  For
+    example, if the environment variable <code class="envar">PGOPTIONS</code> is
+    set, then <span class="application">libpq</span>-based clients will pass that
+    string to the server, which will interpret it as
+    <code class="command">postgres</code> command-line options.
+   </p><div class="refsect2" id="id-1.9.5.14.6.3"><h3>General Purpose</h3><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-B <em class="replaceable"><code>nbuffers</code></em></code></span></dt><dd><p>
+        Sets the number of shared buffers for use by the server
+        processes.  The default value of this parameter is chosen
+        automatically by <span class="application">initdb</span>.
+        Specifying this option is equivalent to setting the
+        <a class="xref" href="runtime-config-resource.html#GUC-SHARED-BUFFERS">shared_buffers</a> configuration parameter.
+       </p></dd><dt><span class="term"><code class="option">-c <em class="replaceable"><code>name</code></em>=<em class="replaceable"><code>value</code></em></code></span></dt><dd><p>
+        Sets a named run-time parameter. The configuration parameters
+        supported by <span class="productname">PostgreSQL</span> are
+        described in <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a>. Most of the
+        other command line options are in fact short forms of such a
+        parameter assignment.  <code class="option">-c</code> can appear multiple times
+        to set multiple parameters.
+       </p></dd><dt><span class="term"><code class="option">-C <em class="replaceable"><code>name</code></em></code></span></dt><dd><p>
+        Prints the value of the named run-time parameter, and exits.
+        (See the <code class="option">-c</code> option above for details.)  This can
+        be used on a running server, and returns values from
+        <code class="filename">postgresql.conf</code>, modified by any parameters
+        supplied in this invocation.  It does not reflect parameters
+        supplied when the cluster was started.
+       </p><p>
+        This option is meant for other programs that interact with a server
+        instance, such as <a class="xref" href="app-pg-ctl.html" title="pg_ctl"><span class="refentrytitle"><span class="application">pg_ctl</span></span></a>, to query configuration
+        parameter values.  User-facing applications should instead use <a class="link" href="sql-show.html" title="SHOW"><code class="command">SHOW</code></a> or the <code class="structname">pg_settings</code> view.
+       </p></dd><dt><span class="term"><code class="option">-d <em class="replaceable"><code>debug-level</code></em></code></span></dt><dd><p>
+        Sets the debug level.  The higher this value is set, the more
+        debugging output is written to the server log.  Values are
+        from 1 to 5.  It is also possible to pass <code class="literal">-d
+        0</code> for a specific session, which will prevent the
+        server log level of the parent <code class="command">postgres</code> process from being
+        propagated to this session.
+       </p></dd><dt><span class="term"><code class="option">-D <em class="replaceable"><code>datadir</code></em></code></span></dt><dd><p>
+        Specifies the file system location of the database
+        configuration files.  See
+        <a class="xref" href="runtime-config-file-locations.html" title="20.2. File Locations">Section 20.2</a> for details.
+       </p></dd><dt><span class="term"><code class="option">-e</code></span></dt><dd><p>
+        Sets the default date style to <span class="quote">“<span class="quote">European</span>”</span>, that is
+        <code class="literal">DMY</code> ordering of input date fields.  This also causes
+        the day to be printed before the month in certain date output formats.
+        See <a class="xref" href="datatype-datetime.html" title="8.5. Date/Time Types">Section 8.5</a> for more information.
+       </p></dd><dt><span class="term"><code class="option">-F</code></span></dt><dd><p>
+        Disables <code class="function">fsync</code> calls for improved
+        performance, at the risk of data corruption in the event of a
+        system crash.  Specifying this option is equivalent to
+        disabling the <a class="xref" href="runtime-config-wal.html#GUC-FSYNC">fsync</a> configuration
+        parameter. Read the detailed documentation before using this!
+       </p></dd><dt><span class="term"><code class="option">-h <em class="replaceable"><code>hostname</code></em></code></span></dt><dd><p>
+        Specifies the IP host name or address on which
+        <code class="command">postgres</code> is to listen for TCP/IP
+        connections from client applications.  The value can also be a
+        comma-separated list of addresses, or <code class="literal">*</code> to specify
+        listening on all available interfaces.  An empty value
+        specifies not listening on any IP addresses, in which case
+        only Unix-domain sockets can be used to connect to the
+        server.  Defaults to listening only on
+        <span class="systemitem">localhost</span>.
+        Specifying this option is equivalent to setting the <a class="xref" href="runtime-config-connection.html#GUC-LISTEN-ADDRESSES">listen_addresses</a> configuration parameter.
+       </p></dd><dt><span class="term"><code class="option">-i</code></span></dt><dd><p>
+        Allows remote clients to connect via TCP/IP (Internet domain)
+        connections.  Without this option, only local connections are
+        accepted.  This option is equivalent to setting
+        <code class="varname">listen_addresses</code> to <code class="literal">*</code> in
+        <code class="filename">postgresql.conf</code> or via <code class="option">-h</code>.
+       </p><p>
+        This option is deprecated since it does not allow access to the
+        full functionality of <a class="xref" href="runtime-config-connection.html#GUC-LISTEN-ADDRESSES">listen_addresses</a>.
+        It's usually better to set <code class="varname">listen_addresses</code> directly.
+       </p></dd><dt><span class="term"><code class="option">-k <em class="replaceable"><code>directory</code></em></code></span></dt><dd><p>
+        Specifies the directory of the Unix-domain socket on which
+        <code class="command">postgres</code> is to listen for
+        connections from client applications.  The value can also be a
+        comma-separated list of directories.  An empty value
+        specifies not listening on any Unix-domain sockets, in which case
+        only TCP/IP sockets can be used to connect to the server.
+        The default value is normally
+        <code class="filename">/tmp</code>, but that can be changed at build time.
+        Specifying this option is equivalent to setting the <a class="xref" href="runtime-config-connection.html#GUC-UNIX-SOCKET-DIRECTORIES">unix_socket_directories</a> configuration parameter.
+       </p></dd><dt><span class="term"><code class="option">-l</code></span></dt><dd><p>
+        Enables secure connections using <acronym class="acronym">SSL</acronym>.
+        <span class="productname">PostgreSQL</span> must have been compiled with
+        support for <acronym class="acronym">SSL</acronym> for this option to be
+        available. For more information on using <acronym class="acronym">SSL</acronym>,
+        refer to <a class="xref" href="ssl-tcp.html" title="19.9. Secure TCP/IP Connections with SSL">Section 19.9</a>.
+       </p></dd><dt><span class="term"><code class="option">-N <em class="replaceable"><code>max-connections</code></em></code></span></dt><dd><p>
+        Sets the maximum number of client connections that this
+        server will accept.  The default value of this parameter is chosen
+        automatically by <span class="application">initdb</span>.
+        Specifying this option is equivalent to setting the
+        <a class="xref" href="runtime-config-connection.html#GUC-MAX-CONNECTIONS">max_connections</a> configuration parameter.
+       </p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>port</code></em></code></span></dt><dd><p>
+        Specifies the TCP/IP port or local Unix domain socket file
+        extension on which <code class="command">postgres</code>
+        is to listen for connections from client applications.
+        Defaults to the value of the <code class="envar">PGPORT</code> environment
+        variable, or if <code class="envar">PGPORT</code> is not set, then
+        defaults to the value established during compilation (normally
+        5432).  If you specify a port other than the default port,
+        then all client applications must specify the same port using
+        either command-line options or <code class="envar">PGPORT</code>.
+       </p></dd><dt><span class="term"><code class="option">-s</code></span></dt><dd><p>
+        Print time information and other statistics at the end of each command.
+        This is useful for benchmarking or for use in tuning the number of
+        buffers.
+       </p></dd><dt><span class="term"><code class="option">-S</code> <em class="replaceable"><code>work-mem</code></em></span></dt><dd><p>
+        Specifies the base amount of memory to be used by sorts and
+        hash tables before resorting to temporary disk files.  See the
+        description of the <code class="varname">work_mem</code> configuration
+        parameter in <a class="xref" href="runtime-config-resource.html#RUNTIME-CONFIG-RESOURCE-MEMORY" title="20.4.1. Memory">Section 20.4.1</a>.
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+        Print the <span class="application">postgres</span> version and exit.
+       </p></dd><dt><span class="term"><code class="option">--<em class="replaceable"><code>name</code></em>=<em class="replaceable"><code>value</code></em></code></span></dt><dd><p>
+        Sets a named run-time parameter; a shorter form of
+        <code class="option">-c</code>.
+       </p></dd><dt><span class="term"><code class="option">--describe-config</code></span></dt><dd><p>
+        This option dumps out the server's internal configuration variables,
+        descriptions, and defaults in tab-delimited <code class="command">COPY</code> format.
+        It is designed primarily for use by administration tools.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+        Show help about <span class="application">postgres</span> command line
+        arguments, and exit.
+       </p></dd></dl></div></div><div class="refsect2" id="id-1.9.5.14.6.4"><h3>Semi-Internal Options</h3><p>
+     The options described here are used
+     mainly for debugging purposes, and in some cases to assist with
+     recovery of severely damaged databases. There should be no reason
+     to use them in a production database setup.  They are listed
+     here only for use by <span class="productname">PostgreSQL</span>
+     system developers.  Furthermore, these options might
+     change or be removed in a future release without notice.
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-f</code> <code class="literal">{ s | i | o | b | t | n | m | h }</code></span></dt><dd><p>
+        Forbids the use of particular scan and join methods:
+        <code class="literal">s</code> and <code class="literal">i</code>
+        disable sequential and index scans respectively,
+        <code class="literal">o</code>, <code class="literal">b</code> and <code class="literal">t</code>
+        disable index-only scans, bitmap index scans, and TID scans
+        respectively, while
+        <code class="literal">n</code>, <code class="literal">m</code>, and <code class="literal">h</code>
+        disable nested-loop, merge and hash joins respectively.
+       </p><p>
+        Neither sequential scans nor nested-loop joins can be disabled
+        completely; the <code class="literal">-fs</code> and
+        <code class="literal">-fn</code> options simply discourage the optimizer
+        from using those plan types if it has any other alternative.
+       </p></dd><dt><span class="term"><code class="option">-n</code></span></dt><dd><p>
+        This option is for debugging problems that cause a server
+        process to die abnormally.  The ordinary strategy in this
+        situation is to notify all other server processes that they
+        must terminate and then reinitialize the shared memory and
+        semaphores.  This is because an errant server process could
+        have corrupted some shared state before terminating.  This
+        option specifies that <code class="command">postgres</code> will
+        not reinitialize shared data structures.  A knowledgeable
+        system programmer can then use a debugger to examine shared
+        memory and semaphore state.
+       </p></dd><dt><span class="term"><code class="option">-O</code></span></dt><dd><p>
+        Allows the structure of system tables to be modified.  This is
+        used by <code class="command">initdb</code>.
+       </p></dd><dt><span class="term"><code class="option">-P</code></span></dt><dd><p>
+        Ignore system indexes when reading system tables, but still update
+        the indexes when modifying the tables.  This is useful when
+        recovering from damaged system indexes.
+       </p></dd><dt><span class="term"><code class="option">-t</code> <code class="literal">pa[rser] | pl[anner] | e[xecutor]</code></span></dt><dd><p>
+        Print timing statistics for each query relating to each of the
+        major system modules.  This option cannot be used together
+        with the <code class="option">-s</code> option.
+       </p></dd><dt><span class="term"><code class="option">-T</code></span></dt><dd><p>
+        This option is for debugging problems that cause a server
+        process to die abnormally.  The ordinary strategy in this
+        situation is to notify all other server processes that they
+        must terminate and then reinitialize the shared memory and
+        semaphores.  This is because an errant server process could
+        have corrupted some shared state before terminating.  This
+        option specifies that <code class="command">postgres</code> will
+        stop all other server processes by sending the signal
+        <code class="literal">SIGSTOP</code>, but will not cause them to
+        terminate.  This permits system programmers to collect core
+        dumps from all server processes by hand.
+       </p></dd><dt><span class="term"><code class="option">-v</code> <em class="replaceable"><code>protocol</code></em></span></dt><dd><p>
+        Specifies the version number of the frontend/backend protocol
+        to be used for a particular session.  This option is for
+        internal use only.
+       </p></dd><dt><span class="term"><code class="option">-W</code> <em class="replaceable"><code>seconds</code></em></span></dt><dd><p>
+        A delay of this many seconds occurs when a new server process
+        is started, after it conducts the authentication procedure.
+        This is intended to give an opportunity to attach to the
+        server process with a debugger.
+       </p></dd></dl></div></div><div class="refsect2" id="id-1.9.5.14.6.5"><h3>Options for Single-User Mode</h3><a id="id-1.9.5.14.6.5.2" class="indexterm"></a><p>
+     The following options only apply to the single-user mode
+     (see <a class="xref" href="app-postgres.html#APP-POSTGRES-SINGLE-USER" title="Single-User Mode">Single-User Mode</a> below).
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">--single</code></span></dt><dd><p>
+        Selects the single-user mode.  This must be the first argument
+        on the command line.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>database</code></em></span></dt><dd><p>
+        Specifies the name of the database to be accessed.  This must be
+        the last argument on the command line.  If it is
+        omitted it defaults to the user name.
+       </p></dd><dt><span class="term"><code class="option">-E</code></span></dt><dd><p>
+        Echo all commands to standard output before executing them.
+       </p></dd><dt><span class="term"><code class="option">-j</code></span></dt><dd><p>
+        Use semicolon followed by two newlines, rather than just newline,
+        as the command entry terminator.
+       </p></dd><dt><span class="term"><code class="option">-r</code> <em class="replaceable"><code>filename</code></em></span></dt><dd><p>
+        Send all server log output to <em class="replaceable"><code>filename</code></em>.  This option is only
+        honored when supplied as a command-line option.
+       </p></dd></dl></div></div></div><div class="refsect1" id="id-1.9.5.14.7"><h2>Environment</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="envar">PGCLIENTENCODING</code></span></dt><dd><p>
+      Default character encoding used by clients.  (The clients can
+      override this individually.)  This value can also be set in the
+      configuration file.
+     </p></dd><dt><span class="term"><code class="envar">PGDATA</code></span></dt><dd><p>
+      Default data directory location
+     </p></dd><dt><span class="term"><code class="envar">PGDATESTYLE</code></span></dt><dd><p>
+      Default value of the <a class="xref" href="runtime-config-client.html#GUC-DATESTYLE">DateStyle</a> run-time
+      parameter.  (The use of this environment variable is deprecated.)
+     </p></dd><dt><span class="term"><code class="envar">PGPORT</code></span></dt><dd><p>
+      Default port number (preferably set in the configuration file)
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.5.14.8"><h2>Diagnostics</h2><p>
+    A failure message mentioning <code class="literal">semget</code> or
+    <code class="literal">shmget</code> probably indicates you need to configure your
+    kernel to provide adequate shared memory and semaphores.  For more
+    discussion see <a class="xref" href="kernel-resources.html" title="19.4. Managing Kernel Resources">Section 19.4</a>.  You might be able
+    to postpone reconfiguring your kernel by decreasing <a class="xref" href="runtime-config-resource.html#GUC-SHARED-BUFFERS">shared_buffers</a> to reduce the shared memory
+    consumption of <span class="productname">PostgreSQL</span>, and/or by reducing
+    <a class="xref" href="runtime-config-connection.html#GUC-MAX-CONNECTIONS">max_connections</a> to reduce the semaphore
+    consumption.
+   </p><p>
+    A failure message suggesting that another server is already running
+    should be checked carefully, for example by using the command
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>ps ax | grep postgres</code></strong>
+</pre><p>
+        or
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>ps -ef | grep postgres</code></strong>
+</pre><p>
+    depending on your system.  If you are certain that no conflicting
+    server is running, you can remove the lock file mentioned in the
+    message and try again.
+   </p><p>
+    A failure message indicating inability to bind to a port might
+    indicate that that port is already in use by some
+    non-<span class="productname">PostgreSQL</span> process.  You might also
+    get this error if you terminate <code class="command">postgres</code>
+    and immediately restart it using the same port; in this case, you
+    must simply wait a few seconds until the operating system closes
+    the port before trying again.  Finally, you might get this error if
+    you specify a port number that your operating system considers to
+    be reserved.  For example, many versions of Unix consider port
+    numbers under 1024 to be <span class="quote">“<span class="quote">trusted</span>”</span> and only permit
+    the Unix superuser to access them.
+   </p></div><div class="refsect1" id="id-1.9.5.14.9"><h2>Notes</h2><p>
+   The utility command <a class="xref" href="app-pg-ctl.html" title="pg_ctl"><span class="refentrytitle"><span class="application">pg_ctl</span></span></a> can be used to
+   start and shut down the <code class="command">postgres</code> server
+   safely and comfortably.
+  </p><p>
+   If at all possible, <span class="emphasis"><em>do not</em></span> use
+   <code class="literal">SIGKILL</code> to kill the main
+   <code class="command">postgres</code> server.  Doing so will prevent
+   <code class="command">postgres</code> from freeing the system
+   resources (e.g., shared memory and semaphores) that it holds before
+   terminating.  This might cause problems for starting a fresh
+   <code class="command">postgres</code> run.
+  </p><p>
+   To terminate the <code class="command">postgres</code> server normally, the
+   signals <code class="literal">SIGTERM</code>, <code class="literal">SIGINT</code>, or
+   <code class="literal">SIGQUIT</code> can be used.  The first will wait for
+   all clients to terminate before quitting, the second will
+   forcefully disconnect all clients, and the third will quit
+   immediately without proper shutdown, resulting in a recovery run
+   during restart.
+  </p><p>
+   The <code class="literal">SIGHUP</code> signal will reload
+   the server configuration files.  It is also possible to send
+   <code class="literal">SIGHUP</code> to an individual server process, but that
+   is usually not sensible.
+  </p><p>
+   To cancel a running query, send the <code class="literal">SIGINT</code> signal
+   to the process running that command. To terminate a backend process
+   cleanly, send <code class="literal">SIGTERM</code> to that process. See
+   also <code class="function">pg_cancel_backend</code> and <code class="function">pg_terminate_backend</code>
+   in <a class="xref" href="functions-admin.html#FUNCTIONS-ADMIN-SIGNAL" title="9.27.2. Server Signaling Functions">Section 9.27.2</a> for the SQL-callable equivalents
+   of these two actions.
+  </p><p>
+   The <code class="command">postgres</code> server uses <code class="literal">SIGQUIT</code>
+   to tell subordinate server processes to terminate without normal
+   cleanup.
+   This signal <span class="emphasis"><em>should not</em></span> be used by users.  It
+   is also unwise to send <code class="literal">SIGKILL</code> to a server
+   process — the main <code class="command">postgres</code> process will
+   interpret this as a crash and will force all the sibling processes
+   to quit as part of its standard crash-recovery procedure.
+  </p></div><div class="refsect1" id="APP-POSTGRES-BUGS"><h2>Bugs</h2><p>
+   The <code class="option">--</code> options will not work on <span class="systemitem">FreeBSD</span> or <span class="systemitem">OpenBSD</span>.
+   Use <code class="option">-c</code> instead. This is a bug in the affected operating
+   systems; a future release of <span class="productname">PostgreSQL</span>
+   will provide a workaround if this is not fixed.
+  </p></div><div class="refsect1" id="APP-POSTGRES-SINGLE-USER"><h2>Single-User Mode</h2><p>
+    To start a single-user mode server, use a command like
+</p><pre class="screen">
+<strong class="userinput"><code>postgres --single -D /usr/local/pgsql/data <em class="replaceable"><code>other-options</code></em> my_database</code></strong>
+</pre><p>
+    Provide the correct path to the database directory with <code class="option">-D</code>, or
+    make sure that the environment variable <code class="envar">PGDATA</code> is set.
+    Also specify the name of the particular database you want to work in.
+   </p><p>
+    Normally, the single-user mode server treats newline as the command
+    entry terminator; there is no intelligence about semicolons,
+    as there is in <span class="application">psql</span>.  To continue a command
+    across multiple lines, you must type backslash just before each
+    newline except the last one.  The backslash and adjacent newline are
+    both dropped from the input command.  Note that this will happen even
+    when within a string literal or comment.
+   </p><p>
+    But if you use the <code class="option">-j</code> command line switch, a single newline
+    does not terminate command entry; instead, the sequence
+    semicolon-newline-newline does.  That is, type a semicolon immediately
+    followed by a completely empty line.  Backslash-newline is not
+    treated specially in this mode.  Again, there is no intelligence about
+    such a sequence appearing within a string literal or comment.
+   </p><p>
+    In either input mode, if you type a semicolon that is not just before or
+    part of a command entry terminator, it is considered a command separator.
+    When you do type a command entry terminator, the multiple statements
+    you've entered will be executed as a single transaction.
+   </p><p>
+    To quit the session, type <acronym class="acronym">EOF</acronym>
+    (<span class="keycap"><strong>Control</strong></span>+<span class="keycap"><strong>D</strong></span>, usually).
+    If you've entered any text since the last command entry terminator,
+    then <acronym class="acronym">EOF</acronym> will be taken as a command entry terminator,
+    and another <acronym class="acronym">EOF</acronym> will be needed to exit.
+   </p><p>
+    Note that the single-user mode server does not provide sophisticated
+    line-editing features (no command history, for example).
+    Single-user mode also does not do any background processing, such as
+    automatic checkpoints or replication.
+   </p></div><div class="refsect1" id="APP-POSTGRES-EXAMPLES"><h2>Examples</h2><p>
+   To start <code class="command">postgres</code> in the background
+   using default values, type:
+
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>nohup postgres &gt;logfile 2&gt;&amp;1 &lt;/dev/null &amp;</code></strong>
+</pre><p>
+  </p><p>
+   To start <code class="command">postgres</code> with a specific
+   port, e.g., 1234:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>postgres -p 1234</code></strong>
+</pre><p>
+   To connect to this server using <span class="application">psql</span>, specify this port with the -p option:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>psql -p 1234</code></strong>
+</pre><p>
+   or set the environment variable <code class="envar">PGPORT</code>:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>export PGPORT=1234</code></strong>
+<code class="prompt">$</code> <strong class="userinput"><code>psql</code></strong>
+</pre><p>
+  </p><p>
+   Named run-time parameters can be set in either of these styles:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>postgres -c work_mem=1234</code></strong>
+<code class="prompt">$</code> <strong class="userinput"><code>postgres --work-mem=1234</code></strong>
+</pre><p>
+   Either form overrides whatever setting might exist for
+   <code class="varname">work_mem</code> in <code class="filename">postgresql.conf</code>.  Notice that
+   underscores in parameter names can be written as either underscore
+   or dash on the command line.  Except for short-term experiments,
+   it's probably better practice to edit the setting in
+   <code class="filename">postgresql.conf</code> than to rely on a command-line switch
+   to set a parameter.
+  </p></div><div class="refsect1" id="id-1.9.5.14.13"><h2>See Also</h2><p>
+   <a class="xref" href="app-initdb.html" title="initdb"><span class="refentrytitle"><span class="application">initdb</span></span></a>,
+   <a class="xref" href="app-pg-ctl.html" title="pg_ctl"><span class="refentrytitle"><span class="application">pg_ctl</span></span></a>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="pgwaldump.html" title="pg_waldump">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="app-postmaster.html" title="postmaster">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_waldump</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">postmaster</span></td></tr></table></div></body></html>

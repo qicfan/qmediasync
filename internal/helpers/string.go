@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/mozillazg/go-pinyin"
 )
 
 // 全局随机生成器，在包初始化时设置种子
@@ -230,4 +232,36 @@ func TruncateString(s string, maxLength int) string {
 		return s
 	}
 	return s[:maxLength] + "..."
+}
+
+// ChineseToPinyin 将字符串中的中文转换为拼音首字母
+// 返回 (是否包含中文, 替换后的字符串)
+func ChineseToPinyin(s string) (bool, string) {
+	if s == "" {
+		return false, s
+	}
+
+	hasChinese := false
+	var result strings.Builder
+
+	for _, ch := range s {
+		// 检查是否是中文字符 (CJK Unified Ideographs)
+		if unicode.Is(unicode.Han, ch) {
+			hasChinese = true
+			// 使用 go-pinyin 库获取拼音首字母
+			args := pinyin.Args{
+				Style: pinyin.FirstLetter, // 首字母
+			}
+			pinyinList := pinyin.Pinyin(string(ch), args)
+			if len(pinyinList) > 0 && len(pinyinList[0]) > 0 {
+				result.WriteString(pinyinList[0][0])
+			} else {
+				result.WriteRune(ch)
+			}
+		} else {
+			result.WriteRune(ch)
+		}
+	}
+
+	return hasChinese, result.String()
 }

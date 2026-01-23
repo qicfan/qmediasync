@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>55.1. For the Translator</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="nls.html" title="Chapter 55. Native Language Support" /><link rel="next" href="nls-programmer.html" title="55.2. For the Programmer" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">55.1. For the Translator</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="nls.html" title="Chapter 55. Native Language Support">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="nls.html" title="Chapter 55. Native Language Support">Up</a></td><th width="60%" align="center">Chapter 55. Native Language Support</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="nls-programmer.html" title="55.2. For the Programmer">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="NLS-TRANSLATOR"><div class="titlepage"><div><div><h2 class="title" style="clear: both">55.1. For the Translator</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="nls-translator.html#id-1.10.7.2.3">55.1.1. Requirements</a></span></dt><dt><span class="sect2"><a href="nls-translator.html#id-1.10.7.2.4">55.1.2. Concepts</a></span></dt><dt><span class="sect2"><a href="nls-translator.html#id-1.10.7.2.5">55.1.3. Creating and Maintaining Message Catalogs</a></span></dt><dt><span class="sect2"><a href="nls-translator.html#id-1.10.7.2.6">55.1.4. Editing the PO Files</a></span></dt></dl></div><p>
+   <span class="productname">PostgreSQL</span>
+   programs (server and client) can issue their messages in
+   your favorite language — if the messages have been translated.
+   Creating and maintaining translated message sets needs the help of
+   people who speak their own language well and want to contribute to
+   the <span class="productname">PostgreSQL</span> effort.  You do not have to be a
+   programmer at all
+   to do this.  This section explains how to help.
+  </p><div class="sect2" id="id-1.10.7.2.3"><div class="titlepage"><div><div><h3 class="title">55.1.1. Requirements</h3></div></div></div><p>
+    We won't judge your language skills — this section is about
+    software tools.  Theoretically, you only need a text editor.  But
+    this is only in the unlikely event that you do not want to try out
+    your translated messages.  When you configure your source tree, be
+    sure to use the <code class="option">--enable-nls</code> option.  This will
+    also check for the <span class="application">libintl</span> library and the
+    <code class="filename">msgfmt</code> program, which all end users will need
+    anyway.  To try out your work, follow the applicable portions of
+    the installation instructions.
+   </p><p>
+    If you want to start a new translation effort or want to do a
+    message catalog merge (described later), you will need the
+    programs <code class="filename">xgettext</code> and
+    <code class="filename">msgmerge</code>, respectively, in a GNU-compatible
+    implementation.  Later, we will try to arrange it so that if you
+    use a packaged source distribution, you won't need
+    <code class="filename">xgettext</code>.  (If working from Git, you will still need
+    it.)  <span class="application">GNU Gettext 0.10.36</span> or later is currently recommended.
+   </p><p>
+    Your local gettext implementation should come with its own
+    documentation.  Some of that is probably duplicated in what
+    follows, but for additional details you should look there.
+   </p></div><div class="sect2" id="id-1.10.7.2.4"><div class="titlepage"><div><div><h3 class="title">55.1.2. Concepts</h3></div></div></div><p>
+    The pairs of original (English) messages and their (possibly)
+    translated equivalents are kept in <em class="firstterm">message
+    catalogs</em>, one for each program (although related
+    programs can share a message catalog) and for each target
+    language.  There are two file formats for message catalogs:  The
+    first is the <span class="quote">“<span class="quote">PO</span>”</span> file (for Portable Object), which
+    is a plain text file with special syntax that translators edit.
+    The second is the <span class="quote">“<span class="quote">MO</span>”</span> file (for Machine Object),
+    which is a binary file generated from the respective PO file and
+    is used while the internationalized program is run.  Translators
+    do not deal with MO files; in fact hardly anyone does.
+   </p><p>
+    The extension of the message catalog file is to no surprise either
+    <code class="filename">.po</code> or <code class="filename">.mo</code>.  The base
+    name is either the name of the program it accompanies, or the
+    language the file is for, depending on the situation.  This is a
+    bit confusing.  Examples are <code class="filename">psql.po</code> (PO file
+    for psql) or <code class="filename">fr.mo</code> (MO file in French).
+   </p><p>
+    The file format of the PO files is illustrated here:
+</p><pre class="programlisting">
+# comment
+
+msgid "original string"
+msgstr "translated string"
+
+msgid "more original"
+msgstr "another translated"
+"string can be broken up like this"
+
+...
+</pre><p>
+    The msgid lines are extracted from the program source.  (They need not
+    be, but this is the most common way.)  The msgstr lines are
+    initially empty and are filled in with useful strings by the
+    translator.  The strings can contain C-style escape characters and
+    can be continued across lines as illustrated.  (The next line must
+    start at the beginning of the line.)
+   </p><p>
+    The # character introduces a comment.  If whitespace immediately
+    follows the # character, then this is a comment maintained by the
+    translator.  There can also be automatic comments, which have a
+    non-whitespace character immediately following the #.  These are
+    maintained by the various tools that operate on the PO files and
+    are intended to aid the translator.
+</p><pre class="programlisting">
+#. automatic comment
+#: filename.c:1023
+#, flags, flags
+</pre><p>
+    The #. style comments are extracted from the source file where the
+    message is used.  Possibly the programmer has inserted information
+    for the translator, such as about expected alignment.  The #:
+    comments indicate the exact locations where the message is used
+    in the source.  The translator need not look at the program
+    source, but can if there is doubt about the correct
+    translation.  The #, comments contain flags that describe the
+    message in some way.  There are currently two flags:
+    <code class="literal">fuzzy</code> is set if the message has possibly been
+    outdated because of changes in the program source.  The translator
+    can then verify this and possibly remove the fuzzy flag.  Note
+    that fuzzy messages are not made available to the end user.  The
+    other flag is <code class="literal">c-format</code>, which indicates that
+    the message is a <code class="function">printf</code>-style format
+    template.  This means that the translation should also be a format
+    string with the same number and type of placeholders.  There are
+    tools that can verify this, which key off the c-format flag.
+   </p></div><div class="sect2" id="id-1.10.7.2.5"><div class="titlepage"><div><div><h3 class="title">55.1.3. Creating and Maintaining Message Catalogs</h3></div></div></div><p>
+    OK, so how does one create a <span class="quote">“<span class="quote">blank</span>”</span> message
+    catalog?  First, go into the directory that contains the program
+    whose messages you want to translate.  If there is a file
+    <code class="filename">nls.mk</code>, then this program has been prepared
+    for translation.
+   </p><p>
+    If there are already some <code class="filename">.po</code> files, then
+    someone has already done some translation work.  The files are
+    named <code class="filename"><em class="replaceable"><code>language</code></em>.po</code>,
+    where <em class="replaceable"><code>language</code></em> is the
+    <a class="ulink" href="https://www.loc.gov/standards/iso639-2/php/English_list.php" target="_top">
+    ISO 639-1 two-letter language code (in lower case)</a>, e.g.,
+    <code class="filename">fr.po</code> for French.  If there is really a need
+    for more than one translation effort per language then the files
+    can also be named
+    <code class="filename"><em class="replaceable"><code>language</code></em>_<em class="replaceable"><code>region</code></em>.po</code>
+    where <em class="replaceable"><code>region</code></em> is the
+    <a class="ulink" href="https://www.iso.org/iso-3166-country-codes.html" target="_top">
+    ISO 3166-1 two-letter country code (in upper case)</a>,
+    e.g.,
+    <code class="filename">pt_BR.po</code> for Portuguese in Brazil.  If you
+    find the language you wanted you can just start working on that
+    file.
+   </p><p>
+    If you need to start a new translation effort, then first run the
+    command:
+</p><pre class="programlisting">
+make init-po
+</pre><p>
+    This will create a file
+    <code class="filename"><em class="replaceable"><code>progname</code></em>.pot</code>.
+    (<code class="filename">.pot</code> to distinguish it from PO files that
+    are <span class="quote">“<span class="quote">in production</span>”</span>. The <code class="literal">T</code> stands for
+    <span class="quote">“<span class="quote">template</span>”</span>.)
+    Copy this file to
+    <code class="filename"><em class="replaceable"><code>language</code></em>.po</code> and
+    edit it.  To make it known that the new language is available,
+    also edit the file <code class="filename">nls.mk</code> and add the
+    language (or language and country) code to the line that looks like:
+</p><pre class="programlisting">
+AVAIL_LANGUAGES := de fr
+</pre><p>
+    (Other languages can appear, of course.)
+   </p><p>
+    As the underlying program or library changes, messages might be
+    changed or added by the programmers.  In this case you do not need
+    to start from scratch.  Instead, run the command:
+</p><pre class="programlisting">
+make update-po
+</pre><p>
+    which will create a new blank message catalog file (the pot file
+    you started with) and will merge it with the existing PO files.
+    If the merge algorithm is not sure about a particular message it
+    marks it <span class="quote">“<span class="quote">fuzzy</span>”</span> as explained above.  The new PO file
+    is saved with a <code class="filename">.po.new</code> extension.
+   </p></div><div class="sect2" id="id-1.10.7.2.6"><div class="titlepage"><div><div><h3 class="title">55.1.4. Editing the PO Files</h3></div></div></div><p>
+    The PO files can be edited with a regular text editor.  The
+    translator should only change the area between the quotes after
+    the msgstr directive, add comments, and alter the fuzzy flag.
+    There is (unsurprisingly) a PO mode for Emacs, which I find quite
+    useful.
+   </p><p>
+    The PO files need not be completely filled in.  The software will
+    automatically fall back to the original string if no translation
+    (or an empty translation) is available.  It is no problem to
+    submit incomplete translations for inclusions in the source tree;
+    that gives room for other people to pick up your work.  However,
+    you are encouraged to give priority to removing fuzzy entries
+    after doing a merge.  Remember that fuzzy entries will not be
+    installed; they only serve as reference for what might be the right
+    translation.
+   </p><p>
+    Here are some things to keep in mind while editing the
+    translations:
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       Make sure that if the original ends with a newline, the
+       translation does, too.  Similarly for tabs, etc.
+      </p></li><li class="listitem"><p>
+       If the original is a <code class="function">printf</code> format string, the translation
+       also needs to be.  The translation also needs to have the same
+       format specifiers in the same order.  Sometimes the natural
+       rules of the language make this impossible or at least awkward.
+       In that case you can modify the format specifiers like this:
+</p><pre class="programlisting">
+msgstr "Die Datei %2$s hat %1$u Zeichen."
+</pre><p>
+       Then the first placeholder will actually use the second
+       argument from the list.  The
+       <code class="literal"><em class="replaceable"><code>digits</code></em>$</code> needs to
+       follow the % immediately, before any other format manipulators.
+       (This feature really exists in the <code class="function">printf</code>
+       family of functions.  You might not have heard of it before because
+       there is little use for it outside of message
+       internationalization.)
+      </p></li><li class="listitem"><p>
+       If the original string contains a linguistic mistake, report
+       that (or fix it yourself in the program source) and translate
+       normally.  The corrected string can be merged in when the
+       program sources have been updated.  If the original string
+       contains a factual mistake, report that (or fix it yourself)
+       and do not translate it.  Instead, you can mark the string with
+       a comment in the PO file.
+      </p></li><li class="listitem"><p>
+       Maintain the style and tone of the original string.
+       Specifically, messages that are not sentences (<code class="literal">cannot
+       open file %s</code>) should probably not start with a
+       capital letter (if your language distinguishes letter case) or
+       end with a period (if your language uses punctuation marks).
+       It might help to read <a class="xref" href="error-style-guide.html" title="54.3. Error Message Style Guide">Section 54.3</a>.
+      </p></li><li class="listitem"><p>
+       If you don't know what a message means, or if it is ambiguous,
+       ask on the developers' mailing list.  Chances are that English
+       speaking end users might also not understand it or find it
+       ambiguous, so it's best to improve the message.
+      </p></li></ul></div><p>
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="nls.html" title="Chapter 55. Native Language Support">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="nls.html" title="Chapter 55. Native Language Support">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="nls-programmer.html" title="55.2. For the Programmer">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 55. Native Language Support </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 55.2. For the Programmer</td></tr></table></div></body></html>

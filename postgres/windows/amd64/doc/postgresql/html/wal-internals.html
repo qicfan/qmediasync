@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>30.6. WAL Internals</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="wal-configuration.html" title="30.5. WAL Configuration" /><link rel="next" href="logical-replication.html" title="Chapter 31. Logical Replication" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">30.6. WAL Internals</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="wal-configuration.html" title="30.5. WAL Configuration">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="wal.html" title="Chapter 30. Reliability and the Write-Ahead Log">Up</a></td><th width="60%" align="center">Chapter 30. Reliability and the Write-Ahead Log</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="logical-replication.html" title="Chapter 31. Logical Replication">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="WAL-INTERNALS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">30.6. WAL Internals</h2></div></div></div><a id="id-1.6.17.8.2" class="indexterm"></a><p>
+   <acronym class="acronym">WAL</acronym> is automatically enabled; no action is
+   required from the administrator except ensuring that the
+   disk-space requirements for the <acronym class="acronym">WAL</acronym> logs are met,
+   and that any necessary tuning is done (see <a class="xref" href="wal-configuration.html" title="30.5. WAL Configuration">Section 30.5</a>).
+  </p><p>
+   <acronym class="acronym">WAL</acronym> records are appended to the <acronym class="acronym">WAL</acronym>
+   logs as each new record is written. The insert position is described by
+   a Log Sequence Number (<acronym class="acronym">LSN</acronym>) that is a byte offset into
+   the logs, increasing monotonically with each new record.
+   <acronym class="acronym">LSN</acronym> values are returned as the datatype
+   <a class="link" href="datatype-pg-lsn.html" title="8.20. pg_lsn Type"><code class="type">pg_lsn</code></a>. Values can be
+   compared to calculate the volume of <acronym class="acronym">WAL</acronym> data that
+   separates them, so they are used to measure the progress of replication
+   and recovery.
+  </p><p>
+   <acronym class="acronym">WAL</acronym> logs are stored in the directory
+   <code class="filename">pg_wal</code> under the data directory, as a set of
+   segment files, normally each 16 MB in size (but the size can be changed
+   by altering the <code class="option">--wal-segsize</code> <span class="application">initdb</span> option).  Each segment is
+   divided into pages, normally 8 kB each (this size can be changed via the
+   <code class="option">--with-wal-blocksize</code> configure option).  The log record headers
+   are described in <code class="filename">access/xlogrecord.h</code>; the record
+   content is dependent on the type of event that is being logged.  Segment
+   files are given ever-increasing numbers as names, starting at
+   <code class="filename">000000010000000000000001</code>.  The numbers do not wrap,
+   but it will take a very, very long time to exhaust the
+   available stock of numbers.
+  </p><p>
+   It is advantageous if the log is located on a different disk from the
+   main database files.  This can be achieved by moving the
+   <code class="filename">pg_wal</code> directory to another location (while the server
+   is shut down, of course) and creating a symbolic link from the
+   original location in the main data directory to the new location.
+  </p><p>
+   The aim of <acronym class="acronym">WAL</acronym> is to ensure that the log is
+   written before database records are altered, but this can be subverted by
+   disk drives<a id="id-1.6.17.8.7.2" class="indexterm"></a> that falsely report a
+   successful write to the kernel,
+   when in fact they have only cached the data and not yet stored it
+   on the disk.  A power failure in such a situation might lead to
+   irrecoverable data corruption.  Administrators should try to ensure
+   that disks holding <span class="productname">PostgreSQL</span>'s
+   <acronym class="acronym">WAL</acronym> log files do not make such false reports.
+   (See <a class="xref" href="wal-reliability.html" title="30.1. Reliability">Section 30.1</a>.)
+  </p><p>
+   After a checkpoint has been made and the log flushed, the
+   checkpoint's position is saved in the file
+   <code class="filename">pg_control</code>. Therefore, at the start of recovery,
+   the server first reads <code class="filename">pg_control</code> and
+   then the checkpoint record; then it performs the REDO operation by
+   scanning forward from the log location indicated in the checkpoint
+   record.  Because the entire content of data pages is saved in the
+   log on the first page modification after a checkpoint (assuming
+   <a class="xref" href="runtime-config-wal.html#GUC-FULL-PAGE-WRITES">full_page_writes</a> is not disabled), all pages
+   changed since the checkpoint will be restored to a consistent
+   state.
+  </p><p>
+   To deal with the case where <code class="filename">pg_control</code> is
+   corrupt, we should support the possibility of scanning existing log
+   segments in reverse order — newest to oldest — in order to find the
+   latest checkpoint.  This has not been implemented yet.
+   <code class="filename">pg_control</code> is small enough (less than one disk page)
+   that it is not subject to partial-write problems, and as of this writing
+   there have been no reports of database failures due solely to the inability
+   to read <code class="filename">pg_control</code> itself.  So while it is
+   theoretically a weak spot, <code class="filename">pg_control</code> does not
+   seem to be a problem in practice.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="wal-configuration.html" title="30.5. WAL Configuration">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="wal.html" title="Chapter 30. Reliability and the Write-Ahead Log">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="logical-replication.html" title="Chapter 31. Logical Replication">Next</a></td></tr><tr><td width="40%" align="left" valign="top">30.5. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">WAL</acronym> Configuration </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 31. Logical Replication</td></tr></table></div></body></html>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>37.55. transforms</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="infoschema-tables.html" title="37.54. tables" /><link rel="next" href="infoschema-triggered-update-columns.html" title="37.56. triggered_update_columns" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">37.55. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">transforms</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="infoschema-tables.html" title="37.54. tables">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><th width="60%" align="center">Chapter 37. The Information Schema</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="infoschema-triggered-update-columns.html" title="37.56. triggered_update_columns">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INFOSCHEMA-TRANSFORMS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">37.55. <code class="literal">transforms</code></h2></div></div></div><p>
+   The view <code class="literal">transforms</code> contains information about the
+   transforms defined in the current database.  More precisely, it contains a
+   row for each function contained in a transform (the <span class="quote">“<span class="quote">from SQL</span>”</span>
+   or <span class="quote">“<span class="quote">to SQL</span>”</span> function).
+  </p><div class="table" id="id-1.7.6.59.3"><p class="title"><strong>Table 37.53. <code class="structname">transforms</code> Columns</strong></p><div class="table-contents"><table class="table" summary="transforms Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">udt_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database that contains the type the transform is for (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">udt_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema that contains the type the transform is for
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">udt_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the type the transform is for
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">specific_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database containing the function (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">specific_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema containing the function
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">specific_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       The <span class="quote">“<span class="quote">specific name</span>”</span> of the function.  See <a class="xref" href="infoschema-routines.html" title="37.45. routines">Section 37.45</a> for more information.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">group_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       The SQL standard allows defining transforms in <span class="quote">“<span class="quote">groups</span>”</span>,
+       and selecting a group at run time.  PostgreSQL does not support this.
+       Instead, transforms are specific to a language.  As a compromise, this
+       field contains the language the transform is for.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">transform_type</code> <code class="type">character_data</code>
+      </p>
+      <p>
+       <code class="literal">FROM SQL</code> or <code class="literal">TO SQL</code>
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="infoschema-tables.html" title="37.54. tables">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="infoschema-triggered-update-columns.html" title="37.56. triggered_update_columns">Next</a></td></tr><tr><td width="40%" align="left" valign="top">37.54. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">tables</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 37.56. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">triggered_update_columns</code></td></tr></table></div></body></html>

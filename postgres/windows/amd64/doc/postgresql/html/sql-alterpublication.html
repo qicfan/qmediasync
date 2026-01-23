@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER PUBLICATION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-alterprocedure.html" title="ALTER PROCEDURE" /><link rel="next" href="sql-alterrole.html" title="ALTER ROLE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER PUBLICATION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-alterprocedure.html" title="ALTER PROCEDURE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-alterrole.html" title="ALTER ROLE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERPUBLICATION"><div class="titlepage"></div><a id="id-1.9.3.25.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER PUBLICATION</span></h2><p>ALTER PUBLICATION — change the definition of a publication</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER PUBLICATION <em class="replaceable"><code>name</code></em> ADD TABLE [ ONLY ] <em class="replaceable"><code>table_name</code></em> [ * ] [, ...]
+ALTER PUBLICATION <em class="replaceable"><code>name</code></em> SET TABLE [ ONLY ] <em class="replaceable"><code>table_name</code></em> [ * ] [, ...]
+ALTER PUBLICATION <em class="replaceable"><code>name</code></em> DROP TABLE [ ONLY ] <em class="replaceable"><code>table_name</code></em> [ * ] [, ...]
+ALTER PUBLICATION <em class="replaceable"><code>name</code></em> SET ( <em class="replaceable"><code>publication_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )
+ALTER PUBLICATION <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER PUBLICATION <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.25.5"><h2>Description</h2><p>
+   The command <code class="command">ALTER PUBLICATION</code> can change the attributes
+   of a publication.
+  </p><p>
+   The first three variants change which tables are part of the publication.
+   The <code class="literal">SET TABLE</code> clause will replace the list of tables in
+   the publication with the specified one.  The <code class="literal">ADD TABLE</code>
+   and <code class="literal">DROP TABLE</code> clauses will add and remove one or more
+   tables from the publication.  Note that adding tables to a publication that
+   is already subscribed to will require a <code class="literal">ALTER SUBSCRIPTION
+   ... REFRESH PUBLICATION</code> action on the subscribing side in order
+   to become effective.
+  </p><p>
+   The fourth variant of this command listed in the synopsis can change
+   all of the publication properties specified in
+   <a class="xref" href="sql-createpublication.html" title="CREATE PUBLICATION"><span class="refentrytitle">CREATE PUBLICATION</span></a>.  Properties not mentioned in the
+   command retain their previous settings.
+  </p><p>
+   The remaining variants change the owner and the name of the publication.
+  </p><p>
+   You must own the publication to use <code class="command">ALTER PUBLICATION</code>.
+   Adding a table to a publication additionally requires owning that table.
+   To alter the owner, you must also be a direct or indirect member of the new
+   owning role. The new owner must have <code class="literal">CREATE</code> privilege on
+   the database.  Also, the new owner of a <code class="literal">FOR ALL TABLES</code>
+   publication must be a superuser.  However, a superuser can change the
+   ownership of a publication regardless of these restrictions.
+  </p></div><div class="refsect1" id="id-1.9.3.25.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of an existing publication whose definition is to be altered.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      Name of an existing table.  If <code class="literal">ONLY</code> is specified before the
+      table name, only that table is affected.  If <code class="literal">ONLY</code> is not
+      specified, the table and all its descendant tables (if any) are
+      affected.  Optionally, <code class="literal">*</code> can be specified after the table
+      name to explicitly indicate that descendant tables are included.
+     </p></dd><dt><span class="term"><code class="literal">SET ( <em class="replaceable"><code>publication_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )</code></span></dt><dd><p>
+      This clause alters publication parameters originally set by
+      <a class="xref" href="sql-createpublication.html" title="CREATE PUBLICATION"><span class="refentrytitle">CREATE PUBLICATION</span></a>.  See there for more information.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The user name of the new owner of the publication.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name for the publication.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.25.7"><h2>Examples</h2><p>
+   Change the publication to publish only deletes and updates:
+</p><pre class="programlisting">
+ALTER PUBLICATION noinsert SET (publish = 'update, delete');
+</pre><p>
+  </p><p>
+   Add some tables to the publication:
+</p><pre class="programlisting">
+ALTER PUBLICATION mypublication ADD TABLE users, departments;
+</pre></div><div class="refsect1" id="id-1.9.3.25.8"><h2>Compatibility</h2><p>
+   <code class="command">ALTER PUBLICATION</code> is a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.25.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createpublication.html" title="CREATE PUBLICATION"><span class="refentrytitle">CREATE PUBLICATION</span></a>, <a class="xref" href="sql-droppublication.html" title="DROP PUBLICATION"><span class="refentrytitle">DROP PUBLICATION</span></a>, <a class="xref" href="sql-createsubscription.html" title="CREATE SUBSCRIPTION"><span class="refentrytitle">CREATE SUBSCRIPTION</span></a>, <a class="xref" href="sql-altersubscription.html" title="ALTER SUBSCRIPTION"><span class="refentrytitle">ALTER SUBSCRIPTION</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-alterprocedure.html" title="ALTER PROCEDURE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-alterrole.html" title="ALTER ROLE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER PROCEDURE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER ROLE</td></tr></table></div></body></html>

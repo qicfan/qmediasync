@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5.4. Constraints</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ddl-generated-columns.html" title="5.3. Generated Columns" /><link rel="next" href="ddl-system-columns.html" title="5.5. System Columns" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">5.4. Constraints</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ddl-generated-columns.html" title="5.3. Generated Columns">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><th width="60%" align="center">Chapter 5. Data Definition</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ddl-system-columns.html" title="5.5. System Columns">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DDL-CONSTRAINTS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">5.4. Constraints</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ddl-constraints.html#DDL-CONSTRAINTS-CHECK-CONSTRAINTS">5.4.1. Check Constraints</a></span></dt><dt><span class="sect2"><a href="ddl-constraints.html#id-1.5.4.6.6">5.4.2. Not-Null Constraints</a></span></dt><dt><span class="sect2"><a href="ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS">5.4.3. Unique Constraints</a></span></dt><dt><span class="sect2"><a href="ddl-constraints.html#DDL-CONSTRAINTS-PRIMARY-KEYS">5.4.4. Primary Keys</a></span></dt><dt><span class="sect2"><a href="ddl-constraints.html#DDL-CONSTRAINTS-FK">5.4.5. Foreign Keys</a></span></dt><dt><span class="sect2"><a href="ddl-constraints.html#DDL-CONSTRAINTS-EXCLUSION">5.4.6. Exclusion Constraints</a></span></dt></dl></div><a id="id-1.5.4.6.2" class="indexterm"></a><p>
+   Data types are a way to limit the kind of data that can be stored
+   in a table.  For many applications, however, the constraint they
+   provide is too coarse.  For example, a column containing a product
+   price should probably only accept positive values.  But there is no
+   standard data type that accepts only positive numbers.  Another issue is
+   that you might want to constrain column data with respect to other
+   columns or rows.  For example, in a table containing product
+   information, there should be only one row for each product number.
+  </p><p>
+   To that end, SQL allows you to define constraints on columns and
+   tables.  Constraints give you as much control over the data in your
+   tables as you wish.  If a user attempts to store data in a column
+   that would violate a constraint, an error is raised.  This applies
+   even if the value came from the default value definition.
+  </p><div class="sect2" id="DDL-CONSTRAINTS-CHECK-CONSTRAINTS"><div class="titlepage"><div><div><h3 class="title">5.4.1. Check Constraints</h3></div></div></div><a id="id-1.5.4.6.5.2" class="indexterm"></a><a id="id-1.5.4.6.5.3" class="indexterm"></a><p>
+    A check constraint is the most generic constraint type.  It allows
+    you to specify that the value in a certain column must satisfy a
+    Boolean (truth-value) expression.  For instance, to require positive
+    product prices, you could use:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric <span class="emphasis"><strong>CHECK (price &gt; 0)</strong></span>
+);
+</pre><p>
+   </p><p>
+    As you see, the constraint definition comes after the data type,
+    just like default value definitions.  Default values and
+    constraints can be listed in any order.  A check constraint
+    consists of the key word <code class="literal">CHECK</code> followed by an
+    expression in parentheses.  The check constraint expression should
+    involve the column thus constrained, otherwise the constraint
+    would not make too much sense.
+   </p><a id="id-1.5.4.6.5.6" class="indexterm"></a><p>
+    You can also give the constraint a separate name.  This clarifies
+    error messages and allows you to refer to the constraint when you
+    need to change it.  The syntax is:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric <span class="emphasis"><strong>CONSTRAINT positive_price</strong></span> CHECK (price &gt; 0)
+);
+</pre><p>
+    So, to specify a named constraint, use the key word
+    <code class="literal">CONSTRAINT</code> followed by an identifier followed
+    by the constraint definition.  (If you don't specify a constraint
+    name in this way, the system chooses a name for you.)
+   </p><p>
+    A check constraint can also refer to several columns.  Say you
+    store a regular price and a discounted price, and you want to
+    ensure that the discounted price is lower than the regular price:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric CHECK (price &gt; 0),
+    discounted_price numeric CHECK (discounted_price &gt; 0),
+    <span class="emphasis"><strong>CHECK (price &gt; discounted_price)</strong></span>
+);
+</pre><p>
+   </p><p>
+    The first two constraints should look familiar.  The third one
+    uses a new syntax.  It is not attached to a particular column,
+    instead it appears as a separate item in the comma-separated
+    column list.  Column definitions and these constraint
+    definitions can be listed in mixed order.
+   </p><p>
+    We say that the first two constraints are column constraints, whereas the
+    third one is a table constraint because it is written separately
+    from any one column definition.  Column constraints can also be
+    written as table constraints, while the reverse is not necessarily
+    possible, since a column constraint is supposed to refer to only the
+    column it is attached to.  (<span class="productname">PostgreSQL</span> doesn't
+    enforce that rule, but you should follow it if you want your table
+    definitions to work with other database systems.)  The above example could
+    also be written as:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric,
+    CHECK (price &gt; 0),
+    discounted_price numeric,
+    CHECK (discounted_price &gt; 0),
+    CHECK (price &gt; discounted_price)
+);
+</pre><p>
+    or even:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric CHECK (price &gt; 0),
+    discounted_price numeric,
+    CHECK (discounted_price &gt; 0 AND price &gt; discounted_price)
+);
+</pre><p>
+    It's a matter of taste.
+   </p><p>
+    Names can be assigned to table constraints in the same way as
+    column constraints:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric,
+    CHECK (price &gt; 0),
+    discounted_price numeric,
+    CHECK (discounted_price &gt; 0),
+    <span class="emphasis"><strong>CONSTRAINT valid_discount</strong></span> CHECK (price &gt; discounted_price)
+);
+</pre><p>
+   </p><a id="id-1.5.4.6.5.12" class="indexterm"></a><p>
+    It should be noted that a check constraint is satisfied if the
+    check expression evaluates to true or the null value.  Since most
+    expressions will evaluate to the null value if any operand is null,
+    they will not prevent null values in the constrained columns.  To
+    ensure that a column does not contain null values, the not-null
+    constraint described in the next section can be used.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     <span class="productname">PostgreSQL</span> does not support
+     <code class="literal">CHECK</code> constraints that reference table data other than
+     the new or updated row being checked.  While a <code class="literal">CHECK</code>
+     constraint that violates this rule may appear to work in simple
+     tests, it cannot guarantee that the database will not reach a state
+     in which the constraint condition is false (due to subsequent changes
+     of the other row(s) involved).  This would cause a database dump and
+     restore to fail.  The restore could fail even when the complete
+     database state is consistent with the constraint, due to rows not
+     being loaded in an order that will satisfy the constraint.  If
+     possible, use <code class="literal">UNIQUE</code>, <code class="literal">EXCLUDE</code>,
+     or <code class="literal">FOREIGN KEY</code> constraints to express
+     cross-row and cross-table restrictions.
+    </p><p>
+     If what you desire is a one-time check against other rows at row
+     insertion, rather than a continuously-maintained consistency
+     guarantee, a custom <a class="link" href="triggers.html" title="Chapter 39. Triggers">trigger</a> can be used
+     to implement that.  (This approach avoids the dump/restore problem because
+     <span class="application">pg_dump</span> does not reinstall triggers until after
+     restoring data, so that the check will not be enforced during a
+     dump/restore.)
+    </p></div><div class="note"><h3 class="title">Note</h3><p>
+     <span class="productname">PostgreSQL</span> assumes that
+     <code class="literal">CHECK</code> constraints' conditions are immutable, that
+     is, they will always give the same result for the same input row.
+     This assumption is what justifies examining <code class="literal">CHECK</code>
+     constraints only when rows are inserted or updated, and not at other
+     times.  (The warning above about not referencing other table data is
+     really a special case of this restriction.)
+    </p><p>
+     An example of a common way to break this assumption is to reference a
+     user-defined function in a <code class="literal">CHECK</code> expression, and
+     then change the behavior of that
+     function.  <span class="productname">PostgreSQL</span> does not disallow
+     that, but it will not notice if there are rows in the table that now
+     violate the <code class="literal">CHECK</code> constraint. That would cause a
+     subsequent database dump and restore to fail.
+     The recommended way to handle such a change is to drop the constraint
+     (using <code class="command">ALTER TABLE</code>), adjust the function definition,
+     and re-add the constraint, thereby rechecking it against all table rows.
+    </p></div></div><div class="sect2" id="id-1.5.4.6.6"><div class="titlepage"><div><div><h3 class="title">5.4.2. Not-Null Constraints</h3></div></div></div><a id="id-1.5.4.6.6.2" class="indexterm"></a><a id="id-1.5.4.6.6.3" class="indexterm"></a><p>
+    A not-null constraint simply specifies that a column must not
+    assume the null value.  A syntax example:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer <span class="emphasis"><strong>NOT NULL</strong></span>,
+    name text <span class="emphasis"><strong>NOT NULL</strong></span>,
+    price numeric
+);
+</pre><p>
+   </p><p>
+    A not-null constraint is always written as a column constraint.  A
+    not-null constraint is functionally equivalent to creating a check
+    constraint <code class="literal">CHECK (<em class="replaceable"><code>column_name</code></em>
+    IS NOT NULL)</code>, but in
+    <span class="productname">PostgreSQL</span> creating an explicit
+    not-null constraint is more efficient.  The drawback is that you
+    cannot give explicit names to not-null constraints created this
+    way.
+   </p><p>
+    Of course, a column can have more than one constraint.  Just write
+    the constraints one after another:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer NOT NULL,
+    name text NOT NULL,
+    price numeric NOT NULL CHECK (price &gt; 0)
+);
+</pre><p>
+    The order doesn't matter.  It does not necessarily determine in which
+    order the constraints are checked.
+   </p><p>
+    The <code class="literal">NOT NULL</code> constraint has an inverse: the
+    <code class="literal">NULL</code> constraint.  This does not mean that the
+    column must be null, which would surely be useless.  Instead, this
+    simply selects the default behavior that the column might be null.
+    The <code class="literal">NULL</code> constraint is not present in the SQL
+    standard and should not be used in portable applications.  (It was
+    only added to <span class="productname">PostgreSQL</span> to be
+    compatible with some other database systems.)  Some users, however,
+    like it because it makes it easy to toggle the constraint in a
+    script file.  For example, you could start with:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer NULL,
+    name text NULL,
+    price numeric NULL
+);
+</pre><p>
+    and then insert the <code class="literal">NOT</code> key word where desired.
+   </p><div class="tip"><h3 class="title">Tip</h3><p>
+     In most database designs the majority of columns should be marked
+     not null.
+    </p></div></div><div class="sect2" id="DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS"><div class="titlepage"><div><div><h3 class="title">5.4.3. Unique Constraints</h3></div></div></div><a id="id-1.5.4.6.7.2" class="indexterm"></a><a id="id-1.5.4.6.7.3" class="indexterm"></a><p>
+    Unique constraints ensure that the data contained in a column, or a
+    group of columns, is unique among all the rows in the
+    table.  The syntax is:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer <span class="emphasis"><strong>UNIQUE</strong></span>,
+    name text,
+    price numeric
+);
+</pre><p>
+    when written as a column constraint, and:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric,
+    <span class="emphasis"><strong>UNIQUE (product_no)</strong></span>
+);
+</pre><p>
+    when written as a table constraint.
+   </p><p>
+    To define a unique constraint for a group of columns, write it as a
+    table constraint with the column names separated by commas:
+</p><pre class="programlisting">
+CREATE TABLE example (
+    a integer,
+    b integer,
+    c integer,
+    <span class="emphasis"><strong>UNIQUE (a, c)</strong></span>
+);
+</pre><p>
+    This specifies that the combination of values in the indicated columns
+    is unique across the whole table, though any one of the columns
+    need not be (and ordinarily isn't) unique.
+   </p><p>
+    You can assign your own name for a unique constraint, in the usual way:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer <span class="emphasis"><strong>CONSTRAINT must_be_different</strong></span> UNIQUE,
+    name text,
+    price numeric
+);
+</pre><p>
+   </p><p>
+    Adding a unique constraint will automatically create a unique B-tree
+    index on the column or group of columns listed in the constraint.
+    A uniqueness restriction covering only some rows cannot be written as
+    a unique constraint, but it is possible to enforce such a restriction by
+    creating a unique <a class="link" href="indexes-partial.html" title="11.8. Partial Indexes">partial index</a>.
+   </p><a id="id-1.5.4.6.7.8" class="indexterm"></a><p>
+    In general, a unique constraint is violated if there is more than
+    one row in the table where the values of all of the
+    columns included in the constraint are equal.
+    However, two null values are never considered equal in this
+    comparison.  That means even in the presence of a
+    unique constraint it is possible to store duplicate
+    rows that contain a null value in at least one of the constrained
+    columns.  This behavior conforms to the SQL standard, but we have
+    heard that other SQL databases might not follow this rule.  So be
+    careful when developing applications that are intended to be
+    portable.
+   </p></div><div class="sect2" id="DDL-CONSTRAINTS-PRIMARY-KEYS"><div class="titlepage"><div><div><h3 class="title">5.4.4. Primary Keys</h3></div></div></div><a id="id-1.5.4.6.8.2" class="indexterm"></a><a id="id-1.5.4.6.8.3" class="indexterm"></a><p>
+    A primary key constraint indicates that a column, or group of columns,
+    can be used as a unique identifier for rows in the table.  This
+    requires that the values be both unique and not null.  So, the following
+    two table definitions accept the same data:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer UNIQUE NOT NULL,
+    name text,
+    price numeric
+);
+</pre><p>
+
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer <span class="emphasis"><strong>PRIMARY KEY</strong></span>,
+    name text,
+    price numeric
+);
+</pre><p>
+   </p><p>
+    Primary keys can span more than one column; the syntax
+    is similar to unique constraints:
+</p><pre class="programlisting">
+CREATE TABLE example (
+    a integer,
+    b integer,
+    c integer,
+    <span class="emphasis"><strong>PRIMARY KEY (a, c)</strong></span>
+);
+</pre><p>
+   </p><p>
+    Adding a primary key will automatically create a unique B-tree index
+    on the column or group of columns listed in the primary key, and will
+    force the column(s) to be marked <code class="literal">NOT NULL</code>.
+   </p><p>
+    A table can have at most one primary key.  (There can be any number
+    of unique and not-null constraints, which are functionally almost the
+    same thing, but only one can be identified as the primary key.)
+    Relational database theory
+    dictates that every table must have a primary key.  This rule is
+    not enforced by <span class="productname">PostgreSQL</span>, but it is
+    usually best to follow it.
+   </p><p>
+    Primary keys are useful both for
+    documentation purposes and for client applications.  For example,
+    a GUI application that allows modifying row values probably needs
+    to know the primary key of a table to be able to identify rows
+    uniquely.  There are also various ways in which the database system
+    makes use of a primary key if one has been declared; for example,
+    the primary key defines the default target column(s) for foreign keys
+    referencing its table.
+   </p></div><div class="sect2" id="DDL-CONSTRAINTS-FK"><div class="titlepage"><div><div><h3 class="title">5.4.5. Foreign Keys</h3></div></div></div><a id="id-1.5.4.6.9.2" class="indexterm"></a><a id="id-1.5.4.6.9.3" class="indexterm"></a><a id="id-1.5.4.6.9.4" class="indexterm"></a><p>
+    A foreign key constraint specifies that the values in a column (or
+    a group of columns) must match the values appearing in some row
+    of another table.
+    We say this maintains the <em class="firstterm">referential
+    integrity</em> between two related tables.
+   </p><p>
+    Say you have the product table that we have used several times already:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer PRIMARY KEY,
+    name text,
+    price numeric
+);
+</pre><p>
+    Let's also assume you have a table storing orders of those
+    products.  We want to ensure that the orders table only contains
+    orders of products that actually exist.  So we define a foreign
+    key constraint in the orders table that references the products
+    table:
+</p><pre class="programlisting">
+CREATE TABLE orders (
+    order_id integer PRIMARY KEY,
+    product_no integer <span class="emphasis"><strong>REFERENCES products (product_no)</strong></span>,
+    quantity integer
+);
+</pre><p>
+    Now it is impossible to create orders with non-NULL
+    <code class="structfield">product_no</code> entries that do not appear in the
+    products table.
+   </p><p>
+    We say that in this situation the orders table is the
+    <em class="firstterm">referencing</em> table and the products table is
+    the <em class="firstterm">referenced</em> table.  Similarly, there are
+    referencing and referenced columns.
+   </p><p>
+    You can also shorten the above command to:
+</p><pre class="programlisting">
+CREATE TABLE orders (
+    order_id integer PRIMARY KEY,
+    product_no integer <span class="emphasis"><strong>REFERENCES products</strong></span>,
+    quantity integer
+);
+</pre><p>
+    because in absence of a column list the primary key of the
+    referenced table is used as the referenced column(s).
+   </p><p>
+    You can assign your own name for a foreign key constraint,
+    in the usual way.
+   </p><p>
+    A foreign key can also constrain and reference a group of columns.
+    As usual, it then needs to be written in table constraint form.
+    Here is a contrived syntax example:
+</p><pre class="programlisting">
+CREATE TABLE t1 (
+  a integer PRIMARY KEY,
+  b integer,
+  c integer,
+  <span class="emphasis"><strong>FOREIGN KEY (b, c) REFERENCES other_table (c1, c2)</strong></span>
+);
+</pre><p>
+    Of course, the number and type of the constrained columns need to
+    match the number and type of the referenced columns.
+   </p><a id="id-1.5.4.6.9.11" class="indexterm"></a><p>
+    Sometimes it is useful for the <span class="quote">“<span class="quote">other table</span>”</span> of a
+    foreign key constraint to be the same table; this is called
+    a <em class="firstterm">self-referential</em> foreign key.  For
+    example, if you want rows of a table to represent nodes of a tree
+    structure, you could write
+</p><pre class="programlisting">
+CREATE TABLE tree (
+    node_id integer PRIMARY KEY,
+    parent_id integer REFERENCES tree,
+    name text,
+    ...
+);
+</pre><p>
+    A top-level node would have NULL <code class="structfield">parent_id</code>,
+    while non-NULL <code class="structfield">parent_id</code> entries would be
+    constrained to reference valid rows of the table.
+   </p><p>
+    A table can have more than one foreign key constraint.  This is
+    used to implement many-to-many relationships between tables.  Say
+    you have tables about products and orders, but now you want to
+    allow one order to contain possibly many products (which the
+    structure above did not allow).  You could use this table structure:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer PRIMARY KEY,
+    name text,
+    price numeric
+);
+
+CREATE TABLE orders (
+    order_id integer PRIMARY KEY,
+    shipping_address text,
+    ...
+);
+
+CREATE TABLE order_items (
+    product_no integer REFERENCES products,
+    order_id integer REFERENCES orders,
+    quantity integer,
+    PRIMARY KEY (product_no, order_id)
+);
+</pre><p>
+    Notice that the primary key overlaps with the foreign keys in
+    the last table.
+   </p><a id="id-1.5.4.6.9.14" class="indexterm"></a><a id="id-1.5.4.6.9.15" class="indexterm"></a><p>
+    We know that the foreign keys disallow creation of orders that
+    do not relate to any products.  But what if a product is removed
+    after an order is created that references it?  SQL allows you to
+    handle that as well.  Intuitively, we have a few options:
+    </p><div class="itemizedlist"><ul class="itemizedlist compact" style="list-style-type: disc; "><li class="listitem"><p>Disallow deleting a referenced product</p></li><li class="listitem"><p>Delete the orders as well</p></li><li class="listitem"><p>Something else?</p></li></ul></div><p>
+   </p><p>
+    To illustrate this, let's implement the following policy on the
+    many-to-many relationship example above: when someone wants to
+    remove a product that is still referenced by an order (via
+    <code class="literal">order_items</code>), we disallow it.  If someone
+    removes an order, the order items are removed as well:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer PRIMARY KEY,
+    name text,
+    price numeric
+);
+
+CREATE TABLE orders (
+    order_id integer PRIMARY KEY,
+    shipping_address text,
+    ...
+);
+
+CREATE TABLE order_items (
+    product_no integer REFERENCES products <span class="emphasis"><strong>ON DELETE RESTRICT</strong></span>,
+    order_id integer REFERENCES orders <span class="emphasis"><strong>ON DELETE CASCADE</strong></span>,
+    quantity integer,
+    PRIMARY KEY (product_no, order_id)
+);
+</pre><p>
+   </p><p>
+    Restricting and cascading deletes are the two most common options.
+    <code class="literal">RESTRICT</code> prevents deletion of a
+    referenced row. <code class="literal">NO ACTION</code> means that if any
+    referencing rows still exist when the constraint is checked, an error
+    is raised; this is the default behavior if you do not specify anything.
+    (The essential difference between these two choices is that
+    <code class="literal">NO ACTION</code> allows the check to be deferred until
+    later in the transaction, whereas <code class="literal">RESTRICT</code> does not.)
+    <code class="literal">CASCADE</code> specifies that when a referenced row is deleted,
+    row(s) referencing it should be automatically deleted as well.
+    There are two other options:
+    <code class="literal">SET NULL</code> and <code class="literal">SET DEFAULT</code>.
+    These cause the referencing column(s) in the referencing row(s)
+    to be set to nulls or their default
+    values, respectively, when the referenced row is deleted.
+    Note that these do not excuse you from observing any constraints.
+    For example, if an action specifies <code class="literal">SET DEFAULT</code>
+    but the default value would not satisfy the foreign key constraint, the
+    operation will fail.
+   </p><p>
+    Analogous to <code class="literal">ON DELETE</code> there is also
+    <code class="literal">ON UPDATE</code> which is invoked when a referenced
+    column is changed (updated).  The possible actions are the same.
+    In this case, <code class="literal">CASCADE</code> means that the updated values of the
+    referenced column(s) should be copied into the referencing row(s).
+   </p><p>
+    Normally, a referencing row need not satisfy the foreign key constraint
+    if any of its referencing columns are null.  If <code class="literal">MATCH FULL</code>
+    is added to the foreign key declaration, a referencing row escapes
+    satisfying the constraint only if all its referencing columns are null
+    (so a mix of null and non-null values is guaranteed to fail a
+    <code class="literal">MATCH FULL</code> constraint).  If you don't want referencing rows
+    to be able to avoid satisfying the foreign key constraint, declare the
+    referencing column(s) as <code class="literal">NOT NULL</code>.
+   </p><p>
+    A foreign key must reference columns that either are a primary key or
+    form a unique constraint, or are columns from a non-partial unique index.
+    This means that the referenced columns always have an index to allow
+    efficient lookups on whether a referencing row has a match.  Since a
+    <code class="command">DELETE</code> of a row from the referenced table or an
+    <code class="command">UPDATE</code> of a referenced column will require a scan of
+    the referencing table for rows matching the old value, it is often a good
+    idea to index the referencing columns too.  Because this is not always
+    needed, and there are many choices available on how to index, the
+    declaration of a foreign key constraint does not automatically create an
+    index on the referencing columns.
+   </p><p>
+    More information about updating and deleting data is in <a class="xref" href="dml.html" title="Chapter 6. Data Manipulation">Chapter 6</a>.  Also see the description of foreign key constraint
+    syntax in the reference documentation for
+    <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a>.
+   </p></div><div class="sect2" id="DDL-CONSTRAINTS-EXCLUSION"><div class="titlepage"><div><div><h3 class="title">5.4.6. Exclusion Constraints</h3></div></div></div><a id="id-1.5.4.6.10.2" class="indexterm"></a><a id="id-1.5.4.6.10.3" class="indexterm"></a><p>
+    Exclusion constraints ensure that if any two rows are compared on
+    the specified columns or expressions using the specified operators,
+    at least one of these operator comparisons will return false or null.
+    The syntax is:
+</p><pre class="programlisting">
+CREATE TABLE circles (
+    c circle,
+    EXCLUDE USING gist (c WITH &amp;&amp;)
+);
+</pre><p>
+   </p><p>
+    See also <a class="link" href="sql-createtable.html#SQL-CREATETABLE-EXCLUDE"><code class="command">CREATE
+    TABLE ... CONSTRAINT ... EXCLUDE</code></a> for details.
+   </p><p>
+    Adding an exclusion constraint will automatically create an index
+    of the type specified in the constraint declaration.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ddl-generated-columns.html" title="5.3. Generated Columns">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ddl-system-columns.html" title="5.5. System Columns">Next</a></td></tr><tr><td width="40%" align="left" valign="top">5.3. Generated Columns </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 5.5. System Columns</td></tr></table></div></body></html>

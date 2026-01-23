@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE TEXT SEARCH PARSER</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createtsdictionary.html" title="CREATE TEXT SEARCH DICTIONARY" /><link rel="next" href="sql-createtstemplate.html" title="CREATE TEXT SEARCH TEMPLATE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE TEXT SEARCH PARSER</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createtsdictionary.html" title="CREATE TEXT SEARCH DICTIONARY">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createtstemplate.html" title="CREATE TEXT SEARCH TEMPLATE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATETSPARSER"><div class="titlepage"></div><a id="id-1.9.3.90.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE TEXT SEARCH PARSER</span></h2><p>CREATE TEXT SEARCH PARSER — define a new text search parser</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE TEXT SEARCH PARSER <em class="replaceable"><code>name</code></em> (
+    START = <em class="replaceable"><code>start_function</code></em> ,
+    GETTOKEN = <em class="replaceable"><code>gettoken_function</code></em> ,
+    END = <em class="replaceable"><code>end_function</code></em> ,
+    LEXTYPES = <em class="replaceable"><code>lextypes_function</code></em>
+    [, HEADLINE = <em class="replaceable"><code>headline_function</code></em> ]
+)
+</pre></div><div class="refsect1" id="id-1.9.3.90.5"><h2>Description</h2><p>
+   <code class="command">CREATE TEXT SEARCH PARSER</code> creates a new text search
+   parser.  A text search parser defines a method for splitting a text
+   string into tokens and assigning types (categories) to the tokens.
+   A parser is not particularly useful by itself, but must be bound into a
+   text search configuration along with some text search dictionaries
+   to be used for searching.
+  </p><p>
+   If a schema name is given then the text search parser is created in the
+   specified schema.  Otherwise it is created in the current schema.
+  </p><p>
+   You must be a superuser to use <code class="command">CREATE TEXT SEARCH PARSER</code>.
+   (This restriction is made because an erroneous text search parser
+   definition could confuse or even crash the server.)
+  </p><p>
+   Refer to <a class="xref" href="textsearch.html" title="Chapter 12. Full Text Search">Chapter 12</a> for further information.
+  </p></div><div class="refsect1" id="id-1.9.3.90.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of the text search parser to be created.  The name can be
+      schema-qualified.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>start_function</code></em></span></dt><dd><p>
+      The name of the start function for the parser.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>gettoken_function</code></em></span></dt><dd><p>
+      The name of the get-next-token function for the parser.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>end_function</code></em></span></dt><dd><p>
+      The name of the end function for the parser.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>lextypes_function</code></em></span></dt><dd><p>
+      The name of the lextypes function for the parser (a function that
+      returns information about the set of token types it produces).
+     </p></dd><dt><span class="term"><em class="replaceable"><code>headline_function</code></em></span></dt><dd><p>
+      The name of the headline function for the parser (a function that
+      summarizes a set of tokens).
+     </p></dd></dl></div><p>
+   The function names can be schema-qualified if necessary.  Argument types
+   are not given, since the argument list for each type of function is
+   predetermined.  All except the headline function are required.
+  </p><p>
+   The arguments can appear in any order, not only the one shown above.
+  </p></div><div class="refsect1" id="id-1.9.3.90.7"><h2>Compatibility</h2><p>
+   There is no
+   <code class="command">CREATE TEXT SEARCH PARSER</code> statement in the SQL
+   standard.
+  </p></div><div class="refsect1" id="id-1.9.3.90.8"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-altertsparser.html" title="ALTER TEXT SEARCH PARSER"><span class="refentrytitle">ALTER TEXT SEARCH PARSER</span></a>, <a class="xref" href="sql-droptsparser.html" title="DROP TEXT SEARCH PARSER"><span class="refentrytitle">DROP TEXT SEARCH PARSER</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createtsdictionary.html" title="CREATE TEXT SEARCH DICTIONARY">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createtstemplate.html" title="CREATE TEXT SEARCH TEMPLATE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE TEXT SEARCH DICTIONARY </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE TEXT SEARCH TEMPLATE</td></tr></table></div></body></html>

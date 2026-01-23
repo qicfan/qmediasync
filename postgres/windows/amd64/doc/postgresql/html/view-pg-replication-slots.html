@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.81. pg_replication_slots</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="view-pg-replication-origin-status.html" title="52.80. pg_replication_origin_status" /><link rel="next" href="view-pg-roles.html" title="52.82. pg_roles" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.81. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_replication_slots</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="view-pg-replication-origin-status.html" title="52.80. pg_replication_origin_status">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="view-pg-roles.html" title="52.82. pg_roles">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="VIEW-PG-REPLICATION-SLOTS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.81. <code class="structname">pg_replication_slots</code></h2></div></div></div><a id="id-1.10.4.83.2" class="indexterm"></a><p>
+   The <code class="structname">pg_replication_slots</code> view provides a listing
+   of all replication slots that currently exist on the database cluster,
+   along with their current state.
+  </p><p>
+   For more on replication slots,
+   see <a class="xref" href="warm-standby.html#STREAMING-REPLICATION-SLOTS" title="27.2.6. Replication Slots">Section 27.2.6</a> and <a class="xref" href="logicaldecoding.html" title="Chapter 49. Logical Decoding">Chapter 49</a>.
+  </p><div class="table" id="id-1.10.4.83.5"><p class="title"><strong>Table 52.82. <code class="structname">pg_replication_slots</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_replication_slots Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">slot_name</code> <code class="type">name</code>
+      </p>
+      <p>
+       A unique, cluster-wide identifier for the replication slot
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">plugin</code> <code class="type">name</code>
+      </p>
+      <p>
+       The base name of the shared object containing the output plugin this logical slot is using, or null for physical slots.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">slot_type</code> <code class="type">text</code>
+      </p>
+      <p>
+       The slot type: <code class="literal">physical</code> or <code class="literal">logical</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">datoid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-database.html" title="52.15. pg_database"><code class="structname">pg_database</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The OID of the database this slot is associated with, or
+       null. Only logical slots have an associated database.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">database</code> <code class="type">name</code>
+       (references <a class="link" href="catalog-pg-database.html" title="52.15. pg_database"><code class="structname">pg_database</code></a>.<code class="structfield">datname</code>)
+      </p>
+      <p>
+       The name of the database this slot is associated with, or
+       null. Only logical slots have an associated database.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">temporary</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if this is a temporary replication slot. Temporary slots are
+       not saved to disk and are automatically dropped on error or when
+       the session has finished.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">active</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if this slot is currently actively being used
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">active_pid</code> <code class="type">int4</code>
+      </p>
+      <p>
+       The process ID of the session using this slot if the slot
+       is currently actively being used. <code class="literal">NULL</code> if
+       inactive.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">xmin</code> <code class="type">xid</code>
+      </p>
+      <p>
+       The oldest transaction that this slot needs the database to
+       retain.  <code class="literal">VACUUM</code> cannot remove tuples deleted
+       by any later transaction.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">catalog_xmin</code> <code class="type">xid</code>
+      </p>
+      <p>
+       The oldest transaction affecting the system catalogs that this
+       slot needs the database to retain.  <code class="literal">VACUUM</code> cannot
+       remove catalog tuples deleted by any later transaction.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">restart_lsn</code> <code class="type">pg_lsn</code>
+      </p>
+      <p>
+       The address (<code class="literal">LSN</code>) of oldest WAL which still
+       might be required by the consumer of this slot and thus won't be
+       automatically removed during checkpoints unless this LSN
+       gets behind more than <a class="xref" href="runtime-config-replication.html#GUC-MAX-SLOT-WAL-KEEP-SIZE">max_slot_wal_keep_size</a>
+       from the current LSN.  <code class="literal">NULL</code>
+       if the <code class="literal">LSN</code> of this slot has never been reserved.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">confirmed_flush_lsn</code> <code class="type">pg_lsn</code>
+      </p>
+      <p>
+       The address (<code class="literal">LSN</code>) up to which the logical
+       slot's consumer has confirmed receiving data. Data older than this is
+       not available anymore. <code class="literal">NULL</code> for physical slots.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">wal_status</code> <code class="type">text</code>
+      </p>
+      <p>
+       Availability of WAL files claimed by this slot.
+       Possible values are:
+       </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="literal">reserved</code> means that the claimed files
+          are within <code class="varname">max_wal_size</code>.</p></li><li class="listitem"><p><code class="literal">extended</code> means
+          that <code class="varname">max_wal_size</code> is exceeded but the files are
+          still retained, either by the replication slot or
+          by <code class="varname">wal_keep_size</code>.
+         </p></li><li class="listitem"><p>
+          <code class="literal">unreserved</code> means that the slot no longer
+          retains the required WAL files and some of them are to be removed at
+          the next checkpoint.  This state can return
+          to <code class="literal">reserved</code> or <code class="literal">extended</code>.
+         </p></li><li class="listitem"><p>
+          <code class="literal">lost</code> means that some required WAL files have
+          been removed and this slot is no longer usable.
+         </p></li></ul></div><p>
+       The last two states are seen only when
+       <a class="xref" href="runtime-config-replication.html#GUC-MAX-SLOT-WAL-KEEP-SIZE">max_slot_wal_keep_size</a> is
+       non-negative. If <code class="structfield">restart_lsn</code> is NULL, this
+       field is null.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">safe_wal_size</code> <code class="type">int8</code>
+      </p>
+      <p>
+       The number of bytes that can be written to WAL such that this slot
+       is not in danger of getting in state "lost".  It is NULL for lost
+       slots, as well as if <code class="varname">max_slot_wal_keep_size</code>
+       is <code class="literal">-1</code>.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">two_phase</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if the slot is enabled for decoding prepared transactions.  Always
+       false for physical slots.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="view-pg-replication-origin-status.html" title="52.80. pg_replication_origin_status">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="view-pg-roles.html" title="52.82. pg_roles">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.80. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_replication_origin_status</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.82. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_roles</code></td></tr></table></div></body></html>

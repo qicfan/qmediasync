@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>73.1. Backup Manifest Top-level Object</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="backup-manifest-format.html" title="Chapter 73. Backup Manifest Format" /><link rel="next" href="backup-manifest-files.html" title="73.2. Backup Manifest File Object" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">73.1. Backup Manifest Top-level Object</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="backup-manifest-format.html" title="Chapter 73. Backup Manifest Format">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="backup-manifest-format.html" title="Chapter 73. Backup Manifest Format">Up</a></td><th width="60%" align="center">Chapter 73. Backup Manifest Format</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="backup-manifest-files.html" title="73.2. Backup Manifest File Object">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BACKUP-MANIFEST-TOPLEVEL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">73.1. Backup Manifest Top-level Object</h2></div></div></div><p>
+   The backup manifest JSON document contains the following keys.
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">PostgreSQL-Backup-Manifest-Version</code></span></dt><dd><p>
+      The associated value is always the integer 1.
+     </p></dd><dt><span class="term"><code class="literal">Files</code></span></dt><dd><p>
+      The associated value is always a list of objects, each describing one
+      file that is present in the backup. No entries are present in this
+      list for the WAL files that are needed in order to use the backup,
+      or for the backup manifest itself.  The structure of each object in the
+      list is described in <a class="xref" href="backup-manifest-files.html" title="73.2. Backup Manifest File Object">Section 73.2</a>.
+     </p></dd><dt><span class="term"><code class="literal">WAL-Ranges</code></span></dt><dd><p>
+      The associated value is always a list of objects, each describing a
+      range of WAL records that must be readable from a particular timeline
+      in order to make use of the backup.  The structure of these objects is
+      further described in <a class="xref" href="backup-manifest-wal-ranges.html" title="73.3. Backup Manifest WAL Range Object">Section 73.3</a>.
+     </p></dd><dt><span class="term"><code class="literal">Manifest-Checksum</code></span></dt><dd><p>
+      This key is always present on the last line of the backup manifest file.
+      The associated value is a SHA256 checksum of all the preceding lines.
+      We use a fixed checksum method here to make it possible for clients
+      to do incremental parsing of the manifest. While a SHA256 checksum
+      is significantly more expensive than a CRC32C checksum, the manifest
+      should normally be small enough that the extra computation won't matter
+      very much.
+     </p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="backup-manifest-format.html" title="Chapter 73. Backup Manifest Format">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="backup-manifest-format.html" title="Chapter 73. Backup Manifest Format">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="backup-manifest-files.html" title="73.2. Backup Manifest File Object">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 73. Backup Manifest Format </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 73.2. Backup Manifest File Object</td></tr></table></div></body></html>

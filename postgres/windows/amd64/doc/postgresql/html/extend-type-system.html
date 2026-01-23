@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>38.2. The PostgreSQL Type System</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="extend-how.html" title="38.1. How Extensibility Works" /><link rel="next" href="xfunc.html" title="38.3. User-Defined Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">38.2. The <span xmlns="http://www.w3.org/1999/xhtml" class="productname">PostgreSQL</span> Type System</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="extend-how.html" title="38.1. How Extensibility Works">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><th width="60%" align="center">Chapter 38. Extending <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym></th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="xfunc.html" title="38.3. User-Defined Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="EXTEND-TYPE-SYSTEM"><div class="titlepage"><div><div><h2 class="title" style="clear: both">38.2. The <span class="productname">PostgreSQL</span> Type System</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="extend-type-system.html#id-1.8.3.5.9">38.2.1. Base Types</a></span></dt><dt><span class="sect2"><a href="extend-type-system.html#id-1.8.3.5.10">38.2.2. Container Types</a></span></dt><dt><span class="sect2"><a href="extend-type-system.html#EXTEND-TYPE-SYSTEM-DOMAINS">38.2.3. Domains</a></span></dt><dt><span class="sect2"><a href="extend-type-system.html#id-1.8.3.5.12">38.2.4. Pseudo-Types</a></span></dt><dt><span class="sect2"><a href="extend-type-system.html#EXTEND-TYPES-POLYMORPHIC">38.2.5. Polymorphic Types</a></span></dt></dl></div><a id="id-1.8.3.5.2" class="indexterm"></a><a id="id-1.8.3.5.3" class="indexterm"></a><a id="id-1.8.3.5.4" class="indexterm"></a><a id="id-1.8.3.5.5" class="indexterm"></a><a id="id-1.8.3.5.6" class="indexterm"></a><a id="id-1.8.3.5.7" class="indexterm"></a><p>
+    <span class="productname">PostgreSQL</span> data types can be divided into base
+    types, container types, domains, and pseudo-types.
+   </p><div class="sect2" id="id-1.8.3.5.9"><div class="titlepage"><div><div><h3 class="title">38.2.1. Base Types</h3></div></div></div><p>
+     Base types are those, like <code class="type">integer</code>, that are
+     implemented below the level of the <acronym class="acronym">SQL</acronym> language
+     (typically in a low-level language such as C).  They generally
+     correspond to what are often known as abstract data types.
+     <span class="productname">PostgreSQL</span> can only operate on such
+     types through functions provided by the user and only understands
+     the behavior of such types to the extent that the user describes
+     them.
+     The built-in base types are described in <a class="xref" href="datatype.html" title="Chapter 8. Data Types">Chapter 8</a>.
+    </p><p>
+     Enumerated (enum) types can be considered as a subcategory of base
+     types.  The main difference is that they can be created using
+     just <acronym class="acronym">SQL</acronym> commands, without any low-level programming.
+     Refer to <a class="xref" href="datatype-enum.html" title="8.7. Enumerated Types">Section 8.7</a> for more information.
+    </p></div><div class="sect2" id="id-1.8.3.5.10"><div class="titlepage"><div><div><h3 class="title">38.2.2. Container Types</h3></div></div></div><p>
+     <span class="productname">PostgreSQL</span> has three kinds
+     of <span class="quote">“<span class="quote">container</span>”</span> types, which are types that contain multiple
+     values of other types.  These are arrays, composites, and ranges.
+    </p><p>
+     Arrays can hold multiple values that are all of the same type.  An array
+     type is automatically created for each base type, composite type, range
+     type, and domain type.  But there are no arrays of arrays.  So far as
+     the type system is concerned, multi-dimensional arrays are the same as
+     one-dimensional arrays.  Refer to <a class="xref" href="arrays.html" title="8.15. Arrays">Section 8.15</a> for more
+     information.
+    </p><p>
+     Composite types, or row types, are created whenever the user
+     creates a table. It is also possible to use <a class="xref" href="sql-createtype.html" title="CREATE TYPE"><span class="refentrytitle">CREATE TYPE</span></a> to
+     define a <span class="quote">“<span class="quote">stand-alone</span>”</span> composite type with no associated
+     table.  A composite type is simply a list of types with
+     associated field names.  A value of a composite type is a row or
+     record of field values.  Refer to <a class="xref" href="rowtypes.html" title="8.16. Composite Types">Section 8.16</a>
+     for more information.
+    </p><p>
+     A range type can hold two values of the same type, which are the lower
+     and upper bounds of the range.  Range types are user-created, although
+     a few built-in ones exist.  Refer to <a class="xref" href="rangetypes.html" title="8.17. Range Types">Section 8.17</a>
+     for more information.
+    </p></div><div class="sect2" id="EXTEND-TYPE-SYSTEM-DOMAINS"><div class="titlepage"><div><div><h3 class="title">38.2.3. Domains</h3></div></div></div><p>
+     A domain is based on a particular underlying type and for many purposes
+     is interchangeable with its underlying type.  However, a domain can have
+     constraints that restrict its valid values to a subset of what the
+     underlying type would allow.  Domains are created using
+     the <acronym class="acronym">SQL</acronym> command <a class="xref" href="sql-createdomain.html" title="CREATE DOMAIN"><span class="refentrytitle">CREATE DOMAIN</span></a>.
+     Refer to <a class="xref" href="domains.html" title="8.18. Domain Types">Section 8.18</a> for more information.
+    </p></div><div class="sect2" id="id-1.8.3.5.12"><div class="titlepage"><div><div><h3 class="title">38.2.4. Pseudo-Types</h3></div></div></div><p>
+     There are a few <span class="quote">“<span class="quote">pseudo-types</span>”</span> for special purposes.
+     Pseudo-types cannot appear as columns of tables or components of
+     container types, but they can be used to declare the argument and
+     result types of functions.  This provides a mechanism within the
+     type system to identify special classes of functions.  <a class="xref" href="datatype-pseudo.html#DATATYPE-PSEUDOTYPES-TABLE" title="Table 8.27. Pseudo-Types">Table 8.27</a> lists the existing
+     pseudo-types.
+    </p></div><div class="sect2" id="EXTEND-TYPES-POLYMORPHIC"><div class="titlepage"><div><div><h3 class="title">38.2.5. Polymorphic Types</h3></div></div></div><a id="id-1.8.3.5.13.2" class="indexterm"></a><a id="id-1.8.3.5.13.3" class="indexterm"></a><a id="id-1.8.3.5.13.4" class="indexterm"></a><a id="id-1.8.3.5.13.5" class="indexterm"></a><p>
+     Some pseudo-types of special interest are the <em class="firstterm">polymorphic
+     types</em>, which are used to declare <em class="firstterm">polymorphic
+     functions</em>.  This powerful feature allows a single function
+     definition to operate on many different data types, with the specific
+     data type(s) being determined by the data types actually passed to it
+     in a particular call.  The polymorphic types are shown in
+     <a class="xref" href="extend-type-system.html#EXTEND-TYPES-POLYMORPHIC-TABLE" title="Table 38.1. Polymorphic Types">Table 38.1</a>.  Some examples of
+     their use appear in <a class="xref" href="xfunc-sql.html#XFUNC-SQL-POLYMORPHIC-FUNCTIONS" title="38.5.11. Polymorphic SQL Functions">Section 38.5.11</a>.
+    </p><div class="table" id="EXTEND-TYPES-POLYMORPHIC-TABLE"><p class="title"><strong>Table 38.1. Polymorphic Types</strong></p><div class="table-contents"><table class="table" summary="Polymorphic Types" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /></colgroup><thead><tr><th>Name</th><th>Family</th><th>Description</th></tr></thead><tbody><tr><td><code class="type">anyelement</code></td><td>Simple</td><td>Indicates that a function accepts any data type</td></tr><tr><td><code class="type">anyarray</code></td><td>Simple</td><td>Indicates that a function accepts any array data type</td></tr><tr><td><code class="type">anynonarray</code></td><td>Simple</td><td>Indicates that a function accepts any non-array data type</td></tr><tr><td><code class="type">anyenum</code></td><td>Simple</td><td>Indicates that a function accepts any enum data type
+        (see <a class="xref" href="datatype-enum.html" title="8.7. Enumerated Types">Section 8.7</a>)
+        </td></tr><tr><td><code class="type">anyrange</code></td><td>Simple</td><td>Indicates that a function accepts any range data type
+        (see <a class="xref" href="rangetypes.html" title="8.17. Range Types">Section 8.17</a>)
+        </td></tr><tr><td><code class="type">anymultirange</code></td><td>Simple</td><td>Indicates that a function accepts any multirange data type
+        (see <a class="xref" href="rangetypes.html" title="8.17. Range Types">Section 8.17</a>)
+        </td></tr><tr><td><code class="type">anycompatible</code></td><td>Common</td><td>Indicates that a function accepts any data type,
+        with automatic promotion of multiple arguments to a common data type
+        </td></tr><tr><td><code class="type">anycompatiblearray</code></td><td>Common</td><td>Indicates that a function accepts any array data type,
+        with automatic promotion of multiple arguments to a common data type
+        </td></tr><tr><td><code class="type">anycompatiblenonarray</code></td><td>Common</td><td>Indicates that a function accepts any non-array data type,
+        with automatic promotion of multiple arguments to a common data type
+        </td></tr><tr><td><code class="type">anycompatiblerange</code></td><td>Common</td><td>Indicates that a function accepts any range data type,
+        with automatic promotion of multiple arguments to a common data type
+        </td></tr><tr><td><code class="type">anycompatiblemultirange</code></td><td>Common</td><td>Indicates that a function accepts any multirange data type,
+        with automatic promotion of multiple arguments to a common data type
+        </td></tr></tbody></table></div></div><br class="table-break" /><p>
+     Polymorphic arguments and results are tied to each other and are resolved
+     to specific data types when a query calling a polymorphic function is
+     parsed.  When there is more than one polymorphic argument, the actual
+     data types of the input values must match up as described below.  If the
+     function's result type is polymorphic, or it has output parameters of
+     polymorphic types, the types of those results are deduced from the
+     actual types of the polymorphic inputs as described below.
+    </p><p>
+     For the <span class="quote">“<span class="quote">simple</span>”</span> family of polymorphic types, the
+     matching and deduction rules work like this:
+    </p><p>
+     Each position (either argument or return value) declared as
+     <code class="type">anyelement</code> is allowed to have any specific actual
+     data type, but in any given call they must all be the
+     <span class="emphasis"><em>same</em></span> actual type. Each
+     position declared as <code class="type">anyarray</code> can have any array data type,
+     but similarly they must all be the same type.  And similarly,
+     positions declared as <code class="type">anyrange</code> must all be the same range
+     type.  Likewise for <code class="type">anymultirange</code>.
+    </p><p>
+     Furthermore, if there are
+     positions declared <code class="type">anyarray</code> and others declared
+     <code class="type">anyelement</code>, the actual array type in the
+     <code class="type">anyarray</code> positions must be an array whose elements are
+     the same type appearing in the <code class="type">anyelement</code> positions.
+     <code class="type">anynonarray</code> is treated exactly the same as <code class="type">anyelement</code>,
+     but adds the additional constraint that the actual type must not be
+     an array type.
+     <code class="type">anyenum</code> is treated exactly the same as <code class="type">anyelement</code>,
+     but adds the additional constraint that the actual type must
+     be an enum type.
+    </p><p>
+     Similarly, if there are positions declared <code class="type">anyrange</code>
+     and others declared <code class="type">anyelement</code> or <code class="type">anyarray</code>,
+     the actual range type in the <code class="type">anyrange</code> positions must be a
+     range whose subtype is the same type appearing in
+     the <code class="type">anyelement</code> positions and the same as the element type
+     of the <code class="type">anyarray</code> positions.
+     If there are positions declared <code class="type">anymultirange</code>,
+     their actual multirange type must contain ranges matching parameters declared
+     <code class="type">anyrange</code> and base elements matching parameters declared
+     <code class="type">anyelement</code> and <code class="type">anyarray</code>.
+    </p><p>
+     Thus, when more than one argument position is declared with a polymorphic
+     type, the net effect is that only certain combinations of actual argument
+     types are allowed.  For example, a function declared as
+     <code class="literal">equal(anyelement, anyelement)</code> will take any two input values,
+     so long as they are of the same data type.
+    </p><p>
+     When the return value of a function is declared as a polymorphic type,
+     there must be at least one argument position that is also polymorphic,
+     and the actual data type(s) supplied for the polymorphic arguments
+     determine the actual
+     result type for that call.  For example, if there were not already
+     an array subscripting mechanism, one could define a function that
+     implements subscripting as <code class="literal">subscript(anyarray, integer)
+     returns anyelement</code>.  This declaration constrains the actual first
+     argument to be an array type, and allows the parser to infer the correct
+     result type from the actual first argument's type.  Another example
+     is that a function declared as <code class="literal">f(anyarray) returns anyenum</code>
+     will only accept arrays of enum types.
+    </p><p>
+     In most cases, the parser can infer the actual data type for a
+     polymorphic result type from arguments that are of a different
+     polymorphic type in the same family; for example <code class="type">anyarray</code>
+     can be deduced from <code class="type">anyelement</code> or vice versa.
+     An exception is that a
+     polymorphic result of type <code class="type">anyrange</code> requires an argument
+     of type <code class="type">anyrange</code>; it cannot be deduced
+     from <code class="type">anyarray</code> or <code class="type">anyelement</code> arguments.  This
+     is because there could be multiple range types with the same subtype.
+    </p><p>
+     Note that <code class="type">anynonarray</code> and <code class="type">anyenum</code> do not represent
+     separate type variables; they are the same type as
+     <code class="type">anyelement</code>, just with an additional constraint.  For
+     example, declaring a function as <code class="literal">f(anyelement, anyenum)</code>
+     is equivalent to declaring it as <code class="literal">f(anyenum, anyenum)</code>:
+     both actual arguments have to be the same enum type.
+    </p><p>
+     For the <span class="quote">“<span class="quote">common</span>”</span> family of polymorphic types, the
+     matching and deduction rules work approximately the same as for
+     the <span class="quote">“<span class="quote">simple</span>”</span> family, with one major difference: the
+     actual types of the arguments need not be identical, so long as they
+     can be implicitly cast to a single common type.  The common type is
+     selected following the same rules as for <code class="literal">UNION</code> and
+     related constructs (see <a class="xref" href="typeconv-union-case.html" title="10.5. UNION, CASE, and Related Constructs">Section 10.5</a>).
+     Selection of the common type considers the actual types
+     of <code class="type">anycompatible</code> and <code class="type">anycompatiblenonarray</code>
+     inputs, the array element types of <code class="type">anycompatiblearray</code>
+     inputs, the range subtypes of <code class="type">anycompatiblerange</code> inputs,
+     and the multirange subtypes of <code class="type">anycompatiblemultirange</code>
+     inputs.  If <code class="type">anycompatiblenonarray</code> is present then the
+     common type is required to be a non-array type.  Once a common type is
+     identified, arguments in <code class="type">anycompatible</code>
+     and <code class="type">anycompatiblenonarray</code> positions are automatically
+     cast to that type, and arguments in <code class="type">anycompatiblearray</code>
+     positions are automatically cast to the array type for that type.
+    </p><p>
+     Since there is no way to select a range type knowing only its subtype,
+     use of <code class="type">anycompatiblerange</code> and/or
+     <code class="type">anycompatiblemultirange</code> requires that all arguments declared
+     with that type have the same actual range and/or multirange type, and that
+     that type's subtype agree with the selected common type, so that no casting
+     of the range values is required.  As with <code class="type">anyrange</code> and
+     <code class="type">anymultirange</code>, use of <code class="type">anycompatiblerange</code> and
+     <code class="type">anymultirange</code> as a function result type requires that there be
+     an <code class="type">anycompatiblerange</code> or <code class="type">anycompatiblemultirange</code>
+     argument.
+    </p><p>
+     Notice that there is no <code class="type">anycompatibleenum</code> type.  Such a
+     type would not be very useful, since there normally are not any
+     implicit casts to enum types, meaning that there would be no way to
+     resolve a common type for dissimilar enum inputs.
+    </p><p>
+     The <span class="quote">“<span class="quote">simple</span>”</span> and <span class="quote">“<span class="quote">common</span>”</span> polymorphic
+     families represent two independent sets of type variables.  Consider
+     for example
+</p><pre class="programlisting">
+CREATE FUNCTION myfunc(a anyelement, b anyelement,
+                       c anycompatible, d anycompatible)
+RETURNS anycompatible AS ...
+</pre><p>
+     In an actual call of this function, the first two inputs must have
+     exactly the same type.  The last two inputs must be promotable to a
+     common type, but this type need not have anything to do with the type
+     of the first two inputs.  The result will have the common type of the
+     last two inputs.
+    </p><p>
+     A variadic function (one taking a variable number of arguments, as in
+     <a class="xref" href="xfunc-sql.html#XFUNC-SQL-VARIADIC-FUNCTIONS" title="38.5.6. SQL Functions with Variable Numbers of Arguments">Section 38.5.6</a>) can be
+     polymorphic: this is accomplished by declaring its last parameter as
+     <code class="literal">VARIADIC</code> <code class="type">anyarray</code> or
+     <code class="literal">VARIADIC</code> <code class="type">anycompatiblearray</code>.
+     For purposes of argument
+     matching and determining the actual result type, such a function behaves
+     the same as if you had written the appropriate number of
+     <code class="type">anynonarray</code> or <code class="type">anycompatiblenonarray</code>
+     parameters.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="extend-how.html" title="38.1. How Extensibility Works">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="xfunc.html" title="38.3. User-Defined Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">38.1. How Extensibility Works </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 38.3. User-Defined Functions</td></tr></table></div></body></html>

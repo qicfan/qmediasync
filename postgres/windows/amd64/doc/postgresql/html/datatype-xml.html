@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.13. XML Type</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-uuid.html" title="8.12. UUID Type" /><link rel="next" href="datatype-json.html" title="8.14. JSON Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.13. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">XML</acronym> Type</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-uuid.html" title="8.12. UUID Type">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datatype-json.html" title="8.14. JSON Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATATYPE-XML"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.13. <acronym class="acronym">XML</acronym> Type</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="datatype-xml.html#id-1.5.7.21.6">8.13.1. Creating XML Values</a></span></dt><dt><span class="sect2"><a href="datatype-xml.html#id-1.5.7.21.7">8.13.2. Encoding Handling</a></span></dt><dt><span class="sect2"><a href="datatype-xml.html#id-1.5.7.21.8">8.13.3. Accessing XML Values</a></span></dt></dl></div><a id="id-1.5.7.21.2" class="indexterm"></a><p>
+    The <code class="type">xml</code> data type can be used to store XML data.  Its
+    advantage over storing XML data in a <code class="type">text</code> field is that it
+    checks the input values for well-formedness, and there are support
+    functions to perform type-safe operations on it; see <a class="xref" href="functions-xml.html" title="9.15. XML Functions">Section 9.15</a>.  Use of this data type requires the
+    installation to have been built with <code class="command">configure
+    --with-libxml</code>.
+   </p><p>
+    The <code class="type">xml</code> type can store well-formed
+    <span class="quote">“<span class="quote">documents</span>”</span>, as defined by the XML standard, as well
+    as <span class="quote">“<span class="quote">content</span>”</span> fragments, which are defined by reference
+    to the more permissive
+    <a class="ulink" href="https://www.w3.org/TR/2010/REC-xpath-datamodel-20101214/#DocumentNode" target="_top"><span class="quote">“<span class="quote">document node</span>”</span></a>
+    of the XQuery and XPath data model.
+    Roughly, this means that content fragments can have
+    more than one top-level element or character node.  The expression
+    <code class="literal"><em class="replaceable"><code>xmlvalue</code></em> IS DOCUMENT</code>
+    can be used to evaluate whether a particular <code class="type">xml</code>
+    value is a full document or only a content fragment.
+   </p><p>
+    Limits and compatibility notes for the <code class="type">xml</code> data type
+    can be found in <a class="xref" href="xml-limits-conformance.html" title="D.3. XML Limits and Conformance to SQL/XML">Section D.3</a>.
+   </p><div class="sect2" id="id-1.5.7.21.6"><div class="titlepage"><div><div><h3 class="title">8.13.1. Creating XML Values</h3></div></div></div><p>
+    To produce a value of type <code class="type">xml</code> from character data,
+    use the function
+    <code class="function">xmlparse</code>:<a id="id-1.5.7.21.6.2.3" class="indexterm"></a>
+</p><pre class="synopsis">
+XMLPARSE ( { DOCUMENT | CONTENT } <em class="replaceable"><code>value</code></em>)
+</pre><p>
+    Examples:
+</p><pre class="programlisting">
+XMLPARSE (DOCUMENT '&lt;?xml version="1.0"?&gt;&lt;book&gt;&lt;title&gt;Manual&lt;/title&gt;&lt;chapter&gt;...&lt;/chapter&gt;&lt;/book&gt;')
+XMLPARSE (CONTENT 'abc&lt;foo&gt;bar&lt;/foo&gt;&lt;bar&gt;foo&lt;/bar&gt;')
+</pre><p>
+    While this is the only way to convert character strings into XML
+    values according to the SQL standard, the PostgreSQL-specific
+    syntaxes:
+</p><pre class="programlisting">
+xml '&lt;foo&gt;bar&lt;/foo&gt;'
+'&lt;foo&gt;bar&lt;/foo&gt;'::xml
+</pre><p>
+    can also be used.
+   </p><p>
+    The <code class="type">xml</code> type does not validate input values
+    against a document type declaration
+    (DTD),<a id="id-1.5.7.21.6.3.2" class="indexterm"></a>
+    even when the input value specifies a DTD.
+    There is also currently no built-in support for validating against
+    other XML schema languages such as XML Schema.
+   </p><p>
+    The inverse operation, producing a character string value from
+    <code class="type">xml</code>, uses the function
+    <code class="function">xmlserialize</code>:<a id="id-1.5.7.21.6.4.3" class="indexterm"></a>
+</p><pre class="synopsis">
+XMLSERIALIZE ( { DOCUMENT | CONTENT } <em class="replaceable"><code>value</code></em> AS <em class="replaceable"><code>type</code></em> )
+</pre><p>
+    <em class="replaceable"><code>type</code></em> can be
+    <code class="type">character</code>, <code class="type">character varying</code>, or
+    <code class="type">text</code> (or an alias for one of those).  Again, according
+    to the SQL standard, this is the only way to convert between type
+    <code class="type">xml</code> and character types, but PostgreSQL also allows
+    you to simply cast the value.
+   </p><p>
+    When a character string value is cast to or from type
+    <code class="type">xml</code> without going through <code class="type">XMLPARSE</code> or
+    <code class="type">XMLSERIALIZE</code>, respectively, the choice of
+    <code class="literal">DOCUMENT</code> versus <code class="literal">CONTENT</code> is
+    determined by the <span class="quote">“<span class="quote">XML option</span>”</span>
+    <a id="id-1.5.7.21.6.5.7" class="indexterm"></a>
+    session configuration parameter, which can be set using the
+    standard command:
+</p><pre class="synopsis">
+SET XML OPTION { DOCUMENT | CONTENT };
+</pre><p>
+    or the more PostgreSQL-like syntax
+</p><pre class="synopsis">
+SET xmloption TO { DOCUMENT | CONTENT };
+</pre><p>
+    The default is <code class="literal">CONTENT</code>, so all forms of XML
+    data are allowed.
+   </p></div><div class="sect2" id="id-1.5.7.21.7"><div class="titlepage"><div><div><h3 class="title">8.13.2. Encoding Handling</h3></div></div></div><p>
+    Care must be taken when dealing with multiple character encodings
+    on the client, server, and in the XML data passed through them.
+    When using the text mode to pass queries to the server and query
+    results to the client (which is the normal mode), PostgreSQL
+    converts all character data passed between the client and the
+    server and vice versa to the character encoding of the respective
+    end; see <a class="xref" href="multibyte.html" title="24.3. Character Set Support">Section 24.3</a>.  This includes string
+    representations of XML values, such as in the above examples.
+    This would ordinarily mean that encoding declarations contained in
+    XML data can become invalid as the character data is converted
+    to other encodings while traveling between client and server,
+    because the embedded encoding declaration is not changed.  To cope
+    with this behavior, encoding declarations contained in
+    character strings presented for input to the <code class="type">xml</code> type
+    are <span class="emphasis"><em>ignored</em></span>, and content is assumed
+    to be in the current server encoding.  Consequently, for correct
+    processing, character strings of XML data must be sent
+    from the client in the current client encoding.  It is the
+    responsibility of the client to either convert documents to the
+    current client encoding before sending them to the server, or to
+    adjust the client encoding appropriately.  On output, values of
+    type <code class="type">xml</code> will not have an encoding declaration, and
+    clients should assume all data is in the current client
+    encoding.
+   </p><p>
+    When using binary mode to pass query parameters to the server
+    and query results back to the client, no encoding conversion
+    is performed, so the situation is different.  In this case, an
+    encoding declaration in the XML data will be observed, and if it
+    is absent, the data will be assumed to be in UTF-8 (as required by
+    the XML standard; note that PostgreSQL does not support UTF-16).
+    On output, data will have an encoding declaration
+    specifying the client encoding, unless the client encoding is
+    UTF-8, in which case it will be omitted.
+   </p><p>
+    Needless to say, processing XML data with PostgreSQL will be less
+    error-prone and more efficient if the XML data encoding, client encoding,
+    and server encoding are the same.  Since XML data is internally
+    processed in UTF-8, computations will be most efficient if the
+    server encoding is also UTF-8.
+   </p><div class="caution"><h3 class="title">Caution</h3><p>
+     Some XML-related functions may not work at all on non-ASCII data
+     when the server encoding is not UTF-8.  This is known to be an
+     issue for <code class="function">xmltable()</code> and <code class="function">xpath()</code> in particular.
+    </p></div></div><div class="sect2" id="id-1.5.7.21.8"><div class="titlepage"><div><div><h3 class="title">8.13.3. Accessing XML Values</h3></div></div></div><p>
+    The <code class="type">xml</code> data type is unusual in that it does not
+    provide any comparison operators.  This is because there is no
+    well-defined and universally useful comparison algorithm for XML
+    data.  One consequence of this is that you cannot retrieve rows by
+    comparing an <code class="type">xml</code> column against a search value.  XML
+    values should therefore typically be accompanied by a separate key
+    field such as an ID.  An alternative solution for comparing XML
+    values is to convert them to character strings first, but note
+    that character string comparison has little to do with a useful
+    XML comparison method.
+   </p><p>
+    Since there are no comparison operators for the <code class="type">xml</code>
+    data type, it is not possible to create an index directly on a
+    column of this type.  If speedy searches in XML data are desired,
+    possible workarounds include casting the expression to a
+    character string type and indexing that, or indexing an XPath
+    expression.  Of course, the actual query would have to be adjusted
+    to search by the indexed expression.
+   </p><p>
+    The text-search functionality in PostgreSQL can also be used to speed
+    up full-document searches of XML data.  The necessary
+    preprocessing support is, however, not yet available in the PostgreSQL
+    distribution.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-uuid.html" title="8.12. UUID Type">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datatype-json.html" title="8.14. JSON Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.12. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">UUID</acronym> Type </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.14. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">JSON</acronym> Types</td></tr></table></div></body></html>

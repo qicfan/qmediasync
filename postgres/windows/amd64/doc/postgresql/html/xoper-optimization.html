@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>38.15. Operator Optimization Information</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="xoper.html" title="38.14. User-Defined Operators" /><link rel="next" href="xindex.html" title="38.16. Interfacing Extensions to Indexes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">38.15. Operator Optimization Information</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="xoper.html" title="38.14. User-Defined Operators">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><th width="60%" align="center">Chapter 38. Extending <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym></th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="xindex.html" title="38.16. Interfacing Extensions to Indexes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="XOPER-OPTIMIZATION"><div class="titlepage"><div><div><h2 class="title" style="clear: both">38.15. Operator Optimization Information</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="xoper-optimization.html#id-1.8.3.18.6">38.15.1. <code class="literal">COMMUTATOR</code></a></span></dt><dt><span class="sect2"><a href="xoper-optimization.html#id-1.8.3.18.7">38.15.2. <code class="literal">NEGATOR</code></a></span></dt><dt><span class="sect2"><a href="xoper-optimization.html#id-1.8.3.18.8">38.15.3. <code class="literal">RESTRICT</code></a></span></dt><dt><span class="sect2"><a href="xoper-optimization.html#id-1.8.3.18.9">38.15.4. <code class="literal">JOIN</code></a></span></dt><dt><span class="sect2"><a href="xoper-optimization.html#id-1.8.3.18.10">38.15.5. <code class="literal">HASHES</code></a></span></dt><dt><span class="sect2"><a href="xoper-optimization.html#id-1.8.3.18.11">38.15.6. <code class="literal">MERGES</code></a></span></dt></dl></div><a id="id-1.8.3.18.2" class="indexterm"></a><p>
+    A <span class="productname">PostgreSQL</span> operator definition can include
+    several optional clauses that tell the system useful things about how
+    the operator behaves.  These clauses should be provided whenever
+    appropriate, because they can make for considerable speedups in execution
+    of queries that use the operator.  But if you provide them, you must be
+    sure that they are right!  Incorrect use of an optimization clause can
+    result in slow queries, subtly wrong output, or other Bad Things.
+    You can always leave out an optimization clause if you are not sure
+    about it; the only consequence is that queries might run slower than
+    they need to.
+   </p><p>
+    Additional optimization clauses might be added in future versions of
+    <span class="productname">PostgreSQL</span>.  The ones described here are all
+    the ones that release 14.12 understands.
+   </p><p>
+    It is also possible to attach a planner support function to the function
+    that underlies an operator, providing another way of telling the system
+    about the behavior of the operator.
+    See <a class="xref" href="xfunc-optimization.html" title="38.11. Function Optimization Information">Section 38.11</a> for more information.
+   </p><div class="sect2" id="id-1.8.3.18.6"><div class="titlepage"><div><div><h3 class="title">38.15.1. <code class="literal">COMMUTATOR</code></h3></div></div></div><p>
+     The <code class="literal">COMMUTATOR</code> clause, if provided, names an operator that is the
+     commutator of the operator being defined.  We say that operator A is the
+     commutator of operator B if (x A y) equals (y B x) for all possible input
+     values x, y.  Notice that B is also the commutator of A.  For example,
+     operators <code class="literal">&lt;</code> and <code class="literal">&gt;</code> for a particular data type are usually each others'
+     commutators, and operator <code class="literal">+</code> is usually commutative with itself.
+     But operator <code class="literal">-</code> is usually not commutative with anything.
+    </p><p>
+     The left operand type of a commutable operator is the same as the
+     right operand type of its commutator, and vice versa.  So the name of
+     the commutator operator is all that <span class="productname">PostgreSQL</span>
+     needs to be given to look up the commutator, and that's all that needs to
+     be provided in the <code class="literal">COMMUTATOR</code> clause.
+    </p><p>
+     It's critical to provide commutator information for operators that
+     will be used in indexes and join clauses, because this allows the
+     query optimizer to <span class="quote">“<span class="quote">flip around</span>”</span> such a clause to the forms
+     needed for different plan types.  For example, consider a query with
+     a WHERE clause like <code class="literal">tab1.x = tab2.y</code>, where <code class="literal">tab1.x</code>
+     and <code class="literal">tab2.y</code> are of a user-defined type, and suppose that
+     <code class="literal">tab2.y</code> is indexed.  The optimizer cannot generate an
+     index scan unless it can determine how to flip the clause around to
+     <code class="literal">tab2.y = tab1.x</code>, because the index-scan machinery expects
+     to see the indexed column on the left of the operator it is given.
+     <span class="productname">PostgreSQL</span> will <span class="emphasis"><em>not</em></span> simply
+     assume that this is a valid transformation — the creator of the
+     <code class="literal">=</code> operator must specify that it is valid, by marking the
+     operator with commutator information.
+    </p><p>
+     When you are defining a self-commutative operator, you just do it.
+     When you are defining a pair of commutative operators, things are
+     a little trickier: how can the first one to be defined refer to the
+     other one, which you haven't defined yet?  There are two solutions
+     to this problem:
+
+     </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+        One way is to omit the <code class="literal">COMMUTATOR</code> clause in the first operator that
+        you define, and then provide one in the second operator's definition.
+        Since <span class="productname">PostgreSQL</span> knows that commutative
+        operators come in pairs, when it sees the second definition it will
+        automatically go back and fill in the missing <code class="literal">COMMUTATOR</code> clause in
+        the first definition.
+       </p></li><li class="listitem"><p>
+        The other, more straightforward way is just to include <code class="literal">COMMUTATOR</code> clauses
+        in both definitions.  When <span class="productname">PostgreSQL</span> processes
+        the first definition and realizes that <code class="literal">COMMUTATOR</code> refers to a nonexistent
+        operator, the system will make a dummy entry for that operator in the
+        system catalog.  This dummy entry will have valid data only
+        for the operator name, left and right operand types, and result type,
+        since that's all that <span class="productname">PostgreSQL</span> can deduce
+        at this point.  The first operator's catalog entry will link to this
+        dummy entry.  Later, when you define the second operator, the system
+        updates the dummy entry with the additional information from the second
+        definition.  If you try to use the dummy operator before it's been filled
+        in, you'll just get an error message.
+       </p></li></ul></div><p>
+    </p></div><div class="sect2" id="id-1.8.3.18.7"><div class="titlepage"><div><div><h3 class="title">38.15.2. <code class="literal">NEGATOR</code></h3></div></div></div><p>
+     The <code class="literal">NEGATOR</code> clause, if provided, names an operator that is the
+     negator of the operator being defined.  We say that operator A
+     is the negator of operator B if both return Boolean results and
+     (x A y) equals NOT (x B y) for all possible inputs x, y.
+     Notice that B is also the negator of A.
+     For example, <code class="literal">&lt;</code> and <code class="literal">&gt;=</code> are a negator pair for most data types.
+     An operator can never validly be its own negator.
+    </p><p>
+    Unlike commutators, a pair of unary operators could validly be marked
+    as each other's negators; that would mean (A x) equals NOT (B x)
+    for all x.
+   </p><p>
+    An operator's negator must have the same left and/or right operand types
+    as the operator to be defined, so just as with <code class="literal">COMMUTATOR</code>, only the operator
+    name need be given in the <code class="literal">NEGATOR</code> clause.
+   </p><p>
+    Providing a negator is very helpful to the query optimizer since
+    it allows expressions like <code class="literal">NOT (x = y)</code> to be simplified into
+    <code class="literal">x &lt;&gt; y</code>.  This comes up more often than you might think, because
+    <code class="literal">NOT</code> operations can be inserted as a consequence of other rearrangements.
+   </p><p>
+    Pairs of negator operators can be defined using the same methods
+    explained above for commutator pairs.
+   </p></div><div class="sect2" id="id-1.8.3.18.8"><div class="titlepage"><div><div><h3 class="title">38.15.3. <code class="literal">RESTRICT</code></h3></div></div></div><p>
+    The <code class="literal">RESTRICT</code> clause, if provided, names a restriction selectivity
+    estimation function for the operator.  (Note that this is a function
+    name, not an operator name.)  <code class="literal">RESTRICT</code> clauses only make sense for
+    binary operators that return <code class="type">boolean</code>.  The idea behind a restriction
+    selectivity estimator is to guess what fraction of the rows in a
+    table will satisfy a <code class="literal">WHERE</code>-clause condition of the form:
+</p><pre class="programlisting">
+column OP constant
+</pre><p>
+    for the current operator and a particular constant value.
+    This assists the optimizer by
+    giving it some idea of how many rows will be eliminated by <code class="literal">WHERE</code>
+    clauses that have this form.  (What happens if the constant is on
+    the left, you might be wondering?  Well, that's one of the things that
+    <code class="literal">COMMUTATOR</code> is for...)
+   </p><p>
+    Writing new restriction selectivity estimation functions is far beyond
+    the scope of this chapter, but fortunately you can usually just use
+    one of the system's standard estimators for many of your own operators.
+    These are the standard restriction estimators:
+    </p><table border="0" summary="Simple list" class="simplelist"><tr><td><code class="function">eqsel</code> for <code class="literal">=</code></td></tr><tr><td><code class="function">neqsel</code> for <code class="literal">&lt;&gt;</code></td></tr><tr><td><code class="function">scalarltsel</code> for <code class="literal">&lt;</code></td></tr><tr><td><code class="function">scalarlesel</code> for <code class="literal">&lt;=</code></td></tr><tr><td><code class="function">scalargtsel</code> for <code class="literal">&gt;</code></td></tr><tr><td><code class="function">scalargesel</code> for <code class="literal">&gt;=</code></td></tr></table><p>
+   </p><p>
+    You can frequently get away with using either <code class="function">eqsel</code> or <code class="function">neqsel</code> for
+    operators that have very high or very low selectivity, even if they
+    aren't really equality or inequality.  For example, the
+    approximate-equality geometric operators use <code class="function">eqsel</code> on the assumption that
+    they'll usually only match a small fraction of the entries in a table.
+   </p><p>
+    You can use <code class="function">scalarltsel</code>, <code class="function">scalarlesel</code>,
+    <code class="function">scalargtsel</code> and <code class="function">scalargesel</code> for comparisons on
+    data types that have some sensible means of being converted into numeric
+    scalars for range comparisons.  If possible, add the data type to those
+    understood by the function <code class="function">convert_to_scalar()</code> in
+    <code class="filename">src/backend/utils/adt/selfuncs.c</code>.
+    (Eventually, this function should be replaced by per-data-type functions
+    identified through a column of the <code class="classname">pg_type</code> system catalog; but that hasn't happened
+    yet.)  If you do not do this, things will still work, but the optimizer's
+    estimates won't be as good as they could be.
+   </p><p>
+    Another useful built-in selectivity estimation function
+    is <code class="function">matchingsel</code>, which will work for almost any
+    binary operator, if standard MCV and/or histogram statistics are
+    collected for the input data type(s).  Its default estimate is set to
+    twice the default estimate used in <code class="function">eqsel</code>, making
+    it most suitable for comparison operators that are somewhat less
+    strict than equality.  (Or you could call the
+    underlying <code class="function">generic_restriction_selectivity</code>
+    function, providing a different default estimate.)
+   </p><p>
+    There are additional selectivity estimation functions designed for geometric
+    operators in <code class="filename">src/backend/utils/adt/geo_selfuncs.c</code>: <code class="function">areasel</code>, <code class="function">positionsel</code>,
+    and <code class="function">contsel</code>.  At this writing these are just stubs, but you might want
+    to use them (or even better, improve them) anyway.
+   </p></div><div class="sect2" id="id-1.8.3.18.9"><div class="titlepage"><div><div><h3 class="title">38.15.4. <code class="literal">JOIN</code></h3></div></div></div><p>
+     The <code class="literal">JOIN</code> clause, if provided, names a join selectivity
+     estimation function for the operator.  (Note that this is a function
+     name, not an operator name.)  <code class="literal">JOIN</code> clauses only make sense for
+     binary operators that return <code class="type">boolean</code>.  The idea behind a join
+     selectivity estimator is to guess what fraction of the rows in a
+     pair of tables will satisfy a <code class="literal">WHERE</code>-clause condition of the form:
+</p><pre class="programlisting">
+table1.column1 OP table2.column2
+</pre><p>
+     for the current operator.  As with the <code class="literal">RESTRICT</code> clause, this helps
+     the optimizer very substantially by letting it figure out which
+     of several possible join sequences is likely to take the least work.
+    </p><p>
+     As before, this chapter will make no attempt to explain how to write
+     a join selectivity estimator function, but will just suggest that
+     you use one of the standard estimators if one is applicable:
+     </p><table border="0" summary="Simple list" class="simplelist"><tr><td><code class="function">eqjoinsel</code> for <code class="literal">=</code></td></tr><tr><td><code class="function">neqjoinsel</code> for <code class="literal">&lt;&gt;</code></td></tr><tr><td><code class="function">scalarltjoinsel</code> for <code class="literal">&lt;</code></td></tr><tr><td><code class="function">scalarlejoinsel</code> for <code class="literal">&lt;=</code></td></tr><tr><td><code class="function">scalargtjoinsel</code> for <code class="literal">&gt;</code></td></tr><tr><td><code class="function">scalargejoinsel</code> for <code class="literal">&gt;=</code></td></tr><tr><td><code class="function">matchingjoinsel</code> for generic matching operators</td></tr><tr><td><code class="function">areajoinsel</code> for 2D area-based comparisons</td></tr><tr><td><code class="function">positionjoinsel</code> for 2D position-based comparisons</td></tr><tr><td><code class="function">contjoinsel</code> for 2D containment-based comparisons</td></tr></table><p>
+    </p></div><div class="sect2" id="id-1.8.3.18.10"><div class="titlepage"><div><div><h3 class="title">38.15.5. <code class="literal">HASHES</code></h3></div></div></div><p>
+     The <code class="literal">HASHES</code> clause, if present, tells the system that
+     it is permissible to use the hash join method for a join based on this
+     operator.  <code class="literal">HASHES</code> only makes sense for a binary operator that
+     returns <code class="literal">boolean</code>, and in practice the operator must represent
+     equality for some data type or pair of data types.
+    </p><p>
+     The assumption underlying hash join is that the join operator can
+     only return true for pairs of left and right values that hash to the
+     same hash code.  If two values get put in different hash buckets, the
+     join will never compare them at all, implicitly assuming that the
+     result of the join operator must be false.  So it never makes sense
+     to specify <code class="literal">HASHES</code> for operators that do not represent
+     some form of equality.  In most cases it is only practical to support
+     hashing for operators that take the same data type on both sides.
+     However, sometimes it is possible to design compatible hash functions
+     for two or more data types; that is, functions that will generate the
+     same hash codes for <span class="quote">“<span class="quote">equal</span>”</span> values, even though the values
+     have different representations.  For example, it's fairly simple
+     to arrange this property when hashing integers of different widths.
+    </p><p>
+     To be marked <code class="literal">HASHES</code>, the join operator must appear
+     in a hash index operator family.  This is not enforced when you create
+     the operator, since of course the referencing operator family couldn't
+     exist yet.  But attempts to use the operator in hash joins will fail
+     at run time if no such operator family exists.  The system needs the
+     operator family to find the data-type-specific hash function(s) for the
+     operator's input data type(s).  Of course, you must also create suitable
+     hash functions before you can create the operator family.
+    </p><p>
+     Care should be exercised when preparing a hash function, because there
+     are machine-dependent ways in which it might fail to do the right thing.
+     For example, if your data type is a structure in which there might be
+     uninteresting pad bits, you cannot simply pass the whole structure to
+     <code class="function">hash_any</code>.  (Unless you write your other operators and
+     functions to ensure that the unused bits are always zero, which is the
+     recommended strategy.)
+     Another example is that on machines that meet the <acronym class="acronym">IEEE</acronym>
+     floating-point standard, negative zero and positive zero are different
+     values (different bit patterns) but they are defined to compare equal.
+     If a float value might contain negative zero then extra steps are needed
+     to ensure it generates the same hash value as positive zero.
+    </p><p>
+     A hash-joinable operator must have a commutator (itself if the two
+     operand data types are the same, or a related equality operator
+     if they are different) that appears in the same operator family.
+     If this is not the case, planner errors might occur when the operator
+     is used.  Also, it is a good idea (but not strictly required) for
+     a hash operator family that supports multiple data types to provide
+     equality operators for every combination of the data types; this
+     allows better optimization.
+    </p><div class="note"><h3 class="title">Note</h3><p>
+     The function underlying a hash-joinable operator must be marked
+     immutable or stable.  If it is volatile, the system will never
+     attempt to use the operator for a hash join.
+    </p></div><div class="note"><h3 class="title">Note</h3><p>
+     If a hash-joinable operator has an underlying function that is marked
+     strict, the
+     function must also be complete: that is, it should return true or
+     false, never null, for any two nonnull inputs.  If this rule is
+     not followed, hash-optimization of <code class="literal">IN</code> operations might
+     generate wrong results.  (Specifically, <code class="literal">IN</code> might return
+     false where the correct answer according to the standard would be null;
+     or it might yield an error complaining that it wasn't prepared for a
+     null result.)
+    </p></div></div><div class="sect2" id="id-1.8.3.18.11"><div class="titlepage"><div><div><h3 class="title">38.15.6. <code class="literal">MERGES</code></h3></div></div></div><p>
+     The <code class="literal">MERGES</code> clause, if present, tells the system that
+     it is permissible to use the merge-join method for a join based on this
+     operator.  <code class="literal">MERGES</code> only makes sense for a binary operator that
+     returns <code class="literal">boolean</code>, and in practice the operator must represent
+     equality for some data type or pair of data types.
+    </p><p>
+     Merge join is based on the idea of sorting the left- and right-hand tables
+     into order and then scanning them in parallel.  So, both data types must
+     be capable of being fully ordered, and the join operator must be one
+     that can only succeed for pairs of values that fall at the
+     <span class="quote">“<span class="quote">same place</span>”</span>
+     in the sort order.  In practice this means that the join operator must
+     behave like equality.  But it is possible to merge-join two
+     distinct data types so long as they are logically compatible.  For
+     example, the <code class="type">smallint</code>-versus-<code class="type">integer</code>
+     equality operator is merge-joinable.
+     We only need sorting operators that will bring both data types into a
+     logically compatible sequence.
+    </p><p>
+     To be marked <code class="literal">MERGES</code>, the join operator must appear
+     as an equality member of a <code class="literal">btree</code> index operator family.
+     This is not enforced when you create
+     the operator, since of course the referencing operator family couldn't
+     exist yet.  But the operator will not actually be used for merge joins
+     unless a matching operator family can be found.  The
+     <code class="literal">MERGES</code> flag thus acts as a hint to the planner that
+     it's worth looking for a matching operator family.
+    </p><p>
+     A merge-joinable operator must have a commutator (itself if the two
+     operand data types are the same, or a related equality operator
+     if they are different) that appears in the same operator family.
+     If this is not the case, planner errors might occur when the operator
+     is used.  Also, it is a good idea (but not strictly required) for
+     a <code class="literal">btree</code> operator family that supports multiple data types to provide
+     equality operators for every combination of the data types; this
+     allows better optimization.
+    </p><div class="note"><h3 class="title">Note</h3><p>
+     The function underlying a merge-joinable operator must be marked
+     immutable or stable.  If it is volatile, the system will never
+     attempt to use the operator for a merge join.
+    </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="xoper.html" title="38.14. User-Defined Operators">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="xindex.html" title="38.16. Interfacing Extensions to Indexes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">38.14. User-Defined Operators </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 38.16. Interfacing Extensions to Indexes</td></tr></table></div></body></html>

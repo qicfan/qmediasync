@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>68.3. Extensibility</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="brin-builtin-opclasses.html" title="68.2. Built-in Operator Classes" /><link rel="next" href="hash-index.html" title="Chapter 69. Hash Indexes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">68.3. Extensibility</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="brin-builtin-opclasses.html" title="68.2. Built-in Operator Classes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="brin.html" title="Chapter 68. BRIN Indexes">Up</a></td><th width="60%" align="center">Chapter 68. BRIN Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="hash-index.html" title="Chapter 69. Hash Indexes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BRIN-EXTENSIBILITY"><div class="titlepage"><div><div><h2 class="title" style="clear: both">68.3. Extensibility</h2></div></div></div><p>
+  The <acronym class="acronym">BRIN</acronym> interface has a high level of abstraction,
+  requiring the access method implementer only to implement the semantics
+  of the data type being accessed.  The <acronym class="acronym">BRIN</acronym> layer
+  itself takes care of concurrency, logging and searching the index structure.
+ </p><p>
+  All it takes to get a <acronym class="acronym">BRIN</acronym> access method working is to
+  implement a few user-defined methods, which define the behavior of
+  summary values stored in the index and the way they interact with
+  scan keys.
+  In short, <acronym class="acronym">BRIN</acronym> combines
+  extensibility with generality, code reuse, and a clean interface.
+ </p><p>
+  There are four methods that an operator class for <acronym class="acronym">BRIN</acronym>
+  must provide:
+
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">BrinOpcInfo *opcInfo(Oid type_oid)</code></span></dt><dd><p>
+      Returns internal information about the indexed columns' summary data.
+      The return value must point to a palloc'd <code class="structname">BrinOpcInfo</code>,
+      which has this definition:
+</p><pre class="programlisting">
+typedef struct BrinOpcInfo
+{
+    /* Number of columns stored in an index column of this opclass */
+    uint16      oi_nstored;
+
+    /* Opaque pointer for the opclass' private use */
+    void       *oi_opaque;
+
+    /* Type cache entries of the stored columns */
+    TypeCacheEntry *oi_typcache[FLEXIBLE_ARRAY_MEMBER];
+} BrinOpcInfo;
+</pre><p>
+      <code class="structname">BrinOpcInfo</code>.<code class="structfield">oi_opaque</code> can be used by the
+      operator class routines to pass information between support functions
+      during an index scan.
+     </p></dd><dt><span class="term"><code class="function">bool consistent(BrinDesc *bdesc, BrinValues *column,
+       ScanKey *keys, int nkeys)</code></span></dt><dd><p>
+      Returns whether all the ScanKey entries are consistent with the given
+      indexed values for a range.
+      The attribute number to use is passed as part of the scan key.
+      Multiple scan keys for the same attribute may be passed at once; the
+      number of entries is determined by the <code class="literal">nkeys</code> parameter.
+     </p></dd><dt><span class="term"><code class="function">bool consistent(BrinDesc *bdesc, BrinValues *column,
+       ScanKey key)</code></span></dt><dd><p>
+      Returns whether the ScanKey is consistent with the given indexed
+      values for a range.
+      The attribute number to use is passed as part of the scan key.
+      This is an older backward-compatible variant of the consistent function.
+     </p></dd><dt><span class="term"><code class="function">bool addValue(BrinDesc *bdesc, BrinValues *column,
+       Datum newval, bool isnull)</code></span></dt><dd><p>
+      Given an index tuple and an indexed value, modifies the indicated
+      attribute of the tuple so that it additionally represents the new value.
+      If any modification was done to the tuple, <code class="literal">true</code> is
+      returned.
+     </p></dd><dt><span class="term"><code class="function">bool unionTuples(BrinDesc *bdesc, BrinValues *a,
+       BrinValues *b)</code></span></dt><dd><p>
+      Consolidates two index tuples. Given two index tuples, modifies the
+      indicated attribute of the first of them so that it represents both tuples.
+      The second tuple is not modified.
+     </p></dd></dl></div><p>
+
+  An operator class for <acronym class="acronym">BRIN</acronym> can optionally specify the
+  following method:
+
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">void options(local_relopts *relopts)</code></span></dt><dd><p>
+       Defines a set of user-visible parameters that control operator class
+       behavior.
+      </p><p>
+       The <code class="function">options</code> function is passed a pointer to a
+       <code class="structname">local_relopts</code> struct, which needs to be
+       filled with a set of operator class specific options.  The options
+       can be accessed from other support functions using the
+       <code class="literal">PG_HAS_OPCLASS_OPTIONS()</code> and
+       <code class="literal">PG_GET_OPCLASS_OPTIONS()</code> macros.
+      </p><p>
+       Since both key extraction of indexed values and representation of the
+       key in <acronym class="acronym">BRIN</acronym> are flexible, they may depend on
+       user-specified parameters.
+      </p></dd></dl></div><p>
+
+  The core distribution includes support for four types of operator classes:
+  minmax, minmax-multi, inclusion and bloom.  Operator class definitions
+  using them are shipped for in-core data types as appropriate.  Additional
+  operator classes can be defined by the user for other data types using
+  equivalent definitions, without having to write any source code;
+  appropriate catalog entries being declared is enough.  Note that
+  assumptions about the semantics of operator strategies are embedded in the
+  support functions' source code.
+ </p><p>
+  Operator classes that implement completely different semantics are also
+  possible, provided implementations of the four main support functions
+  described above are written.  Note that backwards compatibility across major
+  releases is not guaranteed: for example, additional support functions might
+  be required in later releases.
+ </p><p>
+  To write an operator class for a data type that implements a totally
+  ordered set, it is possible to use the minmax support functions
+  alongside the corresponding operators, as shown in
+  <a class="xref" href="brin-extensibility.html#BRIN-EXTENSIBILITY-MINMAX-TABLE" title="Table 68.2. Function and Support Numbers for Minmax Operator Classes">Table 68.2</a>.
+  All operator class members (functions and operators) are mandatory.
+ </p><div class="table" id="BRIN-EXTENSIBILITY-MINMAX-TABLE"><p class="title"><strong>Table 68.2. Function and Support Numbers for Minmax Operator Classes</strong></p><div class="table-contents"><table class="table" summary="Function and Support Numbers for Minmax Operator Classes" border="1"><colgroup><col class="col1" /><col class="col2" /></colgroup><thead><tr><th>Operator class member</th><th>Object</th></tr></thead><tbody><tr><td>Support Function 1</td><td>internal function <code class="function">brin_minmax_opcinfo()</code></td></tr><tr><td>Support Function 2</td><td>internal function <code class="function">brin_minmax_add_value()</code></td></tr><tr><td>Support Function 3</td><td>internal function <code class="function">brin_minmax_consistent()</code></td></tr><tr><td>Support Function 4</td><td>internal function <code class="function">brin_minmax_union()</code></td></tr><tr><td>Operator Strategy 1</td><td>operator less-than</td></tr><tr><td>Operator Strategy 2</td><td>operator less-than-or-equal-to</td></tr><tr><td>Operator Strategy 3</td><td>operator equal-to</td></tr><tr><td>Operator Strategy 4</td><td>operator greater-than-or-equal-to</td></tr><tr><td>Operator Strategy 5</td><td>operator greater-than</td></tr></tbody></table></div></div><br class="table-break" /><p>
+  To write an operator class for a complex data type which has values
+  included within another type, it's possible to use the inclusion support
+  functions alongside the corresponding operators, as shown
+  in <a class="xref" href="brin-extensibility.html#BRIN-EXTENSIBILITY-INCLUSION-TABLE" title="Table 68.3. Function and Support Numbers for Inclusion Operator Classes">Table 68.3</a>.  It requires
+  only a single additional function, which can be written in any language.
+  More functions can be defined for additional functionality.  All operators
+  are optional.  Some operators require other operators, as shown as
+  dependencies on the table.
+ </p><div class="table" id="BRIN-EXTENSIBILITY-INCLUSION-TABLE"><p class="title"><strong>Table 68.3. Function and Support Numbers for Inclusion Operator Classes</strong></p><div class="table-contents"><table class="table" summary="Function and Support Numbers for Inclusion Operator Classes" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /></colgroup><thead><tr><th>Operator class member</th><th>Object</th><th>Dependency</th></tr></thead><tbody><tr><td>Support Function 1</td><td>internal function <code class="function">brin_inclusion_opcinfo()</code></td><td> </td></tr><tr><td>Support Function 2</td><td>internal function <code class="function">brin_inclusion_add_value()</code></td><td> </td></tr><tr><td>Support Function 3</td><td>internal function <code class="function">brin_inclusion_consistent()</code></td><td> </td></tr><tr><td>Support Function 4</td><td>internal function <code class="function">brin_inclusion_union()</code></td><td> </td></tr><tr><td>Support Function 11</td><td>function to merge two elements</td><td> </td></tr><tr><td>Support Function 12</td><td>optional function to check whether two elements are mergeable</td><td> </td></tr><tr><td>Support Function 13</td><td>optional function to check if an element is contained within another</td><td> </td></tr><tr><td>Support Function 14</td><td>optional function to check whether an element is empty</td><td> </td></tr><tr><td>Operator Strategy 1</td><td>operator left-of</td><td>Operator Strategy 4</td></tr><tr><td>Operator Strategy 2</td><td>operator does-not-extend-to-the-right-of</td><td>Operator Strategy 5</td></tr><tr><td>Operator Strategy 3</td><td>operator overlaps</td><td> </td></tr><tr><td>Operator Strategy 4</td><td>operator does-not-extend-to-the-left-of</td><td>Operator Strategy 1</td></tr><tr><td>Operator Strategy 5</td><td>operator right-of</td><td>Operator Strategy 2</td></tr><tr><td>Operator Strategy 6, 18</td><td>operator same-as-or-equal-to</td><td>Operator Strategy 7</td></tr><tr><td>Operator Strategy 7, 16, 24, 25</td><td>operator contains-or-equal-to</td><td> </td></tr><tr><td>Operator Strategy 8, 26, 27</td><td>operator is-contained-by-or-equal-to</td><td>Operator Strategy 3</td></tr><tr><td>Operator Strategy 9</td><td>operator does-not-extend-above</td><td>Operator Strategy 11</td></tr><tr><td>Operator Strategy 10</td><td>operator is-below</td><td>Operator Strategy 12</td></tr><tr><td>Operator Strategy 11</td><td>operator is-above</td><td>Operator Strategy 9</td></tr><tr><td>Operator Strategy 12</td><td>operator does-not-extend-below</td><td>Operator Strategy 10</td></tr><tr><td>Operator Strategy 20</td><td>operator less-than</td><td>Operator Strategy 5</td></tr><tr><td>Operator Strategy 21</td><td>operator less-than-or-equal-to</td><td>Operator Strategy 5</td></tr><tr><td>Operator Strategy 22</td><td>operator greater-than</td><td>Operator Strategy 1</td></tr><tr><td>Operator Strategy 23</td><td>operator greater-than-or-equal-to</td><td>Operator Strategy 1</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Support function numbers 1 through 10 are reserved for the BRIN internal
+    functions, so the SQL level functions start with number 11.  Support
+    function number 11 is the main function required to build the index.
+    It should accept two arguments with the same data type as the operator class,
+    and return the union of them.  The inclusion operator class can store union
+    values with different data types if it is defined with the
+    <code class="literal">STORAGE</code> parameter.  The return value of the union
+    function should match the <code class="literal">STORAGE</code> data type.
+ </p><p>
+    Support function numbers 12 and 14 are provided to support
+    irregularities of built-in data types.  Function number 12
+    is used to support network addresses from different families which
+    are not mergeable.  Function number 14 is used to support
+    empty ranges.  Function number 13 is an optional but
+    recommended one, which allows the new value to be checked before
+    it is passed to the union function.  As the BRIN framework can shortcut
+    some operations when the union is not changed, using this
+    function can improve index performance.
+ </p><p>
+  To write an operator class for a data type that implements only an equality
+  operator and supports hashing, it is possible to use the bloom support procedures
+  alongside the corresponding operators, as shown in
+  <a class="xref" href="brin-extensibility.html#BRIN-EXTENSIBILITY-BLOOM-TABLE" title="Table 68.4. Procedure and Support Numbers for Bloom Operator Classes">Table 68.4</a>.
+  All operator class members (procedures and operators) are mandatory.
+ </p><div class="table" id="BRIN-EXTENSIBILITY-BLOOM-TABLE"><p class="title"><strong>Table 68.4. Procedure and Support Numbers for Bloom Operator Classes</strong></p><div class="table-contents"><table class="table" summary="Procedure and Support Numbers for Bloom Operator Classes" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Operator class member</th><th>Object</th></tr></thead><tbody><tr><td>Support Procedure 1</td><td>internal function <code class="function">brin_bloom_opcinfo()</code></td></tr><tr><td>Support Procedure 2</td><td>internal function <code class="function">brin_bloom_add_value()</code></td></tr><tr><td>Support Procedure 3</td><td>internal function <code class="function">brin_bloom_consistent()</code></td></tr><tr><td>Support Procedure 4</td><td>internal function <code class="function">brin_bloom_union()</code></td></tr><tr><td>Support Procedure 5</td><td>internal function <code class="function">brin_bloom_options()</code></td></tr><tr><td>Support Procedure 11</td><td>function to compute hash of an element</td></tr><tr><td>Operator Strategy 1</td><td>operator equal-to</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Support procedure numbers 1-10 are reserved for the BRIN internal
+    functions, so the SQL level functions start with number 11.  Support
+    function number 11 is the main function required to build the index.
+    It should accept one argument with the same data type as the operator class,
+    and return a hash of the value.
+ </p><p>
+  The minmax-multi operator class is also intended for data types implementing
+  a totally ordered set, and may be seen as a simple extension of the minmax
+  operator class. While minmax operator class summarizes values from each block
+  range into a single contiguous interval, minmax-multi allows summarization
+  into multiple smaller intervals to improve handling of outlier values.
+  It is possible to use the minmax-multi support procedures alongside the
+  corresponding operators, as shown in
+  <a class="xref" href="brin-extensibility.html#BRIN-EXTENSIBILITY-MINMAX-MULTI-TABLE" title="Table 68.5. Procedure and Support Numbers for minmax-multi Operator Classes">Table 68.5</a>.
+  All operator class members (procedures and operators) are mandatory.
+ </p><div class="table" id="BRIN-EXTENSIBILITY-MINMAX-MULTI-TABLE"><p class="title"><strong>Table 68.5. Procedure and Support Numbers for minmax-multi Operator Classes</strong></p><div class="table-contents"><table class="table" summary="Procedure and Support Numbers for minmax-multi Operator Classes" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Operator class member</th><th>Object</th></tr></thead><tbody><tr><td>Support Procedure 1</td><td>internal function <code class="function">brin_minmax_multi_opcinfo()</code></td></tr><tr><td>Support Procedure 2</td><td>internal function <code class="function">brin_minmax_multi_add_value()</code></td></tr><tr><td>Support Procedure 3</td><td>internal function <code class="function">brin_minmax_multi_consistent()</code></td></tr><tr><td>Support Procedure 4</td><td>internal function <code class="function">brin_minmax_multi_union()</code></td></tr><tr><td>Support Procedure 5</td><td>internal function <code class="function">brin_minmax_multi_options()</code></td></tr><tr><td>Support Procedure 11</td><td>function to compute distance between two values (length of a range)</td></tr><tr><td>Operator Strategy 1</td><td>operator less-than</td></tr><tr><td>Operator Strategy 2</td><td>operator less-than-or-equal-to</td></tr><tr><td>Operator Strategy 3</td><td>operator equal-to</td></tr><tr><td>Operator Strategy 4</td><td>operator greater-than-or-equal-to</td></tr><tr><td>Operator Strategy 5</td><td>operator greater-than</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Both minmax and inclusion operator classes support cross-data-type
+    operators, though with these the dependencies become more complicated.
+    The minmax operator class requires a full set of operators to be
+    defined with both arguments having the same data type.  It allows
+    additional data types to be supported by defining extra sets
+    of operators.  Inclusion operator class operator strategies are dependent
+    on another operator strategy as shown in
+    <a class="xref" href="brin-extensibility.html#BRIN-EXTENSIBILITY-INCLUSION-TABLE" title="Table 68.3. Function and Support Numbers for Inclusion Operator Classes">Table 68.3</a>, or the same
+    operator strategy as themselves.  They require the dependency
+    operator to be defined with the <code class="literal">STORAGE</code> data type as the
+    left-hand-side argument and the other supported data type to be the
+    right-hand-side argument of the supported operator.  See
+    <code class="literal">float4_minmax_ops</code> as an example of minmax, and
+    <code class="literal">box_inclusion_ops</code> as an example of inclusion.
+ </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="brin-builtin-opclasses.html" title="68.2. Built-in Operator Classes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="brin.html" title="Chapter 68. BRIN Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="hash-index.html" title="Chapter 69. Hash Indexes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">68.2. Built-in Operator Classes </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 69. Hash Indexes</td></tr></table></div></body></html>

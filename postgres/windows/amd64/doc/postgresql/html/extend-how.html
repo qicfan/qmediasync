@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>38.1. How Extensibility Works</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="extend.html" title="Chapter 38. Extending SQL" /><link rel="next" href="extend-type-system.html" title="38.2. The PostgreSQL Type System" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">38.1. How Extensibility Works</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="extend.html" title="Chapter 38. Extending SQL">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><th width="60%" align="center">Chapter 38. Extending <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym></th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="extend-type-system.html" title="38.2. The PostgreSQL Type System">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="EXTEND-HOW"><div class="titlepage"><div><div><h2 class="title" style="clear: both">38.1. How Extensibility Works</h2></div></div></div><p>
+    <span class="productname">PostgreSQL</span> is extensible because its operation  is
+    catalog-driven.   If  you  are familiar with standard
+    relational database systems, you know that  they  store  information
+    about  databases,  tables,  columns,  etc., in what are
+    commonly known as system catalogs.  (Some systems  call
+    this  the data dictionary.)  The catalogs appear to the
+    user as tables like any other, but  the  <acronym class="acronym">DBMS</acronym>  stores
+    its  internal  bookkeeping in them.  One key difference
+    between <span class="productname">PostgreSQL</span> and  standard  relational database systems  is
+    that <span class="productname">PostgreSQL</span> stores much more information in its
+    catalogs: not only information about tables and  columns,
+    but also information about data types, functions, access
+    methods, and so on.  These tables can be  modified  by
+    the  user, and since <span class="productname">PostgreSQL</span> bases its operation
+    on these tables, this means that <span class="productname">PostgreSQL</span> can  be
+    extended   by   users.    By  comparison,  conventional
+    database systems can only be extended by changing hardcoded
+    procedures in the source code or by loading modules
+    specially written by the <acronym class="acronym">DBMS</acronym> vendor.
+   </p><p>
+    The <span class="productname">PostgreSQL</span> server can moreover
+    incorporate user-written code into itself through dynamic loading.
+    That is, the user can specify an object code file (e.g., a shared
+    library) that implements a new type or function, and
+    <span class="productname">PostgreSQL</span> will load it as required.
+    Code written in <acronym class="acronym">SQL</acronym> is even more trivial to add
+    to the server.  This ability to modify its operation <span class="quote">“<span class="quote">on the
+    fly</span>”</span> makes <span class="productname">PostgreSQL</span> uniquely
+    suited for rapid prototyping of new applications and storage
+    structures.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="extend.html" title="Chapter 38. Extending SQL">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="extend.html" title="Chapter 38. Extending SQL">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="extend-type-system.html" title="38.2. The PostgreSQL Type System">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 38. Extending <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 38.2. The <span xmlns="http://www.w3.org/1999/xhtml" class="productname">PostgreSQL</span> Type System</td></tr></table></div></body></html>

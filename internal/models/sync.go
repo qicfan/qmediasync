@@ -3,6 +3,7 @@ package models
 import (
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
+	"Q115-STRM/internal/notificationmanager"
 	"context"
 	"fmt"
 	"os"
@@ -186,7 +187,19 @@ func (s *Sync) Complete() bool {
 	s.SyncPath.SetIsFullSync(false) // 改回默认值，下次非全量同步
 	s.Logger.Infof("同步任务已完成: %d", s.ID)
 	if s.NewUpload > 0 || s.NewMeta > 0 || s.NewStrm > 0 {
-		helpers.GlobalNotificationManager.SendSyncNotification("sync_finish", s.RemotePath, s.GetDuration(), helpers.IntToString(s.NewStrm), helpers.IntToString(s.NewMeta), helpers.IntToString(s.NewUpload))
+		ctx := context.Background()
+		notif := &Notification{
+			Type:      SyncFinished,
+			Title:     fmt.Sprintf("✅ %s 同步完成", s.RemotePath),
+			Content:   fmt.Sprintf("📊 耗时: %s, 生成STRM: %s, 下载: %s, 上传: %s\n⏰ 时间: %s", s.GetDuration(), helpers.IntToString(s.NewStrm), helpers.IntToString(s.NewMeta), helpers.IntToString(s.NewUpload), time.Now().Format("2006-01-02 15:04:05")),
+			Timestamp: time.Now(),
+			Priority:  NormalPriority,
+		}
+		if notificationmanager.GlobalEnhancedNotificationManager != nil {
+			if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+				s.Logger.Errorf("发送同步完成通知失败: %v", err)
+			}
+		}
 	}
 	return true
 }
@@ -197,7 +210,19 @@ func (s *Sync) Failed(reason string) {
 	s.LocalFileFinishAt = s.FinishAt
 	s.UpdateStatus(SyncStatusFailed)
 	s.SyncPath.SetIsFullSync(false) // 改回默认值，下次非全量同步
-	helpers.GlobalNotificationManager.SendSyncNotification("error", s.RemotePath, reason)
+	ctx := context.Background()
+	notif := &Notification{
+		Type:      SyncError,
+		Title:     "❌ 同步错误",
+		Content:   fmt.Sprintf("🔍 错误: %s\n⏰ 时间: %s", reason, time.Now().Format("2006-01-02 15:04:05")),
+		Timestamp: time.Now(),
+		Priority:  HighPriority,
+	}
+	if notificationmanager.GlobalEnhancedNotificationManager != nil {
+		if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+			s.Logger.Errorf("发送同步错误通知失败: %v", err)
+		}
+	}
 }
 
 func (s *Sync) GetDuration() string {

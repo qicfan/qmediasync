@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>26.1. SQL Dump</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="backup.html" title="Chapter 26. Backup and Restore" /><link rel="next" href="backup-file.html" title="26.2. File System Level Backup" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">26.1. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> Dump</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="backup.html" title="Chapter 26. Backup and Restore">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="backup.html" title="Chapter 26. Backup and Restore">Up</a></td><th width="60%" align="center">Chapter 26. Backup and Restore</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="backup-file.html" title="26.2. File System Level Backup">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BACKUP-DUMP"><div class="titlepage"><div><div><h2 class="title" style="clear: both">26.1. <acronym class="acronym">SQL</acronym> Dump</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="backup-dump.html#BACKUP-DUMP-RESTORE">26.1.1. Restoring the Dump</a></span></dt><dt><span class="sect2"><a href="backup-dump.html#BACKUP-DUMP-ALL">26.1.2. Using <span class="application">pg_dumpall</span></a></span></dt><dt><span class="sect2"><a href="backup-dump.html#BACKUP-DUMP-LARGE">26.1.3. Handling Large Databases</a></span></dt></dl></div><p>
+   The idea behind this dump method is to generate a file with SQL
+   commands that, when fed back to the server, will recreate the
+   database in the same state as it was at the time of the dump.
+   <span class="productname">PostgreSQL</span> provides the utility program
+   <a class="xref" href="app-pgdump.html" title="pg_dump"><span class="refentrytitle"><span class="application">pg_dump</span></span></a> for this purpose. The basic usage of this
+   command is:
+</p><pre class="synopsis">
+pg_dump <em class="replaceable"><code>dbname</code></em> &gt; <em class="replaceable"><code>dumpfile</code></em>
+</pre><p>
+   As you see, <span class="application">pg_dump</span> writes its result to the
+   standard output. We will see below how this can be useful.
+   While the above command creates a text file, <span class="application">pg_dump</span>
+   can create files in other formats that allow for parallelism and more
+   fine-grained control of object restoration.
+  </p><p>
+   <span class="application">pg_dump</span> is a regular <span class="productname">PostgreSQL</span>
+   client application (albeit a particularly clever one). This means
+   that you can perform this backup procedure from any remote host that has
+   access to the database. But remember that <span class="application">pg_dump</span>
+   does not operate with special permissions. In particular, it must
+   have read access to all tables that you want to back up, so in order
+   to back up the entire database you almost always have to run it as a
+   database superuser.  (If you do not have sufficient privileges to back up
+   the entire database, you can still back up portions of the database to which
+   you do have access using options such as
+   <code class="option">-n <em class="replaceable"><code>schema</code></em></code>
+   or <code class="option">-t <em class="replaceable"><code>table</code></em></code>.)
+  </p><p>
+   To specify which database server <span class="application">pg_dump</span> should
+   contact, use the command line options <code class="option">-h
+   <em class="replaceable"><code>host</code></em></code> and <code class="option">-p <em class="replaceable"><code>port</code></em></code>. The
+   default host is the local host or whatever your
+   <code class="envar">PGHOST</code> environment variable specifies. Similarly,
+   the default port is indicated by the <code class="envar">PGPORT</code>
+   environment variable or, failing that, by the compiled-in default.
+   (Conveniently, the server will normally have the same compiled-in
+   default.)
+  </p><p>
+   Like any other <span class="productname">PostgreSQL</span> client application,
+   <span class="application">pg_dump</span> will by default connect with the database
+   user name that is equal to the current operating system user name. To override
+   this, either specify the <code class="option">-U</code> option or set the
+   environment variable <code class="envar">PGUSER</code>. Remember that
+   <span class="application">pg_dump</span> connections are subject to the normal
+   client authentication mechanisms (which are described in <a class="xref" href="client-authentication.html" title="Chapter 21. Client Authentication">Chapter 21</a>).
+  </p><p>
+   An important advantage of <span class="application">pg_dump</span> over the other backup
+   methods described later is that <span class="application">pg_dump</span>'s output can
+   generally be re-loaded into newer versions of <span class="productname">PostgreSQL</span>,
+   whereas file-level backups and continuous archiving are both extremely
+   server-version-specific.  <span class="application">pg_dump</span> is also the only method
+   that will work when transferring a database to a different machine
+   architecture, such as going from a 32-bit to a 64-bit server.
+  </p><p>
+   Dumps created by <span class="application">pg_dump</span> are internally consistent,
+   meaning, the dump represents a snapshot of the database at the time
+   <span class="application">pg_dump</span> began running. <span class="application">pg_dump</span> does not
+   block other operations on the database while it is working.
+   (Exceptions are those operations that need to operate with an
+   exclusive lock, such as most forms of <code class="command">ALTER TABLE</code>.)
+  </p><div class="sect2" id="BACKUP-DUMP-RESTORE"><div class="titlepage"><div><div><h3 class="title">26.1.1. Restoring the Dump</h3></div></div></div><p>
+    Text files created by <span class="application">pg_dump</span> are intended to
+    be read in by the <span class="application">psql</span> program. The
+    general command form to restore a dump is
+</p><pre class="synopsis">
+psql <em class="replaceable"><code>dbname</code></em> &lt; <em class="replaceable"><code>dumpfile</code></em>
+</pre><p>
+    where <em class="replaceable"><code>dumpfile</code></em> is the
+    file output by the <span class="application">pg_dump</span> command. The database <em class="replaceable"><code>dbname</code></em> will not be created by this
+    command, so you must create it yourself from <code class="literal">template0</code>
+    before executing <span class="application">psql</span> (e.g., with
+    <code class="literal">createdb -T template0 <em class="replaceable"><code>dbname</code></em></code>).  <span class="application">psql</span>
+    supports options similar to <span class="application">pg_dump</span> for specifying
+    the database server to connect to and the user name to use. See
+    the <a class="xref" href="app-psql.html" title="psql"><span class="refentrytitle"><span class="application">psql</span></span></a> reference page for more information.
+    Non-text file dumps are restored using the <a class="xref" href="app-pgrestore.html" title="pg_restore"><span class="refentrytitle"><span class="application">pg_restore</span></span></a> utility.
+   </p><p>
+    Before restoring an SQL dump, all the users who own objects or were
+    granted permissions on objects in the dumped database must already
+    exist. If they do not, the restore will fail to recreate the
+    objects with the original ownership and/or permissions.
+    (Sometimes this is what you want, but usually it is not.)
+   </p><p>
+    By default, the <span class="application">psql</span> script will continue to
+    execute after an SQL error is encountered. You might wish to run
+    <span class="application">psql</span> with
+    the <code class="literal">ON_ERROR_STOP</code> variable set to alter that
+    behavior and have <span class="application">psql</span> exit with an
+    exit status of 3 if an SQL error occurs:
+</p><pre class="programlisting">
+psql --set ON_ERROR_STOP=on <em class="replaceable"><code>dbname</code></em> &lt; <em class="replaceable"><code>dumpfile</code></em>
+</pre><p>
+    Either way, you will only have a partially restored database.
+    Alternatively, you can specify that the whole dump should be
+    restored as a single transaction, so the restore is either fully
+    completed or fully rolled back. This mode can be specified by
+    passing the <code class="option">-1</code> or <code class="option">--single-transaction</code>
+    command-line options to <span class="application">psql</span>. When using this
+    mode, be aware that even a minor error can rollback a
+    restore that has already run for many hours. However, that might
+    still be preferable to manually cleaning up a complex database
+    after a partially restored dump.
+   </p><p>
+    The ability of <span class="application">pg_dump</span> and <span class="application">psql</span> to
+    write to or read from pipes makes it possible to dump a database
+    directly from one server to another, for example:
+</p><pre class="programlisting">
+pg_dump -h <em class="replaceable"><code>host1</code></em> <em class="replaceable"><code>dbname</code></em> | psql -h <em class="replaceable"><code>host2</code></em> <em class="replaceable"><code>dbname</code></em>
+</pre><p>
+   </p><div class="important"><h3 class="title">Important</h3><p>
+     The dumps produced by <span class="application">pg_dump</span> are relative to
+     <code class="literal">template0</code>. This means that any languages, procedures,
+     etc. added via <code class="literal">template1</code> will also be dumped by
+     <span class="application">pg_dump</span>. As a result, when restoring, if you are
+     using a customized <code class="literal">template1</code>, you must create the
+     empty database from <code class="literal">template0</code>, as in the example
+     above.
+    </p></div><p>
+    After restoring a backup, it is wise to run <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a> on each
+    database so the query optimizer has useful statistics;
+    see <a class="xref" href="routine-vacuuming.html#VACUUM-FOR-STATISTICS" title="25.1.3. Updating Planner Statistics">Section 25.1.3</a>
+    and <a class="xref" href="routine-vacuuming.html#AUTOVACUUM" title="25.1.6. The Autovacuum Daemon">Section 25.1.6</a> for more information.
+    For more advice on how to load large amounts of data
+    into <span class="productname">PostgreSQL</span> efficiently, refer to <a class="xref" href="populate.html" title="14.4. Populating a Database">Section 14.4</a>.
+   </p></div><div class="sect2" id="BACKUP-DUMP-ALL"><div class="titlepage"><div><div><h3 class="title">26.1.2. Using <span class="application">pg_dumpall</span></h3></div></div></div><p>
+    <span class="application">pg_dump</span> dumps only a single database at a time,
+    and it does not dump information about roles or tablespaces
+    (because those are cluster-wide rather than per-database).
+    To support convenient dumping of the entire contents of a database
+    cluster, the <a class="xref" href="app-pg-dumpall.html" title="pg_dumpall"><span class="refentrytitle"><span class="application">pg_dumpall</span></span></a> program is provided.
+    <span class="application">pg_dumpall</span> backs up each database in a given
+    cluster, and also preserves cluster-wide data such as role and
+    tablespace definitions. The basic usage of this command is:
+</p><pre class="synopsis">
+pg_dumpall &gt; <em class="replaceable"><code>dumpfile</code></em>
+</pre><p>
+    The resulting dump can be restored with <span class="application">psql</span>:
+</p><pre class="synopsis">
+psql -f <em class="replaceable"><code>dumpfile</code></em> postgres
+</pre><p>
+    (Actually, you can specify any existing database name to start from,
+    but if you are loading into an empty cluster then <code class="literal">postgres</code>
+    should usually be used.)  It is always necessary to have
+    database superuser access when restoring a <span class="application">pg_dumpall</span>
+    dump, as that is required to restore the role and tablespace information.
+    If you use tablespaces, make sure that the tablespace paths in the
+    dump are appropriate for the new installation.
+   </p><p>
+    <span class="application">pg_dumpall</span> works by emitting commands to re-create
+    roles, tablespaces, and empty databases, then invoking
+    <span class="application">pg_dump</span> for each database.  This means that while
+    each database will be internally consistent, the snapshots of
+    different databases are not synchronized.
+   </p><p>
+    Cluster-wide data can be dumped alone using the
+    <span class="application">pg_dumpall</span> <code class="option">--globals-only</code> option.
+    This is necessary to fully backup the cluster if running the
+    <span class="application">pg_dump</span> command on individual databases.
+   </p></div><div class="sect2" id="BACKUP-DUMP-LARGE"><div class="titlepage"><div><div><h3 class="title">26.1.3. Handling Large Databases</h3></div></div></div><p>
+    Some operating systems have maximum file size limits that cause
+    problems when creating large <span class="application">pg_dump</span> output files.
+    Fortunately, <span class="application">pg_dump</span> can write to the standard
+    output, so you can use standard Unix tools to work around this
+    potential problem.  There are several possible methods:
+   </p><p><strong>Use compressed dumps. </strong>
+     You can use your favorite compression program, for example
+     <span class="application">gzip</span>:
+
+</p><pre class="programlisting">
+pg_dump <em class="replaceable"><code>dbname</code></em> | gzip &gt; <em class="replaceable"><code>filename</code></em>.gz
+</pre><p>
+
+     Reload with:
+
+</p><pre class="programlisting">
+gunzip -c <em class="replaceable"><code>filename</code></em>.gz | psql <em class="replaceable"><code>dbname</code></em>
+</pre><p>
+
+     or:
+
+</p><pre class="programlisting">
+cat <em class="replaceable"><code>filename</code></em>.gz | gunzip | psql <em class="replaceable"><code>dbname</code></em>
+</pre><p>
+    </p><p><strong>Use <code class="command">split</code>. </strong>
+     The <code class="command">split</code> command
+     allows you to split the output into smaller files that are
+     acceptable in size to the underlying file system. For example, to
+     make 2 gigabyte chunks:
+
+</p><pre class="programlisting">
+pg_dump <em class="replaceable"><code>dbname</code></em> | split -b 2G - <em class="replaceable"><code>filename</code></em>
+</pre><p>
+
+     Reload with:
+
+</p><pre class="programlisting">
+cat <em class="replaceable"><code>filename</code></em>* | psql <em class="replaceable"><code>dbname</code></em>
+</pre><p>
+
+     If using GNU <span class="application">split</span>, it is possible to
+     use it and <span class="application">gzip</span> together:
+
+</p><pre class="programlisting">
+pg_dump <em class="replaceable"><code>dbname</code></em> | split -b 2G --filter='gzip &gt; $FILE.gz'
+</pre><p>
+
+     It can be restored using <code class="command">zcat</code>.
+    </p><p><strong>Use <span class="application">pg_dump</span>'s custom dump format. </strong>
+     If <span class="productname">PostgreSQL</span> was built on a system with the
+     <span class="application">zlib</span> compression library installed, the custom dump
+     format will compress data as it writes it to the output file. This will
+     produce dump file sizes similar to using <code class="command">gzip</code>, but it
+     has the added advantage that tables can be restored selectively. The
+     following command dumps a database using the custom dump format:
+
+</p><pre class="programlisting">
+pg_dump -Fc <em class="replaceable"><code>dbname</code></em> &gt; <em class="replaceable"><code>filename</code></em>
+</pre><p>
+
+     A custom-format dump is not a script for <span class="application">psql</span>, but
+     instead must be restored with <span class="application">pg_restore</span>, for example:
+
+</p><pre class="programlisting">
+pg_restore -d <em class="replaceable"><code>dbname</code></em> <em class="replaceable"><code>filename</code></em>
+</pre><p>
+
+     See the <a class="xref" href="app-pgdump.html" title="pg_dump"><span class="refentrytitle"><span class="application">pg_dump</span></span></a> and <a class="xref" href="app-pgrestore.html" title="pg_restore"><span class="refentrytitle"><span class="application">pg_restore</span></span></a> reference pages for details.
+    </p><p>
+    For very large databases, you might need to combine <code class="command">split</code>
+    with one of the other two approaches.
+   </p><p><strong>Use <span class="application">pg_dump</span>'s parallel dump feature. </strong>
+     To speed up the dump of a large database, you can use
+     <span class="application">pg_dump</span>'s parallel mode. This will dump
+     multiple tables at the same time. You can control the degree of
+     parallelism with the <code class="command">-j</code> parameter. Parallel dumps
+     are only supported for the "directory" archive format.
+
+</p><pre class="programlisting">
+pg_dump -j <em class="replaceable"><code>num</code></em> -F d -f <em class="replaceable"><code>out.dir</code></em> <em class="replaceable"><code>dbname</code></em>
+</pre><p>
+
+     You can use <code class="command">pg_restore -j</code> to restore a dump in parallel.
+     This will work for any archive of either the "custom" or the "directory"
+     archive mode, whether or not it has been created with <code class="command">pg_dump -j</code>.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="backup.html" title="Chapter 26. Backup and Restore">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="backup.html" title="Chapter 26. Backup and Restore">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="backup-file.html" title="26.2. File System Level Backup">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 26. Backup and Restore </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 26.2. File System Level Backup</td></tr></table></div></body></html>

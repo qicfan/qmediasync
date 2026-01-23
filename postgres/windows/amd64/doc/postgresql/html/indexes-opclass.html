@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>11.10. Operator Classes and Operator Families</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="indexes-index-only-scans.html" title="11.9. Index-Only Scans and Covering Indexes" /><link rel="next" href="indexes-collations.html" title="11.11. Indexes and Collations" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">11.10. Operator Classes and Operator Families</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="indexes-index-only-scans.html" title="11.9. Index-Only Scans and Covering Indexes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="indexes.html" title="Chapter 11. Indexes">Up</a></td><th width="60%" align="center">Chapter 11. Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="indexes-collations.html" title="11.11. Indexes and Collations">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INDEXES-OPCLASS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">11.10. Operator Classes and Operator Families</h2></div></div></div><a id="id-1.5.10.13.2" class="indexterm"></a><a id="id-1.5.10.13.3" class="indexterm"></a><p>
+   An index definition can specify an <em class="firstterm">operator
+   class</em> for each column of an index.
+</p><pre class="synopsis">
+CREATE INDEX <em class="replaceable"><code>name</code></em> ON <em class="replaceable"><code>table</code></em> (<em class="replaceable"><code>column</code></em> <em class="replaceable"><code>opclass</code></em> [ ( <em class="replaceable"><code>opclass_options</code></em> ) ] [<span class="optional"><em class="replaceable"><code>sort options</code></em></span>] [<span class="optional">, ...</span>]);
+</pre><p>
+   The operator class identifies the operators to be used by the index
+   for that column.  For example, a B-tree index on the type <code class="type">int4</code>
+   would use the <code class="literal">int4_ops</code> class; this operator
+   class includes comparison functions for values of type <code class="type">int4</code>.
+   In practice the default operator class for the column's data type is
+   usually sufficient.  The main reason for having operator classes is
+   that for some data types, there could be more than one meaningful
+   index behavior.  For example, we might want to sort a complex-number data
+   type either by absolute value or by real part.  We could do this by
+   defining two operator classes for the data type and then selecting
+   the proper class when making an index.  The operator class determines
+   the basic sort ordering (which can then be modified by adding sort options
+   <code class="literal">COLLATE</code>,
+   <code class="literal">ASC</code>/<code class="literal">DESC</code> and/or
+   <code class="literal">NULLS FIRST</code>/<code class="literal">NULLS LAST</code>).
+  </p><p>
+   There are also some built-in operator classes besides the default ones:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      The operator classes <code class="literal">text_pattern_ops</code>,
+      <code class="literal">varchar_pattern_ops</code>, and
+      <code class="literal">bpchar_pattern_ops</code> support B-tree indexes on
+      the types <code class="type">text</code>, <code class="type">varchar</code>, and
+      <code class="type">char</code> respectively.  The
+      difference from the default operator classes is that the values
+      are compared strictly character by character rather than
+      according to the locale-specific collation rules.  This makes
+      these operator classes suitable for use by queries involving
+      pattern matching expressions (<code class="literal">LIKE</code> or POSIX
+      regular expressions) when the database does not use the standard
+      <span class="quote">“<span class="quote">C</span>”</span> locale.  As an example, you might index a
+      <code class="type">varchar</code> column like this:
+</p><pre class="programlisting">
+CREATE INDEX test_index ON test_table (col varchar_pattern_ops);
+</pre><p>
+      Note that you should also create an index with the default operator
+      class if you want queries involving ordinary <code class="literal">&lt;</code>,
+      <code class="literal">&lt;=</code>, <code class="literal">&gt;</code>, or <code class="literal">&gt;=</code> comparisons
+      to use an index.  Such queries cannot use the
+      <code class="literal"><em class="replaceable"><code>xxx</code></em>_pattern_ops</code>
+      operator classes.  (Ordinary equality comparisons can use these
+      operator classes, however.)  It is possible to create multiple
+      indexes on the same column with different operator classes.
+      If you do use the C locale, you do not need the
+      <code class="literal"><em class="replaceable"><code>xxx</code></em>_pattern_ops</code>
+      operator classes, because an index with the default operator class
+      is usable for pattern-matching queries in the C locale.
+     </p></li></ul></div><p>
+  </p><p>
+    The following query shows all defined operator classes:
+
+</p><pre class="programlisting">
+SELECT am.amname AS index_method,
+       opc.opcname AS opclass_name,
+       opc.opcintype::regtype AS indexed_type,
+       opc.opcdefault AS is_default
+    FROM pg_am am, pg_opclass opc
+    WHERE opc.opcmethod = am.oid
+    ORDER BY index_method, opclass_name;
+</pre><p>
+  </p><p>
+   An operator class is actually just a subset of a larger structure called an
+   <em class="firstterm">operator family</em>.  In cases where several data types have
+   similar behaviors, it is frequently useful to define cross-data-type
+   operators and allow these to work with indexes.  To do this, the operator
+   classes for each of the types must be grouped into the same operator
+   family.  The cross-type operators are members of the family, but are not
+   associated with any single class within the family.
+  </p><p>
+    This expanded version of the previous query shows the operator family
+    each operator class belongs to:
+</p><pre class="programlisting">
+SELECT am.amname AS index_method,
+       opc.opcname AS opclass_name,
+       opf.opfname AS opfamily_name,
+       opc.opcintype::regtype AS indexed_type,
+       opc.opcdefault AS is_default
+    FROM pg_am am, pg_opclass opc, pg_opfamily opf
+    WHERE opc.opcmethod = am.oid AND
+          opc.opcfamily = opf.oid
+    ORDER BY index_method, opclass_name;
+</pre><p>
+  </p><p>
+    This query shows all defined operator families and all
+    the operators included in each family:
+</p><pre class="programlisting">
+SELECT am.amname AS index_method,
+       opf.opfname AS opfamily_name,
+       amop.amopopr::regoperator AS opfamily_operator
+    FROM pg_am am, pg_opfamily opf, pg_amop amop
+    WHERE opf.opfmethod = am.oid AND
+          amop.amopfamily = opf.oid
+    ORDER BY index_method, opfamily_name, opfamily_operator;
+</pre><p>
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    <a class="xref" href="app-psql.html" title="psql"><span class="refentrytitle"><span class="application">psql</span></span></a> has
+    commands <code class="command">\dAc</code>, <code class="command">\dAf</code>,
+    and <code class="command">\dAo</code>, which provide slightly more sophisticated
+    versions of these queries.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="indexes-index-only-scans.html" title="11.9. Index-Only Scans and Covering Indexes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="indexes.html" title="Chapter 11. Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="indexes-collations.html" title="11.11. Indexes and Collations">Next</a></td></tr><tr><td width="40%" align="left" valign="top">11.9. Index-Only Scans and Covering Indexes </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 11.11. Indexes and Collations</td></tr></table></div></body></html>

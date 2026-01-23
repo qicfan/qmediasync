@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>19.1. The PostgreSQL User Account</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="runtime.html" title="Chapter 19. Server Setup and Operation" /><link rel="next" href="creating-cluster.html" title="19.2. Creating a Database Cluster" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">19.1. The <span xmlns="http://www.w3.org/1999/xhtml" class="productname">PostgreSQL</span> User Account</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="runtime.html" title="Chapter 19. Server Setup and Operation">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><th width="60%" align="center">Chapter 19. Server Setup and Operation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="creating-cluster.html" title="19.2. Creating a Database Cluster">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="POSTGRES-USER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">19.1. The <span class="productname">PostgreSQL</span> User Account</h2></div></div></div><a id="id-1.6.6.4.2" class="indexterm"></a><p>
+   As with any server daemon that is accessible to the outside world,
+   it is advisable to run <span class="productname">PostgreSQL</span> under a
+   separate user account. This user account should only own the data
+   that is managed by the server, and should not be shared with other
+   daemons. (For example, using the user <code class="literal">nobody</code> is a bad
+   idea.) In particular, it is advisable that this user account not own
+   the <span class="productname">PostgreSQL</span> executable files, to ensure
+   that a compromised server process could not modify those executables.
+  </p><p>
+   Pre-packaged versions of <span class="productname">PostgreSQL</span> will
+   typically create a suitable user account automatically during
+   package installation.
+  </p><p>
+   To add a Unix user account to your system, look for a command
+   <code class="command">useradd</code> or <code class="command">adduser</code>. The user
+   name <span class="systemitem">postgres</span> is often used, and is assumed
+   throughout this book, but you can use another name if you like.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="runtime.html" title="Chapter 19. Server Setup and Operation">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="creating-cluster.html" title="19.2. Creating a Database Cluster">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 19. Server Setup and Operation </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 19.2. Creating a Database Cluster</td></tr></table></div></body></html>

@@ -1,0 +1,1605 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SELECT</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-security-label.html" title="SECURITY LABEL" /><link rel="next" href="sql-selectinto.html" title="SELECT INTO" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SELECT</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-security-label.html" title="SECURITY LABEL">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-selectinto.html" title="SELECT INTO">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-SELECT"><div class="titlepage"></div><a id="id-1.9.3.171.1" class="indexterm"></a><a id="id-1.9.3.171.2" class="indexterm"></a><a id="id-1.9.3.171.3" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SELECT</span></h2><p>SELECT, TABLE, WITH — retrieve rows from a table or view</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+[ WITH [ RECURSIVE ] <em class="replaceable"><code>with_query</code></em> [, ...] ]
+SELECT [ ALL | DISTINCT [ ON ( <em class="replaceable"><code>expression</code></em> [, ...] ) ] ]
+    [ * | <em class="replaceable"><code>expression</code></em> [ [ AS ] <em class="replaceable"><code>output_name</code></em> ] [, ...] ]
+    [ FROM <em class="replaceable"><code>from_item</code></em> [, ...] ]
+    [ WHERE <em class="replaceable"><code>condition</code></em> ]
+    [ GROUP BY [ ALL | DISTINCT ] <em class="replaceable"><code>grouping_element</code></em> [, ...] ]
+    [ HAVING <em class="replaceable"><code>condition</code></em> ]
+    [ WINDOW <em class="replaceable"><code>window_name</code></em> AS ( <em class="replaceable"><code>window_definition</code></em> ) [, ...] ]
+    [ { UNION | INTERSECT | EXCEPT } [ ALL | DISTINCT ] <em class="replaceable"><code>select</code></em> ]
+    [ ORDER BY <em class="replaceable"><code>expression</code></em> [ ASC | DESC | USING <em class="replaceable"><code>operator</code></em> ] [ NULLS { FIRST | LAST } ] [, ...] ]
+    [ LIMIT { <em class="replaceable"><code>count</code></em> | ALL } ]
+    [ OFFSET <em class="replaceable"><code>start</code></em> [ ROW | ROWS ] ]
+    [ FETCH { FIRST | NEXT } [ <em class="replaceable"><code>count</code></em> ] { ROW | ROWS } { ONLY | WITH TIES } ]
+    [ FOR { UPDATE | NO KEY UPDATE | SHARE | KEY SHARE } [ OF <em class="replaceable"><code>table_name</code></em> [, ...] ] [ NOWAIT | SKIP LOCKED ] [...] ]
+
+<span class="phrase">where <em class="replaceable"><code>from_item</code></em> can be one of:</span>
+
+    [ ONLY ] <em class="replaceable"><code>table_name</code></em> [ * ] [ [ AS ] <em class="replaceable"><code>alias</code></em> [ ( <em class="replaceable"><code>column_alias</code></em> [, ...] ) ] ]
+                [ TABLESAMPLE <em class="replaceable"><code>sampling_method</code></em> ( <em class="replaceable"><code>argument</code></em> [, ...] ) [ REPEATABLE ( <em class="replaceable"><code>seed</code></em> ) ] ]
+    [ LATERAL ] ( <em class="replaceable"><code>select</code></em> ) [ AS ] <em class="replaceable"><code>alias</code></em> [ ( <em class="replaceable"><code>column_alias</code></em> [, ...] ) ]
+    <em class="replaceable"><code>with_query_name</code></em> [ [ AS ] <em class="replaceable"><code>alias</code></em> [ ( <em class="replaceable"><code>column_alias</code></em> [, ...] ) ] ]
+    [ LATERAL ] <em class="replaceable"><code>function_name</code></em> ( [ <em class="replaceable"><code>argument</code></em> [, ...] ] )
+                [ WITH ORDINALITY ] [ [ AS ] <em class="replaceable"><code>alias</code></em> [ ( <em class="replaceable"><code>column_alias</code></em> [, ...] ) ] ]
+    [ LATERAL ] <em class="replaceable"><code>function_name</code></em> ( [ <em class="replaceable"><code>argument</code></em> [, ...] ] ) [ AS ] <em class="replaceable"><code>alias</code></em> ( <em class="replaceable"><code>column_definition</code></em> [, ...] )
+    [ LATERAL ] <em class="replaceable"><code>function_name</code></em> ( [ <em class="replaceable"><code>argument</code></em> [, ...] ] ) AS ( <em class="replaceable"><code>column_definition</code></em> [, ...] )
+    [ LATERAL ] ROWS FROM( <em class="replaceable"><code>function_name</code></em> ( [ <em class="replaceable"><code>argument</code></em> [, ...] ] ) [ AS ( <em class="replaceable"><code>column_definition</code></em> [, ...] ) ] [, ...] )
+                [ WITH ORDINALITY ] [ [ AS ] <em class="replaceable"><code>alias</code></em> [ ( <em class="replaceable"><code>column_alias</code></em> [, ...] ) ] ]
+    <em class="replaceable"><code>from_item</code></em> <em class="replaceable"><code>join_type</code></em> <em class="replaceable"><code>from_item</code></em> { ON <em class="replaceable"><code>join_condition</code></em> | USING ( <em class="replaceable"><code>join_column</code></em> [, ...] ) [ AS <em class="replaceable"><code>join_using_alias</code></em> ] }
+    <em class="replaceable"><code>from_item</code></em> NATURAL <em class="replaceable"><code>join_type</code></em> <em class="replaceable"><code>from_item</code></em>
+    <em class="replaceable"><code>from_item</code></em> CROSS JOIN <em class="replaceable"><code>from_item</code></em>
+
+<span class="phrase">and <em class="replaceable"><code>grouping_element</code></em> can be one of:</span>
+
+    ( )
+    <em class="replaceable"><code>expression</code></em>
+    ( <em class="replaceable"><code>expression</code></em> [, ...] )
+    ROLLUP ( { <em class="replaceable"><code>expression</code></em> | ( <em class="replaceable"><code>expression</code></em> [, ...] ) } [, ...] )
+    CUBE ( { <em class="replaceable"><code>expression</code></em> | ( <em class="replaceable"><code>expression</code></em> [, ...] ) } [, ...] )
+    GROUPING SETS ( <em class="replaceable"><code>grouping_element</code></em> [, ...] )
+
+<span class="phrase">and <em class="replaceable"><code>with_query</code></em> is:</span>
+
+    <em class="replaceable"><code>with_query_name</code></em> [ ( <em class="replaceable"><code>column_name</code></em> [, ...] ) ] AS [ [ NOT ] MATERIALIZED ] ( <em class="replaceable"><code>select</code></em> | <em class="replaceable"><code>values</code></em> | <em class="replaceable"><code>insert</code></em> | <em class="replaceable"><code>update</code></em> | <em class="replaceable"><code>delete</code></em> )
+        [ SEARCH { BREADTH | DEPTH } FIRST BY <em class="replaceable"><code>column_name</code></em> [, ...] SET <em class="replaceable"><code>search_seq_col_name</code></em> ]
+        [ CYCLE <em class="replaceable"><code>column_name</code></em> [, ...] SET <em class="replaceable"><code>cycle_mark_col_name</code></em> [ TO <em class="replaceable"><code>cycle_mark_value</code></em> DEFAULT <em class="replaceable"><code>cycle_mark_default</code></em> ] USING <em class="replaceable"><code>cycle_path_col_name</code></em> ]
+
+TABLE [ ONLY ] <em class="replaceable"><code>table_name</code></em> [ * ]
+</pre></div><div class="refsect1" id="id-1.9.3.171.7"><h2>Description</h2><p>
+   <code class="command">SELECT</code> retrieves rows from zero or more tables.
+   The general processing of <code class="command">SELECT</code> is as follows:
+
+   </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>
+      All queries in the <code class="literal">WITH</code> list are computed.
+      These effectively serve as temporary tables that can be referenced
+      in the <code class="literal">FROM</code> list.  A <code class="literal">WITH</code> query
+      that is referenced more than once in <code class="literal">FROM</code> is
+      computed only once,
+      unless specified otherwise with <code class="literal">NOT MATERIALIZED</code>.
+      (See <a class="xref" href="sql-select.html#SQL-WITH" title="WITH Clause">WITH Clause</a> below.)
+     </p></li><li class="listitem"><p>
+      All elements in the <code class="literal">FROM</code> list are computed.
+      (Each element in the <code class="literal">FROM</code> list is a real or
+      virtual table.)  If more than one element is specified in the
+      <code class="literal">FROM</code> list, they are cross-joined together.
+      (See <a class="xref" href="sql-select.html#SQL-FROM" title="FROM Clause">FROM Clause</a> below.)
+     </p></li><li class="listitem"><p>
+      If the <code class="literal">WHERE</code> clause is specified, all rows
+      that do not satisfy the condition are eliminated from the
+      output.  (See <a class="xref" href="sql-select.html#SQL-WHERE" title="WHERE Clause">WHERE Clause</a> below.)
+     </p></li><li class="listitem"><p>
+      If the <code class="literal">GROUP BY</code> clause is specified,
+      or if there are aggregate function calls, the
+      output is combined into groups of rows that match on one or more
+      values, and the results of aggregate functions are computed.
+      If the <code class="literal">HAVING</code> clause is present, it
+      eliminates groups that do not satisfy the given condition.  (See
+      <a class="xref" href="sql-select.html#SQL-GROUPBY" title="GROUP BY Clause">GROUP BY Clause</a> and
+      <a class="xref" href="sql-select.html#SQL-HAVING" title="HAVING Clause">HAVING Clause</a> below.)
+      Although query output columns are nominally computed in the next
+      step, they can also be referenced (by name or ordinal number)
+      in the <code class="literal">GROUP BY</code> clause.
+     </p></li><li class="listitem"><p>
+      The actual output rows are computed using the
+      <code class="command">SELECT</code> output expressions for each selected
+      row or row group.  (See <a class="xref" href="sql-select.html#SQL-SELECT-LIST" title="SELECT List">SELECT List</a> below.)
+     </p></li><li class="listitem"><p><code class="literal">SELECT DISTINCT</code> eliminates duplicate rows from the
+      result.  <code class="literal">SELECT DISTINCT ON</code> eliminates rows that
+      match on all the specified expressions.  <code class="literal">SELECT ALL</code>
+      (the default) will return all candidate rows, including
+      duplicates.  (See <a class="xref" href="sql-select.html#SQL-DISTINCT" title="DISTINCT Clause">DISTINCT Clause</a> below.)
+     </p></li><li class="listitem"><p>
+      Using the operators <code class="literal">UNION</code>,
+      <code class="literal">INTERSECT</code>, and <code class="literal">EXCEPT</code>, the
+      output of more than one <code class="command">SELECT</code> statement can
+      be combined to form a single result set.  The
+      <code class="literal">UNION</code> operator returns all rows that are in
+      one or both of the result sets.  The
+      <code class="literal">INTERSECT</code> operator returns all rows that are
+      strictly in both result sets.  The <code class="literal">EXCEPT</code>
+      operator returns the rows that are in the first result set but
+      not in the second.  In all three cases, duplicate rows are
+      eliminated unless <code class="literal">ALL</code> is specified.  The noise
+      word <code class="literal">DISTINCT</code> can be added to explicitly specify
+      eliminating duplicate rows.  Notice that <code class="literal">DISTINCT</code> is
+      the default behavior here, even though <code class="literal">ALL</code> is
+      the default for <code class="command">SELECT</code> itself.  (See
+      <a class="xref" href="sql-select.html#SQL-UNION" title="UNION Clause">UNION Clause</a>, <a class="xref" href="sql-select.html#SQL-INTERSECT" title="INTERSECT Clause">INTERSECT Clause</a>, and
+      <a class="xref" href="sql-select.html#SQL-EXCEPT" title="EXCEPT Clause">EXCEPT Clause</a> below.)
+     </p></li><li class="listitem"><p>
+      If the <code class="literal">ORDER BY</code> clause is specified, the
+      returned rows are sorted in the specified order.  If
+      <code class="literal">ORDER BY</code> is not given, the rows are returned
+      in whatever order the system finds fastest to produce.  (See
+      <a class="xref" href="sql-select.html#SQL-ORDERBY" title="ORDER BY Clause">ORDER BY Clause</a> below.)
+     </p></li><li class="listitem"><p>
+      If the <code class="literal">LIMIT</code> (or <code class="literal">FETCH FIRST</code>) or <code class="literal">OFFSET</code>
+      clause is specified, the <code class="command">SELECT</code> statement
+      only returns a subset of the result rows. (See <a class="xref" href="sql-select.html#SQL-LIMIT" title="LIMIT Clause">LIMIT Clause</a> below.)
+     </p></li><li class="listitem"><p>
+      If <code class="literal">FOR UPDATE</code>, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR SHARE</code>
+      or <code class="literal">FOR KEY SHARE</code>
+      is specified, the
+      <code class="command">SELECT</code> statement locks the selected rows
+      against concurrent updates.  (See <a class="xref" href="sql-select.html#SQL-FOR-UPDATE-SHARE" title="The Locking Clause">The Locking Clause</a>
+      below.)
+     </p></li></ol></div><p>
+  </p><p>
+   You must have <code class="literal">SELECT</code> privilege on each column used
+   in a <code class="command">SELECT</code> command.  The use of <code class="literal">FOR NO KEY UPDATE</code>,
+   <code class="literal">FOR UPDATE</code>,
+   <code class="literal">FOR SHARE</code> or <code class="literal">FOR KEY SHARE</code> requires
+   <code class="literal">UPDATE</code> privilege as well (for at least one column
+   of each table so selected).
+  </p></div><div class="refsect1" id="id-1.9.3.171.8"><h2>Parameters</h2><div class="refsect2" id="SQL-WITH"><h3><code class="literal">WITH</code> Clause</h3><p>
+    The <code class="literal">WITH</code> clause allows you to specify one or more
+    subqueries that can be referenced by name in the primary query.
+    The subqueries effectively act as temporary tables or views
+    for the duration of the primary query.
+    Each subquery can be a <code class="command">SELECT</code>, <code class="command">TABLE</code>, <code class="command">VALUES</code>,
+    <code class="command">INSERT</code>, <code class="command">UPDATE</code> or
+    <code class="command">DELETE</code> statement.
+    When writing a data-modifying statement (<code class="command">INSERT</code>,
+    <code class="command">UPDATE</code> or <code class="command">DELETE</code>) in
+    <code class="literal">WITH</code>, it is usual to include a <code class="literal">RETURNING</code> clause.
+    It is the output of <code class="literal">RETURNING</code>, <span class="emphasis"><em>not</em></span> the underlying
+    table that the statement modifies, that forms the temporary table that is
+    read by the primary query.  If <code class="literal">RETURNING</code> is omitted, the
+    statement is still executed, but it produces no output so it cannot be
+    referenced as a table by the primary query.
+   </p><p>
+    A name (without schema qualification) must be specified for each
+    <code class="literal">WITH</code> query.  Optionally, a list of column names
+    can be specified; if this is omitted,
+    the column names are inferred from the subquery.
+   </p><p>
+    If <code class="literal">RECURSIVE</code> is specified, it allows a
+    <code class="command">SELECT</code> subquery to reference itself by name.  Such a
+    subquery must have the form
+</p><pre class="synopsis">
+<em class="replaceable"><code>non_recursive_term</code></em> UNION [ ALL | DISTINCT ] <em class="replaceable"><code>recursive_term</code></em>
+</pre><p>
+    where the recursive self-reference must appear on the right-hand
+    side of the <code class="literal">UNION</code>.  Only one recursive self-reference
+    is permitted per query.  Recursive data-modifying statements are not
+    supported, but you can use the results of a recursive
+    <code class="command">SELECT</code> query in
+    a data-modifying statement.  See <a class="xref" href="queries-with.html" title="7.8. WITH Queries (Common Table Expressions)">Section 7.8</a> for
+    an example.
+   </p><p>
+    Another effect of <code class="literal">RECURSIVE</code> is that
+    <code class="literal">WITH</code> queries need not be ordered: a query
+    can reference another one that is later in the list.  (However,
+    circular references, or mutual recursion, are not implemented.)
+    Without <code class="literal">RECURSIVE</code>, <code class="literal">WITH</code> queries
+    can only reference sibling <code class="literal">WITH</code> queries
+    that are earlier in the <code class="literal">WITH</code> list.
+   </p><p>
+    When there are multiple queries in the <code class="literal">WITH</code>
+    clause, <code class="literal">RECURSIVE</code> should be written only once,
+    immediately after <code class="literal">WITH</code>.  It applies to all queries
+    in the <code class="literal">WITH</code> clause, though it has no effect on
+    queries that do not use recursion or forward references.
+   </p><p>
+    The optional <code class="literal">SEARCH</code> clause computes a <em class="firstterm">search
+    sequence column</em> that can be used for ordering the results of a
+    recursive query in either breadth-first or depth-first order.  The
+    supplied column name list specifies the row key that is to be used for
+    keeping track of visited rows.  A column named
+    <em class="replaceable"><code>search_seq_col_name</code></em> will be added to the result
+    column list of the <code class="literal">WITH</code> query.  This column can be
+    ordered by in the outer query to achieve the respective ordering.  See
+    <a class="xref" href="queries-with.html#QUERIES-WITH-SEARCH" title="7.8.2.1. Search Order">Section 7.8.2.1</a> for examples.
+   </p><p>
+    The optional <code class="literal">CYCLE</code> clause is used to detect cycles in
+    recursive queries.  The supplied column name list specifies the row key
+    that is to be used for keeping track of visited rows.  A column named
+    <em class="replaceable"><code>cycle_mark_col_name</code></em> will be added to the result
+    column list of the <code class="literal">WITH</code> query.  This column will be set
+    to <em class="replaceable"><code>cycle_mark_value</code></em> when a cycle has been
+    detected, else to <em class="replaceable"><code>cycle_mark_default</code></em>.
+    Furthermore, processing of the recursive union will stop when a cycle has
+    been detected.  <em class="replaceable"><code>cycle_mark_value</code></em> and
+    <em class="replaceable"><code>cycle_mark_default</code></em> must be constants and they
+    must be coercible to a common data type, and the data type must have an
+    inequality operator.  (The SQL standard requires that they be Boolean
+    constants or character strings, but PostgreSQL does not require that.)  By
+    default, <code class="literal">TRUE</code> and <code class="literal">FALSE</code> (of type
+    <code class="type">boolean</code>) are used.  Furthermore, a column
+    named <em class="replaceable"><code>cycle_path_col_name</code></em> will be added to the
+    result column list of the <code class="literal">WITH</code> query.  This column is
+    used internally for tracking visited rows.  See <a class="xref" href="queries-with.html#QUERIES-WITH-CYCLE" title="7.8.2.2. Cycle Detection">Section 7.8.2.2</a> for examples.
+   </p><p>
+    Both the <code class="literal">SEARCH</code> and the <code class="literal">CYCLE</code> clause
+    are only valid for recursive <code class="literal">WITH</code> queries.  The
+    <em class="replaceable"><code>with_query</code></em> must be a <code class="literal">UNION</code>
+    (or <code class="literal">UNION ALL</code>) of two <code class="literal">SELECT</code> (or
+    equivalent) commands (no nested <code class="literal">UNION</code>s).  If both
+    clauses are used, the column added by the <code class="literal">SEARCH</code> clause
+    appears before the columns added by the <code class="literal">CYCLE</code> clause.
+   </p><p>
+    The primary query and the <code class="literal">WITH</code> queries are all
+    (notionally) executed at the same time.  This implies that the effects of
+    a data-modifying statement in <code class="literal">WITH</code> cannot be seen from
+    other parts of the query, other than by reading its <code class="literal">RETURNING</code>
+    output.  If two such data-modifying statements attempt to modify the same
+    row, the results are unspecified.
+   </p><p>
+    A key property of <code class="literal">WITH</code> queries is that they
+    are normally evaluated only once per execution of the primary query,
+    even if the primary query refers to them more than once.
+    In particular, data-modifying statements are guaranteed to be
+    executed once and only once, regardless of whether the primary query
+    reads all or any of their output.
+   </p><p>
+    However, a <code class="literal">WITH</code> query can be marked
+    <code class="literal">NOT MATERIALIZED</code> to remove this guarantee.  In that
+    case, the <code class="literal">WITH</code> query can be folded into the primary
+    query much as though it were a simple sub-<code class="literal">SELECT</code> in
+    the primary query's <code class="literal">FROM</code> clause.  This results in
+    duplicate computations if the primary query refers to
+    that <code class="literal">WITH</code> query more than once; but if each such use
+    requires only a few rows of the <code class="literal">WITH</code> query's total
+    output, <code class="literal">NOT MATERIALIZED</code> can provide a net savings by
+    allowing the queries to be optimized jointly.
+    <code class="literal">NOT MATERIALIZED</code> is ignored if it is attached to
+    a <code class="literal">WITH</code> query that is recursive or is not
+    side-effect-free (i.e., is not a plain <code class="literal">SELECT</code>
+    containing no volatile functions).
+   </p><p>
+    By default, a side-effect-free <code class="literal">WITH</code> query is folded
+    into the primary query if it is used exactly once in the primary
+    query's <code class="literal">FROM</code> clause.  This allows joint optimization
+    of the two query levels in situations where that should be semantically
+    invisible.  However, such folding can be prevented by marking the
+    <code class="literal">WITH</code> query as <code class="literal">MATERIALIZED</code>.
+    That might be useful, for example, if the <code class="literal">WITH</code> query
+    is being used as an optimization fence to prevent the planner from
+    choosing a bad plan.
+    <span class="productname">PostgreSQL</span> versions before v12 never did
+    such folding, so queries written for older versions might rely on
+    <code class="literal">WITH</code> to act as an optimization fence.
+   </p><p>
+    See <a class="xref" href="queries-with.html" title="7.8. WITH Queries (Common Table Expressions)">Section 7.8</a> for additional information.
+   </p></div><div class="refsect2" id="SQL-FROM"><h3><code class="literal">FROM</code> Clause</h3><p>
+    The <code class="literal">FROM</code> clause specifies one or more source
+    tables for the <code class="command">SELECT</code>.  If multiple sources are
+    specified, the result is the Cartesian product (cross join) of all
+    the sources.  But usually qualification conditions are added (via
+    <code class="literal">WHERE</code>) to restrict the returned rows to a small subset of the
+    Cartesian product.
+   </p><p>
+    The <code class="literal">FROM</code> clause can contain the following
+    elements:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+        The name (optionally schema-qualified) of an existing table or view.
+        If <code class="literal">ONLY</code> is specified before the table name, only that
+        table is scanned.  If <code class="literal">ONLY</code> is not specified, the table
+        and all its descendant tables (if any) are scanned.  Optionally,
+        <code class="literal">*</code> can be specified after the table name to explicitly
+        indicate that descendant tables are included.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>alias</code></em></span></dt><dd><p>
+        A substitute name for the <code class="literal">FROM</code> item containing the
+        alias.  An alias is used for brevity or to eliminate ambiguity
+        for self-joins (where the same table is scanned multiple
+        times).  When an alias is provided, it completely hides the
+        actual name of the table or function; for example given
+        <code class="literal">FROM foo AS f</code>, the remainder of the
+        <code class="command">SELECT</code> must refer to this <code class="literal">FROM</code>
+        item as <code class="literal">f</code> not <code class="literal">foo</code>.  If an alias is
+        written, a column alias list can also be written to provide
+        substitute names for one or more columns of the table.
+       </p></dd><dt><span class="term"><code class="literal">TABLESAMPLE <em class="replaceable"><code>sampling_method</code></em> ( <em class="replaceable"><code>argument</code></em> [, ...] ) [ REPEATABLE ( <em class="replaceable"><code>seed</code></em> ) ]</code></span></dt><dd><p>
+        A <code class="literal">TABLESAMPLE</code> clause after
+        a <em class="replaceable"><code>table_name</code></em> indicates that the
+        specified <em class="replaceable"><code>sampling_method</code></em>
+        should be used to retrieve a subset of the rows in that table.
+        This sampling precedes the application of any other filters such
+        as <code class="literal">WHERE</code> clauses.
+        The standard <span class="productname">PostgreSQL</span> distribution
+        includes two sampling methods, <code class="literal">BERNOULLI</code>
+        and <code class="literal">SYSTEM</code>, and other sampling methods can be
+        installed in the database via extensions.
+       </p><p>
+        The <code class="literal">BERNOULLI</code> and <code class="literal">SYSTEM</code> sampling methods
+        each accept a single <em class="replaceable"><code>argument</code></em>
+        which is the fraction of the table to sample, expressed as a
+        percentage between 0 and 100.  This argument can be
+        any <code class="type">real</code>-valued expression.  (Other sampling methods might
+        accept more or different arguments.)  These two methods each return
+        a randomly-chosen sample of the table that will contain
+        approximately the specified percentage of the table's rows.
+        The <code class="literal">BERNOULLI</code> method scans the whole table and
+        selects or ignores individual rows independently with the specified
+        probability.
+        The <code class="literal">SYSTEM</code> method does block-level sampling with
+        each block having the specified chance of being selected; all rows
+        in each selected block are returned.
+        The <code class="literal">SYSTEM</code> method is significantly faster than
+        the <code class="literal">BERNOULLI</code> method when small sampling
+        percentages are specified, but it may return a less-random sample of
+        the table as a result of clustering effects.
+       </p><p>
+        The optional <code class="literal">REPEATABLE</code> clause specifies
+        a <em class="replaceable"><code>seed</code></em> number or expression to use
+        for generating random numbers within the sampling method.  The seed
+        value can be any non-null floating-point value.  Two queries that
+        specify the same seed and <em class="replaceable"><code>argument</code></em>
+        values will select the same sample of the table, if the table has
+        not been changed meanwhile.  But different seed values will usually
+        produce different samples.
+        If <code class="literal">REPEATABLE</code> is not given then a new random
+        sample is selected for each query, based upon a system-generated seed.
+        Note that some add-on sampling methods do not
+        accept <code class="literal">REPEATABLE</code>, and will always produce new
+        samples on each use.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>select</code></em></span></dt><dd><p>
+        A sub-<code class="command">SELECT</code> can appear in the
+        <code class="literal">FROM</code> clause.  This acts as though its
+        output were created as a temporary table for the duration of
+        this single <code class="command">SELECT</code> command.  Note that the
+        sub-<code class="command">SELECT</code> must be surrounded by
+        parentheses, and an alias <span class="emphasis"><em>must</em></span> be
+        provided for it.  A
+        <a class="link" href="sql-values.html" title="VALUES"><code class="command">VALUES</code></a> command
+        can also be used here.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>with_query_name</code></em></span></dt><dd><p>
+        A <code class="literal">WITH</code> query is referenced by writing its name,
+        just as though the query's name were a table name.  (In fact,
+        the <code class="literal">WITH</code> query hides any real table of the same name
+        for the purposes of the primary query.  If necessary, you can
+        refer to a real table of the same name by schema-qualifying
+        the table's name.)
+        An alias can be provided in the same way as for a table.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>function_name</code></em></span></dt><dd><p>
+        Function calls can appear in the <code class="literal">FROM</code>
+        clause.  (This is especially useful for functions that return
+        result sets, but any function can be used.)  This acts as
+        though the function's output were created as a temporary table for the
+        duration of this single <code class="command">SELECT</code> command.
+        If the function's result type is composite (including the case of a
+        function with multiple <code class="literal">OUT</code> parameters), each
+        attribute becomes a separate column in the implicit table.
+       </p><p>
+        When the optional <code class="command">WITH ORDINALITY</code> clause is added
+        to the function call, an additional column of type <code class="type">bigint</code>
+        will be appended to the function's result column(s).  This column
+        numbers the rows of the function's result set, starting from 1.
+        By default, this column is named <code class="literal">ordinality</code>.
+       </p><p>
+        An alias can be provided in the same way as for a table.
+        If an alias is written, a column
+        alias list can also be written to provide substitute names for
+        one or more attributes of the function's composite return
+        type, including the ordinality column if present.
+       </p><p>
+        Multiple function calls can be combined into a
+        single <code class="literal">FROM</code>-clause item by surrounding them
+        with <code class="literal">ROWS FROM( ... )</code>.  The output of such an item is the
+        concatenation of the first row from each function, then the second
+        row from each function, etc.  If some of the functions produce fewer
+        rows than others, null values are substituted for the missing data, so
+        that the total number of rows returned is always the same as for the
+        function that produced the most rows.
+       </p><p>
+        If the function has been defined as returning the
+        <code class="type">record</code> data type, then an alias or the key word
+        <code class="literal">AS</code> must be present, followed by a column
+        definition list in the form <code class="literal">( <em class="replaceable"><code>column_name</code></em> <em class="replaceable"><code>data_type</code></em> [<span class="optional">, ...
+        </span>])</code>.  The column definition list must match the
+        actual number and types of columns returned by the function.
+       </p><p>
+        When using the <code class="literal">ROWS FROM( ... )</code> syntax, if one of the
+        functions requires a column definition list, it's preferred to put
+        the column definition list after the function call inside
+        <code class="literal">ROWS FROM( ... )</code>.  A column definition list can be placed
+        after the <code class="literal">ROWS FROM( ... )</code> construct only if there's just
+        a single function and no <code class="literal">WITH ORDINALITY</code> clause.
+       </p><p>
+        To use <code class="literal">ORDINALITY</code> together with a column definition
+        list, you must use the <code class="literal">ROWS FROM( ... )</code> syntax and put the
+        column definition list inside <code class="literal">ROWS FROM( ... )</code>.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>join_type</code></em></span></dt><dd><p>
+        One of
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="literal">[ INNER ] JOIN</code></p></li><li class="listitem"><p><code class="literal">LEFT [ OUTER ] JOIN</code></p></li><li class="listitem"><p><code class="literal">RIGHT [ OUTER ] JOIN</code></p></li><li class="listitem"><p><code class="literal">FULL [ OUTER ] JOIN</code></p></li></ul></div><p>
+
+        For the <code class="literal">INNER</code> and <code class="literal">OUTER</code> join types, a
+        join condition must be specified, namely exactly one of
+        <code class="literal">ON <em class="replaceable"><code>join_condition</code></em></code>,
+        <code class="literal">USING (<em class="replaceable"><code>join_column</code></em> [, ...])</code>,
+        or <code class="literal">NATURAL</code>.  See below for the meaning.
+       </p><p>
+        A <code class="literal">JOIN</code> clause combines two <code class="literal">FROM</code>
+        items, which for convenience we will refer to as <span class="quote">“<span class="quote">tables</span>”</span>,
+        though in reality they can be any type of <code class="literal">FROM</code> item.
+        Use parentheses if necessary to determine the order of nesting.
+        In the absence of parentheses, <code class="literal">JOIN</code>s nest
+        left-to-right.  In any case <code class="literal">JOIN</code> binds more
+        tightly than the commas separating <code class="literal">FROM</code>-list items.
+        All the <code class="literal">JOIN</code> options are just a notational
+        convenience, since they do nothing you couldn't do with plain
+        <code class="literal">FROM</code> and <code class="literal">WHERE</code>.
+       </p><p><code class="literal">LEFT OUTER JOIN</code> returns all rows in the qualified
+        Cartesian product (i.e., all combined rows that pass its join
+        condition), plus one copy of each row in the left-hand table
+        for which there was no right-hand row that passed the join
+        condition.  This left-hand row is extended to the full width
+        of the joined table by inserting null values for the
+        right-hand columns.  Note that only the <code class="literal">JOIN</code>
+        clause's own condition is considered while deciding which rows
+        have matches.  Outer conditions are applied afterwards.
+       </p><p>
+        Conversely, <code class="literal">RIGHT OUTER JOIN</code> returns all the
+        joined rows, plus one row for each unmatched right-hand row
+        (extended with nulls on the left).  This is just a notational
+        convenience, since you could convert it to a <code class="literal">LEFT
+        OUTER JOIN</code> by switching the left and right tables.
+       </p><p><code class="literal">FULL OUTER JOIN</code> returns all the joined rows, plus
+        one row for each unmatched left-hand row (extended with nulls
+        on the right), plus one row for each unmatched right-hand row
+        (extended with nulls on the left).
+       </p></dd><dt><span class="term"><code class="literal">ON <em class="replaceable"><code>join_condition</code></em></code></span></dt><dd><p><em class="replaceable"><code>join_condition</code></em> is
+        an expression resulting in a value of type
+        <code class="type">boolean</code> (similar to a <code class="literal">WHERE</code>
+        clause) that specifies which rows in a join are considered to
+        match.
+       </p></dd><dt><span class="term"><code class="literal">USING ( <em class="replaceable"><code>join_column</code></em> [, ...] ) [ AS <em class="replaceable"><code>join_using_alias</code></em> ]</code></span></dt><dd><p>
+        A clause of the form <code class="literal">USING ( a, b, ... )</code> is
+        shorthand for <code class="literal">ON left_table.a = right_table.a AND
+        left_table.b = right_table.b ...</code>.  Also,
+        <code class="literal">USING</code> implies that only one of each pair of
+        equivalent columns will be included in the join output, not
+        both.
+       </p><p>
+        If a <em class="replaceable"><code>join_using_alias</code></em>
+        name is specified, it provides a table alias for the join columns.
+        Only the join columns listed in the <code class="literal">USING</code> clause
+        are addressable by this name.  Unlike a regular <em class="replaceable"><code>alias</code></em>, this does not hide the names of
+        the joined tables from the rest of the query.  Also unlike a regular
+        <em class="replaceable"><code>alias</code></em>, you cannot write a
+        column alias list — the output names of the join columns are the
+        same as they appear in the <code class="literal">USING</code> list.
+       </p></dd><dt><span class="term"><code class="literal">NATURAL</code></span></dt><dd><p>
+        <code class="literal">NATURAL</code> is shorthand for a
+        <code class="literal">USING</code> list that mentions all columns in the two
+        tables that have matching names.  If there are no common
+        column names, <code class="literal">NATURAL</code> is equivalent
+        to <code class="literal">ON TRUE</code>.
+       </p></dd><dt><span class="term"><code class="literal">CROSS JOIN</code></span></dt><dd><p>
+        <code class="literal">CROSS JOIN</code> is equivalent to <code class="literal">INNER JOIN ON
+        (TRUE)</code>, that is, no rows are removed by qualification.
+        They produce a simple Cartesian product, the same result as you get from
+        listing the two tables at the top level of <code class="literal">FROM</code>,
+        but restricted by the join condition (if any).
+       </p></dd><dt><span class="term"><code class="literal">LATERAL</code></span></dt><dd><p>
+        The <code class="literal">LATERAL</code> key word can precede a
+        sub-<code class="command">SELECT</code> <code class="literal">FROM</code> item.  This allows the
+        sub-<code class="command">SELECT</code> to refer to columns of <code class="literal">FROM</code>
+        items that appear before it in the <code class="literal">FROM</code> list.  (Without
+        <code class="literal">LATERAL</code>, each sub-<code class="command">SELECT</code> is
+        evaluated independently and so cannot cross-reference any other
+        <code class="literal">FROM</code> item.)
+       </p><p><code class="literal">LATERAL</code> can also precede a function-call
+        <code class="literal">FROM</code> item, but in this case it is a noise word, because
+        the function expression can refer to earlier <code class="literal">FROM</code> items
+        in any case.
+       </p><p>
+        A <code class="literal">LATERAL</code> item can appear at top level in the
+        <code class="literal">FROM</code> list, or within a <code class="literal">JOIN</code> tree.  In the
+        latter case it can also refer to any items that are on the left-hand
+        side of a <code class="literal">JOIN</code> that it is on the right-hand side of.
+       </p><p>
+        When a <code class="literal">FROM</code> item contains <code class="literal">LATERAL</code>
+        cross-references, evaluation proceeds as follows: for each row of the
+        <code class="literal">FROM</code> item providing the cross-referenced column(s), or
+        set of rows of multiple <code class="literal">FROM</code> items providing the
+        columns, the <code class="literal">LATERAL</code> item is evaluated using that
+        row or row set's values of the columns.  The resulting row(s) are
+        joined as usual with the rows they were computed from.  This is
+        repeated for each row or set of rows from the column source table(s).
+       </p><p>
+        The column source table(s) must be <code class="literal">INNER</code> or
+        <code class="literal">LEFT</code> joined to the <code class="literal">LATERAL</code> item, else
+        there would not be a well-defined set of rows from which to compute
+        each set of rows for the <code class="literal">LATERAL</code> item.  Thus,
+        although a construct such as <code class="literal"><em class="replaceable"><code>X</code></em> RIGHT JOIN
+        LATERAL <em class="replaceable"><code>Y</code></em></code> is syntactically valid, it is
+        not actually allowed for <em class="replaceable"><code>Y</code></em> to reference
+        <em class="replaceable"><code>X</code></em>.
+       </p></dd></dl></div><p>
+   </p></div><div class="refsect2" id="SQL-WHERE"><h3><code class="literal">WHERE</code> Clause</h3><p>
+    The optional <code class="literal">WHERE</code> clause has the general form
+</p><pre class="synopsis">
+WHERE <em class="replaceable"><code>condition</code></em>
+</pre><p>
+    where <em class="replaceable"><code>condition</code></em> is
+    any expression that evaluates to a result of type
+    <code class="type">boolean</code>.  Any row that does not satisfy this
+    condition will be eliminated from the output.  A row satisfies the
+    condition if it returns true when the actual row values are
+    substituted for any variable references.
+   </p></div><div class="refsect2" id="SQL-GROUPBY"><h3><code class="literal">GROUP BY</code> Clause</h3><p>
+    The optional <code class="literal">GROUP BY</code> clause has the general form
+</p><pre class="synopsis">
+GROUP BY [ ALL | DISTINCT ] <em class="replaceable"><code>grouping_element</code></em> [, ...]
+</pre><p>
+   </p><p>
+    <code class="literal">GROUP BY</code> will condense into a single row all
+    selected rows that share the same values for the grouped
+    expressions.  An <em class="replaceable"><code>expression</code></em> used inside a
+    <em class="replaceable"><code>grouping_element</code></em>
+    can be an input column name, or the name or ordinal number of an
+    output column (<code class="command">SELECT</code> list item), or an arbitrary
+    expression formed from input-column values.  In case of ambiguity,
+    a <code class="literal">GROUP BY</code> name will be interpreted as an
+    input-column name rather than an output column name.
+   </p><p>
+    If any of <code class="literal">GROUPING SETS</code>, <code class="literal">ROLLUP</code> or
+    <code class="literal">CUBE</code> are present as grouping elements, then the
+    <code class="literal">GROUP BY</code> clause as a whole defines some number of
+    independent <em class="replaceable"><code>grouping sets</code></em>.  The effect of this is
+    equivalent to constructing a <code class="literal">UNION ALL</code> between
+    subqueries with the individual grouping sets as their
+    <code class="literal">GROUP BY</code> clauses.  The optional <code class="literal">DISTINCT</code>
+    clause removes duplicate sets before processing; it does <span class="emphasis"><em>not</em></span>
+    transform the <code class="literal">UNION ALL</code> into a <code class="literal">UNION DISTINCT</code>.
+    For further details on the handling
+    of grouping sets see <a class="xref" href="queries-table-expressions.html#QUERIES-GROUPING-SETS" title="7.2.4. GROUPING SETS, CUBE, and ROLLUP">Section 7.2.4</a>.
+   </p><p>
+    Aggregate functions, if any are used, are computed across all rows
+    making up each group, producing a separate value for each group.
+    (If there are aggregate functions but no <code class="literal">GROUP BY</code>
+    clause, the query is treated as having a single group comprising all
+    the selected rows.)
+    The set of rows fed to each aggregate function can be further filtered by
+    attaching a <code class="literal">FILTER</code> clause to the aggregate function
+    call; see <a class="xref" href="sql-expressions.html#SYNTAX-AGGREGATES" title="4.2.7. Aggregate Expressions">Section 4.2.7</a> for more information.  When
+    a <code class="literal">FILTER</code> clause is present, only those rows matching it
+    are included in the input to that aggregate function.
+   </p><p>
+    When <code class="literal">GROUP BY</code> is present,
+    or any aggregate functions are present, it is not valid for
+    the <code class="command">SELECT</code> list expressions to refer to
+    ungrouped columns except within aggregate functions or when the
+    ungrouped column is functionally dependent on the grouped columns,
+    since there would otherwise be more than one possible value to
+    return for an ungrouped column.  A functional dependency exists if
+    the grouped columns (or a subset thereof) are the primary key of
+    the table containing the ungrouped column.
+   </p><p>
+    Keep in mind that all aggregate functions are evaluated before
+    evaluating any <span class="quote">“<span class="quote">scalar</span>”</span> expressions in the <code class="literal">HAVING</code>
+    clause or <code class="literal">SELECT</code> list.  This means that, for example,
+    a <code class="literal">CASE</code> expression cannot be used to skip evaluation of
+    an aggregate function; see <a class="xref" href="sql-expressions.html#SYNTAX-EXPRESS-EVAL" title="4.2.14. Expression Evaluation Rules">Section 4.2.14</a>.
+   </p><p>
+    Currently, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>,
+    <code class="literal">FOR SHARE</code> and <code class="literal">FOR KEY SHARE</code> cannot be
+    specified with <code class="literal">GROUP BY</code>.
+   </p></div><div class="refsect2" id="SQL-HAVING"><h3><code class="literal">HAVING</code> Clause</h3><p>
+    The optional <code class="literal">HAVING</code> clause has the general form
+</p><pre class="synopsis">
+HAVING <em class="replaceable"><code>condition</code></em>
+</pre><p>
+    where <em class="replaceable"><code>condition</code></em> is
+    the same as specified for the <code class="literal">WHERE</code> clause.
+   </p><p>
+    <code class="literal">HAVING</code> eliminates group rows that do not
+    satisfy the condition.  <code class="literal">HAVING</code> is different
+    from <code class="literal">WHERE</code>: <code class="literal">WHERE</code> filters
+    individual rows before the application of <code class="literal">GROUP
+    BY</code>, while <code class="literal">HAVING</code> filters group rows
+    created by <code class="literal">GROUP BY</code>.  Each column referenced in
+    <em class="replaceable"><code>condition</code></em> must
+    unambiguously reference a grouping column, unless the reference
+    appears within an aggregate function or the ungrouped column is
+    functionally dependent on the grouping columns.
+   </p><p>
+    The presence of <code class="literal">HAVING</code> turns a query into a grouped
+    query even if there is no <code class="literal">GROUP BY</code> clause.  This is the
+    same as what happens when the query contains aggregate functions but
+    no <code class="literal">GROUP BY</code> clause.  All the selected rows are considered to
+    form a single group, and the <code class="command">SELECT</code> list and
+    <code class="literal">HAVING</code> clause can only reference table columns from
+    within aggregate functions.  Such a query will emit a single row if the
+    <code class="literal">HAVING</code> condition is true, zero rows if it is not true.
+   </p><p>
+    Currently, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>,
+    <code class="literal">FOR SHARE</code> and <code class="literal">FOR KEY SHARE</code> cannot be
+    specified with <code class="literal">HAVING</code>.
+   </p></div><div class="refsect2" id="SQL-WINDOW"><h3><code class="literal">WINDOW</code> Clause</h3><p>
+    The optional <code class="literal">WINDOW</code> clause has the general form
+</p><pre class="synopsis">
+WINDOW <em class="replaceable"><code>window_name</code></em> AS ( <em class="replaceable"><code>window_definition</code></em> ) [, ...]
+</pre><p>
+    where <em class="replaceable"><code>window_name</code></em> is
+    a name that can be referenced from <code class="literal">OVER</code> clauses or
+    subsequent window definitions, and
+    <em class="replaceable"><code>window_definition</code></em> is
+</p><pre class="synopsis">
+[ <em class="replaceable"><code>existing_window_name</code></em> ]
+[ PARTITION BY <em class="replaceable"><code>expression</code></em> [, ...] ]
+[ ORDER BY <em class="replaceable"><code>expression</code></em> [ ASC | DESC | USING <em class="replaceable"><code>operator</code></em> ] [ NULLS { FIRST | LAST } ] [, ...] ]
+[ <em class="replaceable"><code>frame_clause</code></em> ]
+</pre><p>
+   </p><p>
+    If an <em class="replaceable"><code>existing_window_name</code></em>
+    is specified it must refer to an earlier entry in the <code class="literal">WINDOW</code>
+    list; the new window copies its partitioning clause from that entry,
+    as well as its ordering clause if any.  In this case the new window cannot
+    specify its own <code class="literal">PARTITION BY</code> clause, and it can specify
+    <code class="literal">ORDER BY</code> only if the copied window does not have one.
+    The new window always uses its own frame clause; the copied window
+    must not specify a frame clause.
+   </p><p>
+    The elements of the <code class="literal">PARTITION BY</code> list are interpreted in
+    much the same fashion as elements of a <a class="link" href="sql-select.html#SQL-GROUPBY" title="GROUP BY Clause"><code class="literal">GROUP BY</code></a> clause, except that
+    they are always simple expressions and never the name or number of an
+    output column.
+    Another difference is that these expressions can contain aggregate
+    function calls, which are not allowed in a regular <code class="literal">GROUP BY</code>
+    clause.  They are allowed here because windowing occurs after grouping
+    and aggregation.
+   </p><p>
+    Similarly, the elements of the <code class="literal">ORDER BY</code> list are interpreted
+    in much the same fashion as elements of a statement-level <a class="link" href="sql-select.html#SQL-ORDERBY" title="ORDER BY Clause"><code class="literal">ORDER BY</code></a> clause, except that
+    the expressions are always taken as simple expressions and never the name
+    or number of an output column.
+   </p><p>
+    The optional <em class="replaceable"><code>frame_clause</code></em> defines
+    the <em class="firstterm">window frame</em> for window functions that depend on the
+    frame (not all do).  The window frame is a set of related rows for
+    each row of the query (called the <em class="firstterm">current row</em>).
+    The <em class="replaceable"><code>frame_clause</code></em> can be one of
+
+</p><pre class="synopsis">
+{ RANGE | ROWS | GROUPS } <em class="replaceable"><code>frame_start</code></em> [ <em class="replaceable"><code>frame_exclusion</code></em> ]
+{ RANGE | ROWS | GROUPS } BETWEEN <em class="replaceable"><code>frame_start</code></em> AND <em class="replaceable"><code>frame_end</code></em> [ <em class="replaceable"><code>frame_exclusion</code></em> ]
+</pre><p>
+
+    where <em class="replaceable"><code>frame_start</code></em>
+    and <em class="replaceable"><code>frame_end</code></em> can be one of
+
+</p><pre class="synopsis">
+UNBOUNDED PRECEDING
+<em class="replaceable"><code>offset</code></em> PRECEDING
+CURRENT ROW
+<em class="replaceable"><code>offset</code></em> FOLLOWING
+UNBOUNDED FOLLOWING
+</pre><p>
+
+    and <em class="replaceable"><code>frame_exclusion</code></em> can be one of
+
+</p><pre class="synopsis">
+EXCLUDE CURRENT ROW
+EXCLUDE GROUP
+EXCLUDE TIES
+EXCLUDE NO OTHERS
+</pre><p>
+
+    If <em class="replaceable"><code>frame_end</code></em> is omitted it defaults to <code class="literal">CURRENT
+    ROW</code>.  Restrictions are that
+    <em class="replaceable"><code>frame_start</code></em> cannot be <code class="literal">UNBOUNDED FOLLOWING</code>,
+    <em class="replaceable"><code>frame_end</code></em> cannot be <code class="literal">UNBOUNDED PRECEDING</code>,
+    and the <em class="replaceable"><code>frame_end</code></em> choice cannot appear earlier in the
+    above list of <em class="replaceable"><code>frame_start</code></em>
+    and <em class="replaceable"><code>frame_end</code></em> options than
+    the <em class="replaceable"><code>frame_start</code></em> choice does — for example
+    <code class="literal">RANGE BETWEEN CURRENT ROW AND <em class="replaceable"><code>offset</code></em>
+    PRECEDING</code> is not allowed.
+   </p><p>
+    The default framing option is <code class="literal">RANGE UNBOUNDED PRECEDING</code>,
+    which is the same as <code class="literal">RANGE BETWEEN UNBOUNDED PRECEDING AND
+    CURRENT ROW</code>; it sets the frame to be all rows from the partition start
+    up through the current row's last <em class="firstterm">peer</em> (a row
+    that the window's <code class="literal">ORDER BY</code> clause considers
+    equivalent to the current row; all rows are peers if there
+    is no <code class="literal">ORDER BY</code>).
+    In general, <code class="literal">UNBOUNDED PRECEDING</code> means that the frame
+    starts with the first row of the partition, and similarly
+    <code class="literal">UNBOUNDED FOLLOWING</code> means that the frame ends with the last
+    row of the partition, regardless
+    of <code class="literal">RANGE</code>, <code class="literal">ROWS</code>
+    or <code class="literal">GROUPS</code> mode.
+    In <code class="literal">ROWS</code> mode, <code class="literal">CURRENT ROW</code> means
+    that the frame starts or ends with the current row; but
+    in <code class="literal">RANGE</code> or <code class="literal">GROUPS</code> mode it means
+    that the frame starts or ends with the current row's first or last peer
+    in the <code class="literal">ORDER BY</code> ordering.
+    The <em class="replaceable"><code>offset</code></em> <code class="literal">PRECEDING</code> and
+    <em class="replaceable"><code>offset</code></em> <code class="literal">FOLLOWING</code> options
+    vary in meaning depending on the frame mode.
+    In <code class="literal">ROWS</code> mode, the <em class="replaceable"><code>offset</code></em>
+    is an integer indicating that the frame starts or ends that many rows
+    before or after the current row.
+    In <code class="literal">GROUPS</code> mode, the <em class="replaceable"><code>offset</code></em>
+    is an integer indicating that the frame starts or ends that many peer
+    groups before or after the current row's peer group, where
+    a <em class="firstterm">peer group</em> is a group of rows that are
+    equivalent according to the window's <code class="literal">ORDER BY</code> clause.
+    In <code class="literal">RANGE</code> mode, use of
+    an <em class="replaceable"><code>offset</code></em> option requires that there be
+    exactly one <code class="literal">ORDER BY</code> column in the window definition.
+    Then the frame contains those rows whose ordering column value is no
+    more than <em class="replaceable"><code>offset</code></em> less than
+    (for <code class="literal">PRECEDING</code>) or more than
+    (for <code class="literal">FOLLOWING</code>) the current row's ordering column
+    value.  In these cases the data type of
+    the <em class="replaceable"><code>offset</code></em> expression depends on the data
+    type of the ordering column.  For numeric ordering columns it is
+    typically of the same type as the ordering column, but for datetime
+    ordering columns it is an <code class="type">interval</code>.
+    In all these cases, the value of the <em class="replaceable"><code>offset</code></em>
+    must be non-null and non-negative.  Also, while
+    the <em class="replaceable"><code>offset</code></em> does not have to be a simple
+    constant, it cannot contain variables, aggregate functions, or window
+    functions.
+   </p><p>
+    The <em class="replaceable"><code>frame_exclusion</code></em> option allows rows around
+    the current row to be excluded from the frame, even if they would be
+    included according to the frame start and frame end options.
+    <code class="literal">EXCLUDE CURRENT ROW</code> excludes the current row from the
+    frame.
+    <code class="literal">EXCLUDE GROUP</code> excludes the current row and its
+    ordering peers from the frame.
+    <code class="literal">EXCLUDE TIES</code> excludes any peers of the current
+    row from the frame, but not the current row itself.
+    <code class="literal">EXCLUDE NO OTHERS</code> simply specifies explicitly the
+    default behavior of not excluding the current row or its peers.
+   </p><p>
+    Beware that the <code class="literal">ROWS</code> mode can produce unpredictable
+    results if the <code class="literal">ORDER BY</code> ordering does not order the rows
+    uniquely.  The <code class="literal">RANGE</code> and <code class="literal">GROUPS</code>
+    modes are designed to ensure that rows that are peers in
+    the <code class="literal">ORDER BY</code> ordering are treated alike: all rows of
+    a given peer group will be in the frame or excluded from it.
+   </p><p>
+    The purpose of a <code class="literal">WINDOW</code> clause is to specify the
+    behavior of <em class="firstterm">window functions</em> appearing in the query's
+    <a class="link" href="sql-select.html#SQL-SELECT-LIST" title="SELECT List"><code class="command">SELECT</code> list</a> or
+    <a class="link" href="sql-select.html#SQL-ORDERBY" title="ORDER BY Clause"><code class="literal">ORDER BY</code></a> clause.
+    These functions
+    can reference the <code class="literal">WINDOW</code> clause entries by name
+    in their <code class="literal">OVER</code> clauses.  A <code class="literal">WINDOW</code> clause
+    entry does not have to be referenced anywhere, however; if it is not
+    used in the query it is simply ignored.  It is possible to use window
+    functions without any <code class="literal">WINDOW</code> clause at all, since
+    a window function call can specify its window definition directly in
+    its <code class="literal">OVER</code> clause.  However, the <code class="literal">WINDOW</code>
+    clause saves typing when the same window definition is needed for more
+    than one window function.
+   </p><p>
+    Currently, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>,
+    <code class="literal">FOR SHARE</code> and <code class="literal">FOR KEY SHARE</code> cannot be
+    specified with <code class="literal">WINDOW</code>.
+   </p><p>
+    Window functions are described in detail in
+    <a class="xref" href="tutorial-window.html" title="3.5. Window Functions">Section 3.5</a>,
+    <a class="xref" href="sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS" title="4.2.8. Window Function Calls">Section 4.2.8</a>, and
+    <a class="xref" href="queries-table-expressions.html#QUERIES-WINDOW" title="7.2.5. Window Function Processing">Section 7.2.5</a>.
+   </p></div><div class="refsect2" id="SQL-SELECT-LIST"><h3><code class="command">SELECT</code> List</h3><p>
+    The <code class="command">SELECT</code> list (between the key words
+    <code class="literal">SELECT</code> and <code class="literal">FROM</code>) specifies expressions
+    that form the output rows of the <code class="command">SELECT</code>
+    statement.  The expressions can (and usually do) refer to columns
+    computed in the <code class="literal">FROM</code> clause.
+   </p><p>
+    Just as in a table, every output column of a <code class="command">SELECT</code>
+    has a name.  In a simple <code class="command">SELECT</code> this name is just
+    used to label the column for display, but when the <code class="command">SELECT</code>
+    is a sub-query of a larger query, the name is seen by the larger query
+    as the column name of the virtual table produced by the sub-query.
+    To specify the name to use for an output column, write
+    <code class="literal">AS</code> <em class="replaceable"><code>output_name</code></em>
+    after the column's expression.  (You can omit <code class="literal">AS</code>,
+    but only if the desired output name does not match any
+    <span class="productname">PostgreSQL</span> keyword (see <a class="xref" href="sql-keywords-appendix.html" title="Appendix C. SQL Key Words">Appendix C</a>).  For protection against possible
+    future keyword additions, it is recommended that you always either
+    write <code class="literal">AS</code> or double-quote the output name.)
+    If you do not specify a column name, a name is chosen automatically
+    by <span class="productname">PostgreSQL</span>.  If the column's expression
+    is a simple column reference then the chosen name is the same as that
+    column's name.  In more complex cases a function or type name may be
+    used, or the system may fall back on a generated name such as
+    <code class="literal">?column?</code>.
+   </p><p>
+    An output column's name can be used to refer to the column's value in
+    <code class="literal">ORDER BY</code> and <code class="literal">GROUP BY</code> clauses, but not in the
+    <code class="literal">WHERE</code> or <code class="literal">HAVING</code> clauses; there you must write
+    out the expression instead.
+   </p><p>
+    Instead of an expression, <code class="literal">*</code> can be written in
+    the output list as a shorthand for all the columns of the selected
+    rows.  Also, you can write <code class="literal"><em class="replaceable"><code>table_name</code></em>.*</code> as a
+    shorthand for the columns coming from just that table.  In these
+    cases it is not possible to specify new names with <code class="literal">AS</code>;
+    the output column names will be the same as the table columns' names.
+   </p><p>
+    According to the SQL standard, the expressions in the output list should
+    be computed before applying <code class="literal">DISTINCT</code>, <code class="literal">ORDER
+    BY</code>, or <code class="literal">LIMIT</code>.  This is obviously necessary
+    when using <code class="literal">DISTINCT</code>, since otherwise it's not clear
+    what values are being made distinct.  However, in many cases it is
+    convenient if output expressions are computed after <code class="literal">ORDER
+    BY</code> and <code class="literal">LIMIT</code>; particularly if the output list
+    contains any volatile or expensive functions.  With that behavior, the
+    order of function evaluations is more intuitive and there will not be
+    evaluations corresponding to rows that never appear in the output.
+    <span class="productname">PostgreSQL</span> will effectively evaluate output expressions
+    after sorting and limiting, so long as those expressions are not
+    referenced in <code class="literal">DISTINCT</code>, <code class="literal">ORDER BY</code>
+    or <code class="literal">GROUP BY</code>.  (As a counterexample, <code class="literal">SELECT
+    f(x) FROM tab ORDER BY 1</code> clearly must evaluate <code class="function">f(x)</code>
+    before sorting.)  Output expressions that contain set-returning functions
+    are effectively evaluated after sorting and before limiting, so
+    that <code class="literal">LIMIT</code> will act to cut off the output from a
+    set-returning function.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     <span class="productname">PostgreSQL</span> versions before 9.6 did not provide any
+     guarantees about the timing of evaluation of output expressions versus
+     sorting and limiting; it depended on the form of the chosen query plan.
+    </p></div></div><div class="refsect2" id="SQL-DISTINCT"><h3><code class="literal">DISTINCT</code> Clause</h3><p>
+    If <code class="literal">SELECT DISTINCT</code> is specified, all duplicate rows are
+    removed from the result set (one row is kept from each group of
+    duplicates).  <code class="literal">SELECT ALL</code> specifies the opposite: all rows are
+    kept; that is the default.
+   </p><p>
+    <code class="literal">SELECT DISTINCT ON ( <em class="replaceable"><code>expression</code></em> [, ...] )</code>
+    keeps only the first row of each set of rows where the given
+    expressions evaluate to equal.  The <code class="literal">DISTINCT ON</code>
+    expressions are interpreted using the same rules as for
+    <code class="literal">ORDER BY</code> (see above).  Note that the <span class="quote">“<span class="quote">first
+    row</span>”</span> of each set is unpredictable unless <code class="literal">ORDER
+    BY</code> is used to ensure that the desired row appears first.  For
+    example:
+</p><pre class="programlisting">
+SELECT DISTINCT ON (location) location, time, report
+    FROM weather_reports
+    ORDER BY location, time DESC;
+</pre><p>
+    retrieves the most recent weather report for each location.  But
+    if we had not used <code class="literal">ORDER BY</code> to force descending order
+    of time values for each location, we'd have gotten a report from
+    an unpredictable time for each location.
+   </p><p>
+    The <code class="literal">DISTINCT ON</code> expression(s) must match the leftmost
+    <code class="literal">ORDER BY</code> expression(s).  The <code class="literal">ORDER BY</code> clause
+    will normally contain additional expression(s) that determine the
+    desired precedence of rows within each <code class="literal">DISTINCT ON</code> group.
+   </p><p>
+    Currently, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>,
+    <code class="literal">FOR SHARE</code> and <code class="literal">FOR KEY SHARE</code> cannot be
+    specified with <code class="literal">DISTINCT</code>.
+   </p></div><div class="refsect2" id="SQL-UNION"><h3><code class="literal">UNION</code> Clause</h3><p>
+    The <code class="literal">UNION</code> clause has this general form:
+</p><pre class="synopsis">
+<em class="replaceable"><code>select_statement</code></em> UNION [ ALL | DISTINCT ] <em class="replaceable"><code>select_statement</code></em>
+</pre><p><em class="replaceable"><code>select_statement</code></em> is
+    any <code class="command">SELECT</code> statement without an <code class="literal">ORDER
+    BY</code>, <code class="literal">LIMIT</code>, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>,
+    <code class="literal">FOR SHARE</code>, or <code class="literal">FOR KEY SHARE</code> clause.
+    (<code class="literal">ORDER BY</code> and <code class="literal">LIMIT</code> can be attached to a
+    subexpression if it is enclosed in parentheses.  Without
+    parentheses, these clauses will be taken to apply to the result of
+    the <code class="literal">UNION</code>, not to its right-hand input
+    expression.)
+   </p><p>
+    The <code class="literal">UNION</code> operator computes the set union of
+    the rows returned by the involved <code class="command">SELECT</code>
+    statements.  A row is in the set union of two result sets if it
+    appears in at least one of the result sets.  The two
+    <code class="command">SELECT</code> statements that represent the direct
+    operands of the <code class="literal">UNION</code> must produce the same
+    number of columns, and corresponding columns must be of compatible
+    data types.
+   </p><p>
+    The result of <code class="literal">UNION</code> does not contain any duplicate
+    rows unless the <code class="literal">ALL</code> option is specified.
+    <code class="literal">ALL</code> prevents elimination of duplicates.  (Therefore,
+    <code class="literal">UNION ALL</code> is usually significantly quicker than
+    <code class="literal">UNION</code>; use <code class="literal">ALL</code> when you can.)
+    <code class="literal">DISTINCT</code> can be written to explicitly specify the
+    default behavior of eliminating duplicate rows.
+   </p><p>
+    Multiple <code class="literal">UNION</code> operators in the same
+    <code class="command">SELECT</code> statement are evaluated left to right,
+    unless otherwise indicated by parentheses.
+   </p><p>
+    Currently, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>, <code class="literal">FOR SHARE</code> and
+    <code class="literal">FOR KEY SHARE</code> cannot be
+    specified either for a <code class="literal">UNION</code> result or for any input of a
+    <code class="literal">UNION</code>.
+   </p></div><div class="refsect2" id="SQL-INTERSECT"><h3><code class="literal">INTERSECT</code> Clause</h3><p>
+    The <code class="literal">INTERSECT</code> clause has this general form:
+</p><pre class="synopsis">
+<em class="replaceable"><code>select_statement</code></em> INTERSECT [ ALL | DISTINCT ] <em class="replaceable"><code>select_statement</code></em>
+</pre><p><em class="replaceable"><code>select_statement</code></em> is
+    any <code class="command">SELECT</code> statement without an <code class="literal">ORDER
+    BY</code>, <code class="literal">LIMIT</code>, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>,
+    <code class="literal">FOR SHARE</code>, or <code class="literal">FOR KEY SHARE</code> clause.
+   </p><p>
+    The <code class="literal">INTERSECT</code> operator computes the set
+    intersection of the rows returned by the involved
+    <code class="command">SELECT</code> statements.  A row is in the
+    intersection of two result sets if it appears in both result sets.
+   </p><p>
+    The result of <code class="literal">INTERSECT</code> does not contain any
+    duplicate rows unless the <code class="literal">ALL</code> option is specified.
+    With <code class="literal">ALL</code>, a row that has <em class="replaceable"><code>m</code></em> duplicates in the
+    left table and <em class="replaceable"><code>n</code></em> duplicates in the right table will appear
+    min(<em class="replaceable"><code>m</code></em>,<em class="replaceable"><code>n</code></em>) times in the result set.
+    <code class="literal">DISTINCT</code> can be written to explicitly specify the
+    default behavior of eliminating duplicate rows.
+   </p><p>
+    Multiple <code class="literal">INTERSECT</code> operators in the same
+    <code class="command">SELECT</code> statement are evaluated left to right,
+    unless parentheses dictate otherwise.
+    <code class="literal">INTERSECT</code> binds more tightly than
+    <code class="literal">UNION</code>.  That is, <code class="literal">A UNION B INTERSECT
+    C</code> will be read as <code class="literal">A UNION (B INTERSECT
+    C)</code>.
+   </p><p>
+    Currently, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>, <code class="literal">FOR SHARE</code> and
+    <code class="literal">FOR KEY SHARE</code> cannot be
+    specified either for an <code class="literal">INTERSECT</code> result or for any input of
+    an <code class="literal">INTERSECT</code>.
+   </p></div><div class="refsect2" id="SQL-EXCEPT"><h3><code class="literal">EXCEPT</code> Clause</h3><p>
+    The <code class="literal">EXCEPT</code> clause has this general form:
+</p><pre class="synopsis">
+<em class="replaceable"><code>select_statement</code></em> EXCEPT [ ALL | DISTINCT ] <em class="replaceable"><code>select_statement</code></em>
+</pre><p><em class="replaceable"><code>select_statement</code></em> is
+    any <code class="command">SELECT</code> statement without an <code class="literal">ORDER
+    BY</code>, <code class="literal">LIMIT</code>, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>,
+    <code class="literal">FOR SHARE</code>, or <code class="literal">FOR KEY SHARE</code> clause.
+   </p><p>
+    The <code class="literal">EXCEPT</code> operator computes the set of rows
+    that are in the result of the left <code class="command">SELECT</code>
+    statement but not in the result of the right one.
+   </p><p>
+    The result of <code class="literal">EXCEPT</code> does not contain any
+    duplicate rows unless the <code class="literal">ALL</code> option is specified.
+    With <code class="literal">ALL</code>, a row that has <em class="replaceable"><code>m</code></em> duplicates in the
+    left table and <em class="replaceable"><code>n</code></em> duplicates in the right table will appear
+    max(<em class="replaceable"><code>m</code></em>-<em class="replaceable"><code>n</code></em>,0) times in the result set.
+    <code class="literal">DISTINCT</code> can be written to explicitly specify the
+    default behavior of eliminating duplicate rows.
+   </p><p>
+    Multiple <code class="literal">EXCEPT</code> operators in the same
+    <code class="command">SELECT</code> statement are evaluated left to right,
+    unless parentheses dictate otherwise.  <code class="literal">EXCEPT</code> binds at
+    the same level as <code class="literal">UNION</code>.
+   </p><p>
+    Currently, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>, <code class="literal">FOR SHARE</code> and
+    <code class="literal">FOR KEY SHARE</code> cannot be
+    specified either for an <code class="literal">EXCEPT</code> result or for any input of
+    an <code class="literal">EXCEPT</code>.
+   </p></div><div class="refsect2" id="SQL-ORDERBY"><h3><code class="literal">ORDER BY</code> Clause</h3><p>
+    The optional <code class="literal">ORDER BY</code> clause has this general form:
+</p><pre class="synopsis">
+ORDER BY <em class="replaceable"><code>expression</code></em> [ ASC | DESC | USING <em class="replaceable"><code>operator</code></em> ] [ NULLS { FIRST | LAST } ] [, ...]
+</pre><p>
+    The <code class="literal">ORDER BY</code> clause causes the result rows to
+    be sorted according to the specified expression(s).  If two rows are
+    equal according to the leftmost expression, they are compared
+    according to the next expression and so on.  If they are equal
+    according to all specified expressions, they are returned in
+    an implementation-dependent order.
+   </p><p>
+    Each <em class="replaceable"><code>expression</code></em> can be the
+    name or ordinal number of an output column
+    (<code class="command">SELECT</code> list item), or it can be an arbitrary
+    expression formed from input-column values.
+   </p><p>
+    The ordinal number refers to the ordinal (left-to-right) position
+    of the output column. This feature makes it possible to define an
+    ordering on the basis of a column that does not have a unique
+    name.  This is never absolutely necessary because it is always
+    possible to assign a name to an output column using the
+    <code class="literal">AS</code> clause.
+   </p><p>
+    It is also possible to use arbitrary expressions in the
+    <code class="literal">ORDER BY</code> clause, including columns that do not
+    appear in the <code class="command">SELECT</code> output list.  Thus the
+    following statement is valid:
+</p><pre class="programlisting">
+SELECT name FROM distributors ORDER BY code;
+</pre><p>
+    A limitation of this feature is that an <code class="literal">ORDER BY</code>
+    clause applying to the result of a <code class="literal">UNION</code>,
+    <code class="literal">INTERSECT</code>, or <code class="literal">EXCEPT</code> clause can only
+    specify an output column name or number, not an expression.
+   </p><p>
+    If an <code class="literal">ORDER BY</code> expression is a simple name that
+    matches both an output column name and an input column name,
+    <code class="literal">ORDER BY</code> will interpret it as the output column name.
+    This is the opposite of the choice that <code class="literal">GROUP BY</code> will
+    make in the same situation.  This inconsistency is made to be
+    compatible with the SQL standard.
+   </p><p>
+    Optionally one can add the key word <code class="literal">ASC</code> (ascending) or
+    <code class="literal">DESC</code> (descending) after any expression in the
+    <code class="literal">ORDER BY</code> clause.  If not specified, <code class="literal">ASC</code> is
+    assumed by default.  Alternatively, a specific ordering operator
+    name can be specified in the <code class="literal">USING</code> clause.
+    An ordering operator must be a less-than or greater-than
+    member of some B-tree operator family.
+    <code class="literal">ASC</code> is usually equivalent to <code class="literal">USING &lt;</code> and
+    <code class="literal">DESC</code> is usually equivalent to <code class="literal">USING &gt;</code>.
+    (But the creator of a user-defined data type can define exactly what the
+    default sort ordering is, and it might correspond to operators with other
+    names.)
+   </p><p>
+    If <code class="literal">NULLS LAST</code> is specified, null values sort after all
+    non-null values; if <code class="literal">NULLS FIRST</code> is specified, null values
+    sort before all non-null values.  If neither is specified, the default
+    behavior is <code class="literal">NULLS LAST</code> when <code class="literal">ASC</code> is specified
+    or implied, and <code class="literal">NULLS FIRST</code> when <code class="literal">DESC</code> is specified
+    (thus, the default is to act as though nulls are larger than non-nulls).
+    When <code class="literal">USING</code> is specified, the default nulls ordering depends
+    on whether the operator is a less-than or greater-than operator.
+   </p><p>
+    Note that ordering options apply only to the expression they follow;
+    for example <code class="literal">ORDER BY x, y DESC</code> does not mean
+    the same thing as <code class="literal">ORDER BY x DESC, y DESC</code>.
+   </p><p>
+    Character-string data is sorted according to the collation that applies
+    to the column being sorted.  That can be overridden at need by including
+    a <code class="literal">COLLATE</code> clause in the
+    <em class="replaceable"><code>expression</code></em>, for example
+    <code class="literal">ORDER BY mycolumn COLLATE "en_US"</code>.
+    For more information see <a class="xref" href="sql-expressions.html#SQL-SYNTAX-COLLATE-EXPRS" title="4.2.10. Collation Expressions">Section 4.2.10</a> and
+    <a class="xref" href="collation.html" title="24.2. Collation Support">Section 24.2</a>.
+   </p></div><div class="refsect2" id="SQL-LIMIT"><h3><code class="literal">LIMIT</code> Clause</h3><p>
+    The <code class="literal">LIMIT</code> clause consists of two independent
+    sub-clauses:
+</p><pre class="synopsis">
+LIMIT { <em class="replaceable"><code>count</code></em> | ALL }
+OFFSET <em class="replaceable"><code>start</code></em>
+</pre><p>
+    The parameter <em class="replaceable"><code>count</code></em> specifies the
+    maximum number of rows to return, while <em class="replaceable"><code>start</code></em> specifies the number of rows
+    to skip before starting to return rows.  When both are specified,
+    <em class="replaceable"><code>start</code></em> rows are skipped
+    before starting to count the <em class="replaceable"><code>count</code></em> rows to be returned.
+   </p><p>
+    If the <em class="replaceable"><code>count</code></em> expression
+    evaluates to NULL, it is treated as <code class="literal">LIMIT ALL</code>, i.e., no
+    limit.  If <em class="replaceable"><code>start</code></em> evaluates
+    to NULL, it is treated the same as <code class="literal">OFFSET 0</code>.
+   </p><p>
+    SQL:2008 introduced a different syntax to achieve the same result,
+    which <span class="productname">PostgreSQL</span> also supports.  It is:
+</p><pre class="synopsis">
+OFFSET <em class="replaceable"><code>start</code></em> { ROW | ROWS }
+FETCH { FIRST | NEXT } [ <em class="replaceable"><code>count</code></em> ] { ROW | ROWS } { ONLY | WITH TIES }
+</pre><p>
+    In this syntax, the <em class="replaceable"><code>start</code></em>
+    or <em class="replaceable"><code>count</code></em> value is required by
+    the standard to be a literal constant, a parameter, or a variable name;
+    as a <span class="productname">PostgreSQL</span> extension, other expressions
+    are allowed, but will generally need to be enclosed in parentheses to avoid
+    ambiguity.
+    If <em class="replaceable"><code>count</code></em> is
+    omitted in a <code class="literal">FETCH</code> clause, it defaults to 1.
+    The <code class="literal">WITH TIES</code> option is used to return any additional
+    rows that tie for the last place in the result set according to
+    the <code class="literal">ORDER BY</code> clause; <code class="literal">ORDER BY</code>
+    is mandatory in this case, and <code class="literal">SKIP LOCKED</code> is
+    not allowed.
+    <code class="literal">ROW</code> and <code class="literal">ROWS</code> as well as
+    <code class="literal">FIRST</code> and <code class="literal">NEXT</code> are noise
+    words that don't influence the effects of these clauses.
+    According to the standard, the <code class="literal">OFFSET</code> clause must come
+    before the <code class="literal">FETCH</code> clause if both are present; but
+    <span class="productname">PostgreSQL</span> is laxer and allows either order.
+   </p><p>
+    When using <code class="literal">LIMIT</code>, it is a good idea to use an
+    <code class="literal">ORDER BY</code> clause that constrains the result rows into a
+    unique order.  Otherwise you will get an unpredictable subset of
+    the query's rows — you might be asking for the tenth through
+    twentieth rows, but tenth through twentieth in what ordering?  You
+    don't know what ordering unless you specify <code class="literal">ORDER BY</code>.
+   </p><p>
+    The query planner takes <code class="literal">LIMIT</code> into account when
+    generating a query plan, so you are very likely to get different
+    plans (yielding different row orders) depending on what you use
+    for <code class="literal">LIMIT</code> and <code class="literal">OFFSET</code>.  Thus, using
+    different <code class="literal">LIMIT</code>/<code class="literal">OFFSET</code> values to select
+    different subsets of a query result <span class="emphasis"><em>will give
+    inconsistent results</em></span> unless you enforce a predictable
+    result ordering with <code class="literal">ORDER BY</code>.  This is not a bug; it
+    is an inherent consequence of the fact that SQL does not promise
+    to deliver the results of a query in any particular order unless
+    <code class="literal">ORDER BY</code> is used to constrain the order.
+   </p><p>
+    It is even possible for repeated executions of the same <code class="literal">LIMIT</code>
+    query to return different subsets of the rows of a table, if there
+    is not an <code class="literal">ORDER BY</code> to enforce selection of a deterministic
+    subset.  Again, this is not a bug; determinism of the results is
+    simply not guaranteed in such a case.
+   </p></div><div class="refsect2" id="SQL-FOR-UPDATE-SHARE"><h3>The Locking Clause</h3><p>
+    <code class="literal">FOR UPDATE</code>, <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR SHARE</code>
+    and <code class="literal">FOR KEY SHARE</code>
+    are <em class="firstterm">locking clauses</em>; they affect how <code class="literal">SELECT</code>
+    locks rows as they are obtained from the table.
+   </p><p>
+    The locking clause has the general form
+
+</p><pre class="synopsis">
+FOR <em class="replaceable"><code>lock_strength</code></em> [ OF <em class="replaceable"><code>table_name</code></em> [, ...] ] [ NOWAIT | SKIP LOCKED ]
+</pre><p>
+
+    where <em class="replaceable"><code>lock_strength</code></em> can be one of
+
+</p><pre class="synopsis">
+UPDATE
+NO KEY UPDATE
+SHARE
+KEY SHARE
+</pre><p>
+   </p><p>
+    For more information on each row-level lock mode, refer to
+    <a class="xref" href="explicit-locking.html#LOCKING-ROWS" title="13.3.2. Row-Level Locks">Section 13.3.2</a>.
+   </p><p>
+    To prevent the operation from waiting for other transactions to commit,
+    use either the <code class="literal">NOWAIT</code> or <code class="literal">SKIP LOCKED</code>
+    option.  With <code class="literal">NOWAIT</code>, the statement reports an error, rather
+    than waiting, if a selected row cannot be locked immediately.
+    With <code class="literal">SKIP LOCKED</code>, any selected rows that cannot be
+    immediately locked are skipped.  Skipping locked rows provides an
+    inconsistent view of the data, so this is not suitable for general purpose
+    work, but can be used to avoid lock contention with multiple consumers
+    accessing a queue-like table.
+    Note that <code class="literal">NOWAIT</code> and <code class="literal">SKIP LOCKED</code> apply only
+    to the row-level lock(s) — the required <code class="literal">ROW SHARE</code>
+    table-level lock is still taken in the ordinary way (see
+    <a class="xref" href="mvcc.html" title="Chapter 13. Concurrency Control">Chapter 13</a>).  You can use
+    <a class="link" href="sql-lock.html" title="LOCK"><code class="command">LOCK</code></a>
+    with the <code class="literal">NOWAIT</code> option first,
+    if you need to acquire the table-level lock without waiting.
+   </p><p>
+    If specific tables are named in a locking clause,
+    then only rows coming from those tables are locked; any other
+    tables used in the <code class="command">SELECT</code> are simply read as
+    usual.  A locking
+    clause without a table list affects all tables used in the statement.
+    If a locking clause is
+    applied to a view or sub-query, it affects all tables used in
+    the view or sub-query.
+    However, these clauses
+    do not apply to <code class="literal">WITH</code> queries referenced by the primary query.
+    If you want row locking to occur within a <code class="literal">WITH</code> query, specify
+    a locking clause within the <code class="literal">WITH</code> query.
+   </p><p>
+    Multiple locking
+    clauses can be written if it is necessary to specify different locking
+    behavior for different tables.  If the same table is mentioned (or
+    implicitly affected) by more than one locking clause,
+    then it is processed as if it was only specified by the strongest one.
+    Similarly, a table is processed
+    as <code class="literal">NOWAIT</code> if that is specified in any of the clauses
+    affecting it.  Otherwise, it is processed
+    as <code class="literal">SKIP LOCKED</code> if that is specified in any of the
+    clauses affecting it.
+   </p><p>
+    The locking clauses cannot be
+    used in contexts where returned rows cannot be clearly identified with
+    individual table rows; for example they cannot be used with aggregation.
+   </p><p>
+    When a locking clause
+    appears at the top level of a <code class="command">SELECT</code> query, the rows that
+    are locked are exactly those that are returned by the query; in the
+    case of a join query, the rows locked are those that contribute to
+    returned join rows.  In addition, rows that satisfied the query
+    conditions as of the query snapshot will be locked, although they
+    will not be returned if they were updated after the snapshot
+    and no longer satisfy the query conditions.  If a
+    <code class="literal">LIMIT</code> is used, locking stops
+    once enough rows have been returned to satisfy the limit (but note that
+    rows skipped over by <code class="literal">OFFSET</code> will get locked).  Similarly,
+    if a locking clause
+    is used in a cursor's query, only rows actually fetched or stepped past
+    by the cursor will be locked.
+   </p><p>
+    When a locking clause
+    appears in a sub-<code class="command">SELECT</code>, the rows locked are those
+    returned to the outer query by the sub-query.  This might involve
+    fewer rows than inspection of the sub-query alone would suggest,
+    since conditions from the outer query might be used to optimize
+    execution of the sub-query.  For example,
+</p><pre class="programlisting">
+SELECT * FROM (SELECT * FROM mytable FOR UPDATE) ss WHERE col1 = 5;
+</pre><p>
+    will lock only rows having <code class="literal">col1 = 5</code>, even though that
+    condition is not textually within the sub-query.
+   </p><p>
+   Previous releases failed to preserve a lock which is upgraded by a later
+   savepoint.  For example, this code:
+</p><pre class="programlisting">
+BEGIN;
+SELECT * FROM mytable WHERE key = 1 FOR UPDATE;
+SAVEPOINT s;
+UPDATE mytable SET ... WHERE key = 1;
+ROLLBACK TO s;
+</pre><p>
+   would fail to preserve the <code class="literal">FOR UPDATE</code> lock after the
+   <code class="command">ROLLBACK TO</code>.  This has been fixed in release 9.3.
+  </p><div class="caution"><h3 class="title">Caution</h3><p>
+    It is possible for a <code class="command">SELECT</code> command running at the <code class="literal">READ
+    COMMITTED</code> transaction isolation level and using <code class="literal">ORDER
+    BY</code> and a locking clause to return rows out of
+    order.  This is because <code class="literal">ORDER BY</code> is applied first.
+    The command sorts the result, but might then block trying to obtain a lock
+    on one or more of the rows.  Once the <code class="literal">SELECT</code> unblocks, some
+    of the ordering column values might have been modified, leading to those
+    rows appearing to be out of order (though they are in order in terms
+    of the original column values).  This can be worked around at need by
+    placing the <code class="literal">FOR UPDATE/SHARE</code> clause in a sub-query,
+    for example
+</p><pre class="programlisting">
+SELECT * FROM (SELECT * FROM mytable FOR UPDATE) ss ORDER BY column1;
+</pre><p>
+    Note that this will result in locking all rows of <code class="structname">mytable</code>,
+    whereas <code class="literal">FOR UPDATE</code> at the top level would lock only the
+    actually returned rows.  This can make for a significant performance
+    difference, particularly if the <code class="literal">ORDER BY</code> is combined with
+    <code class="literal">LIMIT</code> or other restrictions.  So this technique is recommended
+    only if concurrent updates of the ordering columns are expected and a
+    strictly sorted result is required.
+   </p><p>
+    At the <code class="literal">REPEATABLE READ</code> or <code class="literal">SERIALIZABLE</code>
+    transaction isolation level this would cause a serialization failure (with
+    a <code class="literal">SQLSTATE</code> of <code class="literal">'40001'</code>), so there is
+    no possibility of receiving rows out of order under these isolation levels.
+   </p></div></div><div class="refsect2" id="SQL-TABLE"><h3><code class="literal">TABLE</code> Command</h3><p>
+    The command
+</p><pre class="programlisting">
+TABLE <em class="replaceable"><code>name</code></em>
+</pre><p>
+    is equivalent to
+</p><pre class="programlisting">
+SELECT * FROM <em class="replaceable"><code>name</code></em>
+</pre><p>
+    It can be used as a top-level command or as a space-saving syntax
+    variant in parts of complex queries. Only the <code class="literal">WITH</code>,
+    <code class="literal">UNION</code>, <code class="literal">INTERSECT</code>, <code class="literal">EXCEPT</code>,
+    <code class="literal">ORDER BY</code>, <code class="literal">LIMIT</code>, <code class="literal">OFFSET</code>,
+    <code class="literal">FETCH</code> and <code class="literal">FOR</code> locking clauses can be used
+    with <code class="command">TABLE</code>; the <code class="literal">WHERE</code> clause and any form of
+    aggregation cannot
+    be used.
+   </p></div></div><div class="refsect1" id="id-1.9.3.171.9"><h2>Examples</h2><p>
+   To join the table <code class="literal">films</code> with the table
+   <code class="literal">distributors</code>:
+
+</p><pre class="programlisting">
+SELECT f.title, f.did, d.name, f.date_prod, f.kind
+    FROM distributors d JOIN films f USING (did);
+
+       title       | did |     name     | date_prod  |   kind
+-------------------+-----+--------------+------------+----------
+ The Third Man     | 101 | British Lion | 1949-12-23 | Drama
+ The African Queen | 101 | British Lion | 1951-08-11 | Romantic
+ ...
+</pre><p>
+  </p><p>
+   To sum the column <code class="literal">len</code> of all films and group
+   the results by <code class="literal">kind</code>:
+
+</p><pre class="programlisting">
+SELECT kind, sum(len) AS total FROM films GROUP BY kind;
+
+   kind   | total
+----------+-------
+ Action   | 07:34
+ Comedy   | 02:58
+ Drama    | 14:28
+ Musical  | 06:42
+ Romantic | 04:38
+</pre><p>
+  </p><p>
+   To sum the column <code class="literal">len</code> of all films, group
+   the results by <code class="literal">kind</code> and show those group totals
+   that are less than 5 hours:
+
+</p><pre class="programlisting">
+SELECT kind, sum(len) AS total
+    FROM films
+    GROUP BY kind
+    HAVING sum(len) &lt; interval '5 hours';
+
+   kind   | total
+----------+-------
+ Comedy   | 02:58
+ Romantic | 04:38
+</pre><p>
+  </p><p>
+   The following two examples are identical ways of sorting the individual
+   results according to the contents of the second column
+   (<code class="literal">name</code>):
+
+</p><pre class="programlisting">
+SELECT * FROM distributors ORDER BY name;
+SELECT * FROM distributors ORDER BY 2;
+
+ did |       name
+-----+------------------
+ 109 | 20th Century Fox
+ 110 | Bavaria Atelier
+ 101 | British Lion
+ 107 | Columbia
+ 102 | Jean Luc Godard
+ 113 | Luso films
+ 104 | Mosfilm
+ 103 | Paramount
+ 106 | Toho
+ 105 | United Artists
+ 111 | Walt Disney
+ 112 | Warner Bros.
+ 108 | Westward
+</pre><p>
+  </p><p>
+   The next example shows how to obtain the union of the tables
+   <code class="literal">distributors</code> and
+   <code class="literal">actors</code>, restricting the results to those that begin
+   with the letter W in each table.  Only distinct rows are wanted, so the
+   key word <code class="literal">ALL</code> is omitted.
+
+</p><pre class="programlisting">
+distributors:               actors:
+ did |     name              id |     name
+-----+--------------        ----+----------------
+ 108 | Westward               1 | Woody Allen
+ 111 | Walt Disney            2 | Warren Beatty
+ 112 | Warner Bros.           3 | Walter Matthau
+ ...                         ...
+
+SELECT distributors.name
+    FROM distributors
+    WHERE distributors.name LIKE 'W%'
+UNION
+SELECT actors.name
+    FROM actors
+    WHERE actors.name LIKE 'W%';
+
+      name
+----------------
+ Walt Disney
+ Walter Matthau
+ Warner Bros.
+ Warren Beatty
+ Westward
+ Woody Allen
+</pre><p>
+  </p><p>
+   This example shows how to use a function in the <code class="literal">FROM</code>
+   clause, both with and without a column definition list:
+
+</p><pre class="programlisting">
+CREATE FUNCTION distributors(int) RETURNS SETOF distributors AS $$
+    SELECT * FROM distributors WHERE did = $1;
+$$ LANGUAGE SQL;
+
+SELECT * FROM distributors(111);
+ did |    name
+-----+-------------
+ 111 | Walt Disney
+
+CREATE FUNCTION distributors_2(int) RETURNS SETOF record AS $$
+    SELECT * FROM distributors WHERE did = $1;
+$$ LANGUAGE SQL;
+
+SELECT * FROM distributors_2(111) AS (f1 int, f2 text);
+ f1  |     f2
+-----+-------------
+ 111 | Walt Disney
+</pre><p>
+  </p><p>
+   Here is an example of a function with an ordinality column added:
+
+</p><pre class="programlisting">
+SELECT * FROM unnest(ARRAY['a','b','c','d','e','f']) WITH ORDINALITY;
+ unnest | ordinality
+--------+----------
+ a      |        1
+ b      |        2
+ c      |        3
+ d      |        4
+ e      |        5
+ f      |        6
+(6 rows)
+</pre><p>
+  </p><p>
+   This example shows how to use a simple <code class="literal">WITH</code> clause:
+
+</p><pre class="programlisting">
+WITH t AS (
+    SELECT random() as x FROM generate_series(1, 3)
+  )
+SELECT * FROM t
+UNION ALL
+SELECT * FROM t;
+         x          
+--------------------
+  0.534150459803641
+  0.520092216785997
+ 0.0735620250925422
+  0.534150459803641
+  0.520092216785997
+ 0.0735620250925422
+</pre><p>
+
+   Notice that the <code class="literal">WITH</code> query was evaluated only once,
+   so that we got two sets of the same three random values.
+  </p><p>
+   This example uses <code class="literal">WITH RECURSIVE</code> to find all
+   subordinates (direct or indirect) of the employee Mary, and their
+   level of indirectness, from a table that shows only direct
+   subordinates:
+
+</p><pre class="programlisting">
+WITH RECURSIVE employee_recursive(distance, employee_name, manager_name) AS (
+    SELECT 1, employee_name, manager_name
+    FROM employee
+    WHERE manager_name = 'Mary'
+  UNION ALL
+    SELECT er.distance + 1, e.employee_name, e.manager_name
+    FROM employee_recursive er, employee e
+    WHERE er.employee_name = e.manager_name
+  )
+SELECT distance, employee_name FROM employee_recursive;
+</pre><p>
+
+   Notice the typical form of recursive queries:
+   an initial condition, followed by <code class="literal">UNION</code>,
+   followed by the recursive part of the query. Be sure that the
+   recursive part of the query will eventually return no tuples, or
+   else the query will loop indefinitely.  (See <a class="xref" href="queries-with.html" title="7.8. WITH Queries (Common Table Expressions)">Section 7.8</a>
+   for more examples.)
+  </p><p>
+   This example uses <code class="literal">LATERAL</code> to apply a set-returning function
+   <code class="function">get_product_names()</code> for each row of the
+   <code class="structname">manufacturers</code> table:
+
+</p><pre class="programlisting">
+SELECT m.name AS mname, pname
+FROM manufacturers m, LATERAL get_product_names(m.id) pname;
+</pre><p>
+
+    Manufacturers not currently having any products would not appear in the
+    result, since it is an inner join.  If we wished to include the names of
+    such manufacturers in the result, we could do:
+
+</p><pre class="programlisting">
+SELECT m.name AS mname, pname
+FROM manufacturers m LEFT JOIN LATERAL get_product_names(m.id) pname ON true;
+</pre></div><div class="refsect1" id="id-1.9.3.171.10"><h2>Compatibility</h2><p>
+   Of course, the <code class="command">SELECT</code> statement is compatible
+   with the SQL standard.  But there are some extensions and some
+   missing features.
+  </p><div class="refsect2" id="id-1.9.3.171.10.3"><h3>Omitted <code class="literal">FROM</code> Clauses</h3><p>
+    <span class="productname">PostgreSQL</span> allows one to omit the
+    <code class="literal">FROM</code> clause.  It has a straightforward use to
+    compute the results of simple expressions:
+</p><pre class="programlisting">
+SELECT 2+2;
+
+ ?column?
+----------
+        4
+</pre><p>
+    Some other <acronym class="acronym">SQL</acronym> databases cannot do this except
+    by introducing a dummy one-row table from which to do the
+    <code class="command">SELECT</code>.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.4"><h3>Empty <code class="literal">SELECT</code> Lists</h3><p>
+    The list of output expressions after <code class="literal">SELECT</code> can be
+    empty, producing a zero-column result table.
+    This is not valid syntax according to the SQL standard.
+    <span class="productname">PostgreSQL</span> allows it to be consistent with
+    allowing zero-column tables.
+    However, an empty list is not allowed when <code class="literal">DISTINCT</code> is used.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.5"><h3>Omitting the <code class="literal">AS</code> Key Word</h3><p>
+    In the SQL standard, the optional key word <code class="literal">AS</code> can be
+    omitted before an output column name whenever the new column name
+    is a valid column name (that is, not the same as any reserved
+    keyword).  <span class="productname">PostgreSQL</span> is slightly more
+    restrictive: <code class="literal">AS</code> is required if the new column name
+    matches any keyword at all, reserved or not.  Recommended practice is
+    to use <code class="literal">AS</code> or double-quote output column names, to prevent
+    any possible conflict against future keyword additions.
+   </p><p>
+    In <code class="literal">FROM</code> items, both the standard and
+    <span class="productname">PostgreSQL</span> allow <code class="literal">AS</code> to
+    be omitted before an alias that is an unreserved keyword.  But
+    this is impractical for output column names, because of syntactic
+    ambiguities.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.6"><h3><code class="literal">ONLY</code> and Inheritance</h3><p>
+    The SQL standard requires parentheses around the table name when
+    writing <code class="literal">ONLY</code>, for example <code class="literal">SELECT * FROM ONLY
+    (tab1), ONLY (tab2) WHERE ...</code>.  <span class="productname">PostgreSQL</span>
+    considers these parentheses to be optional.
+   </p><p>
+    <span class="productname">PostgreSQL</span> allows a trailing <code class="literal">*</code> to be written to
+    explicitly specify the non-<code class="literal">ONLY</code> behavior of including
+    child tables.  The standard does not allow this.
+   </p><p>
+    (These points apply equally to all SQL commands supporting the
+    <code class="literal">ONLY</code> option.)
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.7"><h3><code class="literal">TABLESAMPLE</code> Clause Restrictions</h3><p>
+    The <code class="literal">TABLESAMPLE</code> clause is currently accepted only on
+    regular tables and materialized views.  According to the SQL standard
+    it should be possible to apply it to any <code class="literal">FROM</code> item.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.8"><h3>Function Calls in <code class="literal">FROM</code></h3><p>
+    <span class="productname">PostgreSQL</span> allows a function call to be
+    written directly as a member of the <code class="literal">FROM</code> list.  In the SQL
+    standard it would be necessary to wrap such a function call in a
+    sub-<code class="command">SELECT</code>; that is, the syntax
+    <code class="literal">FROM <em class="replaceable"><code>func</code></em>(...) <em class="replaceable"><code>alias</code></em></code>
+    is approximately equivalent to
+    <code class="literal">FROM LATERAL (SELECT <em class="replaceable"><code>func</code></em>(...)) <em class="replaceable"><code>alias</code></em></code>.
+    Note that <code class="literal">LATERAL</code> is considered to be implicit; this is
+    because the standard requires <code class="literal">LATERAL</code> semantics for an
+    <code class="literal">UNNEST()</code> item in <code class="literal">FROM</code>.
+    <span class="productname">PostgreSQL</span> treats <code class="literal">UNNEST()</code> the
+    same as other set-returning functions.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.9"><h3>Namespace Available to <code class="literal">GROUP BY</code> and <code class="literal">ORDER BY</code></h3><p>
+    In the SQL-92 standard, an <code class="literal">ORDER BY</code> clause can
+    only use output column names or numbers, while a <code class="literal">GROUP
+    BY</code> clause can only use expressions based on input column
+    names.  <span class="productname">PostgreSQL</span> extends each of
+    these clauses to allow the other choice as well (but it uses the
+    standard's interpretation if there is ambiguity).
+    <span class="productname">PostgreSQL</span> also allows both clauses to
+    specify arbitrary expressions.  Note that names appearing in an
+    expression will always be taken as input-column names, not as
+    output-column names.
+   </p><p>
+    SQL:1999 and later use a slightly different definition which is not
+    entirely upward compatible with SQL-92.
+    In most cases, however, <span class="productname">PostgreSQL</span>
+    will interpret an <code class="literal">ORDER BY</code> or <code class="literal">GROUP
+    BY</code> expression the same way SQL:1999 does.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.10"><h3>Functional Dependencies</h3><p>
+    <span class="productname">PostgreSQL</span> recognizes functional dependency
+    (allowing columns to be omitted from <code class="literal">GROUP BY</code>) only when
+    a table's primary key is included in the <code class="literal">GROUP BY</code> list.
+    The SQL standard specifies additional conditions that should be
+    recognized.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.11"><h3><code class="literal">LIMIT</code> and <code class="literal">OFFSET</code></h3><p>
+    The clauses <code class="literal">LIMIT</code> and <code class="literal">OFFSET</code>
+    are <span class="productname">PostgreSQL</span>-specific syntax, also
+    used by <span class="productname">MySQL</span>.  The SQL:2008 standard
+    has introduced the clauses <code class="literal">OFFSET ... FETCH {FIRST|NEXT}
+    ...</code> for the same functionality, as shown above
+    in <a class="xref" href="sql-select.html#SQL-LIMIT" title="LIMIT Clause">LIMIT Clause</a>.  This
+    syntax is also used by <span class="productname">IBM DB2</span>.
+    (Applications written for <span class="productname">Oracle</span>
+    frequently use a workaround involving the automatically
+    generated <code class="literal">rownum</code> column, which is not available in
+    PostgreSQL, to implement the effects of these clauses.)
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.12"><h3><code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR UPDATE</code>, <code class="literal">FOR SHARE</code>, <code class="literal">FOR KEY SHARE</code></h3><p>
+    Although <code class="literal">FOR UPDATE</code> appears in the SQL standard, the
+    standard allows it only as an option of <code class="command">DECLARE CURSOR</code>.
+    <span class="productname">PostgreSQL</span> allows it in any <code class="command">SELECT</code>
+    query as well as in sub-<code class="command">SELECT</code>s, but this is an extension.
+    The <code class="literal">FOR NO KEY UPDATE</code>, <code class="literal">FOR SHARE</code> and
+    <code class="literal">FOR KEY SHARE</code> variants, as well as the <code class="literal">NOWAIT</code>
+    and <code class="literal">SKIP LOCKED</code> options, do not appear in the
+    standard.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.13"><h3>Data-Modifying Statements in <code class="literal">WITH</code></h3><p>
+    <span class="productname">PostgreSQL</span> allows <code class="command">INSERT</code>,
+    <code class="command">UPDATE</code>, and <code class="command">DELETE</code> to be used as <code class="literal">WITH</code>
+    queries.  This is not found in the SQL standard.
+   </p></div><div class="refsect2" id="id-1.9.3.171.10.14"><h3>Nonstandard Clauses</h3><p>
+    <code class="literal">DISTINCT ON ( ... )</code> is an extension of the
+    SQL standard.
+   </p><p>
+    <code class="literal">ROWS FROM( ... )</code> is an extension of the SQL standard.
+   </p><p>
+    The <code class="literal">MATERIALIZED</code> and <code class="literal">NOT
+    MATERIALIZED</code> options of <code class="literal">WITH</code> are extensions
+    of the SQL standard.
+   </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-security-label.html" title="SECURITY LABEL">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-selectinto.html" title="SELECT INTO">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SECURITY LABEL </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SELECT INTO</td></tr></table></div></body></html>

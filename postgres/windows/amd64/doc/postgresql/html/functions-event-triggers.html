@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.29. Event Trigger Functions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-trigger.html" title="9.28. Trigger Functions" /><link rel="next" href="functions-statistics.html" title="9.30. Statistics Information Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.29. Event Trigger Functions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-trigger.html" title="9.28. Trigger Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-statistics.html" title="9.30. Statistics Information Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-EVENT-TRIGGERS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.29. Event Trigger Functions</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="functions-event-triggers.html#PG-EVENT-TRIGGER-DDL-COMMAND-END-FUNCTIONS">9.29.1. Capturing Changes at Command End</a></span></dt><dt><span class="sect2"><a href="functions-event-triggers.html#PG-EVENT-TRIGGER-SQL-DROP-FUNCTIONS">9.29.2. Processing Objects Dropped by a DDL Command</a></span></dt><dt><span class="sect2"><a href="functions-event-triggers.html#PG-EVENT-TRIGGER-TABLE-REWRITE-FUNCTIONS">9.29.3. Handling a Table Rewrite Event</a></span></dt></dl></div><p>
+    <span class="productname">PostgreSQL</span> provides these helper functions
+    to retrieve information from event triggers.
+   </p><p>
+    For more information about event triggers,
+    see <a class="xref" href="event-triggers.html" title="Chapter 40. Event Triggers">Chapter 40</a>.
+   </p><div class="sect2" id="PG-EVENT-TRIGGER-DDL-COMMAND-END-FUNCTIONS"><div class="titlepage"><div><div><h3 class="title">9.29.1. Capturing Changes at Command End</h3></div></div></div><a id="id-1.5.8.35.4.2" class="indexterm"></a><pre class="synopsis">
+<code class="function">pg_event_trigger_ddl_commands</code> () → <code class="returnvalue">setof record</code>
+</pre><p>
+    <code class="function">pg_event_trigger_ddl_commands</code> returns a list of
+    <acronym class="acronym">DDL</acronym> commands executed by each user action,
+    when invoked in a function attached to a
+    <code class="literal">ddl_command_end</code> event trigger.  If called in any other
+    context, an error is raised.
+    <code class="function">pg_event_trigger_ddl_commands</code> returns one row for each
+    base command executed; some commands that are a single SQL sentence
+    may return more than one row.  This function returns the following
+    columns:
+
+    </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="literal">classid</code></td><td><code class="type">oid</code></td><td>OID of catalog the object belongs in</td></tr><tr><td><code class="literal">objid</code></td><td><code class="type">oid</code></td><td>OID of the object itself</td></tr><tr><td><code class="literal">objsubid</code></td><td><code class="type">integer</code></td><td>Sub-object ID (e.g., attribute number for a column)</td></tr><tr><td><code class="literal">command_tag</code></td><td><code class="type">text</code></td><td>Command tag</td></tr><tr><td><code class="literal">object_type</code></td><td><code class="type">text</code></td><td>Type of the object</td></tr><tr><td><code class="literal">schema_name</code></td><td><code class="type">text</code></td><td>
+         Name of the schema the object belongs in, if any; otherwise <code class="literal">NULL</code>.
+         No quoting is applied.
+        </td></tr><tr><td><code class="literal">object_identity</code></td><td><code class="type">text</code></td><td>
+         Text rendering of the object identity, schema-qualified. Each
+         identifier included in the identity is quoted if necessary.
+        </td></tr><tr><td><code class="literal">in_extension</code></td><td><code class="type">boolean</code></td><td>True if the command is part of an extension script</td></tr><tr><td><code class="literal">command</code></td><td><code class="type">pg_ddl_command</code></td><td>
+         A complete representation of the command, in internal format.
+         This cannot be output directly, but it can be passed to other
+         functions to obtain different pieces of information about the
+         command.
+        </td></tr></tbody></table></div><p>
+   </p></div><div class="sect2" id="PG-EVENT-TRIGGER-SQL-DROP-FUNCTIONS"><div class="titlepage"><div><div><h3 class="title">9.29.2. Processing Objects Dropped by a DDL Command</h3></div></div></div><a id="id-1.5.8.35.5.2" class="indexterm"></a><pre class="synopsis">
+<code class="function">pg_event_trigger_dropped_objects</code> () → <code class="returnvalue">setof record</code>
+</pre><p>
+    <code class="function">pg_event_trigger_dropped_objects</code> returns a list of all objects
+    dropped by the command in whose <code class="literal">sql_drop</code> event it is called.
+    If called in any other context, an error is raised.
+    This function returns the following columns:
+
+    </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="literal">classid</code></td><td><code class="type">oid</code></td><td>OID of catalog the object belonged in</td></tr><tr><td><code class="literal">objid</code></td><td><code class="type">oid</code></td><td>OID of the object itself</td></tr><tr><td><code class="literal">objsubid</code></td><td><code class="type">integer</code></td><td>Sub-object ID (e.g., attribute number for a column)</td></tr><tr><td><code class="literal">original</code></td><td><code class="type">boolean</code></td><td>True if this was one of the root object(s) of the deletion</td></tr><tr><td><code class="literal">normal</code></td><td><code class="type">boolean</code></td><td>
+         True if there was a normal dependency relationship
+         in the dependency graph leading to this object
+        </td></tr><tr><td><code class="literal">is_temporary</code></td><td><code class="type">boolean</code></td><td>
+         True if this was a temporary object
+        </td></tr><tr><td><code class="literal">object_type</code></td><td><code class="type">text</code></td><td>Type of the object</td></tr><tr><td><code class="literal">schema_name</code></td><td><code class="type">text</code></td><td>
+         Name of the schema the object belonged in, if any; otherwise <code class="literal">NULL</code>.
+         No quoting is applied.
+        </td></tr><tr><td><code class="literal">object_name</code></td><td><code class="type">text</code></td><td>
+         Name of the object, if the combination of schema and name can be
+         used as a unique identifier for the object; otherwise <code class="literal">NULL</code>.
+         No quoting is applied, and name is never schema-qualified.
+        </td></tr><tr><td><code class="literal">object_identity</code></td><td><code class="type">text</code></td><td>
+         Text rendering of the object identity, schema-qualified. Each
+         identifier included in the identity is quoted if necessary.
+        </td></tr><tr><td><code class="literal">address_names</code></td><td><code class="type">text[]</code></td><td>
+         An array that, together with <code class="literal">object_type</code> and
+         <code class="literal">address_args</code>, can be used by
+         the <code class="function">pg_get_object_address</code> function to
+         recreate the object address in a remote server containing an
+         identically named object of the same kind.
+        </td></tr><tr><td><code class="literal">address_args</code></td><td><code class="type">text[]</code></td><td>
+         Complement for <code class="literal">address_names</code>
+        </td></tr></tbody></table></div><p>
+   </p><p>
+    The <code class="function">pg_event_trigger_dropped_objects</code> function can be used
+    in an event trigger like this:
+</p><pre class="programlisting">
+CREATE FUNCTION test_event_trigger_for_drops()
+        RETURNS event_trigger LANGUAGE plpgsql AS $$
+DECLARE
+    obj record;
+BEGIN
+    FOR obj IN SELECT * FROM pg_event_trigger_dropped_objects()
+    LOOP
+        RAISE NOTICE '% dropped object: % %.% %',
+                     tg_tag,
+                     obj.object_type,
+                     obj.schema_name,
+                     obj.object_name,
+                     obj.object_identity;
+    END LOOP;
+END;
+$$;
+CREATE EVENT TRIGGER test_event_trigger_for_drops
+   ON sql_drop
+   EXECUTE FUNCTION test_event_trigger_for_drops();
+</pre><p>
+    </p></div><div class="sect2" id="PG-EVENT-TRIGGER-TABLE-REWRITE-FUNCTIONS"><div class="titlepage"><div><div><h3 class="title">9.29.3. Handling a Table Rewrite Event</h3></div></div></div><p>
+    The functions shown in
+    <a class="xref" href="functions-event-triggers.html#FUNCTIONS-EVENT-TRIGGER-TABLE-REWRITE" title="Table 9.100. Table Rewrite Information Functions">Table 9.100</a>
+    provide information about a table for which a
+    <code class="literal">table_rewrite</code> event has just been called.
+    If called in any other context, an error is raised.
+   </p><div class="table" id="FUNCTIONS-EVENT-TRIGGER-TABLE-REWRITE"><p class="title"><strong>Table 9.100. Table Rewrite Information Functions</strong></p><div class="table-contents"><table class="table" summary="Table Rewrite Information Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.35.6.3.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">pg_event_trigger_table_rewrite_oid</code> ()
+        → <code class="returnvalue">oid</code>
+       </p>
+       <p>
+        Returns the OID of the table about to be rewritten.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.35.6.3.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">pg_event_trigger_table_rewrite_reason</code> ()
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns a code explaining the reason(s) for rewriting.  The exact
+        meaning of the codes is release dependent.
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+    These functions can be used in an event trigger like this:
+</p><pre class="programlisting">
+CREATE FUNCTION test_event_trigger_table_rewrite_oid()
+ RETURNS event_trigger
+ LANGUAGE plpgsql AS
+$$
+BEGIN
+  RAISE NOTICE 'rewriting table % for reason %',
+                pg_event_trigger_table_rewrite_oid()::regclass,
+                pg_event_trigger_table_rewrite_reason();
+END;
+$$;
+
+CREATE EVENT TRIGGER test_table_rewrite_oid
+                  ON table_rewrite
+   EXECUTE FUNCTION test_event_trigger_table_rewrite_oid();
+</pre><p>
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-trigger.html" title="9.28. Trigger Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-statistics.html" title="9.30. Statistics Information Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.28. Trigger Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.30. Statistics Information Functions</td></tr></table></div></body></html>

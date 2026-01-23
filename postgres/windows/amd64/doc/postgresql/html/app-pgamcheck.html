@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_amcheck</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-ecpg.html" title="ecpg" /><link rel="next" href="app-pgbasebackup.html" title="pg_basebackup" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_amcheck</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-ecpg.html" title="ecpg">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><th width="60%" align="center">PostgreSQL Client Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="app-pgbasebackup.html" title="pg_basebackup">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-PGAMCHECK"><div class="titlepage"></div><a id="id-1.9.4.9.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_amcheck</span></span></h2><p>pg_amcheck — checks for corruption in one or more
+  <span class="productname">PostgreSQL</span> databases</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.4.9.4.1"><code class="command">pg_amcheck</code> [<em class="replaceable"><code>option</code></em>...] [<em class="replaceable"><code>dbname</code></em>]</p></div></div><div class="refsect1" id="id-1.9.4.9.5"><h2>Description</h2><p>
+   <span class="application">pg_amcheck</span> supports running
+   <a class="xref" href="amcheck.html" title="F.2. amcheck">amcheck</a>'s corruption checking functions against one or
+   more databases, with options to select which schemas, tables and indexes to
+   check, which kinds of checking to perform, and whether to perform the checks
+   in parallel, and if so, the number of parallel connections to establish and
+   use.
+  </p><p>
+   Only table relations and btree indexes are currently supported.  Other
+   relation types are silently skipped.
+  </p><p>
+   If <code class="literal">dbname</code> is specified, it should be the name of a
+   single database to check, and no other database selection options should
+   be present. Otherwise, if any database selection options are present,
+   all matching databases will be checked. If no such options are present,
+   the default database will be checked. Database selection options include
+   <code class="option">--all</code>, <code class="option">--database</code> and
+   <code class="option">--exclude-database</code>. They also include
+   <code class="option">--relation</code>, <code class="option">--exclude-relation</code>,
+   <code class="option">--table</code>, <code class="option">--exclude-table</code>,
+   <code class="option">--index</code>, and <code class="option">--exclude-index</code>,
+   but only when such options are used with a three-part pattern
+   (e.g. <code class="option">mydb*.myschema*.myrel*</code>).  Finally, they include
+   <code class="option">--schema</code> and <code class="option">--exclude-schema</code>
+   when such options are used with a two-part pattern
+   (e.g. <code class="option">mydb*.myschema*</code>).
+  </p><p>
+   <em class="replaceable"><code>dbname</code></em> can also be a
+   <a class="link" href="libpq-connect.html#LIBPQ-CONNSTRING" title="34.1.1. Connection Strings">connection string</a>.
+  </p></div><div class="refsect1" id="id-1.9.4.9.6"><h2>Options</h2><p>
+   The following command-line options control what is checked:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-a</code><br /></span><span class="term"><code class="option">--all</code></span></dt><dd><p>
+       Check all databases, except for any excluded via
+       <code class="option">--exclude-database</code>.
+      </p></dd><dt><span class="term"><code class="option">-d <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--database=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Check databases matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>,
+       except for any excluded by <code class="option">--exclude-database</code>.
+       This option can be specified more than once.
+      </p></dd><dt><span class="term"><code class="option">-D <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--exclude-database=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Exclude databases matching the given
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>.
+       This option can be specified more than once.
+      </p></dd><dt><span class="term"><code class="option">-i <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--index=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Check indexes matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>,
+       unless they are otherwise excluded.
+       This option can be specified more than once.
+      </p><p>
+       This is similar to the <code class="option">--relation</code> option, except that
+       it applies only to indexes, not tables.
+      </p></dd><dt><span class="term"><code class="option">-I <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--exclude-index=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Exclude indexes matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>.
+       This option can be specified more than once.
+      </p><p>
+       This is similar to the <code class="option">--exclude-relation</code> option,
+       except that it applies only to indexes, not tables.
+      </p></dd><dt><span class="term"><code class="option">-r <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--relation=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Check relations matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>,
+       unless they are otherwise excluded.
+       This option can be specified more than once.
+      </p><p>
+       Patterns may be unqualified, e.g. <code class="literal">myrel*</code>, or they
+       may be schema-qualified, e.g. <code class="literal">myschema*.myrel*</code> or
+       database-qualified and schema-qualified, e.g.
+       <code class="literal">mydb*.myschema*.myrel*</code>. A database-qualified
+       pattern will add matching databases to the list of databases to be
+       checked.
+      </p></dd><dt><span class="term"><code class="option">-R <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--exclude-relation=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Exclude relations matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>.
+       This option can be specified more than once.
+      </p><p>
+       As with <code class="option">--relation</code>, the
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a> may be unqualified, schema-qualified,
+       or database- and schema-qualified.
+      </p></dd><dt><span class="term"><code class="option">-s <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--schema=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Check tables and indexes in schemas matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>, unless they are otherwise excluded.
+       This option can be specified more than once.
+      </p><p>
+       To select only tables in schemas matching a particular pattern,
+       consider using something like
+       <code class="literal">--table=SCHEMAPAT.* --no-dependent-indexes</code>.
+       To select only indexes, consider using something like
+       <code class="literal">--index=SCHEMAPAT.*</code>.
+      </p><p>
+       A schema pattern may be database-qualified. For example, you may
+       write <code class="literal">--schema=mydb*.myschema*</code> to select
+       schemas matching <code class="literal">myschema*</code> in databases matching
+       <code class="literal">mydb*</code>.
+      </p></dd><dt><span class="term"><code class="option">-S <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--exclude-schema=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Exclude tables and indexes in schemas matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>.
+       This option can be specified more than once.
+      </p><p>
+       As with <code class="option">--schema</code>, the pattern may be
+       database-qualified.
+      </p></dd><dt><span class="term"><code class="option">-t <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--table=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Check tables matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>,
+       unless they are otherwise excluded.
+       This option can be specified more than once.
+      </p><p>
+       This is similar to the <code class="option">--relation</code> option, except that
+       it applies only to tables, not indexes.
+      </p></dd><dt><span class="term"><code class="option">-T <em class="replaceable"><code>pattern</code></em></code><br /></span><span class="term"><code class="option">--exclude-table=<em class="replaceable"><code>pattern</code></em></code></span></dt><dd><p>
+       Exclude tables matching the specified
+       <a class="link" href="app-psql.html#APP-PSQL-PATTERNS" title="Patterns"><em class="replaceable"><code>pattern</code></em></a>.
+       This option can be specified more than once.
+      </p><p>
+       This is similar to the <code class="option">--exclude-relation</code> option,
+       except that it applies only to tables, not indexes.
+      </p></dd><dt><span class="term"><code class="option">--no-dependent-indexes</code></span></dt><dd><p>
+       By default, if a table is checked, any btree indexes of that table
+       will also be checked, even if they are not explicitly selected by
+       an option such as <code class="literal">--index</code> or
+       <code class="literal">--relation</code>. This option suppresses that behavior.
+      </p></dd><dt><span class="term"><code class="option">--no-dependent-toast</code></span></dt><dd><p>
+       By default, if a table is checked, its toast table, if any, will also
+       be checked, even if it is not explicitly selected by an option
+       such as <code class="literal">--table</code> or <code class="literal">--relation</code>.
+       This option suppresses that behavior.
+      </p></dd><dt><span class="term"><code class="option">--no-strict-names</code></span></dt><dd><p>
+       By default, if an argument to <code class="literal">--database</code>,
+       <code class="literal">--table</code>, <code class="literal">--index</code>,
+       or <code class="literal">--relation</code> matches no objects, it is a fatal
+       error. This option downgrades that error to a warning.
+      </p></dd></dl></div><p>
+  </p><p>
+   The following command-line options control checking of tables:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">--exclude-toast-pointers</code></span></dt><dd><p>
+       By default, whenever a toast pointer is encountered in a table,
+       a lookup is performed to ensure that it references apparently-valid
+       entries in the toast table. These checks can be quite slow, and this
+       option can be used to skip them.
+      </p></dd><dt><span class="term"><code class="option">--on-error-stop</code></span></dt><dd><p>
+       After reporting all corruptions on the first page of a table where
+       corruption is found, stop processing that table relation and move on
+       to the next table or index.
+      </p><p>
+       Note that index checking always stops after the first corrupt page.
+       This option only has meaning relative to table relations.
+      </p></dd><dt><span class="term"><code class="option">--skip=<em class="replaceable"><code>option</code></em></code></span></dt><dd><p>
+       If <code class="literal">all-frozen</code> is given, table corruption checks
+       will skip over pages in all tables that are marked as all frozen.
+      </p><p>
+       If <code class="literal">all-visible</code> is given, table corruption checks
+       will skip over pages in all tables that are marked as all visible.
+      </p><p>
+       By default, no pages are skipped.  This can be specified as
+       <code class="literal">none</code>, but since this is the default, it need not be
+       mentioned.
+      </p></dd><dt><span class="term"><code class="option">--startblock=<em class="replaceable"><code>block</code></em></code></span></dt><dd><p>
+       Start checking at the specified block number. An error will occur if
+       the table relation being checked has fewer than this number of blocks.
+       This option does not apply to indexes, and is probably only useful
+       when checking a single table relation. See <code class="literal">--endblock</code>
+       for further caveats.
+      </p></dd><dt><span class="term"><code class="option">--endblock=<em class="replaceable"><code>block</code></em></code></span></dt><dd><p>
+       End checking at the specified block number.  An error will occur if the
+       table relation being checked has fewer than this number of blocks.
+       This option does not apply to indexes, and is probably only useful when
+       checking a single table relation. If both a regular table and a toast
+       table are checked, this option will apply to both, but higher-numbered
+       toast blocks may still be accessed while validating toast pointers,
+       unless that is suppressed using
+       <code class="option">--exclude-toast-pointers</code>.
+      </p></dd></dl></div><p>
+  </p><p>
+   The following command-line options control checking of B-tree indexes:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">--heapallindexed</code></span></dt><dd><p>
+       For each index checked, verify the presence of all heap tuples as index
+       tuples in the index using <a class="xref" href="amcheck.html" title="F.2. amcheck">amcheck</a>'s
+       <code class="option">heapallindexed</code> option.
+      </p></dd><dt><span class="term"><code class="option">--parent-check</code></span></dt><dd><p>
+       For each btree index checked, use <a class="xref" href="amcheck.html" title="F.2. amcheck">amcheck</a>'s
+       <code class="function">bt_index_parent_check</code> function, which performs
+       additional checks of parent/child relationships during index checking.
+      </p><p>
+       The default is to use <span class="application">amcheck</span>'s
+       <code class="function">bt_index_check</code> function, but note that use of the
+       <code class="option">--rootdescend</code> option implicitly selects
+       <code class="function">bt_index_parent_check</code>.
+      </p></dd><dt><span class="term"><code class="option">--rootdescend</code></span></dt><dd><p>
+       For each index checked, re-find tuples on the leaf level by performing a
+       new search from the root page for each tuple using
+       <a class="xref" href="amcheck.html" title="F.2. amcheck">amcheck</a>'s <code class="option">rootdescend</code> option.
+      </p><p>
+       Use of this option implicitly also selects the
+       <code class="option">--parent-check</code> option.
+      </p><p>
+       This form of verification was originally written to help in the
+       development of btree index features.  It may be of limited use or even
+       of no use in helping detect the kinds of corruption that occur in
+       practice.  It may also cause corruption checking to take considerably
+       longer and consume considerably more resources on the server.
+      </p></dd></dl></div><p>
+  </p><div class="warning"><h3 class="title">Warning</h3><p>
+    The extra checks performed against B-tree indexes when the
+    <code class="option">--parent-check</code> option or the
+    <code class="option">--rootdescend</code> option is specified require
+    relatively strong relation-level locks.  These checks are the only
+    checks that will block concurrent data modification from
+    <code class="command">INSERT</code>, <code class="command">UPDATE</code>, and
+    <code class="command">DELETE</code> commands.
+   </p></div><p>
+   The following command-line options control the connection to the server:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-h <em class="replaceable"><code>hostname</code></em></code><br /></span><span class="term"><code class="option">--host=<em class="replaceable"><code>hostname</code></em></code></span></dt><dd><p>
+       Specifies the host name of the machine on which the server is running.
+       If the value begins with a slash, it is used as the directory for the
+       Unix domain socket.
+      </p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>port</code></em></code><br /></span><span class="term"><code class="option">--port=<em class="replaceable"><code>port</code></em></code></span></dt><dd><p>
+       Specifies the TCP port or local Unix domain socket file extension on
+       which the server is listening for connections.
+      </p></dd><dt><span class="term"><code class="option">-U</code><br /></span><span class="term"><code class="option">--username=<em class="replaceable"><code>username</code></em></code></span></dt><dd><p>
+       User name to connect as.
+      </p></dd><dt><span class="term"><code class="option">-w</code><br /></span><span class="term"><code class="option">--no-password</code></span></dt><dd><p>
+       Never issue a password prompt.  If the server requires password
+       authentication and a password is not available by other means such as
+       a <code class="filename">.pgpass</code> file, the connection attempt will fail.
+       This option can be useful in batch jobs and scripts where no user is
+       present to enter a password.
+      </p></dd><dt><span class="term"><code class="option">-W</code><br /></span><span class="term"><code class="option">--password</code></span></dt><dd><p>
+       Force <span class="application">pg_amcheck</span> to prompt for a password
+       before connecting to a database.
+      </p><p>
+       This option is never essential, since
+       <span class="application">pg_amcheck</span> will automatically prompt for a
+       password if the server demands password authentication.  However,
+       <span class="application">pg_amcheck</span> will waste a connection attempt
+       finding out that the server wants a password.  In some cases it is
+       worth typing <code class="option">-W</code> to avoid the extra connection attempt.
+      </p></dd><dt><span class="term"><code class="option">--maintenance-db=<em class="replaceable"><code>dbname</code></em></code></span></dt><dd><p>
+       Specifies a database or
+       <a class="link" href="libpq-connect.html#LIBPQ-CONNSTRING" title="34.1.1. Connection Strings">connection string</a> to be
+       used to discover the list of databases to be checked. If neither
+       <code class="option">--all</code> nor any option including a database pattern is
+       used, no such connection is required and this option does nothing.
+       Otherwise, any connection string parameters other than
+       the database name which are included in the value for this option
+       will also be used when connecting to the databases
+       being checked. If this option is omitted, the default is
+       <code class="literal">postgres</code> or, if that fails,
+       <code class="literal">template1</code>.
+      </p></dd></dl></div><p>
+  </p><p>
+   Other options are also available:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-e</code><br /></span><span class="term"><code class="option">--echo</code></span></dt><dd><p>
+      Echo to stdout all SQL sent to the server.
+      </p></dd><dt><span class="term"><code class="option">-j <em class="replaceable"><code>num</code></em></code><br /></span><span class="term"><code class="option">--jobs=<em class="replaceable"><code>num</code></em></code></span></dt><dd><p>
+       Use <em class="replaceable"><code>num</code></em> concurrent connections to the server,
+       or one per object to be checked, whichever is less.
+      </p><p>
+       The default is to use a single connection.
+      </p></dd><dt><span class="term"><code class="option">-P</code><br /></span><span class="term"><code class="option">--progress</code></span></dt><dd><p>
+       Show progress information. Progress information includes the number
+       of relations for which checking has been completed, and the total
+       size of those relations. It also includes the total number of relations
+       that will eventually be checked, and the estimated size of those
+       relations.
+      </p></dd><dt><span class="term"><code class="option">-v</code><br /></span><span class="term"><code class="option">--verbose</code></span></dt><dd><p>
+       Print more messages. In particular, this will print a message for
+       each relation being checked, and will increase the level of detail
+       shown for server errors.
+      </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+       Print the <span class="application">pg_amcheck</span> version and exit.
+      </p></dd><dt><span class="term"><code class="option">--install-missing</code><br /></span><span class="term"><code class="option">--install-missing=<em class="replaceable"><code>schema</code></em></code></span></dt><dd><p>
+       Install any missing extensions that are required to check the
+       database(s).  If not yet installed, each extension's objects will be
+       installed into the given
+       <em class="replaceable"><code>schema</code></em>, or if not specified
+       into schema <code class="literal">pg_catalog</code>.
+      </p><p>
+       At present, the only required extension is <a class="xref" href="amcheck.html" title="F.2. amcheck">amcheck</a>.
+      </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+       Show help about <span class="application">pg_amcheck</span> command line
+       arguments, and exit.
+      </p></dd></dl></div><p>
+  </p></div><div class="refsect1" id="id-1.9.4.9.7"><h2>Notes</h2><p>
+   <span class="application">pg_amcheck</span> is designed to work with
+   <span class="productname">PostgreSQL</span> 14.0 and later.
+  </p></div><div class="refsect1" id="id-1.9.4.9.8"><h2>See Also</h2><span class="simplelist"><a class="xref" href="amcheck.html" title="F.2. amcheck">amcheck</a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-ecpg.html" title="ecpg">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="app-pgbasebackup.html" title="pg_basebackup">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">ecpg</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_basebackup</span></td></tr></table></div></body></html>

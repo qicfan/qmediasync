@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>11.1. Introduction</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="indexes.html" title="Chapter 11. Indexes" /><link rel="next" href="indexes-types.html" title="11.2. Index Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">11.1. Introduction</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="indexes.html" title="Chapter 11. Indexes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="indexes.html" title="Chapter 11. Indexes">Up</a></td><th width="60%" align="center">Chapter 11. Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="indexes-types.html" title="11.2. Index Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INDEXES-INTRO"><div class="titlepage"><div><div><h2 class="title" style="clear: both">11.1. Introduction</h2></div></div></div><p>
+   Suppose we have a table similar to this:
+</p><pre class="programlisting">
+CREATE TABLE test1 (
+    id integer,
+    content varchar
+);
+</pre><p>
+   and the application issues many queries of the form:
+</p><pre class="programlisting">
+SELECT content FROM test1 WHERE id = <em class="replaceable"><code>constant</code></em>;
+</pre><p>
+   With no advance preparation, the system would have to scan the entire
+   <code class="structname">test1</code> table, row by row, to find all
+   matching entries.  If there are many rows in
+   <code class="structname">test1</code> and only a few rows (perhaps zero
+   or one) that would be returned by such a query, this is clearly an
+   inefficient method.  But if the system has been instructed to maintain an
+   index on the <code class="structfield">id</code> column, it can use a more
+   efficient method for locating matching rows.  For instance, it
+   might only have to walk a few levels deep into a search tree.
+  </p><p>
+   A similar approach is used in most non-fiction books:  terms and
+   concepts that are frequently looked up by readers are collected in
+   an alphabetic index at the end of the book.  The interested reader
+   can scan the index relatively quickly and flip to the appropriate
+   page(s), rather than having to read the entire book to find the
+   material of interest.  Just as it is the task of the author to
+   anticipate the items that readers are likely to look up,
+   it is the task of the database programmer to foresee which indexes
+   will be useful.
+  </p><p>
+   The following command can be used to create an index on the
+   <code class="structfield">id</code> column, as discussed:
+</p><pre class="programlisting">
+CREATE INDEX test1_id_index ON test1 (id);
+</pre><p>
+   The name <code class="structname">test1_id_index</code> can be chosen
+   freely, but you should pick something that enables you to remember
+   later what the index was for.
+  </p><p>
+   To remove an index, use the <code class="command">DROP INDEX</code> command.
+   Indexes can be added to and removed from tables at any time.
+  </p><p>
+   Once an index is created, no further intervention is required: the
+   system will update the index when the table is modified, and it will
+   use the index in queries when it thinks doing so would be more efficient
+   than a sequential table scan.  But you might have to run the
+   <code class="command">ANALYZE</code> command regularly to update
+   statistics to allow the query planner to make educated decisions.
+   See <a class="xref" href="performance-tips.html" title="Chapter 14. Performance Tips">Chapter 14</a> for information about
+   how to find out whether an index is used and when and why the
+   planner might choose <span class="emphasis"><em>not</em></span> to use an index.
+  </p><p>
+   Indexes can also benefit <code class="command">UPDATE</code> and
+   <code class="command">DELETE</code> commands with search conditions.
+   Indexes can moreover be used in join searches.  Thus,
+   an index defined on a column that is part of a join condition can
+   also significantly speed up queries with joins.
+  </p><p>
+   In general, <span class="productname">PostgreSQL</span> indexes can be used
+   to optimize queries that contain one or more <code class="literal">WHERE</code>
+   or <code class="literal">JOIN</code> clauses of the form
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>indexed-column</code></em> <em class="replaceable"><code>indexable-operator</code></em> <em class="replaceable"><code>comparison-value</code></em>
+</pre><p>
+
+   Here, the <em class="replaceable"><code>indexed-column</code></em> is whatever
+   column or expression the index has been defined on.
+   The <em class="replaceable"><code>indexable-operator</code></em> is an operator that
+   is a member of the index's <em class="firstterm">operator class</em> for
+   the indexed column.  (More details about that appear below.)
+   And the <em class="replaceable"><code>comparison-value</code></em> can be any
+   expression that is not volatile and does not reference the index's
+   table.
+  </p><p>
+   In some cases the query planner can extract an indexable clause of
+   this form from another SQL construct.  A simple example is that if
+   the original clause was
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>comparison-value</code></em> <em class="replaceable"><code>operator</code></em> <em class="replaceable"><code>indexed-column</code></em>
+</pre><p>
+
+   then it can be flipped around into indexable form if the
+   original <em class="replaceable"><code>operator</code></em> has a commutator
+   operator that is a member of the index's operator class.
+  </p><p>
+   Creating an index on a large table can take a long time.  By default,
+   <span class="productname">PostgreSQL</span> allows reads (<code class="command">SELECT</code> statements) to occur
+   on the table in parallel with index creation, but writes (<code class="command">INSERT</code>,
+   <code class="command">UPDATE</code>, <code class="command">DELETE</code>) are blocked until the index build is finished.
+   In production environments this is often unacceptable.
+   It is possible to allow writes to occur in parallel with index
+   creation, but there are several caveats to be aware of —
+   for more information see <a class="xref" href="sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY" title="Building Indexes Concurrently">Building Indexes Concurrently</a>.
+  </p><p>
+   After an index is created, the system has to keep it synchronized with the
+   table.  This adds overhead to data manipulation operations.  Indexes can
+   also prevent the creation of <a class="link" href="storage-hot.html" title="70.7. Heap-Only Tuples (HOT)">heap-only
+   tuples</a>.
+   Therefore indexes that are seldom or never used in queries
+   should be removed.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="indexes.html" title="Chapter 11. Indexes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="indexes.html" title="Chapter 11. Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="indexes-types.html" title="11.2. Index Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 11. Indexes </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 11.2. Index Types</td></tr></table></div></body></html>

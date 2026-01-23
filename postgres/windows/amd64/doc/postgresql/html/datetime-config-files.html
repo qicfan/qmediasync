@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>B.4. Date/Time Configuration Files</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datetime-keywords.html" title="B.3. Date/Time Key Words" /><link rel="next" href="datetime-posix-timezone-specs.html" title="B.5. POSIX Time Zone Specifications" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">B.4. Date/Time Configuration Files</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datetime-keywords.html" title="B.3. Date/Time Key Words">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datetime-appendix.html" title="Appendix B. Date/Time Support">Up</a></td><th width="60%" align="center">Appendix B. Date/Time Support</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datetime-posix-timezone-specs.html" title="B.5. POSIX Time Zone Specifications">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATETIME-CONFIG-FILES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">B.4. Date/Time Configuration Files</h2></div></div></div><a id="id-1.11.3.7.2" class="indexterm"></a><p>
+    Since timezone abbreviations are not well standardized,
+    <span class="productname">PostgreSQL</span> provides a means to customize
+    the set of abbreviations accepted by the server.  The
+    <a class="xref" href="runtime-config-client.html#GUC-TIMEZONE-ABBREVIATIONS">timezone_abbreviations</a> run-time parameter
+    determines the active set of abbreviations.  While this parameter
+    can be altered by any database user, the possible values for it
+    are under the control of the database administrator — they
+    are in fact names of configuration files stored in
+    <code class="filename">.../share/timezonesets/</code> of the installation directory.
+    By adding or altering files in that directory, the administrator
+    can set local policy for timezone abbreviations.
+   </p><p>
+    <code class="varname">timezone_abbreviations</code> can be set to any file name
+    found in <code class="filename">.../share/timezonesets/</code>, if the file's name
+    is entirely alphabetic.  (The prohibition against non-alphabetic
+    characters in <code class="varname">timezone_abbreviations</code> prevents reading
+    files outside the intended directory, as well as reading editor
+    backup files and other extraneous files.)
+   </p><p>
+    A timezone abbreviation file can contain blank lines and comments
+    beginning with <code class="literal">#</code>.  Non-comment lines must have one of
+    these formats:
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>zone_abbreviation</code></em> <em class="replaceable"><code>offset</code></em>
+<em class="replaceable"><code>zone_abbreviation</code></em> <em class="replaceable"><code>offset</code></em> D
+<em class="replaceable"><code>zone_abbreviation</code></em> <em class="replaceable"><code>time_zone_name</code></em>
+@INCLUDE <em class="replaceable"><code>file_name</code></em>
+@OVERRIDE
+</pre><p>
+   </p><p>
+    A <em class="replaceable"><code>zone_abbreviation</code></em> is just the abbreviation
+    being defined.  An <em class="replaceable"><code>offset</code></em> is an integer giving
+    the equivalent offset in seconds from UTC, positive being east from
+    Greenwich and negative being west.  For example, -18000 would be five
+    hours west of Greenwich, or North American east coast standard time.
+    <code class="literal">D</code> indicates that the zone name represents local
+    daylight-savings time rather than standard time.
+   </p><p>
+    Alternatively, a <em class="replaceable"><code>time_zone_name</code></em> can be given, referencing
+    a zone name defined in the IANA timezone database.  The zone's definition
+    is consulted to see whether the abbreviation is or has been in use in
+    that zone, and if so, the appropriate meaning is used — that is,
+    the meaning that was currently in use at the timestamp whose value is
+    being determined, or the meaning in use immediately before that if it
+    wasn't current at that time, or the oldest meaning if it was used only
+    after that time.  This behavior is essential for dealing with
+    abbreviations whose meaning has historically varied.  It is also allowed
+    to define an abbreviation in terms of a zone name in which that
+    abbreviation does not appear; then using the abbreviation is just
+    equivalent to writing out the zone name.
+   </p><div class="tip"><h3 class="title">Tip</h3><p>
+     Using a simple integer <em class="replaceable"><code>offset</code></em> is preferred
+     when defining an abbreviation whose offset from UTC has never changed,
+     as such abbreviations are much cheaper to process than those that
+     require consulting a time zone definition.
+    </p></div><p>
+    The <code class="literal">@INCLUDE</code> syntax allows inclusion of another file in the
+    <code class="filename">.../share/timezonesets/</code> directory.  Inclusion can be nested,
+    to a limited depth.
+   </p><p>
+    The <code class="literal">@OVERRIDE</code> syntax indicates that subsequent entries in the
+    file can override previous entries (typically, entries obtained from
+    included files).  Without this, conflicting definitions of the same
+    timezone abbreviation are considered an error.
+   </p><p>
+    In an unmodified installation, the file <code class="filename">Default</code> contains
+    all the non-conflicting time zone abbreviations for most of the world.
+    Additional files <code class="filename">Australia</code> and <code class="filename">India</code> are
+    provided for those regions: these files first include the
+    <code class="literal">Default</code> file and then add or modify abbreviations as needed.
+   </p><p>
+    For reference purposes, a standard installation also contains files
+    <code class="filename">Africa.txt</code>, <code class="filename">America.txt</code>, etc, containing
+    information about every time zone abbreviation known to be in use
+    according to the IANA timezone database.  The zone name
+    definitions found in these files can be copied and pasted into a custom
+    configuration file as needed.  Note that these files cannot be directly
+    referenced as <code class="varname">timezone_abbreviations</code> settings, because of
+    the dot embedded in their names.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     If an error occurs while reading the time zone abbreviation set, no new
+     value is applied and the old set is kept. If the error occurs while
+     starting the database, startup fails.
+    </p></div><div class="caution"><h3 class="title">Caution</h3><p>
+     Time zone abbreviations defined in the configuration file override
+     non-timezone meanings built into <span class="productname">PostgreSQL</span>.
+     For example, the <code class="filename">Australia</code> configuration file defines
+     <code class="literal">SAT</code> (for South Australian Standard Time).  When this
+     file is active, <code class="literal">SAT</code> will not be recognized as an abbreviation
+     for Saturday.
+    </p></div><div class="caution"><h3 class="title">Caution</h3><p>
+     If you modify files in <code class="filename">.../share/timezonesets/</code>,
+     it is up to you to make backups — a normal database dump
+     will not include this directory.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datetime-keywords.html" title="B.3. Date/Time Key Words">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datetime-appendix.html" title="Appendix B. Date/Time Support">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datetime-posix-timezone-specs.html" title="B.5. POSIX Time Zone Specifications">Next</a></td></tr><tr><td width="40%" align="left" valign="top">B.3. Date/Time Key Words </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> B.5. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">POSIX</acronym> Time Zone Specifications</td></tr></table></div></body></html>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>44.4. Global Data in PL/Tcl</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="pltcl-data.html" title="44.3. Data Values in PL/Tcl" /><link rel="next" href="pltcl-dbaccess.html" title="44.5. Database Access from PL/Tcl" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">44.4. Global Data in PL/Tcl</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="pltcl-data.html" title="44.3. Data Values in PL/Tcl">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="pltcl.html" title="Chapter 44. PL/Tcl — Tcl Procedural Language">Up</a></td><th width="60%" align="center">Chapter 44. PL/Tcl — Tcl Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="pltcl-dbaccess.html" title="44.5. Database Access from PL/Tcl">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLTCL-GLOBAL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">44.4. Global Data in PL/Tcl</h2></div></div></div><a id="id-1.8.9.8.2" class="indexterm"></a><p>
+     Sometimes it
+     is useful to have some global data that is held between two
+     calls to a function or is shared between different functions.
+     This is easily done in PL/Tcl, but there are some restrictions that
+     must be understood.
+    </p><p>
+     For security reasons, PL/Tcl executes functions called by any one SQL
+     role in a separate Tcl interpreter for that role.  This prevents
+     accidental or malicious interference by one user with the behavior of
+     another user's PL/Tcl functions.  Each such interpreter will have its own
+     values for any <span class="quote">“<span class="quote">global</span>”</span> Tcl variables.  Thus, two PL/Tcl
+     functions will share the same global variables if and only if they are
+     executed by the same SQL role.  In an application wherein a single
+     session executes code under multiple SQL roles (via <code class="literal">SECURITY
+     DEFINER</code> functions, use of <code class="command">SET ROLE</code>, etc) you may need to
+     take explicit steps to ensure that PL/Tcl functions can share data.  To
+     do that, make sure that functions that should communicate are owned by
+     the same user, and mark them <code class="literal">SECURITY DEFINER</code>.  You must of
+     course take care that such functions can't be used to do anything
+     unintended.
+    </p><p>
+     All PL/TclU functions used in a session execute in the same Tcl
+     interpreter, which of course is distinct from the interpreter(s)
+     used for PL/Tcl functions.  So global data is automatically shared
+     between PL/TclU functions.  This is not considered a security risk
+     because all PL/TclU functions execute at the same trust level,
+     namely that of a database superuser.
+    </p><p>
+     To help protect PL/Tcl functions from unintentionally interfering
+     with each other, a global
+     array is made available to each function via the <code class="function">upvar</code>
+     command. The global name of this variable is the function's internal
+     name, and the local name is <code class="literal">GD</code>.  It is recommended that
+     <code class="literal">GD</code> be used
+     for persistent private data of a function.  Use regular Tcl global
+     variables only for values that you specifically intend to be shared among
+     multiple functions.  (Note that the <code class="literal">GD</code> arrays are only
+     global within a particular interpreter, so they do not bypass the
+     security restrictions mentioned above.)
+    </p><p>
+     An example of using <code class="literal">GD</code> appears in the
+     <code class="function">spi_execp</code> example below.
+    </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="pltcl-data.html" title="44.3. Data Values in PL/Tcl">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="pltcl.html" title="Chapter 44. PL/Tcl — Tcl Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="pltcl-dbaccess.html" title="44.5. Database Access from PL/Tcl">Next</a></td></tr><tr><td width="40%" align="left" valign="top">44.3. Data Values in PL/Tcl </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 44.5. Database Access from PL/Tcl</td></tr></table></div></body></html>

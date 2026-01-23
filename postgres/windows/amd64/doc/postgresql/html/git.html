@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>I.1. Getting the Source via Git</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sourcerepo.html" title="Appendix I. The Source Code Repository" /><link rel="next" href="docguide.html" title="Appendix J. Documentation" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">I.1. Getting the Source via <span xmlns="http://www.w3.org/1999/xhtml" class="productname">Git</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sourcerepo.html" title="Appendix I. The Source Code Repository">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sourcerepo.html" title="Appendix I. The Source Code Repository">Up</a></td><th width="60%" align="center">Appendix I. The Source Code Repository</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="docguide.html" title="Appendix J. Documentation">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="GIT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">I.1. Getting the Source via <span class="productname">Git</span></h2></div></div></div><p>
+   With <span class="productname">Git</span> you will make a copy of the entire code repository
+   on your local machine, so you will have access to all history and branches
+   offline. This is the fastest and most flexible way to develop or test
+   patches.
+  </p><div class="procedure" id="id-1.11.10.5.3"><p class="title"><strong>Git</strong></p><ol class="procedure" type="1"><li class="step"><p>
+     You will need an installed version of <span class="productname">Git</span>, which you can
+     get from <a class="ulink" href="https://git-scm.com" target="_top">https://git-scm.com</a>. Many systems already
+     have a recent version of <span class="application">Git</span> installed by default, or
+     available in their package distribution system.
+    </p></li><li class="step"><p>
+     To begin using the Git repository, make a clone of the official mirror:
+
+</p><pre class="programlisting">
+git clone https://git.postgresql.org/git/postgresql.git
+</pre><p>
+
+     This will copy the full repository to your local machine, so it may take
+     a while to complete, especially if you have a slow Internet connection.
+     The files will be placed in a new subdirectory <code class="filename">postgresql</code> of
+     your current directory.
+    </p><p>
+     The Git mirror can also be reached via the Git protocol. Just change the URL
+     prefix to <code class="literal">git</code>, as in:
+
+</p><pre class="programlisting">
+git clone git://git.postgresql.org/git/postgresql.git
+</pre><p>
+
+    </p></li><li class="step"><p>
+     Whenever you want to get the latest updates in the system, <code class="command">cd</code>
+     into the repository, and run:
+
+</p><pre class="programlisting">
+git fetch
+</pre><p>
+    </p></li></ol></div><p>
+   <span class="productname">Git</span> can do a lot more things than just fetch the source. For
+   more information, consult the <span class="productname">Git</span> man pages, or see the
+   website at <a class="ulink" href="https://git-scm.com" target="_top">https://git-scm.com</a>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sourcerepo.html" title="Appendix I. The Source Code Repository">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sourcerepo.html" title="Appendix I. The Source Code Repository">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="docguide.html" title="Appendix J. Documentation">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Appendix I. The Source Code Repository </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Appendix J. Documentation</td></tr></table></div></body></html>

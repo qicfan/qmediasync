@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SPI_commit</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spi-transaction.html" title="47.4. Transaction Management" /><link rel="next" href="spi-spi-rollback.html" title="SPI_rollback" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SPI_commit</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spi-transaction.html" title="47.4. Transaction Management">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spi-transaction.html" title="47.4. Transaction Management">Up</a></td><th width="60%" align="center">47.4. Transaction Management</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spi-spi-rollback.html" title="SPI_rollback">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SPI-SPI-COMMIT"><div class="titlepage"></div><a id="id-1.8.12.11.4.1" class="indexterm"></a><a id="id-1.8.12.11.4.2" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SPI_commit</span></h2><p>SPI_commit, SPI_commit_and_chain — commit the current transaction</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+void SPI_commit(void)
+</pre><pre class="synopsis">
+void SPI_commit_and_chain(void)
+</pre></div><div class="refsect1" id="id-1.8.12.11.4.6"><h2>Description</h2><p>
+   <code class="function">SPI_commit</code> commits the current transaction.  It is
+   approximately equivalent to running the SQL
+   command <code class="command">COMMIT</code>.  After the transaction is committed, a
+   new transaction is automatically started using default transaction
+   characteristics, so that the caller can continue using SPI facilities.
+   If there is a failure during commit, the current transaction is instead
+   rolled back and a new transaction is started, after which the error is
+   thrown in the usual way.
+  </p><p>
+   <code class="function">SPI_commit_and_chain</code> is the same, but the new
+   transaction is started with the same transaction
+   characteristics as the just finished one, like with the SQL command
+   <code class="command">COMMIT AND CHAIN</code>.
+  </p><p>
+   These functions can only be executed if the SPI connection has been set as
+   nonatomic in the call to <code class="function">SPI_connect_ext</code>.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spi-transaction.html" title="47.4. Transaction Management">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spi-transaction.html" title="47.4. Transaction Management">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spi-spi-rollback.html" title="SPI_rollback">Next</a></td></tr><tr><td width="40%" align="left" valign="top">47.4. Transaction Management </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SPI_rollback</td></tr></table></div></body></html>

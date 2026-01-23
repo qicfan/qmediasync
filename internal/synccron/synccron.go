@@ -5,8 +5,10 @@ import (
 	embyclientrestgo "Q115-STRM/internal/embyclient-rest-go"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
+	"Q115-STRM/internal/notificationmanager"
 	"Q115-STRM/internal/scrape"
 	"Q115-STRM/internal/v115open"
+	"context"
 	"fmt"
 	"time"
 
@@ -75,7 +77,19 @@ func Refresh115AccessToken() {
 				helpers.AppLogger.Errorf("刷新115访问凭证失败: %s", err.Error())
 				// 清空token
 				account.ClearToken(err.Error())
-				helpers.GlobalNotificationManager.SendSystemNotification("115开放平台访问凭证已失效，请重新授权", fmt.Sprintf("账号ID：%d, 115用户名：%s", int(account.ID), account.Username))
+				ctx := context.Background()
+				notif := &models.Notification{
+					Type:      models.SystemAlert,
+					Title:     "🔐 115开放平台访问凭证已失效",
+					Content:   fmt.Sprintf("账号ID：%d\n用户名：%s\n请重新授权\n⏰ 时间: %s", int(account.ID), account.Username, time.Now().Format("2006-01-02 15:04:05")),
+					Timestamp: time.Now(),
+					Priority:  models.HighPriority,
+				}
+				if notificationmanager.GlobalEnhancedNotificationManager != nil {
+					if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+						helpers.AppLogger.Errorf("发送访问凭证失效通知失败: %v", err)
+					}
+				}
 				continue
 			}
 			// 更新账号的token

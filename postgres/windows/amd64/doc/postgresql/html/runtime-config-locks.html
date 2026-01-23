@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>20.12. Lock Management</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="runtime-config-client.html" title="20.11. Client Connection Defaults" /><link rel="next" href="runtime-config-compatible.html" title="20.13. Version and Platform Compatibility" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">20.12. Lock Management</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="runtime-config-client.html" title="20.11. Client Connection Defaults">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime-config.html" title="Chapter 20. Server Configuration">Up</a></td><th width="60%" align="center">Chapter 20. Server Configuration</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="runtime-config-compatible.html" title="20.13. Version and Platform Compatibility">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RUNTIME-CONFIG-LOCKS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">20.12. Lock Management</h2></div></div></div><div class="variablelist"><dl class="variablelist"><dt id="GUC-DEADLOCK-TIMEOUT"><span class="term"><code class="varname">deadlock_timeout</code> (<code class="type">integer</code>)
+      <a id="id-1.6.7.15.2.1.1.3" class="indexterm"></a>
+      <a id="id-1.6.7.15.2.1.1.4" class="indexterm"></a>
+      <a id="id-1.6.7.15.2.1.1.5" class="indexterm"></a>
+      </span></dt><dd><p>
+        This is the amount of time to wait on a lock
+        before checking to see if there is a deadlock condition. The
+        check for deadlock is relatively expensive, so the server doesn't run
+        it every time it waits for a lock. We optimistically assume
+        that deadlocks are not common in production applications and
+        just wait on the lock for a while before checking for a
+        deadlock. Increasing this value reduces the amount of time
+        wasted in needless deadlock checks, but slows down reporting of
+        real deadlock errors.
+        If this value is specified without units, it is taken as milliseconds.
+        The default is one second (<code class="literal">1s</code>),
+        which is probably about the smallest value you would want in
+        practice. On a heavily loaded server you might want to raise it.
+        Ideally the setting should exceed your typical transaction time,
+        so as to improve the odds that a lock will be released before
+        the waiter decides to check for deadlock.  Only superusers can change
+        this setting.
+       </p><p>
+        When <a class="xref" href="runtime-config-logging.html#GUC-LOG-LOCK-WAITS">log_lock_waits</a> is set,
+        this parameter also determines the amount of time to wait before
+        a log message is issued about the lock wait.  If you are trying
+        to investigate locking delays you might want to set a shorter than
+        normal <code class="varname">deadlock_timeout</code>.
+       </p></dd><dt id="GUC-MAX-LOCKS-PER-TRANSACTION"><span class="term"><code class="varname">max_locks_per_transaction</code> (<code class="type">integer</code>)
+      <a id="id-1.6.7.15.2.2.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        The shared lock table tracks locks on
+        <code class="varname">max_locks_per_transaction</code> * (<a class="xref" href="runtime-config-connection.html#GUC-MAX-CONNECTIONS">max_connections</a> + <a class="xref" href="runtime-config-resource.html#GUC-MAX-PREPARED-TRANSACTIONS">max_prepared_transactions</a>) objects (e.g.,  tables);
+        hence, no more than this many distinct objects can be locked at
+        any one time.  This parameter controls the average number of object
+        locks allocated for each transaction;  individual transactions
+        can lock more objects as long as the locks of all transactions
+        fit in the lock table.  This is <span class="emphasis"><em>not</em></span> the number of
+        rows that can be locked; that value is unlimited.  The default,
+        64, has historically proven sufficient, but you might need to
+        raise this value if you have queries that touch many different
+        tables in a single transaction, e.g., query of a parent table with
+        many children.  This parameter can only be set at server start.
+       </p><p>
+        When running a standby server, you must set this parameter to the
+        same or higher value than on the primary server. Otherwise, queries
+        will not be allowed in the standby server.
+       </p></dd><dt id="GUC-MAX-PRED-LOCKS-PER-TRANSACTION"><span class="term"><code class="varname">max_pred_locks_per_transaction</code> (<code class="type">integer</code>)
+      <a id="id-1.6.7.15.2.3.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        The shared predicate lock table tracks locks on
+        <code class="varname">max_pred_locks_per_transaction</code> * (<a class="xref" href="runtime-config-connection.html#GUC-MAX-CONNECTIONS">max_connections</a> + <a class="xref" href="runtime-config-resource.html#GUC-MAX-PREPARED-TRANSACTIONS">max_prepared_transactions</a>) objects (e.g., tables);
+        hence, no more than this many distinct objects can be locked at
+        any one time.  This parameter controls the average number of object
+        locks allocated for each transaction;  individual transactions
+        can lock more objects as long as the locks of all transactions
+        fit in the lock table.  This is <span class="emphasis"><em>not</em></span> the number of
+        rows that can be locked; that value is unlimited.  The default,
+        64, has generally been sufficient in testing, but you might need to
+        raise this value if you have clients that touch many different
+        tables in a single serializable transaction. This parameter can
+        only be set at server start.
+       </p></dd><dt id="GUC-MAX-PRED-LOCKS-PER-RELATION"><span class="term"><code class="varname">max_pred_locks_per_relation</code> (<code class="type">integer</code>)
+      <a id="id-1.6.7.15.2.4.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        This controls how many pages or tuples of a single relation can be
+        predicate-locked before the lock is promoted to covering the whole
+        relation.  Values greater than or equal to zero mean an absolute
+        limit, while negative values
+        mean <a class="xref" href="runtime-config-locks.html#GUC-MAX-PRED-LOCKS-PER-TRANSACTION">max_pred_locks_per_transaction</a> divided by
+        the absolute value of this setting.  The default is -2, which keeps
+        the behavior from previous versions of <span class="productname">PostgreSQL</span>.
+        This parameter can only be set in the <code class="filename">postgresql.conf</code>
+        file or on the server command line.
+       </p></dd><dt id="GUC-MAX-PRED-LOCKS-PER-PAGE"><span class="term"><code class="varname">max_pred_locks_per_page</code> (<code class="type">integer</code>)
+      <a id="id-1.6.7.15.2.5.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        This controls how many rows on a single page can be predicate-locked
+        before the lock is promoted to covering the whole page.  The default
+        is 2.  This parameter can only be set in
+        the <code class="filename">postgresql.conf</code> file or on the server command line.
+       </p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="runtime-config-client.html" title="20.11. Client Connection Defaults">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime-config.html" title="Chapter 20. Server Configuration">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="runtime-config-compatible.html" title="20.13. Version and Platform Compatibility">Next</a></td></tr><tr><td width="40%" align="left" valign="top">20.11. Client Connection Defaults </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 20.13. Version and Platform Compatibility</td></tr></table></div></body></html>

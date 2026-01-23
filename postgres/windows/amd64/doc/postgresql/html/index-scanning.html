@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>62.3. Index Scanning</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="index-functions.html" title="62.2. Index Access Method Functions" /><link rel="next" href="index-locking.html" title="62.4. Index Locking Considerations" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">62.3. Index Scanning</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="index-functions.html" title="62.2. Index Access Method Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="indexam.html" title="Chapter 62. Index Access Method Interface Definition">Up</a></td><th width="60%" align="center">Chapter 62. Index Access Method Interface Definition</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="index-locking.html" title="62.4. Index Locking Considerations">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INDEX-SCANNING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">62.3. Index Scanning</h2></div></div></div><p>
+   In an index scan, the index access method is responsible for regurgitating
+   the TIDs of all the tuples it has been told about that match the
+   <em class="firstterm">scan keys</em>.  The access method is <span class="emphasis"><em>not</em></span> involved in
+   actually fetching those tuples from the index's parent table, nor in
+   determining whether they pass the scan's visibility test or other
+   conditions.
+  </p><p>
+   A scan key is the internal representation of a <code class="literal">WHERE</code> clause of
+   the form <em class="replaceable"><code>index_key</code></em> <em class="replaceable"><code>operator</code></em>
+   <em class="replaceable"><code>constant</code></em>, where the index key is one of the columns of the
+   index and the operator is one of the members of the operator family
+   associated with that index column.  An index scan has zero or more scan
+   keys, which are implicitly ANDed — the returned tuples are expected
+   to satisfy all the indicated conditions.
+  </p><p>
+   The access method can report that the index is <em class="firstterm">lossy</em>, or
+   requires rechecks, for a particular query.  This implies that the index
+   scan will return all the entries that pass the scan key, plus possibly
+   additional entries that do not.  The core system's index-scan machinery
+   will then apply the index conditions again to the heap tuple to verify
+   whether or not it really should be selected.  If the recheck option is not
+   specified, the index scan must return exactly the set of matching entries.
+  </p><p>
+   Note that it is entirely up to the access method to ensure that it
+   correctly finds all and only the entries passing all the given scan keys.
+   Also, the core system will simply hand off all the <code class="literal">WHERE</code>
+   clauses that match the index keys and operator families, without any
+   semantic analysis to determine whether they are redundant or
+   contradictory.  As an example, given
+   <code class="literal">WHERE x &gt; 4 AND x &gt; 14</code> where <code class="literal">x</code> is a b-tree
+   indexed column, it is left to the b-tree <code class="function">amrescan</code> function
+   to realize that the first scan key is redundant and can be discarded.
+   The extent of preprocessing needed during <code class="function">amrescan</code> will
+   depend on the extent to which the index access method needs to reduce
+   the scan keys to a <span class="quote">“<span class="quote">normalized</span>”</span> form.
+  </p><p>
+   Some access methods return index entries in a well-defined order, others
+   do not.  There are actually two different ways that an access method can
+   support sorted output:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       Access methods that always return entries in the natural ordering
+       of their data (such as btree) should set
+       <code class="structfield">amcanorder</code> to true.
+       Currently, such access methods must use btree-compatible strategy
+       numbers for their equality and ordering operators.
+      </p></li><li class="listitem"><p>
+       Access methods that support ordering operators should set
+       <code class="structfield">amcanorderbyop</code> to true.
+       This indicates that the index is capable of returning entries in
+       an order satisfying <code class="literal">ORDER BY</code> <em class="replaceable"><code>index_key</code></em>
+       <em class="replaceable"><code>operator</code></em> <em class="replaceable"><code>constant</code></em>.  Scan modifiers
+       of that form can be passed to <code class="function">amrescan</code> as described
+       previously.
+      </p></li></ul></div><p>
+  </p><p>
+   The <code class="function">amgettuple</code> function has a <code class="literal">direction</code> argument,
+   which can be either <code class="literal">ForwardScanDirection</code> (the normal case)
+   or  <code class="literal">BackwardScanDirection</code>.  If the first call after
+   <code class="function">amrescan</code> specifies <code class="literal">BackwardScanDirection</code>, then the
+   set of matching index entries is to be scanned back-to-front rather than in
+   the normal front-to-back direction, so <code class="function">amgettuple</code> must return
+   the last matching tuple in the index, rather than the first one as it
+   normally would.  (This will only occur for access
+   methods that set <code class="structfield">amcanorder</code> to true.)  After the
+   first call, <code class="function">amgettuple</code> must be prepared to advance the scan in
+   either direction from the most recently returned entry.  (But if
+   <code class="structfield">amcanbackward</code> is false, all subsequent
+   calls will have the same direction as the first one.)
+  </p><p>
+   Access methods that support ordered scans must support <span class="quote">“<span class="quote">marking</span>”</span> a
+   position in a scan and later returning to the marked position.  The same
+   position might be restored multiple times.  However, only one position need
+   be remembered per scan; a new <code class="function">ammarkpos</code> call overrides the
+   previously marked position.  An access method that does not support ordered
+   scans need not provide <code class="function">ammarkpos</code> and <code class="function">amrestrpos</code>
+   functions in <code class="structname">IndexAmRoutine</code>; set those pointers to NULL
+   instead.
+  </p><p>
+   Both the scan position and the mark position (if any) must be maintained
+   consistently in the face of concurrent insertions or deletions in the
+   index.  It is OK if a freshly-inserted entry is not returned by a scan that
+   would have found the entry if it had existed when the scan started, or for
+   the scan to return such an entry upon rescanning or backing
+   up even though it had not been returned the first time through.  Similarly,
+   a concurrent delete might or might not be reflected in the results of a scan.
+   What is important is that insertions or deletions not cause the scan to
+   miss or multiply return entries that were not themselves being inserted or
+   deleted.
+  </p><p>
+   If the index stores the original indexed data values (and not some lossy
+   representation of them), it is useful to
+   support <a class="link" href="indexes-index-only-scans.html" title="11.9. Index-Only Scans and Covering Indexes">index-only scans</a>, in
+   which the index returns the actual data not just the TID of the heap tuple.
+   This will only avoid I/O if the visibility map shows that the TID is on an
+   all-visible page; else the heap tuple must be visited anyway to check
+   MVCC visibility.  But that is no concern of the access method's.
+  </p><p>
+   Instead of using <code class="function">amgettuple</code>, an index scan can be done with
+   <code class="function">amgetbitmap</code> to fetch all tuples in one call.  This can be
+   noticeably more efficient than <code class="function">amgettuple</code> because it allows
+   avoiding lock/unlock cycles within the access method.  In principle
+   <code class="function">amgetbitmap</code> should have the same effects as repeated
+   <code class="function">amgettuple</code> calls, but we impose several restrictions to
+   simplify matters.  First of all, <code class="function">amgetbitmap</code> returns all
+   tuples at once and marking or restoring scan positions isn't
+   supported. Secondly, the tuples are returned in a bitmap which doesn't
+   have any specific ordering, which is why <code class="function">amgetbitmap</code> doesn't
+   take a <code class="literal">direction</code> argument.  (Ordering operators will never be
+   supplied for such a scan, either.)
+   Also, there is no provision for index-only scans with
+   <code class="function">amgetbitmap</code>, since there is no way to return the contents of
+   index tuples.
+   Finally, <code class="function">amgetbitmap</code>
+   does not guarantee any locking of the returned tuples, with implications
+   spelled out in <a class="xref" href="index-locking.html" title="62.4. Index Locking Considerations">Section 62.4</a>.
+  </p><p>
+   Note that it is permitted for an access method to implement only
+   <code class="function">amgetbitmap</code> and not <code class="function">amgettuple</code>, or vice versa,
+   if its internal implementation is unsuited to one API or the other.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="index-functions.html" title="62.2. Index Access Method Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="indexam.html" title="Chapter 62. Index Access Method Interface Definition">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="index-locking.html" title="62.4. Index Locking Considerations">Next</a></td></tr><tr><td width="40%" align="left" valign="top">62.2. Index Access Method Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 62.4. Index Locking Considerations</td></tr></table></div></body></html>

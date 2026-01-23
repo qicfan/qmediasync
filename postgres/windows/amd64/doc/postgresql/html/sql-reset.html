@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>RESET</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT" /><link rel="next" href="sql-revoke.html" title="REVOKE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">RESET</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-revoke.html" title="REVOKE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-RESET"><div class="titlepage"></div><a id="id-1.9.3.164.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">RESET</span></h2><p>RESET — restore the value of a run-time parameter to the default value</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+RESET <em class="replaceable"><code>configuration_parameter</code></em>
+RESET ALL
+</pre></div><div class="refsect1" id="id-1.9.3.164.5"><h2>Description</h2><p>
+   <code class="command">RESET</code> restores run-time parameters to their
+   default values.  <code class="command">RESET</code> is an alternative
+   spelling for
+</p><pre class="synopsis">
+SET <em class="replaceable"><code>configuration_parameter</code></em> TO DEFAULT
+</pre><p>
+   Refer to <a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a> for
+   details.
+  </p><p>
+   The default value is defined as the value that the parameter would
+   have had, if no <code class="command">SET</code> had ever been issued for it in the
+   current session.  The actual source of this value might be a
+   compiled-in default, the configuration file, command-line options,
+   or per-database or per-user default settings.  This is subtly different
+   from defining it as <span class="quote">“<span class="quote">the value that the parameter had at session
+   start</span>”</span>, because if the value came from the configuration file, it
+   will be reset to whatever is specified by the configuration file now.
+   See <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a> for details.
+  </p><p>
+   The transactional behavior of <code class="command">RESET</code> is the same as
+   <code class="command">SET</code>: its effects will be undone by transaction rollback.
+  </p></div><div class="refsect1" id="id-1.9.3.164.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>configuration_parameter</code></em></span></dt><dd><p>
+      Name of a settable run-time parameter.  Available parameters are
+      documented in <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a> and on the
+      <a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a> reference page.
+     </p></dd><dt><span class="term"><code class="literal">ALL</code></span></dt><dd><p>
+      Resets all settable run-time parameters to default values.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.164.7"><h2>Examples</h2><p>
+   Set the <code class="varname">timezone</code> configuration variable to its default value:
+</p><pre class="screen">
+RESET timezone;
+</pre></div><div class="refsect1" id="id-1.9.3.164.8"><h2>Compatibility</h2><p>
+   <code class="command">RESET</code> is a <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.164.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a>, <a class="xref" href="sql-show.html" title="SHOW"><span class="refentrytitle">SHOW</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-revoke.html" title="REVOKE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">RELEASE SAVEPOINT </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> REVOKE</td></tr></table></div></body></html>

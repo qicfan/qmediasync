@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>64.3. B-Tree Support Functions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="btree-behavior.html" title="64.2. Behavior of B-Tree Operator Classes" /><link rel="next" href="btree-implementation.html" title="64.4. Implementation" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">64.3. B-Tree Support Functions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="btree-behavior.html" title="64.2. Behavior of B-Tree Operator Classes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="btree.html" title="Chapter 64. B-Tree Indexes">Up</a></td><th width="60%" align="center">Chapter 64. B-Tree Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="btree-implementation.html" title="64.4. Implementation">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BTREE-SUPPORT-FUNCS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">64.3. B-Tree Support Functions</h2></div></div></div><p>
+  As shown in <a class="xref" href="xindex.html#XINDEX-BTREE-SUPPORT-TABLE" title="Table 38.9. B-Tree Support Functions">Table 38.9</a>, btree defines
+  one required and four optional support functions.  The five
+  user-defined methods are:
+ </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">order</code></span></dt><dd><p>
+     For each combination of data types that a btree operator family
+     provides comparison operators for, it must provide a comparison
+     support function, registered in
+     <code class="structname">pg_amproc</code> with support function number 1
+     and
+     <code class="structfield">amproclefttype</code>/<code class="structfield">amprocrighttype</code>
+     equal to the left and right data types for the comparison (i.e.,
+     the same data types that the matching operators are registered
+     with in <code class="structname">pg_amop</code>).  The comparison
+     function must take two non-null values
+     <em class="replaceable"><code>A</code></em> and <em class="replaceable"><code>B</code></em> and
+     return an <code class="type">int32</code> value that is
+     <code class="literal">&lt;</code> <code class="literal">0</code>,
+     <code class="literal">0</code>, or <code class="literal">&gt;</code>
+     <code class="literal">0</code> when <em class="replaceable"><code>A</code></em>
+     <code class="literal">&lt;</code> <em class="replaceable"><code>B</code></em>,
+     <em class="replaceable"><code>A</code></em> <code class="literal">=</code>
+     <em class="replaceable"><code>B</code></em>, or <em class="replaceable"><code>A</code></em>
+     <code class="literal">&gt;</code> <em class="replaceable"><code>B</code></em>,
+     respectively.  A null result is disallowed: all values of the
+     data type must be comparable.  See
+     <code class="filename">src/backend/access/nbtree/nbtcompare.c</code> for
+     examples.
+    </p><p>
+     If the compared values are of a collatable data type, the
+     appropriate collation OID will be passed to the comparison
+     support function, using the standard
+     <code class="function">PG_GET_COLLATION()</code> mechanism.
+    </p></dd><dt><span class="term"><code class="function">sortsupport</code></span></dt><dd><p>
+     Optionally, a btree operator family may provide <em class="firstterm">sort
+      support</em> function(s), registered under support
+     function number 2.  These functions allow implementing
+     comparisons for sorting purposes in a more efficient way than
+     naively calling the comparison support function.  The APIs
+     involved in this are defined in
+     <code class="filename">src/include/utils/sortsupport.h</code>.
+    </p></dd><dt><span class="term"><code class="function">in_range</code></span></dt><dd><a id="id-1.10.16.5.3.3.2.1" class="indexterm"></a><a id="id-1.10.16.5.3.3.2.2" class="indexterm"></a><p>
+     Optionally, a btree operator family may provide
+     <em class="firstterm">in_range</em> support function(s), registered
+     under support function number 3.  These are not used during btree
+     index operations; rather, they extend the semantics of the
+     operator family so that it can support window clauses containing
+     the <code class="literal">RANGE</code> <em class="replaceable"><code>offset</code></em>
+     <code class="literal">PRECEDING</code> and <code class="literal">RANGE</code>
+     <em class="replaceable"><code>offset</code></em> <code class="literal">FOLLOWING</code>
+     frame bound types (see <a class="xref" href="sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS" title="4.2.8. Window Function Calls">Section 4.2.8</a>).  Fundamentally, the extra
+     information provided is how to add or subtract an
+     <em class="replaceable"><code>offset</code></em> value in a way that is
+     compatible with the family's data ordering.
+    </p><p>
+     An <code class="function">in_range</code> function must have the signature
+</p><pre class="synopsis">
+in_range(<em class="replaceable"><code>val</code></em> type1, <em class="replaceable"><code>base</code></em> type1, <em class="replaceable"><code>offset</code></em> type2, <em class="replaceable"><code>sub</code></em> bool, <em class="replaceable"><code>less</code></em> bool)
+returns bool
+</pre><p>
+     <em class="replaceable"><code>val</code></em> and
+     <em class="replaceable"><code>base</code></em> must be of the same type, which
+     is one of the types supported by the operator family (i.e., a
+     type for which it provides an ordering).  However,
+     <em class="replaceable"><code>offset</code></em> could be of a different type,
+     which might be one otherwise unsupported by the family.  An
+     example is that the built-in <code class="literal">time_ops</code> family
+     provides an <code class="function">in_range</code> function that has
+     <em class="replaceable"><code>offset</code></em> of type <code class="type">interval</code>.
+     A family can provide <code class="function">in_range</code> functions for
+     any of its supported types and one or more
+     <em class="replaceable"><code>offset</code></em> types.  Each
+     <code class="function">in_range</code> function should be entered in
+     <code class="structname">pg_amproc</code> with
+     <code class="structfield">amproclefttype</code> equal to
+     <code class="type">type1</code> and <code class="structfield">amprocrighttype</code>
+     equal to <code class="type">type2</code>.
+    </p><p>
+     The essential semantics of an <code class="function">in_range</code>
+     function depend on the two Boolean flag parameters.  It should
+     add or subtract <em class="replaceable"><code>base</code></em> and
+     <em class="replaceable"><code>offset</code></em>, then compare
+     <em class="replaceable"><code>val</code></em> to the result, as follows:
+     </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+        if <code class="literal">!</code><em class="replaceable"><code>sub</code></em> and
+        <code class="literal">!</code><em class="replaceable"><code>less</code></em>, return
+        <em class="replaceable"><code>val</code></em> <code class="literal">&gt;=</code>
+        (<em class="replaceable"><code>base</code></em> <code class="literal">+</code>
+        <em class="replaceable"><code>offset</code></em>)
+       </p></li><li class="listitem"><p>
+        if <code class="literal">!</code><em class="replaceable"><code>sub</code></em> and
+        <em class="replaceable"><code>less</code></em>, return
+        <em class="replaceable"><code>val</code></em> <code class="literal">&lt;=</code>
+        (<em class="replaceable"><code>base</code></em> <code class="literal">+</code>
+        <em class="replaceable"><code>offset</code></em>)
+       </p></li><li class="listitem"><p>
+        if <em class="replaceable"><code>sub</code></em> and
+        <code class="literal">!</code><em class="replaceable"><code>less</code></em>, return
+        <em class="replaceable"><code>val</code></em> <code class="literal">&gt;=</code>
+        (<em class="replaceable"><code>base</code></em> <code class="literal">-</code>
+        <em class="replaceable"><code>offset</code></em>)
+       </p></li><li class="listitem"><p>
+        if <em class="replaceable"><code>sub</code></em> and
+        <em class="replaceable"><code>less</code></em>, return
+        <em class="replaceable"><code>val</code></em> <code class="literal">&lt;=</code>
+        (<em class="replaceable"><code>base</code></em> <code class="literal">-</code>
+        <em class="replaceable"><code>offset</code></em>)
+       </p></li></ul></div><p>
+     Before doing so, the function should check the sign of
+     <em class="replaceable"><code>offset</code></em>: if it is less than zero, raise
+     error
+     <code class="literal">ERRCODE_INVALID_PRECEDING_OR_FOLLOWING_SIZE</code>
+     (22013) with error text like <span class="quote">“<span class="quote">invalid preceding or
+      following size in window function</span>”</span>.  (This is required by
+     the SQL standard, although nonstandard operator families might
+     perhaps choose to ignore this restriction, since there seems to
+     be little semantic necessity for it.) This requirement is
+     delegated to the <code class="function">in_range</code> function so that
+     the core code needn't understand what <span class="quote">“<span class="quote">less than
+      zero</span>”</span> means for a particular data type.
+    </p><p>
+     An additional expectation is that <code class="function">in_range</code>
+     functions should, if practical, avoid throwing an error if
+     <em class="replaceable"><code>base</code></em> <code class="literal">+</code>
+     <em class="replaceable"><code>offset</code></em> or
+     <em class="replaceable"><code>base</code></em> <code class="literal">-</code>
+     <em class="replaceable"><code>offset</code></em> would overflow.  The correct
+     comparison result can be determined even if that value would be
+     out of the data type's range.  Note that if the data type
+     includes concepts such as <span class="quote">“<span class="quote">infinity</span>”</span> or
+     <span class="quote">“<span class="quote">NaN</span>”</span>, extra care may be needed to ensure that
+     <code class="function">in_range</code>'s results agree with the normal
+     sort order of the operator family.
+    </p><p>
+     The results of the <code class="function">in_range</code> function must be
+     consistent with the sort ordering imposed by the operator family.
+     To be precise, given any fixed values of
+     <em class="replaceable"><code>offset</code></em> and
+     <em class="replaceable"><code>sub</code></em>, then:
+     </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+        If <code class="function">in_range</code> with
+        <em class="replaceable"><code>less</code></em> = true is true for some
+        <em class="replaceable"><code>val1</code></em> and
+        <em class="replaceable"><code>base</code></em>, it must be true for every
+        <em class="replaceable"><code>val2</code></em> <code class="literal">&lt;=</code>
+        <em class="replaceable"><code>val1</code></em> with the same
+        <em class="replaceable"><code>base</code></em>.
+       </p></li><li class="listitem"><p>
+        If <code class="function">in_range</code> with
+        <em class="replaceable"><code>less</code></em> = true is false for some
+        <em class="replaceable"><code>val1</code></em> and
+        <em class="replaceable"><code>base</code></em>, it must be false for every
+        <em class="replaceable"><code>val2</code></em> <code class="literal">&gt;=</code>
+        <em class="replaceable"><code>val1</code></em> with the same
+        <em class="replaceable"><code>base</code></em>.
+       </p></li><li class="listitem"><p>
+        If <code class="function">in_range</code> with
+        <em class="replaceable"><code>less</code></em> = true is true for some
+        <em class="replaceable"><code>val</code></em> and
+        <em class="replaceable"><code>base1</code></em>, it must be true for every
+        <em class="replaceable"><code>base2</code></em> <code class="literal">&gt;=</code>
+        <em class="replaceable"><code>base1</code></em> with the same
+        <em class="replaceable"><code>val</code></em>.
+       </p></li><li class="listitem"><p>
+        If <code class="function">in_range</code> with
+        <em class="replaceable"><code>less</code></em> = true is false for some
+        <em class="replaceable"><code>val</code></em> and
+        <em class="replaceable"><code>base1</code></em>, it must be false for every
+        <em class="replaceable"><code>base2</code></em> <code class="literal">&lt;=</code>
+        <em class="replaceable"><code>base1</code></em> with the same
+        <em class="replaceable"><code>val</code></em>.
+       </p></li></ul></div><p>
+     Analogous statements with inverted conditions hold when
+     <em class="replaceable"><code>less</code></em> = false.
+    </p><p>
+     If the type being ordered (<code class="type">type1</code>) is collatable, the
+     appropriate collation OID will be passed to the
+     <code class="function">in_range</code> function, using the standard
+     PG_GET_COLLATION() mechanism.
+    </p><p>
+     <code class="function">in_range</code> functions need not handle NULL
+     inputs, and typically will be marked strict.
+    </p></dd><dt><span class="term"><code class="function">equalimage</code></span></dt><dd><p>
+     Optionally, a btree operator family may provide
+     <code class="function">equalimage</code> (<span class="quote">“<span class="quote">equality implies image
+      equality</span>”</span>) support functions, registered under support
+     function number 4.  These functions allow the core code to
+     determine when it is safe to apply the btree deduplication
+     optimization.  Currently, <code class="function">equalimage</code>
+     functions are only called when building or rebuilding an index.
+    </p><p>
+     An <code class="function">equalimage</code> function must have the
+     signature
+</p><pre class="synopsis">
+equalimage(<em class="replaceable"><code>opcintype</code></em> <code class="type">oid</code>) returns bool
+</pre><p>
+     The return value is static information about an operator class
+     and collation.  Returning <code class="literal">true</code> indicates that
+     the <code class="function">order</code> function for the operator class is
+     guaranteed to only return <code class="literal">0</code> (<span class="quote">“<span class="quote">arguments
+      are equal</span>”</span>) when its <em class="replaceable"><code>A</code></em> and
+     <em class="replaceable"><code>B</code></em> arguments are also interchangeable
+     without any loss of semantic information.  Not registering an
+     <code class="function">equalimage</code> function or returning
+     <code class="literal">false</code> indicates that this condition cannot be
+     assumed to hold.
+    </p><p>
+     The <em class="replaceable"><code>opcintype</code></em> argument is the
+     <code class="literal"><code class="structname">pg_type</code>.oid</code> of the
+     data type that the operator class indexes.  This is a convenience
+     that allows reuse of the same underlying
+     <code class="function">equalimage</code> function across operator classes.
+     If <em class="replaceable"><code>opcintype</code></em> is a collatable data
+     type, the appropriate collation OID will be passed to the
+     <code class="function">equalimage</code> function, using the standard
+     <code class="function">PG_GET_COLLATION()</code> mechanism.
+    </p><p>
+     As far as the operator class is concerned, returning
+     <code class="literal">true</code> indicates that deduplication is safe (or
+     safe for the collation whose OID was passed to its
+     <code class="function">equalimage</code> function).  However, the core
+     code will only deem deduplication safe for an index when
+     <span class="emphasis"><em>every</em></span> indexed column uses an operator class
+     that registers an <code class="function">equalimage</code> function, and
+     each function actually returns <code class="literal">true</code> when
+     called.
+    </p><p>
+     Image equality is <span class="emphasis"><em>almost</em></span> the same condition
+     as simple bitwise equality.  There is one subtle difference: When
+     indexing a varlena data type, the on-disk representation of two
+     image equal datums may not be bitwise equal due to inconsistent
+     application of <acronym class="acronym">TOAST</acronym> compression on input.
+     Formally, when an operator class's
+     <code class="function">equalimage</code> function returns
+     <code class="literal">true</code>, it is safe to assume that the
+     <code class="literal">datum_image_eq()</code> C function will always agree
+     with the operator class's <code class="function">order</code> function
+     (provided that the same collation OID is passed to both the
+     <code class="function">equalimage</code> and <code class="function">order</code>
+     functions).
+    </p><p>
+     The core code is fundamentally unable to deduce anything about
+     the <span class="quote">“<span class="quote">equality implies image equality</span>”</span> status of an
+     operator class within a multiple-data-type family based on
+     details from other operator classes in the same family.  Also, it
+     is not sensible for an operator family to register a cross-type
+     <code class="function">equalimage</code> function, and attempting to do so
+     will result in an error.  This is because <span class="quote">“<span class="quote">equality implies
+      image equality</span>”</span> status does not just depend on
+     sorting/equality semantics, which are more or less defined at the
+     operator family level.  In general, the semantics that one
+     particular data type implements must be considered separately.
+    </p><p>
+     The convention followed by the operator classes included with the
+     core <span class="productname">PostgreSQL</span> distribution is to
+     register a stock, generic <code class="function">equalimage</code>
+     function.  Most operator classes register
+     <code class="function">btequalimage()</code>, which indicates that
+     deduplication is safe unconditionally.  Operator classes for
+     collatable data types such as <code class="type">text</code> register
+     <code class="function">btvarstrequalimage()</code>, which indicates that
+     deduplication is safe with deterministic collations.  Best
+     practice for third-party extensions is to register their own
+     custom function to retain control.
+    </p></dd><dt><span class="term"><code class="function">options</code></span></dt><dd><p>
+     Optionally, a B-tree operator family may provide
+     <code class="function">options</code> (<span class="quote">“<span class="quote">operator class specific
+     options</span>”</span>) support functions, registered under support
+     function number 5.  These functions define a set of user-visible
+     parameters that control operator class behavior.
+    </p><p>
+     An <code class="function">options</code> support function must have the
+     signature
+</p><pre class="synopsis">
+options(<em class="replaceable"><code>relopts</code></em> <code class="type">local_relopts *</code>) returns void
+</pre><p>
+     The function is passed a pointer to a <code class="structname">local_relopts</code>
+     struct, which needs to be filled with a set of operator class
+     specific options.  The options can be accessed from other support
+     functions using the <code class="literal">PG_HAS_OPCLASS_OPTIONS()</code> and
+     <code class="literal">PG_GET_OPCLASS_OPTIONS()</code> macros.
+    </p><p>
+     Currently, no B-Tree operator class has an <code class="function">options</code>
+     support function.  B-tree doesn't allow flexible representation of keys
+     like GiST, SP-GiST, GIN and BRIN do.  So, <code class="function">options</code>
+     probably doesn't have much application in the current B-tree index
+     access method.  Nevertheless, this support function was added to B-tree
+     for uniformity, and will probably find uses during further
+     evolution of B-tree in <span class="productname">PostgreSQL</span>.
+    </p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="btree-behavior.html" title="64.2. Behavior of B-Tree Operator Classes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="btree.html" title="Chapter 64. B-Tree Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="btree-implementation.html" title="64.4. Implementation">Next</a></td></tr><tr><td width="40%" align="left" valign="top">64.2. Behavior of B-Tree Operator Classes </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 64.4. Implementation</td></tr></table></div></body></html>

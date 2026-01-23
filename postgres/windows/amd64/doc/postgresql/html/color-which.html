@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>N.2. Configuring the Colors</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="color-when.html" title="N.1. When Color is Used" /><link rel="next" href="appendix-obsolete.html" title="Appendix O. Obsolete or Renamed Features" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">N.2. Configuring the Colors</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="color-when.html" title="N.1. When Color is Used">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="color.html" title="Appendix N. Color Support">Up</a></td><th width="60%" align="center">Appendix N. Color Support</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="appendix-obsolete.html" title="Appendix O. Obsolete or Renamed Features">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="COLOR-WHICH"><div class="titlepage"><div><div><h2 class="title" style="clear: both">N.2. Configuring the Colors</h2></div></div></div><p>
+   The actual colors to be used are configured using the environment variable
+   <code class="envar">PG_COLORS</code><a id="id-1.11.15.5.2.2" class="indexterm"></a>
+   (note plural).  The value is a colon-separated list of
+   <code class="literal"><em class="replaceable"><code>key</code></em>=<em class="replaceable"><code>value</code></em></code>
+   pairs.  The keys specify what the color is to be used for.  The values are
+   SGR (Select Graphic Rendition) specifications, which are interpreted by the
+   terminal.
+  </p><p>
+   The following keys are currently in use:
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">error</code></span></dt><dd><p>used to highlight the text <span class="quote">“<span class="quote">error</span>”</span> in error messages</p></dd><dt><span class="term"><code class="literal">warning</code></span></dt><dd><p>used to highlight the text <span class="quote">“<span class="quote">warning</span>”</span> in warning
+      messages</p></dd><dt><span class="term"><code class="literal">locus</code></span></dt><dd><p>used to highlight location information (e.g., program name and
+      file name) in messages</p></dd></dl></div><p>
+  </p><p>
+   The default value is <code class="literal">error=01;31:warning=01;35:locus=01</code>
+   (<code class="literal">01;31</code> = bold red, <code class="literal">01;35</code> = bold
+   magenta, <code class="literal">01</code> = bold default color).
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    This color specification format is also used by other software packages
+    such as <span class="productname">GCC</span>, <span class="productname">GNU
+    coreutils</span>, and <span class="productname">GNU grep</span>.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="color-when.html" title="N.1. When Color is Used">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="color.html" title="Appendix N. Color Support">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="appendix-obsolete.html" title="Appendix O. Obsolete or Renamed Features">Next</a></td></tr><tr><td width="40%" align="left" valign="top">N.1. When Color is Used </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Appendix O. Obsolete or Renamed Features</td></tr></table></div></body></html>

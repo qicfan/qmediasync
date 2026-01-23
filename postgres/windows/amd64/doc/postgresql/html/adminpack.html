@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.1. adminpack</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="contrib.html" title="Appendix F. Additional Supplied Modules" /><link rel="next" href="amcheck.html" title="F.2. amcheck" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.1. adminpack</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="contrib.html" title="Appendix F. Additional Supplied Modules">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="amcheck.html" title="F.2. amcheck">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ADMINPACK"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.1. adminpack</h2></div></div></div><a id="id-1.11.7.10.2" class="indexterm"></a><p>
+  <code class="filename">adminpack</code> provides a number of support functions which
+  <span class="application">pgAdmin</span> and other administration and management tools can
+  use to provide additional functionality, such as remote management
+  of server log files.
+  Use of all these functions is only allowed to the superuser by default but may be
+  allowed to other users by using the <code class="command">GRANT</code> command.
+ </p><p>
+  The functions shown in <a class="xref" href="adminpack.html#FUNCTIONS-ADMINPACK-TABLE" title="Table F.1. adminpack Functions">Table F.1</a> provide
+  write access to files on the machine hosting the server.  (See also the
+  functions in <a class="xref" href="functions-admin.html#FUNCTIONS-ADMIN-GENFILE-TABLE" title="Table 9.97. Generic File Access Functions">Table 9.97</a>, which
+  provide read-only access.)
+  Only files within the database cluster directory can be accessed, unless the
+  user is a superuser or given one of the pg_read_server_files, or pg_write_server_files
+  roles, as appropriate for the function, but either a relative or absolute path is
+  allowable.
+ </p><div class="table" id="FUNCTIONS-ADMINPACK-TABLE"><p class="title"><strong>Table F.1. <code class="filename">adminpack</code> Functions</strong></p><div class="table-contents"><table class="table" summary="adminpack Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">pg_catalog.pg_file_write</code> ( <em class="parameter"><code>filename</code></em> <code class="type">text</code>, <em class="parameter"><code>data</code></em> <code class="type">text</code>, <em class="parameter"><code>append</code></em> <code class="type">boolean</code> )
+        → <code class="returnvalue">bigint</code>
+       </p>
+       <p>
+        Writes, or appends to, a text file.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">pg_catalog.pg_file_sync</code> ( <em class="parameter"><code>filename</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">void</code>
+       </p>
+       <p>
+        Flushes a file or directory to disk.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">pg_catalog.pg_file_rename</code> ( <em class="parameter"><code>oldname</code></em> <code class="type">text</code>, <em class="parameter"><code>newname</code></em> <code class="type">text</code> [<span class="optional">, <em class="parameter"><code>archivename</code></em> <code class="type">text</code> </span>] )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Renames a file.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">pg_catalog.pg_file_unlink</code> ( <em class="parameter"><code>filename</code></em> <code class="type">text</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Removes a file.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">pg_catalog.pg_logdir_ls</code> ()
+        → <code class="returnvalue">setof record</code>
+       </p>
+       <p>
+        Lists the log files in the <code class="varname">log_directory</code> directory.
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><a id="id-1.11.7.10.6" class="indexterm"></a><p>
+  <code class="function">pg_file_write</code> writes the specified <em class="parameter"><code>data</code></em> into
+  the file named by <em class="parameter"><code>filename</code></em>.  If <em class="parameter"><code>append</code></em> is
+  false, the file must not already exist.  If <em class="parameter"><code>append</code></em> is true,
+  the file can already exist, and will be appended to if so.
+  Returns the number of bytes written.
+ </p><a id="id-1.11.7.10.8" class="indexterm"></a><p>
+  <code class="function">pg_file_sync</code> fsyncs the specified file or directory
+  named by <em class="parameter"><code>filename</code></em>.  An error is thrown
+  on failure (e.g., the specified file is not present). Note that
+  <a class="xref" href="runtime-config-error-handling.html#GUC-DATA-SYNC-RETRY">data_sync_retry</a> has no effect on this function,
+  and therefore a PANIC-level error will not be raised even on failure to
+  flush database files.
+ </p><a id="id-1.11.7.10.10" class="indexterm"></a><p>
+  <code class="function">pg_file_rename</code> renames a file.  If <em class="parameter"><code>archivename</code></em>
+  is omitted or NULL, it simply renames <em class="parameter"><code>oldname</code></em>
+  to <em class="parameter"><code>newname</code></em> (which must not already exist).
+  If <em class="parameter"><code>archivename</code></em> is provided, it first
+  renames <em class="parameter"><code>newname</code></em> to <em class="parameter"><code>archivename</code></em> (which must
+  not already exist), and then renames <em class="parameter"><code>oldname</code></em>
+  to <em class="parameter"><code>newname</code></em>.  In event of failure of the second rename step,
+  it will try to rename <em class="parameter"><code>archivename</code></em> back
+  to <em class="parameter"><code>newname</code></em> before reporting the error.
+  Returns true on success, false if the source file(s) are not present or
+  not writable; other cases throw errors.
+ </p><a id="id-1.11.7.10.12" class="indexterm"></a><p>
+  <code class="function">pg_file_unlink</code> removes the specified file.
+  Returns true on success, false if the specified file is not present
+  or the <code class="function">unlink()</code> call fails; other cases throw errors.
+ </p><a id="id-1.11.7.10.14" class="indexterm"></a><p>
+  <code class="function">pg_logdir_ls</code> returns the start timestamps and path
+  names of all the log files in the <a class="xref" href="runtime-config-logging.html#GUC-LOG-DIRECTORY">log_directory</a>
+  directory.  The <a class="xref" href="runtime-config-logging.html#GUC-LOG-FILENAME">log_filename</a> parameter must have its
+  default setting (<code class="literal">postgresql-%Y-%m-%d_%H%M%S.log</code>) to use this
+  function.
+ </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="contrib.html" title="Appendix F. Additional Supplied Modules">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="amcheck.html" title="F.2. amcheck">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Appendix F. Additional Supplied Modules </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.2. amcheck</td></tr></table></div></body></html>

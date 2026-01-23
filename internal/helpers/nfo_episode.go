@@ -13,6 +13,7 @@ type TVShowEpisode struct {
 	Tagline       string     `xml:"tagline,omitempty"`
 	Title         string     `xml:"title,omitempty"`
 	OriginalTitle string     `xml:"originaltitle,omitempty"`
+	SortTitle     string     `xml:"sorttitle,omitempty"`
 	Premiered     string     `xml:"premiered,omitempty"`
 	Releasedate   string     `xml:"releasedate,omitempty"`
 	Year          int        `xml:"year,omitempty"`

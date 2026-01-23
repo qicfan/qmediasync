@@ -1,0 +1,765 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>36.6. pgtypes Library</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-dynamic.html" title="36.5. Dynamic SQL" /><link rel="next" href="ecpg-descriptors.html" title="36.7. Using Descriptor Areas" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">36.6. pgtypes Library</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-dynamic.html" title="36.5. Dynamic SQL">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><th width="60%" align="center">Chapter 36. <span xmlns="http://www.w3.org/1999/xhtml" class="application">ECPG</span> — Embedded <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> in C</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-descriptors.html" title="36.7. Using Descriptor Areas">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ECPG-PGTYPES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">36.6. pgtypes Library</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-CSTRINGS">36.6.1. Character Strings</a></span></dt><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-NUMERIC">36.6.2. The numeric Type</a></span></dt><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-DATE">36.6.3. The date Type</a></span></dt><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-TIMESTAMP">36.6.4. The timestamp Type</a></span></dt><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-INTERVAL">36.6.5. The interval Type</a></span></dt><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-DECIMAL">36.6.6. The decimal Type</a></span></dt><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-ERRNO">36.6.7. errno Values of pgtypeslib</a></span></dt><dt><span class="sect2"><a href="ecpg-pgtypes.html#ECPG-PGTYPES-CONSTANTS">36.6.8. Special Constants of pgtypeslib</a></span></dt></dl></div><p>
+   The pgtypes library maps <span class="productname">PostgreSQL</span> database
+   types to C equivalents that can be used in C programs. It also offers
+   functions to do basic calculations with those types within C, i.e., without
+   the help of the <span class="productname">PostgreSQL</span> server. See the
+   following example:
+</p><pre class="programlisting">
+EXEC SQL BEGIN DECLARE SECTION;
+   date date1;
+   timestamp ts1, tsout;
+   interval iv1;
+   char *out;
+EXEC SQL END DECLARE SECTION;
+
+PGTYPESdate_today(&amp;date1);
+EXEC SQL SELECT started, duration INTO :ts1, :iv1 FROM datetbl WHERE d=:date1;
+PGTYPEStimestamp_add_interval(&amp;ts1, &amp;iv1, &amp;tsout);
+out = PGTYPEStimestamp_to_asc(&amp;tsout);
+printf("Started + duration: %s\n", out);
+PGTYPESchar_free(out);
+
+</pre><p>
+  </p><div class="sect2" id="ECPG-PGTYPES-CSTRINGS"><div class="titlepage"><div><div><h3 class="title">36.6.1. Character Strings</h3></div></div></div><p>
+   Some functions such as <code class="function">PGTYPESnumeric_to_asc</code> return
+   a pointer to a freshly allocated character string. These results should be
+   freed with <code class="function">PGTYPESchar_free</code> instead of
+   <code class="function">free</code>. (This is important only on Windows, where
+   memory allocation and release sometimes need to be done by the same
+   library.)
+   </p></div><div class="sect2" id="ECPG-PGTYPES-NUMERIC"><div class="titlepage"><div><div><h3 class="title">36.6.2. The numeric Type</h3></div></div></div><p>
+    The numeric type offers to do calculations with arbitrary precision. See
+    <a class="xref" href="datatype-numeric.html" title="8.1. Numeric Types">Section 8.1</a> for the equivalent type in the
+    <span class="productname">PostgreSQL</span> server. Because of the arbitrary precision this
+    variable needs to be able to expand and shrink dynamically. That's why you
+    can only create numeric variables on the heap, by means of the
+    <code class="function">PGTYPESnumeric_new</code> and <code class="function">PGTYPESnumeric_free</code>
+    functions. The decimal type, which is similar but limited in precision,
+    can be created on the stack as well as on the heap.
+   </p><p>
+   The following functions can be used to work with the numeric type:
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">PGTYPESnumeric_new</code></span></dt><dd><p>
+      Request a pointer to a newly allocated numeric variable.
+</p><pre class="synopsis">
+numeric *PGTYPESnumeric_new(void);
+</pre><p>
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_free</code></span></dt><dd><p>
+      Free a numeric type, release all of its memory.
+</p><pre class="synopsis">
+void PGTYPESnumeric_free(numeric *var);
+</pre><p>
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_from_asc</code></span></dt><dd><p>
+       Parse a numeric type from its string notation.
+</p><pre class="synopsis">
+numeric *PGTYPESnumeric_from_asc(char *str, char **endptr);
+</pre><p>
+       Valid formats are for example:
+        <code class="literal">-2</code>,
+        <code class="literal">.794</code>,
+        <code class="literal">+3.44</code>,
+        <code class="literal">592.49E07</code> or
+        <code class="literal">-32.84e-4</code>.
+       If the value could be parsed successfully, a valid pointer is returned,
+       else the NULL pointer. At the moment ECPG always parses the complete
+       string and so it currently does not support to store the address of the
+       first invalid character in <code class="literal">*endptr</code>. You can safely
+       set <code class="literal">endptr</code> to NULL.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_to_asc</code></span></dt><dd><p>
+       Returns a pointer to a string allocated by <code class="function">malloc</code> that contains the string
+       representation of the numeric type <code class="literal">num</code>.
+</p><pre class="synopsis">
+char *PGTYPESnumeric_to_asc(numeric *num, int dscale);
+</pre><p>
+       The numeric value will be printed with <code class="literal">dscale</code> decimal
+       digits, with rounding applied if necessary.
+       The result must be freed with <code class="function">PGTYPESchar_free()</code>.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_add</code></span></dt><dd><p>
+       Add two numeric variables into a third one.
+</p><pre class="synopsis">
+int PGTYPESnumeric_add(numeric *var1, numeric *var2, numeric *result);
+</pre><p>
+       The function adds the variables <code class="literal">var1</code> and
+       <code class="literal">var2</code> into the result variable
+       <code class="literal">result</code>.
+       The function returns 0 on success and -1 in case of error.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_sub</code></span></dt><dd><p>
+       Subtract two numeric variables and return the result in a third one.
+</p><pre class="synopsis">
+int PGTYPESnumeric_sub(numeric *var1, numeric *var2, numeric *result);
+</pre><p>
+       The function subtracts the variable <code class="literal">var2</code> from
+       the variable <code class="literal">var1</code>. The result of the operation is
+       stored in the variable <code class="literal">result</code>.
+       The function returns 0 on success and -1 in case of error.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_mul</code></span></dt><dd><p>
+       Multiply two numeric variables and return the result in a third one.
+</p><pre class="synopsis">
+int PGTYPESnumeric_mul(numeric *var1, numeric *var2, numeric *result);
+</pre><p>
+       The function multiplies the variables <code class="literal">var1</code> and
+       <code class="literal">var2</code>. The result of the operation is stored in the
+       variable <code class="literal">result</code>.
+       The function returns 0 on success and -1 in case of error.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_div</code></span></dt><dd><p>
+       Divide two numeric variables and return the result in a third one.
+</p><pre class="synopsis">
+int PGTYPESnumeric_div(numeric *var1, numeric *var2, numeric *result);
+</pre><p>
+       The function divides the variables <code class="literal">var1</code> by
+       <code class="literal">var2</code>. The result of the operation is stored in the
+       variable <code class="literal">result</code>.
+       The function returns 0 on success and -1 in case of error.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_cmp</code></span></dt><dd><p>
+       Compare two numeric variables.
+</p><pre class="synopsis">
+int PGTYPESnumeric_cmp(numeric *var1, numeric *var2)
+</pre><p>
+       This function compares two numeric variables. In case of error,
+       <code class="literal">INT_MAX</code> is returned. On success, the function
+       returns one of three possible results:
+       </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+          1, if <code class="literal">var1</code> is bigger than <code class="literal">var2</code>
+         </p></li><li class="listitem"><p>
+          -1, if <code class="literal">var1</code> is smaller than <code class="literal">var2</code>
+         </p></li><li class="listitem"><p>
+          0, if <code class="literal">var1</code> and <code class="literal">var2</code> are equal
+         </p></li></ul></div><p>
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_from_int</code></span></dt><dd><p>
+       Convert an int variable to a numeric variable.
+</p><pre class="synopsis">
+int PGTYPESnumeric_from_int(signed int int_val, numeric *var);
+</pre><p>
+       This function accepts a variable of type signed int and stores it
+       in the numeric variable <code class="literal">var</code>. Upon success, 0 is returned and
+       -1 in case of a failure.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_from_long</code></span></dt><dd><p>
+       Convert a long int variable to a numeric variable.
+</p><pre class="synopsis">
+int PGTYPESnumeric_from_long(signed long int long_val, numeric *var);
+</pre><p>
+       This function accepts a variable of type signed long int and stores it
+       in the numeric variable <code class="literal">var</code>. Upon success, 0 is returned and
+       -1 in case of a failure.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_copy</code></span></dt><dd><p>
+       Copy over one numeric variable into another one.
+</p><pre class="synopsis">
+int PGTYPESnumeric_copy(numeric *src, numeric *dst);
+</pre><p>
+       This function copies over the value of the variable that
+       <code class="literal">src</code> points to into the variable that <code class="literal">dst</code>
+       points to. It returns 0 on success and -1 if an error occurs.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_from_double</code></span></dt><dd><p>
+       Convert a variable of type double to a numeric.
+</p><pre class="synopsis">
+int  PGTYPESnumeric_from_double(double d, numeric *dst);
+</pre><p>
+       This function accepts a variable of type double and stores the result
+       in the variable that <code class="literal">dst</code> points to. It returns 0 on success
+       and -1 if an error occurs.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_to_double</code></span></dt><dd><p>
+       Convert a variable of type numeric to double.
+</p><pre class="synopsis">
+int PGTYPESnumeric_to_double(numeric *nv, double *dp)
+</pre><p>
+       The function converts the numeric value from the variable that
+       <code class="literal">nv</code> points to into the double variable that <code class="literal">dp</code> points
+       to. It returns 0 on success and -1 if an error occurs, including
+       overflow. On overflow, the global variable <code class="literal">errno</code> will be set
+       to <code class="literal">PGTYPES_NUM_OVERFLOW</code> additionally.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_to_int</code></span></dt><dd><p>
+       Convert a variable of type numeric to int.
+</p><pre class="synopsis">
+int PGTYPESnumeric_to_int(numeric *nv, int *ip);
+</pre><p>
+       The function converts the numeric value from the variable that
+       <code class="literal">nv</code> points to into the integer variable that <code class="literal">ip</code>
+       points to. It returns 0 on success and -1 if an error occurs, including
+       overflow. On overflow, the global variable <code class="literal">errno</code> will be set
+       to <code class="literal">PGTYPES_NUM_OVERFLOW</code> additionally.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_to_long</code></span></dt><dd><p>
+       Convert a variable of type numeric to long.
+</p><pre class="synopsis">
+int PGTYPESnumeric_to_long(numeric *nv, long *lp);
+</pre><p>
+       The function converts the numeric value from the variable that
+       <code class="literal">nv</code> points to into the long integer variable that
+       <code class="literal">lp</code> points to. It returns 0 on success and -1 if an error
+       occurs, including overflow. On overflow, the global variable
+       <code class="literal">errno</code> will be set to <code class="literal">PGTYPES_NUM_OVERFLOW</code>
+       additionally.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_to_decimal</code></span></dt><dd><p>
+       Convert a variable of type numeric to decimal.
+</p><pre class="synopsis">
+int PGTYPESnumeric_to_decimal(numeric *src, decimal *dst);
+</pre><p>
+       The function converts the numeric value from the variable that
+       <code class="literal">src</code> points to into the decimal variable that
+       <code class="literal">dst</code> points to. It returns 0 on success and -1 if an error
+       occurs, including overflow. On overflow, the global variable
+       <code class="literal">errno</code> will be set to <code class="literal">PGTYPES_NUM_OVERFLOW</code>
+       additionally.
+      </p></dd><dt><span class="term"><code class="function">PGTYPESnumeric_from_decimal</code></span></dt><dd><p>
+       Convert a variable of type decimal to numeric.
+</p><pre class="synopsis">
+int PGTYPESnumeric_from_decimal(decimal *src, numeric *dst);
+</pre><p>
+       The function converts the decimal value from the variable that
+       <code class="literal">src</code> points to into the numeric variable that
+       <code class="literal">dst</code> points to. It returns 0 on success and -1 if an error
+       occurs. Since the decimal type is implemented as a limited version of
+       the numeric type, overflow cannot occur with this conversion.
+      </p></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-PGTYPES-DATE"><div class="titlepage"><div><div><h3 class="title">36.6.3. The date Type</h3></div></div></div><p>
+    The date type in C enables your programs to deal with data of the SQL type
+    date. See <a class="xref" href="datatype-datetime.html" title="8.5. Date/Time Types">Section 8.5</a> for the equivalent type in the
+    <span class="productname">PostgreSQL</span> server.
+   </p><p>
+    The following functions can be used to work with the date type:
+    </p><div class="variablelist"><dl class="variablelist"><dt id="PGTYPESDATEFROMTIMESTAMP"><span class="term"><code class="function">PGTYPESdate_from_timestamp</code></span></dt><dd><p>
+        Extract the date part from a timestamp.
+</p><pre class="synopsis">
+date PGTYPESdate_from_timestamp(timestamp dt);
+</pre><p>
+        The function receives a timestamp as its only argument and returns the
+        extracted date part from this timestamp.
+       </p></dd><dt id="PGTYPESDATEFROMASC"><span class="term"><code class="function">PGTYPESdate_from_asc</code></span></dt><dd><p>
+       Parse a date from its textual representation.
+</p><pre class="synopsis">
+date PGTYPESdate_from_asc(char *str, char **endptr);
+</pre><p>
+        The function receives a C char* string <code class="literal">str</code> and a pointer to
+        a C char* string <code class="literal">endptr</code>. At the moment ECPG always parses
+        the complete string and so it currently does not support to store the
+        address of the first invalid character in <code class="literal">*endptr</code>.
+        You can safely set <code class="literal">endptr</code> to NULL.
+       </p><p>
+        Note that the function always assumes MDY-formatted dates and there is
+        currently no variable to change that within ECPG.
+       </p><p>
+        <a class="xref" href="ecpg-pgtypes.html#ECPG-PGTYPESDATE-FROM-ASC-TABLE" title="Table 36.2. Valid Input Formats for PGTYPESdate_from_asc">Table 36.2</a> shows the allowed input formats.
+       </p><div class="table" id="ECPG-PGTYPESDATE-FROM-ASC-TABLE"><p class="title"><strong>Table 36.2. Valid Input Formats for <code class="function">PGTYPESdate_from_asc</code></strong></p><div class="table-contents"><table class="table" summary="Valid Input Formats for PGTYPESdate_from_asc" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Input</th><th>Result</th></tr></thead><tbody><tr><td><code class="literal">January 8, 1999</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">1999-01-08</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">1/8/1999</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">1/18/1999</code></td><td><code class="literal">January 18, 1999</code></td></tr><tr><td><code class="literal">01/02/03</code></td><td><code class="literal">February 1, 2003</code></td></tr><tr><td><code class="literal">1999-Jan-08</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">Jan-08-1999</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">08-Jan-1999</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">99-Jan-08</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">08-Jan-99</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">08-Jan-06</code></td><td><code class="literal">January 8, 2006</code></td></tr><tr><td><code class="literal">Jan-08-99</code></td><td><code class="literal">January 8, 1999</code></td></tr><tr><td><code class="literal">19990108</code></td><td><code class="literal">ISO 8601; January 8, 1999</code></td></tr><tr><td><code class="literal">990108</code></td><td><code class="literal">ISO 8601; January 8, 1999</code></td></tr><tr><td><code class="literal">1999.008</code></td><td><code class="literal">year and day of year</code></td></tr><tr><td><code class="literal">J2451187</code></td><td><code class="literal">Julian day</code></td></tr><tr><td><code class="literal">January 8, 99 BC</code></td><td><code class="literal">year 99 before the Common Era</code></td></tr></tbody></table></div></div><br class="table-break" /></dd><dt id="PGTYPESDATETOASC"><span class="term"><code class="function">PGTYPESdate_to_asc</code></span></dt><dd><p>
+        Return the textual representation of a date variable.
+</p><pre class="synopsis">
+char *PGTYPESdate_to_asc(date dDate);
+</pre><p>
+        The function receives the date <code class="literal">dDate</code> as its only parameter.
+        It will output the date in the form <code class="literal">1999-01-18</code>, i.e., in the
+        <code class="literal">YYYY-MM-DD</code> format.
+        The result must be freed with <code class="function">PGTYPESchar_free()</code>.
+       </p></dd><dt id="PGTYPESDATEJULMDY"><span class="term"><code class="function">PGTYPESdate_julmdy</code></span></dt><dd><p>
+        Extract the values for the day, the month and the year from a variable
+        of type date.
+</p><pre class="synopsis">
+void PGTYPESdate_julmdy(date d, int *mdy);
+</pre><p>
+       
+        The function receives the date <code class="literal">d</code> and a pointer to an array
+        of 3 integer values <code class="literal">mdy</code>. The variable name indicates
+        the sequential order: <code class="literal">mdy[0]</code> will be set to contain the
+        number of the month, <code class="literal">mdy[1]</code> will be set to the value of the
+        day and <code class="literal">mdy[2]</code> will contain the year.
+       </p></dd><dt id="PGTYPESDATEMDYJUL"><span class="term"><code class="function">PGTYPESdate_mdyjul</code></span></dt><dd><p>
+        Create a date value from an array of 3 integers that specify the
+        day, the month and the year of the date.
+</p><pre class="synopsis">
+void PGTYPESdate_mdyjul(int *mdy, date *jdate);
+</pre><p>
+        The function receives the array of the 3 integers (<code class="literal">mdy</code>) as
+        its first argument and as its second argument a pointer to a variable
+        of type date that should hold the result of the operation.
+       </p></dd><dt id="PGTYPESDATEDAYOFWEEK"><span class="term"><code class="function">PGTYPESdate_dayofweek</code></span></dt><dd><p>
+        Return a number representing the day of the week for a date value.
+</p><pre class="synopsis">
+int PGTYPESdate_dayofweek(date d);
+</pre><p>
+        The function receives the date variable <code class="literal">d</code> as its only
+        argument and returns an integer that indicates the day of the week for
+        this date.
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           0 - Sunday
+          </p></li><li class="listitem"><p>
+           1 - Monday
+          </p></li><li class="listitem"><p>
+           2 - Tuesday
+          </p></li><li class="listitem"><p>
+           3 - Wednesday
+          </p></li><li class="listitem"><p>
+           4 - Thursday
+          </p></li><li class="listitem"><p>
+           5 - Friday
+          </p></li><li class="listitem"><p>
+           6 - Saturday
+          </p></li></ul></div><p>
+       </p></dd><dt id="PGTYPESDATETODAY"><span class="term"><code class="function">PGTYPESdate_today</code></span></dt><dd><p>
+        Get the current date.
+</p><pre class="synopsis">
+void PGTYPESdate_today(date *d);
+</pre><p>
+        The function receives a pointer to a date variable (<code class="literal">d</code>)
+        that it sets to the current date.
+       </p></dd><dt id="PGTYPESDATEFMTASC"><span class="term"><code class="function">PGTYPESdate_fmt_asc</code></span></dt><dd><p>
+        Convert a variable of type date to its textual representation using a
+        format mask.
+</p><pre class="synopsis">
+int PGTYPESdate_fmt_asc(date dDate, char *fmtstring, char *outbuf);
+</pre><p>
+        The function receives the date to convert (<code class="literal">dDate</code>), the
+        format mask (<code class="literal">fmtstring</code>) and the string that will hold the
+        textual representation of the date (<code class="literal">outbuf</code>).
+       </p><p>
+        On success, 0 is returned and a negative value if an error occurred.
+       </p><p>
+        The following literals are the field specifiers you can use:
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           <code class="literal">dd</code> - The number of the day of the month.
+          </p></li><li class="listitem"><p>
+           <code class="literal">mm</code> - The number of the month of the year.
+          </p></li><li class="listitem"><p>
+           <code class="literal">yy</code> - The number of the year as a two digit number.
+          </p></li><li class="listitem"><p>
+           <code class="literal">yyyy</code> - The number of the year as a four digit number.
+          </p></li><li class="listitem"><p>
+           <code class="literal">ddd</code> - The name of the day (abbreviated).
+          </p></li><li class="listitem"><p>
+           <code class="literal">mmm</code> - The name of the month (abbreviated).
+          </p></li></ul></div><p>
+        All other characters are copied 1:1 to the output string.
+       </p><p>
+        <a class="xref" href="ecpg-pgtypes.html#ECPG-PGTYPESDATE-FMT-ASC-EXAMPLE-TABLE" title="Table 36.3. Valid Input Formats for PGTYPESdate_fmt_asc">Table 36.3</a> indicates a few possible formats. This will give
+        you an idea of how to use this function. All output lines are based on
+        the same date: November 23, 1959.
+       </p><div class="table" id="ECPG-PGTYPESDATE-FMT-ASC-EXAMPLE-TABLE"><p class="title"><strong>Table 36.3. Valid Input Formats for <code class="function">PGTYPESdate_fmt_asc</code></strong></p><div class="table-contents"><table class="table" summary="Valid Input Formats for PGTYPESdate_fmt_asc" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Format</th><th>Result</th></tr></thead><tbody><tr><td><code class="literal">mmddyy</code></td><td><code class="literal">112359</code></td></tr><tr><td><code class="literal">ddmmyy</code></td><td><code class="literal">231159</code></td></tr><tr><td><code class="literal">yymmdd</code></td><td><code class="literal">591123</code></td></tr><tr><td><code class="literal">yy/mm/dd</code></td><td><code class="literal">59/11/23</code></td></tr><tr><td><code class="literal">yy mm dd</code></td><td><code class="literal">59 11 23</code></td></tr><tr><td><code class="literal">yy.mm.dd</code></td><td><code class="literal">59.11.23</code></td></tr><tr><td><code class="literal">.mm.yyyy.dd.</code></td><td><code class="literal">.11.1959.23.</code></td></tr><tr><td><code class="literal">mmm. dd, yyyy</code></td><td><code class="literal">Nov. 23, 1959</code></td></tr><tr><td><code class="literal">mmm dd yyyy</code></td><td><code class="literal">Nov 23 1959</code></td></tr><tr><td><code class="literal">yyyy dd mm</code></td><td><code class="literal">1959 23 11</code></td></tr><tr><td><code class="literal">ddd, mmm. dd, yyyy</code></td><td><code class="literal">Mon, Nov. 23, 1959</code></td></tr><tr><td><code class="literal">(ddd) mmm. dd, yyyy</code></td><td><code class="literal">(Mon) Nov. 23, 1959</code></td></tr></tbody></table></div></div><br class="table-break" /></dd><dt id="PGTYPESDATEDEFMTASC"><span class="term"><code class="function">PGTYPESdate_defmt_asc</code></span></dt><dd><p>
+        Use a format mask to convert a C <code class="type">char*</code> string to a value of type
+        date.
+</p><pre class="synopsis">
+int PGTYPESdate_defmt_asc(date *d, char *fmt, char *str);
+</pre><p>
+        
+        The function receives a pointer to the date value that should hold the
+        result of the operation (<code class="literal">d</code>), the format mask to use for
+        parsing the date (<code class="literal">fmt</code>) and the C char* string containing
+        the textual representation of the date (<code class="literal">str</code>). The textual
+        representation is expected to match the format mask. However you do not
+        need to have a 1:1 mapping of the string to the format mask. The
+        function only analyzes the sequential order and looks for the literals
+        <code class="literal">yy</code> or <code class="literal">yyyy</code> that indicate the
+        position of the year, <code class="literal">mm</code> to indicate the position of
+        the month and <code class="literal">dd</code> to indicate the position of the
+        day.
+       </p><p>
+        <a class="xref" href="ecpg-pgtypes.html#ECPG-RDEFMTDATE-EXAMPLE-TABLE" title="Table 36.4. Valid Input Formats for rdefmtdate">Table 36.4</a> indicates a few possible formats. This will give
+        you an idea of how to use this function.
+       </p><div class="table" id="ECPG-RDEFMTDATE-EXAMPLE-TABLE"><p class="title"><strong>Table 36.4. Valid Input Formats for <code class="function">rdefmtdate</code></strong></p><div class="table-contents"><table class="table" summary="Valid Input Formats for rdefmtdate" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Format</th><th>String</th><th>Result</th></tr></thead><tbody><tr><td><code class="literal">ddmmyy</code></td><td><code class="literal">21-2-54</code></td><td><code class="literal">1954-02-21</code></td></tr><tr><td><code class="literal">ddmmyy</code></td><td><code class="literal">2-12-54</code></td><td><code class="literal">1954-12-02</code></td></tr><tr><td><code class="literal">ddmmyy</code></td><td><code class="literal">20111954</code></td><td><code class="literal">1954-11-20</code></td></tr><tr><td><code class="literal">ddmmyy</code></td><td><code class="literal">130464</code></td><td><code class="literal">1964-04-13</code></td></tr><tr><td><code class="literal">mmm.dd.yyyy</code></td><td><code class="literal">MAR-12-1967</code></td><td><code class="literal">1967-03-12</code></td></tr><tr><td><code class="literal">yy/mm/dd</code></td><td><code class="literal">1954, February 3rd</code></td><td><code class="literal">1954-02-03</code></td></tr><tr><td><code class="literal">mmm.dd.yyyy</code></td><td><code class="literal">041269</code></td><td><code class="literal">1969-04-12</code></td></tr><tr><td><code class="literal">yy/mm/dd</code></td><td><code class="literal">In the year 2525, in the month of July, mankind will be alive on the 28th day</code></td><td><code class="literal">2525-07-28</code></td></tr><tr><td><code class="literal">dd-mm-yy</code></td><td><code class="literal">I said on the 28th of July in the year 2525</code></td><td><code class="literal">2525-07-28</code></td></tr><tr><td><code class="literal">mmm.dd.yyyy</code></td><td><code class="literal">9/14/58</code></td><td><code class="literal">1958-09-14</code></td></tr><tr><td><code class="literal">yy/mm/dd</code></td><td><code class="literal">47/03/29</code></td><td><code class="literal">1947-03-29</code></td></tr><tr><td><code class="literal">mmm.dd.yyyy</code></td><td><code class="literal">oct 28 1975</code></td><td><code class="literal">1975-10-28</code></td></tr><tr><td><code class="literal">mmddyy</code></td><td><code class="literal">Nov 14th, 1985</code></td><td><code class="literal">1985-11-14</code></td></tr></tbody></table></div></div><br class="table-break" /></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-PGTYPES-TIMESTAMP"><div class="titlepage"><div><div><h3 class="title">36.6.4. The timestamp Type</h3></div></div></div><p>
+    The timestamp type in C enables your programs to deal with data of the SQL
+    type timestamp. See <a class="xref" href="datatype-datetime.html" title="8.5. Date/Time Types">Section 8.5</a> for the equivalent
+    type in the <span class="productname">PostgreSQL</span> server.
+   </p><p>
+    The following functions can be used to work with the timestamp type:
+    </p><div class="variablelist"><dl class="variablelist"><dt id="PGTYPESTIMESTAMPFROMASC"><span class="term"><code class="function">PGTYPEStimestamp_from_asc</code></span></dt><dd><p>
+        Parse a timestamp from its textual representation into a timestamp
+        variable.
+</p><pre class="synopsis">
+timestamp PGTYPEStimestamp_from_asc(char *str, char **endptr);
+</pre><p>
+        The function receives the string to parse (<code class="literal">str</code>) and a
+        pointer to a C char* (<code class="literal">endptr</code>).
+        At the moment ECPG always parses
+        the complete string and so it currently does not support to store the
+        address of the first invalid character in <code class="literal">*endptr</code>.
+        You can safely set <code class="literal">endptr</code> to NULL.
+       </p><p>
+        The function returns the parsed timestamp on success. On error,
+        <code class="literal">PGTYPESInvalidTimestamp</code> is returned and <code class="varname">errno</code> is
+        set to <code class="literal">PGTYPES_TS_BAD_TIMESTAMP</code>. See <a class="xref" href="ecpg-pgtypes.html#PGTYPESINVALIDTIMESTAMP"><code class="literal">PGTYPESInvalidTimestamp</code></a> for important notes on this value.
+       </p><p>
+        In general, the input string can contain any combination of an allowed
+        date specification, a whitespace character and an allowed time
+        specification. Note that time zones are not supported by ECPG. It can
+        parse them but does not apply any calculation as the
+        <span class="productname">PostgreSQL</span> server does for example. Timezone
+        specifiers are silently discarded.
+       </p><p>
+        <a class="xref" href="ecpg-pgtypes.html#ECPG-PGTYPESTIMESTAMP-FROM-ASC-EXAMPLE-TABLE" title="Table 36.5. Valid Input Formats for PGTYPEStimestamp_from_asc">Table 36.5</a> contains a few examples for input strings.
+       </p><div class="table" id="ECPG-PGTYPESTIMESTAMP-FROM-ASC-EXAMPLE-TABLE"><p class="title"><strong>Table 36.5. Valid Input Formats for <code class="function">PGTYPEStimestamp_from_asc</code></strong></p><div class="table-contents"><table class="table" summary="Valid Input Formats for PGTYPEStimestamp_from_asc" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Input</th><th>Result</th></tr></thead><tbody><tr><td><code class="literal">1999-01-08 04:05:06</code></td><td><code class="literal">1999-01-08 04:05:06</code></td></tr><tr><td><code class="literal">January 8 04:05:06 1999 PST</code></td><td><code class="literal">1999-01-08 04:05:06</code></td></tr><tr><td><code class="literal">1999-Jan-08 04:05:06.789-8</code></td><td><code class="literal">1999-01-08 04:05:06.789 (time zone specifier ignored)</code></td></tr><tr><td><code class="literal">J2451187 04:05-08:00</code></td><td><code class="literal">1999-01-08 04:05:00 (time zone specifier ignored)</code></td></tr></tbody></table></div></div><br class="table-break" /></dd><dt id="PGTYPESTIMESTAMPTOASC"><span class="term"><code class="function">PGTYPEStimestamp_to_asc</code></span></dt><dd><p>
+        Converts a date to a C char* string.
+</p><pre class="synopsis">
+char *PGTYPEStimestamp_to_asc(timestamp tstamp);
+</pre><p>
+        The function receives the timestamp <code class="literal">tstamp</code> as
+        its only argument and returns an allocated string that contains the
+        textual representation of the timestamp.
+        The result must be freed with <code class="function">PGTYPESchar_free()</code>.
+       </p></dd><dt id="PGTYPESTIMESTAMPCURRENT"><span class="term"><code class="function">PGTYPEStimestamp_current</code></span></dt><dd><p>
+        Retrieve the current timestamp.
+</p><pre class="synopsis">
+void PGTYPEStimestamp_current(timestamp *ts);
+</pre><p>
+        The function retrieves the current timestamp and saves it into the
+        timestamp variable that <code class="literal">ts</code> points to.
+       </p></dd><dt id="PGTYPESTIMESTAMPFMTASC"><span class="term"><code class="function">PGTYPEStimestamp_fmt_asc</code></span></dt><dd><p>
+        Convert a timestamp variable to a C char* using a format mask.
+</p><pre class="synopsis">
+int PGTYPEStimestamp_fmt_asc(timestamp *ts, char *output, int str_len, char *fmtstr);
+</pre><p>
+        The function receives a pointer to the timestamp to convert as its
+        first argument (<code class="literal">ts</code>), a pointer to the output buffer
+        (<code class="literal">output</code>), the maximal length that has been allocated for
+        the output buffer (<code class="literal">str_len</code>) and the format mask to
+        use for the conversion (<code class="literal">fmtstr</code>).
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p><p>
+        You can use the following format specifiers for the format mask. The
+        format specifiers are the same ones that are used in the
+        <code class="function">strftime</code> function in <span class="productname">libc</span>. Any
+        non-format specifier will be copied into the output buffer.
+        
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           <code class="literal">%A</code> - is replaced by national representation of
+           the full weekday name.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%a</code> - is replaced by national representation of
+           the abbreviated weekday name.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%B</code> - is replaced by national representation of
+           the full month name.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%b</code> - is replaced by national representation of
+           the abbreviated month name.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%C</code> - is replaced by (year / 100) as decimal
+           number; single digits are preceded by a zero.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%c</code> - is replaced by national representation of
+           time and date.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%D</code> - is equivalent to
+           <code class="literal">%m/%d/%y</code>.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%d</code> - is replaced by the day of the month as a
+           decimal number (01–31).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%E*</code> <code class="literal">%O*</code> -  POSIX locale
+           extensions. The sequences
+           <code class="literal">%Ec</code>
+           <code class="literal">%EC</code>
+           <code class="literal">%Ex</code>
+           <code class="literal">%EX</code>
+           <code class="literal">%Ey</code>
+           <code class="literal">%EY</code>
+           <code class="literal">%Od</code>
+           <code class="literal">%Oe</code>
+           <code class="literal">%OH</code>
+           <code class="literal">%OI</code>
+           <code class="literal">%Om</code>
+           <code class="literal">%OM</code>
+           <code class="literal">%OS</code>
+           <code class="literal">%Ou</code>
+           <code class="literal">%OU</code>
+           <code class="literal">%OV</code>
+           <code class="literal">%Ow</code>
+           <code class="literal">%OW</code>
+           <code class="literal">%Oy</code>
+           are supposed to provide alternative representations.
+          </p><p>
+           Additionally <code class="literal">%OB</code> implemented to represent
+           alternative months names (used standalone, without day mentioned).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%e</code> - is replaced by the day of month as a decimal
+           number (1–31); single digits are preceded by a blank.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%F</code> - is equivalent to <code class="literal">%Y-%m-%d</code>.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%G</code> - is replaced by a year as a decimal number
+           with century. This year is the one that contains the greater part of
+           the week (Monday as the first day of the week).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%g</code> - is replaced by the same year as in
+           <code class="literal">%G</code>, but as a decimal number without century
+           (00–99).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%H</code> - is replaced by the hour (24-hour clock) as a
+           decimal number (00–23).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%h</code> - the same as <code class="literal">%b</code>.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%I</code> - is replaced by the hour (12-hour clock) as a
+           decimal number (01–12).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%j</code> - is replaced by the day of the year as a
+           decimal number (001–366).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%k</code> - is replaced by the hour (24-hour clock) as a
+           decimal number (0–23); single digits are preceded by a blank.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%l</code> - is replaced by the hour (12-hour clock) as a
+           decimal number (1–12); single digits are preceded by a blank.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%M</code> - is replaced by the minute as a decimal
+           number (00–59).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%m</code> - is replaced by the month as a decimal number
+           (01–12).
+          </p></li><li class="listitem"><p>
+          <code class="literal">%n</code> - is replaced by a newline.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%O*</code> - the same as <code class="literal">%E*</code>.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%p</code> - is replaced by national representation of
+           either <span class="quote">“<span class="quote">ante meridiem</span>”</span> or <span class="quote">“<span class="quote">post meridiem</span>”</span> as appropriate.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%R</code> - is equivalent to <code class="literal">%H:%M</code>.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%r</code> - is equivalent to <code class="literal">%I:%M:%S
+           %p</code>.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%S</code> - is replaced by the second as a decimal
+           number (00–60).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%s</code> - is replaced by the number of seconds since
+           the Epoch, UTC.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%T</code> - is equivalent to <code class="literal">%H:%M:%S</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">%t</code> - is replaced by a tab.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%U</code> - is replaced by the week number of the year
+           (Sunday as the first day of the week) as a decimal number (00–53).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%u</code> - is replaced by the weekday (Monday as the
+           first day of the week) as a decimal number (1–7).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%V</code> - is replaced by the week number of the year
+           (Monday as the first day of the week) as a decimal number (01–53).
+           If the week containing January 1 has four or more days in the new
+           year, then it is week 1; otherwise it is the last week of the
+           previous year, and the next week is week 1.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%v</code> - is equivalent to
+           <code class="literal">%e-%b-%Y</code>.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%W</code> - is replaced by the week number of the year
+           (Monday as the first day of the week) as a decimal number (00–53).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%w</code> - is replaced by the weekday (Sunday as the
+           first day of the week) as a decimal number (0–6).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%X</code> - is replaced by national representation of
+           the time.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%x</code> - is replaced by national representation of
+           the date.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%Y</code> - is replaced by the year with century as a
+           decimal number.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%y</code> - is replaced by the year without century as a
+           decimal number (00–99).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%Z</code> - is replaced by the time zone name.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%z</code> - is replaced by the time zone offset from
+           UTC; a leading plus sign stands for east of UTC, a minus sign for
+           west of UTC, hours and minutes follow with two digits each and no
+           delimiter between them (common form for <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc822" target="_top">RFC 822</a> date headers).
+          </p></li><li class="listitem"><p>
+           <code class="literal">%+</code> - is replaced by national representation of
+           the date and time.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%-*</code> - GNU libc extension. Do not do any padding
+           when performing numerical outputs.
+          </p></li><li class="listitem"><p>
+           $_* - GNU libc extension.    Explicitly specify space for padding.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%0*</code> - GNU libc extension. Explicitly specify zero
+           for padding.
+          </p></li><li class="listitem"><p>
+           <code class="literal">%%</code> - is replaced by <code class="literal">%</code>.
+          </p></li></ul></div><p>
+       </p></dd><dt id="PGTYPESTIMESTAMPSUB"><span class="term"><code class="function">PGTYPEStimestamp_sub</code></span></dt><dd><p>
+        Subtract one timestamp from another one and save the result in a
+        variable of type interval.
+</p><pre class="synopsis">
+int PGTYPEStimestamp_sub(timestamp *ts1, timestamp *ts2, interval *iv);
+</pre><p>
+        The function will subtract the timestamp variable that <code class="literal">ts2</code>
+        points to from the timestamp variable that <code class="literal">ts1</code> points to
+        and will store the result in the interval variable that <code class="literal">iv</code>
+        points to.
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p></dd><dt id="PGTYPESTIMESTAMPDEFMTASC"><span class="term"><code class="function">PGTYPEStimestamp_defmt_asc</code></span></dt><dd><p>
+        Parse a timestamp value from its textual representation using a
+        formatting mask.
+</p><pre class="synopsis">
+int PGTYPEStimestamp_defmt_asc(char *str, char *fmt, timestamp *d);
+</pre><p>
+        The function receives the textual representation of a timestamp in the
+        variable <code class="literal">str</code> as well as the formatting mask to use in the
+        variable <code class="literal">fmt</code>. The result will be stored in the variable
+        that <code class="literal">d</code> points to.
+       </p><p>
+        If the formatting mask <code class="literal">fmt</code> is NULL, the function will fall
+        back to the default formatting mask which is <code class="literal">%Y-%m-%d
+        %H:%M:%S</code>.
+       </p><p>
+        This is the reverse function to <a class="xref" href="ecpg-pgtypes.html#PGTYPESTIMESTAMPFMTASC"><code class="function">PGTYPEStimestamp_fmt_asc</code></a>.  See the documentation there in
+        order to find out about the possible formatting mask entries.
+       </p></dd><dt id="PGTYPESTIMESTAMPADDINTERVAL"><span class="term"><code class="function">PGTYPEStimestamp_add_interval</code></span></dt><dd><p>
+        Add an interval variable to a timestamp variable.
+</p><pre class="synopsis">
+int PGTYPEStimestamp_add_interval(timestamp *tin, interval *span, timestamp *tout);
+</pre><p>
+        The function receives a pointer to a timestamp variable <code class="literal">tin</code>
+        and a pointer to an interval variable <code class="literal">span</code>. It adds the
+        interval to the timestamp and saves the resulting timestamp in the
+        variable that <code class="literal">tout</code> points to.
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p></dd><dt id="PGTYPESTIMESTAMPSUBINTERVAL"><span class="term"><code class="function">PGTYPEStimestamp_sub_interval</code></span></dt><dd><p>
+        Subtract an interval variable from a timestamp variable.
+</p><pre class="synopsis">
+int PGTYPEStimestamp_sub_interval(timestamp *tin, interval *span, timestamp *tout);
+</pre><p>
+        The function subtracts the interval variable that <code class="literal">span</code>
+        points to from the timestamp variable that <code class="literal">tin</code> points to
+        and saves the result into the variable that <code class="literal">tout</code> points
+        to.
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-PGTYPES-INTERVAL"><div class="titlepage"><div><div><h3 class="title">36.6.5. The interval Type</h3></div></div></div><p>
+    The interval type in C enables your programs to deal with data of the SQL
+    type interval. See <a class="xref" href="datatype-datetime.html" title="8.5. Date/Time Types">Section 8.5</a> for the equivalent
+    type in the <span class="productname">PostgreSQL</span> server.
+   </p><p>
+    The following functions can be used to work with the interval type:
+    </p><div class="variablelist"><dl class="variablelist"><dt id="PGTYPESINTERVALNEW"><span class="term"><code class="function">PGTYPESinterval_new</code></span></dt><dd><p>
+        Return a pointer to a newly allocated interval variable.
+</p><pre class="synopsis">
+interval *PGTYPESinterval_new(void);
+</pre><p>
+       </p></dd><dt id="PGTYPESINTERVALFREE"><span class="term"><code class="function">PGTYPESinterval_free</code></span></dt><dd><p>
+        Release the memory of a previously allocated interval variable.
+</p><pre class="synopsis">
+void PGTYPESinterval_free(interval *intvl);
+</pre><p>
+       </p></dd><dt id="PGTYPESINTERVALFROMASC"><span class="term"><code class="function">PGTYPESinterval_from_asc</code></span></dt><dd><p>
+        Parse an interval from its textual representation.
+</p><pre class="synopsis">
+interval *PGTYPESinterval_from_asc(char *str, char **endptr);
+</pre><p>
+        The function parses the input string <code class="literal">str</code> and returns a
+        pointer to an allocated interval variable.
+        At the moment ECPG always parses
+        the complete string and so it currently does not support to store the
+        address of the first invalid character in <code class="literal">*endptr</code>.
+        You can safely set <code class="literal">endptr</code> to NULL.
+       </p></dd><dt id="PGTYPESINTERVALTOASC"><span class="term"><code class="function">PGTYPESinterval_to_asc</code></span></dt><dd><p>
+        Convert a variable of type interval to its textual representation.
+</p><pre class="synopsis">
+char *PGTYPESinterval_to_asc(interval *span);
+</pre><p>
+        The function converts the interval variable that <code class="literal">span</code>
+        points to into a C char*. The output looks like this example:
+        <code class="literal">@ 1 day 12 hours 59 mins 10 secs</code>.
+        The result must be freed with <code class="function">PGTYPESchar_free()</code>.
+       </p></dd><dt id="PGTYPESINTERVALCOPY"><span class="term"><code class="function">PGTYPESinterval_copy</code></span></dt><dd><p>
+        Copy a variable of type interval.
+</p><pre class="synopsis">
+int PGTYPESinterval_copy(interval *intvlsrc, interval *intvldest);
+</pre><p>
+        The function copies the interval variable that <code class="literal">intvlsrc</code>
+        points to into the variable that <code class="literal">intvldest</code> points to. Note
+        that you need to allocate the memory for the destination variable
+        before.
+       </p></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-PGTYPES-DECIMAL"><div class="titlepage"><div><div><h3 class="title">36.6.6. The decimal Type</h3></div></div></div><p>
+     The decimal type is similar to the numeric type. However it is limited to
+     a maximum precision of 30 significant digits. In contrast to the numeric
+     type which can be created on the heap only, the decimal type can be
+     created either on the stack or on the heap (by means of the functions
+     <code class="function">PGTYPESdecimal_new</code> and
+     <code class="function">PGTYPESdecimal_free</code>).
+     There are a lot of other functions that deal with the decimal type in the
+     <span class="productname">Informix</span> compatibility mode described in <a class="xref" href="ecpg-informix-compat.html" title="36.15. Informix Compatibility Mode">Section 36.15</a>.
+   </p><p>
+    The following functions can be used to work with the decimal type and are
+    not only contained in the <code class="literal">libcompat</code> library.
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">PGTYPESdecimal_new</code></span></dt><dd><p>
+       Request a pointer to a newly allocated decimal variable.
+</p><pre class="synopsis">
+decimal *PGTYPESdecimal_new(void);
+</pre><p>
+       </p></dd><dt><span class="term"><code class="function">PGTYPESdecimal_free</code></span></dt><dd><p>
+       Free a decimal type, release all of its memory.
+</p><pre class="synopsis">
+void PGTYPESdecimal_free(decimal *var);
+</pre><p>
+       </p></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-PGTYPES-ERRNO"><div class="titlepage"><div><div><h3 class="title">36.6.7. errno Values of pgtypeslib</h3></div></div></div><p>
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">PGTYPES_NUM_BAD_NUMERIC</code></span></dt><dd><p>
+        An argument should contain a numeric variable (or point to a numeric
+        variable) but in fact its in-memory representation was invalid.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_NUM_OVERFLOW</code></span></dt><dd><p>
+        An overflow occurred. Since the numeric type can deal with almost
+        arbitrary precision, converting a numeric variable into other types
+        might cause overflow.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_NUM_UNDERFLOW</code></span></dt><dd><p>
+        An underflow occurred. Since the numeric type can deal with almost
+        arbitrary precision, converting a numeric variable into other types
+        might cause underflow.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_NUM_DIVIDE_ZERO</code></span></dt><dd><p>
+        A division by zero has been attempted.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_DATE_BAD_DATE</code></span></dt><dd><p>
+        An invalid date string was passed to
+        the <code class="function">PGTYPESdate_from_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_DATE_ERR_EARGS</code></span></dt><dd><p>
+        Invalid arguments were passed to the
+        <code class="function">PGTYPESdate_defmt_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_DATE_ERR_ENOSHORTDATE</code></span></dt><dd><p>
+        An invalid token in the input string was found by the
+        <code class="function">PGTYPESdate_defmt_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_INTVL_BAD_INTERVAL</code></span></dt><dd><p>
+        An invalid interval string was passed to the
+        <code class="function">PGTYPESinterval_from_asc</code> function, or an
+        invalid interval value was passed to the
+        <code class="function">PGTYPESinterval_to_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_DATE_ERR_ENOTDMY</code></span></dt><dd><p>
+        There was a mismatch in the day/month/year assignment in the
+        <code class="function">PGTYPESdate_defmt_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_DATE_BAD_DAY</code></span></dt><dd><p>
+        An invalid day of the month value was found by
+        the <code class="function">PGTYPESdate_defmt_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_DATE_BAD_MONTH</code></span></dt><dd><p>
+        An invalid month value was found by
+        the <code class="function">PGTYPESdate_defmt_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_TS_BAD_TIMESTAMP</code></span></dt><dd><p>
+        An invalid timestamp string pass passed to
+        the <code class="function">PGTYPEStimestamp_from_asc</code> function,
+        or an invalid timestamp value was passed to
+        the <code class="function">PGTYPEStimestamp_to_asc</code> function.
+       </p></dd><dt><span class="term"><code class="literal">PGTYPES_TS_ERR_EINFTIME</code></span></dt><dd><p>
+        An infinite timestamp value was encountered in a context that
+        cannot handle it.
+       </p></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-PGTYPES-CONSTANTS"><div class="titlepage"><div><div><h3 class="title">36.6.8. Special Constants of pgtypeslib</h3></div></div></div><p>
+    </p><div class="variablelist"><dl class="variablelist"><dt id="PGTYPESINVALIDTIMESTAMP"><span class="term"><code class="literal">PGTYPESInvalidTimestamp</code></span></dt><dd><p>
+        A value of type timestamp representing an invalid time stamp. This is
+        returned by the function <code class="function">PGTYPEStimestamp_from_asc</code> on
+        parse error.
+        Note that due to the internal representation of the <code class="type">timestamp</code> data type,
+        <code class="literal">PGTYPESInvalidTimestamp</code> is also a valid timestamp at
+        the same time. It is set to <code class="literal">1899-12-31 23:59:59</code>. In order
+        to detect errors, make sure that your application does not only test
+        for <code class="literal">PGTYPESInvalidTimestamp</code> but also for
+        <code class="literal">errno != 0</code> after each call to
+        <code class="function">PGTYPEStimestamp_from_asc</code>.
+       </p></dd></dl></div><p>
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-dynamic.html" title="36.5. Dynamic SQL">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-descriptors.html" title="36.7. Using Descriptor Areas">Next</a></td></tr><tr><td width="40%" align="left" valign="top">36.5. Dynamic SQL </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 36.7. Using Descriptor Areas</td></tr></table></div></body></html>

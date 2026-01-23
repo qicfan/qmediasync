@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE SEQUENCE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createschema.html" title="CREATE SCHEMA" /><link rel="next" href="sql-createserver.html" title="CREATE SERVER" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE SEQUENCE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createschema.html" title="CREATE SCHEMA">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createserver.html" title="CREATE SERVER">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATESEQUENCE"><div class="titlepage"></div><a id="id-1.9.3.81.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE SEQUENCE</span></h2><p>CREATE SEQUENCE — define a new sequence generator</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE [ TEMPORARY | TEMP ] SEQUENCE [ IF NOT EXISTS ] <em class="replaceable"><code>name</code></em>
+    [ AS <em class="replaceable"><code>data_type</code></em> ]
+    [ INCREMENT [ BY ] <em class="replaceable"><code>increment</code></em> ]
+    [ MINVALUE <em class="replaceable"><code>minvalue</code></em> | NO MINVALUE ] [ MAXVALUE <em class="replaceable"><code>maxvalue</code></em> | NO MAXVALUE ]
+    [ START [ WITH ] <em class="replaceable"><code>start</code></em> ] [ CACHE <em class="replaceable"><code>cache</code></em> ] [ [ NO ] CYCLE ]
+    [ OWNED BY { <em class="replaceable"><code>table_name</code></em>.<em class="replaceable"><code>column_name</code></em> | NONE } ]
+</pre></div><div class="refsect1" id="id-1.9.3.81.5"><h2>Description</h2><p>
+   <code class="command">CREATE SEQUENCE</code> creates a new sequence number
+   generator.  This involves creating and initializing a new special
+   single-row table with the name <em class="replaceable"><code>name</code></em>.  The generator will be
+   owned by the user issuing the command.
+  </p><p>
+   If a schema name is given then the sequence is created in the
+   specified schema.  Otherwise it is created in the current schema.
+   Temporary sequences exist in a special schema, so a schema name cannot be
+   given when creating a temporary sequence.
+   The sequence name must be distinct from the name of any other sequence,
+   table, index, view, or foreign table in the same schema.
+  </p><p>
+   After a sequence is created, you use the functions
+   <code class="function">nextval</code>,
+   <code class="function">currval</code>, and
+   <code class="function">setval</code>
+   to operate on the sequence.  These functions are documented in
+   <a class="xref" href="functions-sequence.html" title="9.17. Sequence Manipulation Functions">Section 9.17</a>.
+  </p><p>
+   Although you cannot update a sequence directly, you can use a query like:
+
+</p><pre class="programlisting">
+SELECT * FROM <em class="replaceable"><code>name</code></em>;
+</pre><p>
+
+   to examine the parameters and current state of a sequence.  In particular,
+   the <code class="literal">last_value</code> field of the sequence shows the last value
+   allocated by any session.  (Of course, this value might be obsolete
+   by the time it's printed, if other sessions are actively doing
+   <code class="function">nextval</code> calls.)
+  </p></div><div class="refsect1" id="id-1.9.3.81.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">TEMPORARY</code> or <code class="literal">TEMP</code></span></dt><dd><p>
+      If specified, the sequence object is created only for this
+      session, and is automatically dropped on session exit.  Existing
+      permanent sequences with the same name are not visible (in this
+      session) while the temporary sequence exists, unless they are
+      referenced with schema-qualified names.
+     </p></dd><dt><span class="term"><code class="literal">IF NOT EXISTS</code></span></dt><dd><p>
+      Do not throw an error if a relation with the same name already exists.
+      A notice is issued in this case. Note that there is no guarantee that
+      the existing relation is anything like the sequence that would have
+      been created — it might not even be a sequence.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of the sequence to be created.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>data_type</code></em></span></dt><dd><p>
+      The optional
+      clause <code class="literal">AS <em class="replaceable"><code>data_type</code></em></code>
+      specifies the data type of the sequence.  Valid types are
+      <code class="literal">smallint</code>, <code class="literal">integer</code>,
+      and <code class="literal">bigint</code>.  <code class="literal">bigint</code> is the
+      default.  The data type determines the default minimum and maximum
+      values of the sequence.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>increment</code></em></span></dt><dd><p>
+      The optional clause <code class="literal">INCREMENT BY <em class="replaceable"><code>increment</code></em></code> specifies
+      which value is added to the current sequence value to create a
+      new value.  A positive value will make an ascending sequence, a
+      negative one a descending sequence.  The default value is 1.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>minvalue</code></em><br /></span><span class="term"><code class="literal">NO MINVALUE</code></span></dt><dd><p>
+      The optional clause <code class="literal">MINVALUE <em class="replaceable"><code>minvalue</code></em></code> determines
+      the minimum value a sequence can generate. If this clause is not
+      supplied or <code class="option">NO MINVALUE</code> is specified, then
+      defaults will be used.  The default for an ascending sequence is 1.  The
+      default for a descending sequence is the minimum value of the data type.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>maxvalue</code></em><br /></span><span class="term"><code class="literal">NO MAXVALUE</code></span></dt><dd><p>
+      The optional clause <code class="literal">MAXVALUE <em class="replaceable"><code>maxvalue</code></em></code> determines
+      the maximum value for the sequence. If this clause is not
+      supplied or <code class="option">NO MAXVALUE</code> is specified, then
+      default values will be used.  The default for an ascending sequence is
+      the maximum value of the data type.  The default for a descending
+      sequence is -1.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>start</code></em></span></dt><dd><p>
+      The optional clause <code class="literal">START WITH <em class="replaceable"><code>start</code></em> </code> allows the
+      sequence to begin anywhere.  The default starting value is
+      <em class="replaceable"><code>minvalue</code></em> for
+      ascending sequences and <em class="replaceable"><code>maxvalue</code></em> for descending ones.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>cache</code></em></span></dt><dd><p>
+      The optional clause <code class="literal">CACHE <em class="replaceable"><code>cache</code></em></code> specifies how
+      many sequence numbers are to be preallocated and stored in
+      memory for faster access. The minimum value is 1 (only one value
+      can be generated at a time, i.e., no cache), and this is also the
+      default.
+     </p></dd><dt><span class="term"><code class="literal">CYCLE</code><br /></span><span class="term"><code class="literal">NO CYCLE</code></span></dt><dd><p>
+      The <code class="literal">CYCLE</code> option allows the sequence to wrap
+      around when the <em class="replaceable"><code>maxvalue</code></em> or <em class="replaceable"><code>minvalue</code></em> has been reached by an
+      ascending or descending sequence respectively. If the limit is
+      reached, the next number generated will be the <em class="replaceable"><code>minvalue</code></em> or <em class="replaceable"><code>maxvalue</code></em>, respectively.
+     </p><p>
+      If <code class="literal">NO CYCLE</code> is specified, any calls to
+      <code class="function">nextval</code> after the sequence has reached its
+      maximum value will return an error.  If neither
+      <code class="literal">CYCLE</code> or <code class="literal">NO CYCLE</code> are
+      specified, <code class="literal">NO CYCLE</code> is the default.
+     </p></dd><dt><span class="term"><code class="literal">OWNED BY</code> <em class="replaceable"><code>table_name</code></em>.<em class="replaceable"><code>column_name</code></em><br /></span><span class="term"><code class="literal">OWNED BY NONE</code></span></dt><dd><p>
+      The <code class="literal">OWNED BY</code> option causes the sequence to be
+      associated with a specific table column, such that if that column
+      (or its whole table) is dropped, the sequence will be automatically
+      dropped as well.  The specified table must have the same owner and be in
+      the same schema as the sequence.
+      <code class="literal">OWNED BY NONE</code>, the default, specifies that there
+      is no such association.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.81.7"><h2>Notes</h2><p>
+   Use <code class="command">DROP SEQUENCE</code> to remove a sequence.
+  </p><p>
+   Sequences are based on <code class="type">bigint</code> arithmetic, so the range
+   cannot exceed the range of an eight-byte integer
+   (-9223372036854775808 to 9223372036854775807).
+  </p><p>
+   Because <code class="function">nextval</code> and <code class="function">setval</code> calls are never
+   rolled back, sequence objects cannot be used if <span class="quote">“<span class="quote">gapless</span>”</span>
+   assignment of sequence numbers is needed.  It is possible to build
+   gapless assignment by using exclusive locking of a table containing a
+   counter; but this solution is much more expensive than sequence
+   objects, especially if many transactions need sequence numbers
+   concurrently.
+  </p><p>
+   Unexpected results might be obtained if a <em class="replaceable"><code>cache</code></em> setting greater than one is
+   used for a sequence object that will be used concurrently by
+   multiple sessions.  Each session will allocate and cache successive
+   sequence values during one access to the sequence object and
+   increase the sequence object's <code class="literal">last_value</code> accordingly.
+   Then, the next <em class="replaceable"><code>cache</code></em>-1
+   uses of <code class="function">nextval</code> within that session simply return the
+   preallocated values without touching the sequence object.  So, any
+   numbers allocated but not used within a session will be lost when
+   that session ends, resulting in <span class="quote">“<span class="quote">holes</span>”</span> in the
+   sequence.
+  </p><p>
+   Furthermore, although multiple sessions are guaranteed to allocate
+   distinct sequence values, the values might be generated out of
+   sequence when all the sessions are considered.  For example, with
+   a <em class="replaceable"><code>cache</code></em> setting of 10,
+   session A might reserve values 1..10 and return
+   <code class="function">nextval</code>=1, then session B might reserve values
+   11..20 and return <code class="function">nextval</code>=11 before session A
+   has generated <code class="function">nextval</code>=2.  Thus, with a
+   <em class="replaceable"><code>cache</code></em> setting of one
+   it is safe to assume that <code class="function">nextval</code> values are generated
+   sequentially; with a <em class="replaceable"><code>cache</code></em> setting greater than one you
+   should only assume that the <code class="function">nextval</code> values are all
+   distinct, not that they are generated purely sequentially.  Also,
+   <code class="literal">last_value</code> will reflect the latest value reserved by
+   any session, whether or not it has yet been returned by
+   <code class="function">nextval</code>.
+  </p><p>
+   Another consideration is that a <code class="function">setval</code> executed on
+   such a sequence will not be noticed by other sessions until they
+   have used up any preallocated values they have cached.
+  </p></div><div class="refsect1" id="id-1.9.3.81.8"><h2>Examples</h2><p>
+   Create an ascending sequence called <code class="literal">serial</code>, starting at 101:
+</p><pre class="programlisting">
+CREATE SEQUENCE serial START 101;
+</pre><p>
+  </p><p>
+   Select the next number from this sequence:
+</p><pre class="programlisting">
+SELECT nextval('serial');
+
+ nextval
+---------
+     101
+</pre><p>
+  </p><p>
+   Select the next number from this sequence:
+</p><pre class="programlisting">
+SELECT nextval('serial');
+
+ nextval
+---------
+     102
+</pre><p>
+  </p><p>
+   Use this sequence in an <code class="command">INSERT</code> command:
+</p><pre class="programlisting">
+INSERT INTO distributors VALUES (nextval('serial'), 'nothing');
+</pre><p>
+  </p><p>
+   Update the sequence value after a <code class="command">COPY FROM</code>:
+</p><pre class="programlisting">
+BEGIN;
+COPY distributors FROM 'input_file';
+SELECT setval('serial', max(id)) FROM distributors;
+END;
+</pre></div><div class="refsect1" id="id-1.9.3.81.9"><h2>Compatibility</h2><p>
+   <code class="command">CREATE SEQUENCE</code> conforms to the <acronym class="acronym">SQL</acronym>
+   standard, with the following exceptions:
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Obtaining the next value is done using the <code class="function">nextval()</code>
+      function instead of the standard's <code class="command">NEXT VALUE FOR</code>
+      expression.
+     </p></li><li class="listitem"><p>
+      The <code class="literal">OWNED BY</code> clause is a <span class="productname">PostgreSQL</span>
+      extension.
+     </p></li></ul></div></div><div class="refsect1" id="id-1.9.3.81.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-altersequence.html" title="ALTER SEQUENCE"><span class="refentrytitle">ALTER SEQUENCE</span></a>, <a class="xref" href="sql-dropsequence.html" title="DROP SEQUENCE"><span class="refentrytitle">DROP SEQUENCE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createschema.html" title="CREATE SCHEMA">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createserver.html" title="CREATE SERVER">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE SCHEMA </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE SERVER</td></tr></table></div></body></html>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.9. Network Address Types</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-geometric.html" title="8.8. Geometric Types" /><link rel="next" href="datatype-bit.html" title="8.10. Bit String Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.9. Network Address Types</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-geometric.html" title="8.8. Geometric Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="datatype-bit.html" title="8.10. Bit String Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DATATYPE-NET-TYPES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.9. Network Address Types</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="datatype-net-types.html#DATATYPE-INET">8.9.1. <code class="type">inet</code></a></span></dt><dt><span class="sect2"><a href="datatype-net-types.html#DATATYPE-CIDR">8.9.2. <code class="type">cidr</code></a></span></dt><dt><span class="sect2"><a href="datatype-net-types.html#DATATYPE-INET-VS-CIDR">8.9.3. <code class="type">inet</code> vs. <code class="type">cidr</code></a></span></dt><dt><span class="sect2"><a href="datatype-net-types.html#DATATYPE-MACADDR">8.9.4. <code class="type">macaddr</code></a></span></dt><dt><span class="sect2"><a href="datatype-net-types.html#DATATYPE-MACADDR8">8.9.5. <code class="type">macaddr8</code></a></span></dt></dl></div><a id="id-1.5.7.17.2" class="indexterm"></a><p>
+    <span class="productname">PostgreSQL</span> offers data types to store IPv4, IPv6, and MAC
+    addresses, as shown in <a class="xref" href="datatype-net-types.html#DATATYPE-NET-TYPES-TABLE" title="Table 8.21. Network Address Types">Table 8.21</a>.  It
+    is better to use these types instead of plain text types to store
+    network addresses, because
+    these types offer input error checking and specialized
+    operators and functions (see <a class="xref" href="functions-net.html" title="9.12. Network Address Functions and Operators">Section 9.12</a>).
+   </p><div class="table" id="DATATYPE-NET-TYPES-TABLE"><p class="title"><strong>Table 8.21. Network Address Types</strong></p><div class="table-contents"><table class="table" summary="Network Address Types" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /></colgroup><thead><tr><th>Name</th><th>Storage Size</th><th>Description</th></tr></thead><tbody><tr><td><code class="type">cidr</code></td><td>7 or 19 bytes</td><td>IPv4 and IPv6 networks</td></tr><tr><td><code class="type">inet</code></td><td>7 or 19 bytes</td><td>IPv4 and IPv6 hosts and networks</td></tr><tr><td><code class="type">macaddr</code></td><td>6 bytes</td><td>MAC addresses</td></tr><tr><td><code class="type">macaddr8</code></td><td>8 bytes</td><td>MAC addresses (EUI-64 format)</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    When sorting <code class="type">inet</code> or <code class="type">cidr</code> data types,
+    IPv4 addresses will always sort before IPv6 addresses, including
+    IPv4 addresses encapsulated or mapped to IPv6 addresses, such as
+    ::10.2.3.4 or ::ffff:10.4.3.2.
+   </p><div class="sect2" id="DATATYPE-INET"><div class="titlepage"><div><div><h3 class="title">8.9.1. <code class="type">inet</code></h3></div></div></div><a id="id-1.5.7.17.6.2" class="indexterm"></a><p>
+     The <code class="type">inet</code> type holds an IPv4 or IPv6 host address, and
+     optionally its subnet, all in one field.
+     The subnet is represented by the number of network address bits
+     present in the host address (the
+     <span class="quote">“<span class="quote">netmask</span>”</span>).  If the netmask is 32 and the address is IPv4,
+     then the value does not indicate a subnet, only a single host.
+     In IPv6, the address length is 128 bits, so 128 bits specify a
+     unique host address.  Note that if you
+     want to accept only networks, you should use the
+     <code class="type">cidr</code> type rather than <code class="type">inet</code>.
+    </p><p>
+      The input format for this type is
+      <em class="replaceable"><code>address/y</code></em>
+      where
+      <em class="replaceable"><code>address</code></em>
+      is an IPv4 or IPv6 address and
+      <em class="replaceable"><code>y</code></em>
+      is the number of bits in the netmask.  If the
+      <em class="replaceable"><code>/y</code></em>
+      portion is omitted, the
+      netmask is taken to be 32 for IPv4 or 128 for IPv6,
+      so the value represents
+      just a single host.  On display, the
+      <em class="replaceable"><code>/y</code></em>
+      portion is suppressed if the netmask specifies a single host.
+    </p></div><div class="sect2" id="DATATYPE-CIDR"><div class="titlepage"><div><div><h3 class="title">8.9.2. <code class="type">cidr</code></h3></div></div></div><a id="id-1.5.7.17.7.2" class="indexterm"></a><p>
+     The <code class="type">cidr</code> type holds an IPv4 or IPv6 network specification.
+     Input and output formats follow Classless Internet Domain Routing
+     conventions.
+     The format for specifying networks is <em class="replaceable"><code>address/y</code></em> where <em class="replaceable"><code>address</code></em> is the network's lowest
+     address represented as an
+     IPv4 or IPv6 address, and <em class="replaceable"><code>y</code></em> is the number of bits in the netmask.  If
+     <em class="replaceable"><code>y</code></em> is omitted, it is calculated
+     using assumptions from the older classful network numbering system, except
+     it will be at least large enough to include all of the octets
+     written in the input.  It is an error to specify a network address
+     that has bits set to the right of the specified netmask.
+    </p><p>
+     <a class="xref" href="datatype-net-types.html#DATATYPE-NET-CIDR-TABLE" title="Table 8.22. cidr Type Input Examples">Table 8.22</a> shows some examples.
+    </p><div class="table" id="DATATYPE-NET-CIDR-TABLE"><p class="title"><strong>Table 8.22. <code class="type">cidr</code> Type Input Examples</strong></p><div class="table-contents"><table class="table" summary="cidr Type Input Examples" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th><code class="type">cidr</code> Input</th><th><code class="type">cidr</code> Output</th><th><code class="literal"><code class="function">abbrev(<code class="type">cidr</code>)</code></code></th></tr></thead><tbody><tr><td>192.168.100.128/25</td><td>192.168.100.128/25</td><td>192.168.100.128/25</td></tr><tr><td>192.168/24</td><td>192.168.0.0/24</td><td>192.168.0/24</td></tr><tr><td>192.168/25</td><td>192.168.0.0/25</td><td>192.168.0.0/25</td></tr><tr><td>192.168.1</td><td>192.168.1.0/24</td><td>192.168.1/24</td></tr><tr><td>192.168</td><td>192.168.0.0/24</td><td>192.168.0/24</td></tr><tr><td>128.1</td><td>128.1.0.0/16</td><td>128.1/16</td></tr><tr><td>128</td><td>128.0.0.0/16</td><td>128.0/16</td></tr><tr><td>128.1.2</td><td>128.1.2.0/24</td><td>128.1.2/24</td></tr><tr><td>10.1.2</td><td>10.1.2.0/24</td><td>10.1.2/24</td></tr><tr><td>10.1</td><td>10.1.0.0/16</td><td>10.1/16</td></tr><tr><td>10</td><td>10.0.0.0/8</td><td>10/8</td></tr><tr><td>10.1.2.3/32</td><td>10.1.2.3/32</td><td>10.1.2.3/32</td></tr><tr><td>2001:4f8:3:ba::/64</td><td>2001:4f8:3:ba::/64</td><td>2001:4f8:3:ba/64</td></tr><tr><td>2001:4f8:3:ba:​2e0:81ff:fe22:d1f1/128</td><td>2001:4f8:3:ba:​2e0:81ff:fe22:d1f1/128</td><td>2001:4f8:3:ba:​2e0:81ff:fe22:d1f1/128</td></tr><tr><td>::ffff:1.2.3.0/120</td><td>::ffff:1.2.3.0/120</td><td>::ffff:1.2.3/120</td></tr><tr><td>::ffff:1.2.3.0/128</td><td>::ffff:1.2.3.0/128</td><td>::ffff:1.2.3.0/128</td></tr></tbody></table></div></div><br class="table-break" /></div><div class="sect2" id="DATATYPE-INET-VS-CIDR"><div class="titlepage"><div><div><h3 class="title">8.9.3. <code class="type">inet</code> vs. <code class="type">cidr</code></h3></div></div></div><p>
+    The essential difference between <code class="type">inet</code> and <code class="type">cidr</code>
+    data types is that <code class="type">inet</code> accepts values with nonzero bits to
+    the right of the netmask, whereas <code class="type">cidr</code> does not.  For
+    example, <code class="literal">192.168.0.1/24</code> is valid for <code class="type">inet</code>
+    but not for <code class="type">cidr</code>.
+    </p><div class="tip"><h3 class="title">Tip</h3><p>
+        If you do not like the output format for <code class="type">inet</code> or
+        <code class="type">cidr</code> values, try the functions <code class="function">host</code>,
+        <code class="function">text</code>, and <code class="function">abbrev</code>.
+        </p></div></div><div class="sect2" id="DATATYPE-MACADDR"><div class="titlepage"><div><div><h3 class="title">8.9.4. <code class="type">macaddr</code></h3></div></div></div><a id="id-1.5.7.17.9.2" class="indexterm"></a><a id="id-1.5.7.17.9.3" class="indexterm"></a><p>
+     The <code class="type">macaddr</code> type stores MAC addresses, known for example
+     from Ethernet card hardware addresses (although MAC addresses are
+     used for other purposes as well).  Input is accepted in the
+     following formats:
+
+     </p><table border="0" summary="Simple list" class="simplelist"><tr><td><code class="literal">'08:00:2b:01:02:03'</code></td></tr><tr><td><code class="literal">'08-00-2b-01-02-03'</code></td></tr><tr><td><code class="literal">'08002b:010203'</code></td></tr><tr><td><code class="literal">'08002b-010203'</code></td></tr><tr><td><code class="literal">'0800.2b01.0203'</code></td></tr><tr><td><code class="literal">'0800-2b01-0203'</code></td></tr><tr><td><code class="literal">'08002b010203'</code></td></tr></table><p>
+
+     These examples all specify the same address.  Upper and
+     lower case is accepted for the digits
+     <code class="literal">a</code> through <code class="literal">f</code>.  Output is always in the
+     first of the forms shown.
+    </p><p>
+     IEEE Standard 802-2001 specifies the second form shown (with hyphens)
+     as the canonical form for MAC addresses, and specifies the first
+     form (with colons) as used with bit-reversed, MSB-first notation, so that
+     08-00-2b-01-02-03 = 10:00:D4:80:40:C0.  This convention is widely
+     ignored nowadays, and it is relevant only for obsolete network
+     protocols (such as Token Ring).  PostgreSQL makes no provisions
+     for bit reversal; all accepted formats use the canonical LSB
+     order.
+    </p><p>
+     The remaining five input formats are not part of any standard.
+    </p></div><div class="sect2" id="DATATYPE-MACADDR8"><div class="titlepage"><div><div><h3 class="title">8.9.5. <code class="type">macaddr8</code></h3></div></div></div><a id="id-1.5.7.17.10.2" class="indexterm"></a><a id="id-1.5.7.17.10.3" class="indexterm"></a><p>
+     The <code class="type">macaddr8</code> type stores MAC addresses in EUI-64
+     format, known for example from Ethernet card hardware addresses
+     (although MAC addresses are used for other purposes as well).
+     This type can accept both 6 and 8 byte length MAC addresses
+     and stores them in 8 byte length format.  MAC addresses given
+     in 6 byte format will be stored in 8 byte length format with the
+     4th and 5th bytes set to FF and FE, respectively.
+
+     Note that IPv6 uses a modified EUI-64 format where the 7th bit
+     should be set to one after the conversion from EUI-48.  The
+     function <code class="function">macaddr8_set7bit</code> is provided to make this
+     change.
+
+     Generally speaking, any input which is comprised of pairs of hex
+     digits (on byte boundaries), optionally separated consistently by
+     one of <code class="literal">':'</code>, <code class="literal">'-'</code> or <code class="literal">'.'</code>, is
+     accepted.  The number of hex digits must be either 16 (8 bytes) or
+     12 (6 bytes).  Leading and trailing whitespace is ignored.
+
+     The following are examples of input formats that are accepted:
+
+     </p><table border="0" summary="Simple list" class="simplelist"><tr><td><code class="literal">'08:00:2b:01:02:03:04:05'</code></td></tr><tr><td><code class="literal">'08-00-2b-01-02-03-04-05'</code></td></tr><tr><td><code class="literal">'08002b:0102030405'</code></td></tr><tr><td><code class="literal">'08002b-0102030405'</code></td></tr><tr><td><code class="literal">'0800.2b01.0203.0405'</code></td></tr><tr><td><code class="literal">'0800-2b01-0203-0405'</code></td></tr><tr><td><code class="literal">'08002b01:02030405'</code></td></tr><tr><td><code class="literal">'08002b0102030405'</code></td></tr></table><p>
+
+     These examples all specify the same address.  Upper and
+     lower case is accepted for the digits
+     <code class="literal">a</code> through <code class="literal">f</code>.  Output is always in the
+     first of the forms shown.
+    </p><p>
+     The last six input formats shown above are not part of any standard.
+    </p><p>
+     To convert a traditional 48 bit MAC address in EUI-48 format to
+     modified EUI-64 format to be included as the host portion of an
+     IPv6 address, use <code class="function">macaddr8_set7bit</code> as shown:
+
+</p><pre class="programlisting">
+SELECT macaddr8_set7bit('08:00:2b:01:02:03');
+<code class="computeroutput">
+    macaddr8_set7bit     
+-------------------------
+ 0a:00:2b:ff:fe:01:02:03
+(1 row)
+</code>
+</pre><p>
+
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-geometric.html" title="8.8. Geometric Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="datatype-bit.html" title="8.10. Bit String Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.8. Geometric Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.10. Bit String Types</td></tr></table></div></body></html>

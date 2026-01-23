@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.21. pg_event_trigger</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-enum.html" title="52.20. pg_enum" /><link rel="next" href="catalog-pg-extension.html" title="52.22. pg_extension" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.21. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_event_trigger</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-enum.html" title="52.20. pg_enum">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-extension.html" title="52.22. pg_extension">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-EVENT-TRIGGER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.21. <code class="structname">pg_event_trigger</code></h2></div></div></div><a id="id-1.10.4.23.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_event_trigger</code> stores event triggers.
+   See <a class="xref" href="event-triggers.html" title="Chapter 40. Event Triggers">Chapter 40</a> for more information.
+  </p><div class="table" id="id-1.10.4.23.4"><p class="title"><strong>Table 52.21. <code class="structname">pg_event_trigger</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_event_trigger Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">evtname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Trigger name (must be unique)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">evtevent</code> <code class="type">name</code>
+      </p>
+      <p>
+       Identifies the event for which this trigger fires
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">evtowner</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the event trigger
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">evtfoid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The function to be called
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">evtenabled</code> <code class="type">char</code>
+      </p>
+      <p>
+       Controls in which <a class="xref" href="runtime-config-client.html#GUC-SESSION-REPLICATION-ROLE">session_replication_role</a> modes
+       the event trigger fires.
+       <code class="literal">O</code> = trigger fires in <span class="quote">“<span class="quote">origin</span>”</span> and <span class="quote">“<span class="quote">local</span>”</span> modes,
+       <code class="literal">D</code> = trigger is disabled,
+       <code class="literal">R</code> = trigger fires in <span class="quote">“<span class="quote">replica</span>”</span> mode,
+       <code class="literal">A</code> = trigger fires always.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">evttags</code> <code class="type">text[]</code>
+      </p>
+      <p>
+       Command tags for which this trigger will fire.  If NULL, the firing
+       of this trigger is not restricted on the basis of the command tag.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-enum.html" title="52.20. pg_enum">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-extension.html" title="52.22. pg_extension">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.20. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_enum</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.22. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_extension</code></td></tr></table></div></body></html>

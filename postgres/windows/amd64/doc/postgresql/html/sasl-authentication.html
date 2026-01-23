@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>53.3. SASL Authentication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="protocol-flow.html" title="53.2. Message Flow" /><link rel="next" href="protocol-replication.html" title="53.4. Streaming Replication Protocol" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">53.3. SASL Authentication</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="protocol-flow.html" title="53.2. Message Flow">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="protocol.html" title="Chapter 53. Frontend/Backend Protocol">Up</a></td><th width="60%" align="center">Chapter 53. Frontend/Backend Protocol</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="protocol-replication.html" title="53.4. Streaming Replication Protocol">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SASL-AUTHENTICATION"><div class="titlepage"><div><div><h2 class="title" style="clear: both">53.3. SASL Authentication</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="sasl-authentication.html#SASL-SCRAM-SHA-256">53.3.1. SCRAM-SHA-256 Authentication</a></span></dt></dl></div><p>
+<em class="firstterm">SASL</em> is a framework for authentication in connection-oriented
+protocols. At the moment, <span class="productname">PostgreSQL</span> implements two SASL
+authentication mechanisms, SCRAM-SHA-256 and SCRAM-SHA-256-PLUS. More
+might be added in the future. The below steps illustrate how SASL
+authentication is performed in general, while the next subsection gives
+more details on SCRAM-SHA-256 and SCRAM-SHA-256-PLUS.
+</p><div class="procedure" id="id-1.10.5.8.3"><p class="title"><strong>SASL Authentication Message Flow</strong></p><ol class="procedure" type="1"><li class="step" id="SASL-AUTH-BEGIN"><p>
+  To begin a SASL authentication exchange, the server sends an
+  AuthenticationSASL message. It includes a list of SASL authentication
+  mechanisms that the server can accept, in the server's preferred order.
+</p></li><li class="step" id="SASL-AUTH-INITIAL-RESPONSE"><p>
+  The client selects one of the supported mechanisms from the list, and sends
+  a SASLInitialResponse message to the server. The message includes the name
+  of the selected mechanism, and an optional Initial Client Response, if the
+  selected mechanism uses that.
+</p></li><li class="step" id="SASL-AUTH-CONTINUE"><p>
+  One or more server-challenge and client-response message will follow. Each
+  server-challenge is sent in an AuthenticationSASLContinue message, followed
+  by a response from client in a SASLResponse message. The particulars of
+  the messages are mechanism specific.
+</p></li><li class="step" id="SASL-AUTH-END"><p>
+  Finally, when the authentication exchange is completed successfully, the
+  server sends an AuthenticationSASLFinal message, followed
+  immediately by an AuthenticationOk message. The AuthenticationSASLFinal
+  contains additional server-to-client data, whose content is particular to the
+  selected authentication mechanism. If the authentication mechanism doesn't
+  use additional data that's sent at completion, the AuthenticationSASLFinal
+  message is not sent.
+</p></li></ol></div><p>
+On error, the server can abort the authentication at any stage, and send an
+ErrorMessage.
+</p><div class="sect2" id="SASL-SCRAM-SHA-256"><div class="titlepage"><div><div><h3 class="title">53.3.1. SCRAM-SHA-256 Authentication</h3></div></div></div><p>
+   The implemented SASL mechanisms at the moment
+   are <code class="literal">SCRAM-SHA-256</code> and its variant with channel
+   binding <code class="literal">SCRAM-SHA-256-PLUS</code>. They are described in
+   detail in <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc7677" target="_top">RFC 7677</a>
+   and <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc5802" target="_top">RFC 5802</a>.
+  </p><p>
+When SCRAM-SHA-256 is used in PostgreSQL, the server will ignore the user name
+that the client sends in the <code class="structname">client-first-message</code>. The user name
+that was already sent in the startup message is used instead.
+<span class="productname">PostgreSQL</span> supports multiple character encodings, while SCRAM
+dictates UTF-8 to be used for the user name, so it might be impossible to
+represent the PostgreSQL user name in UTF-8.
+  </p><p>
+The SCRAM specification dictates that the password is also in UTF-8, and is
+processed with the <em class="firstterm">SASLprep</em> algorithm.
+<span class="productname">PostgreSQL</span>, however, does not require UTF-8 to be used for
+the password. When a user's password is set, it is processed with SASLprep
+as if it was in UTF-8, regardless of the actual encoding used. However, if
+it is not a legal UTF-8 byte sequence, or it contains UTF-8 byte sequences
+that are prohibited by the SASLprep algorithm, the raw password will be used
+without SASLprep processing, instead of throwing an error. This allows the
+password to be normalized when it is in UTF-8, but still allows a non-UTF-8
+password to be used, and doesn't require the system to know which encoding
+the password is in.
+  </p><p>
+<em class="firstterm">Channel binding</em> is supported in PostgreSQL builds with
+SSL support. The SASL mechanism name for SCRAM with channel binding is
+<code class="literal">SCRAM-SHA-256-PLUS</code>.  The channel binding type used by
+PostgreSQL is <code class="literal">tls-server-end-point</code>.
+  </p><p>
+   In <acronym class="acronym">SCRAM</acronym> without channel binding, the server chooses
+   a random number that is transmitted to the client to be mixed with the
+   user-supplied password in the transmitted password hash.  While this
+   prevents the password hash from being successfully retransmitted in
+   a later session, it does not prevent a fake server between the real
+   server and client from passing through the server's random value
+   and successfully authenticating.
+  </p><p>
+   <acronym class="acronym">SCRAM</acronym> with channel binding prevents such
+   man-in-the-middle attacks by mixing the signature of the server's
+   certificate into the transmitted password hash. While a fake server can
+   retransmit the real server's certificate, it doesn't have access to the
+   private key matching that certificate, and therefore cannot prove it is
+   the owner, causing SSL connection failure.
+  </p><div class="procedure" id="id-1.10.5.8.5.8"><p class="title"><strong>Example</strong></p><ol class="procedure" type="1"><li class="step" id="SCRAM-BEGIN"><p>
+  The server sends an AuthenticationSASL message. It includes a list of
+  SASL authentication mechanisms that the server can accept.
+  This will be <code class="literal">SCRAM-SHA-256-PLUS</code>
+  and <code class="literal">SCRAM-SHA-256</code> if the server is built with SSL
+  support, or else just the latter.
+</p></li><li class="step" id="SCRAM-CLIENT-FIRST"><p>
+  The client responds by sending a SASLInitialResponse message, which
+  indicates the chosen mechanism, <code class="literal">SCRAM-SHA-256</code> or
+  <code class="literal">SCRAM-SHA-256-PLUS</code>. (A client is free to choose either
+  mechanism, but for better security it should choose the channel-binding
+  variant if it can support it.) In the Initial Client response field, the
+  message contains the SCRAM <code class="structname">client-first-message</code>.
+  The <code class="structname">client-first-message</code> also contains the channel
+  binding type chosen by the client.
+</p></li><li class="step" id="SCRAM-SERVER-FIRST"><p>
+  Server sends an AuthenticationSASLContinue message, with a SCRAM
+  <code class="structname">server-first-message</code> as the content.
+</p></li><li class="step" id="SCRAM-CLIENT-FINAL"><p>
+  Client sends a SASLResponse message, with SCRAM
+  <code class="structname">client-final-message</code> as the content.
+</p></li><li class="step" id="SCRAM-SERVER-FINAL"><p>
+  Server sends an AuthenticationSASLFinal message, with the SCRAM
+  <code class="structname">server-final-message</code>, followed immediately by
+  an AuthenticationOk message.
+</p></li></ol></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="protocol-flow.html" title="53.2. Message Flow">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="protocol.html" title="Chapter 53. Frontend/Backend Protocol">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="protocol-replication.html" title="53.4. Streaming Replication Protocol">Next</a></td></tr><tr><td width="40%" align="left" valign="top">53.2. Message Flow </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 53.4. Streaming Replication Protocol</td></tr></table></div></body></html>

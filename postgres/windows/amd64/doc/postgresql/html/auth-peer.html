@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>21.9. Peer Authentication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="auth-ident.html" title="21.8. Ident Authentication" /><link rel="next" href="auth-ldap.html" title="21.10. LDAP Authentication" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">21.9. Peer Authentication</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="auth-ident.html" title="21.8. Ident Authentication">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><th width="60%" align="center">Chapter 21. Client Authentication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="auth-ldap.html" title="21.10. LDAP Authentication">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="AUTH-PEER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">21.9. Peer Authentication</h2></div></div></div><a id="id-1.6.8.16.2" class="indexterm"></a><p>
+    The peer authentication method works by obtaining the client's
+    operating system user name from the kernel and using it as the
+    allowed database user name (with optional user name mapping). This
+    method is only supported on local connections.
+   </p><p>
+    The following configuration options are supported for <span class="productname">peer</span>:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">map</code></span></dt><dd><p>
+        Allows for mapping between system and database user names. See
+        <a class="xref" href="auth-username-maps.html" title="21.2. User Name Maps">Section 21.2</a> for details.
+       </p></dd></dl></div><p>
+   </p><p>
+    Peer authentication is only available on operating systems providing
+    the <code class="function">getpeereid()</code> function, the <code class="symbol">SO_PEERCRED</code>
+    socket parameter, or similar mechanisms.  Currently that includes
+    <span class="systemitem">Linux</span>,
+    most flavors of <span class="systemitem">BSD</span> including
+    <span class="systemitem">macOS</span>,
+    and <span class="systemitem">Solaris</span>.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="auth-ident.html" title="21.8. Ident Authentication">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="auth-ldap.html" title="21.10. LDAP Authentication">Next</a></td></tr><tr><td width="40%" align="left" valign="top">21.8. Ident Authentication </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.10. LDAP Authentication</td></tr></table></div></body></html>

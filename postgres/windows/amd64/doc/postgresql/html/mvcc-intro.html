@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>13.1. Introduction</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="mvcc.html" title="Chapter 13. Concurrency Control" /><link rel="next" href="transaction-iso.html" title="13.2. Transaction Isolation" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">13.1. Introduction</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="mvcc.html" title="Chapter 13. Concurrency Control">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="mvcc.html" title="Chapter 13. Concurrency Control">Up</a></td><th width="60%" align="center">Chapter 13. Concurrency Control</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="transaction-iso.html" title="13.2. Transaction Isolation">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="MVCC-INTRO"><div class="titlepage"><div><div><h2 class="title" style="clear: both">13.1. Introduction</h2></div></div></div><a id="id-1.5.12.4.2" class="indexterm"></a><a id="id-1.5.12.4.3" class="indexterm"></a><a id="id-1.5.12.4.4" class="indexterm"></a><a id="id-1.5.12.4.5" class="indexterm"></a><p>
+    <span class="productname">PostgreSQL</span> provides a rich set of tools
+    for developers to manage concurrent access to data.  Internally,
+    data consistency is maintained by using a multiversion
+    model (Multiversion Concurrency Control, <acronym class="acronym">MVCC</acronym>).
+    This means that each SQL statement sees
+    a snapshot of data (a <em class="firstterm">database version</em>)
+    as it was some
+    time ago, regardless of the current state of the underlying data.
+    This prevents statements from viewing inconsistent data produced
+    by concurrent transactions performing updates on the same
+    data rows, providing <em class="firstterm">transaction isolation</em>
+    for each database session.  <acronym class="acronym">MVCC</acronym>, by eschewing
+    the locking methodologies of traditional database systems,
+    minimizes lock contention in order to allow for reasonable
+    performance in multiuser environments.
+   </p><p>
+    The main advantage of using the <acronym class="acronym">MVCC</acronym> model of
+    concurrency control rather than locking is that in
+    <acronym class="acronym">MVCC</acronym> locks acquired for querying (reading) data
+    do not conflict with locks acquired for writing data, and so
+    reading never blocks writing and writing never blocks reading.
+    <span class="productname">PostgreSQL</span> maintains this guarantee
+    even when providing the strictest level of transaction
+    isolation through the use of an innovative <em class="firstterm">Serializable
+    Snapshot Isolation</em> (<acronym class="acronym">SSI</acronym>) level.
+   </p><p>
+    Table- and row-level locking facilities are also available in
+    <span class="productname">PostgreSQL</span> for applications which don't
+    generally need full transaction isolation and prefer to explicitly
+    manage particular points of conflict.  However, proper
+    use of <acronym class="acronym">MVCC</acronym> will generally provide better
+    performance than locks.  In addition, application-defined advisory
+    locks provide a mechanism for acquiring locks that are not tied
+    to a single transaction.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="mvcc.html" title="Chapter 13. Concurrency Control">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="mvcc.html" title="Chapter 13. Concurrency Control">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="transaction-iso.html" title="13.2. Transaction Isolation">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 13. Concurrency Control </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 13.2. Transaction Isolation</td></tr></table></div></body></html>

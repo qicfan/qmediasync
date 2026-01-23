@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>D.3. XML Limits and Conformance to SQL/XML</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="unsupported-features-sql-standard.html" title="D.2. Unsupported Features" /><link rel="next" href="release.html" title="Appendix E. Release Notes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">D.3. XML Limits and Conformance to SQL/XML</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="unsupported-features-sql-standard.html" title="D.2. Unsupported Features">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="features.html" title="Appendix D. SQL Conformance">Up</a></td><th width="60%" align="center">Appendix D. SQL Conformance</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="release.html" title="Appendix E. Release Notes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="XML-LIMITS-CONFORMANCE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">D.3. XML Limits and Conformance to SQL/XML</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="xml-limits-conformance.html#FUNCTIONS-XML-LIMITS-XPATH1">D.3.1. Queries Are Restricted to XPath 1.0</a></span></dt><dt><span class="sect2"><a href="xml-limits-conformance.html#FUNCTIONS-XML-LIMITS-POSTGRESQL">D.3.2. Incidental Limits of the Implementation</a></span></dt></dl></div><a id="id-1.11.5.13.2" class="indexterm"></a><p>
+    Significant revisions to the XML-related specifications in ISO/IEC 9075-14
+    (SQL/XML) were introduced with SQL:2006.
+    <span class="productname">PostgreSQL</span>'s implementation of the XML data
+    type and related functions largely follows the earlier 2003 edition,
+    with some borrowing from later editions.  In particular:
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       Where the current standard provides a family of XML data types
+       to hold <span class="quote">“<span class="quote">document</span>”</span> or <span class="quote">“<span class="quote">content</span>”</span> in
+       untyped or XML Schema-typed variants, and a type
+       <code class="type">XML(SEQUENCE)</code> to hold arbitrary pieces of XML content,
+       <span class="productname">PostgreSQL</span> provides the single
+       <code class="type">xml</code> type, which can hold <span class="quote">“<span class="quote">document</span>”</span> or
+       <span class="quote">“<span class="quote">content</span>”</span>.  There is no equivalent of the
+       standard's <span class="quote">“<span class="quote">sequence</span>”</span> type.
+      </p></li><li class="listitem"><p>
+       <span class="productname">PostgreSQL</span> provides two functions
+       introduced in SQL:2006, but in variants that use the XPath 1.0
+       language, rather than XML Query as specified for them in the
+       standard.
+      </p></li></ul></div><p>
+   </p><p>
+    This section presents some of the resulting differences you may encounter.
+   </p><div class="sect2" id="FUNCTIONS-XML-LIMITS-XPATH1"><div class="titlepage"><div><div><h3 class="title">D.3.1. Queries Are Restricted to XPath 1.0</h3></div></div></div><p>
+     The <span class="productname">PostgreSQL</span>-specific functions
+     <code class="function">xpath()</code> and <code class="function">xpath_exists()</code>
+     query XML documents using the XPath language.
+     <span class="productname">PostgreSQL</span> also provides XPath-only variants
+     of the standard functions <code class="function">XMLEXISTS</code> and
+     <code class="function">XMLTABLE</code>, which officially use
+     the XQuery language. For all of these functions,
+     <span class="productname">PostgreSQL</span> relies on the
+     <span class="application">libxml2</span> library, which provides only XPath 1.0.
+    </p><p>
+     There is a strong connection between the XQuery language and XPath
+     versions 2.0 and later: any expression that is syntactically valid and
+     executes successfully in both produces the same result (with a minor
+     exception for expressions containing numeric character references or
+     predefined entity references, which XQuery replaces with the
+     corresponding character while XPath leaves them alone).  But there is
+     no such connection between these languages and XPath 1.0; it was an
+     earlier language and differs in many respects.
+    </p><p>
+     There are two categories of limitation to keep in mind: the restriction
+     from XQuery to XPath for the functions specified in the SQL standard, and
+     the restriction of XPath to version 1.0 for both the standard and the
+     <span class="productname">PostgreSQL</span>-specific functions.
+    </p><div class="sect3" id="id-1.11.5.13.5.5"><div class="titlepage"><div><div><h4 class="title">D.3.1.1. Restriction of XQuery to XPath</h4></div></div></div><p>
+      Features of XQuery beyond those of XPath include:
+
+      </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+         XQuery expressions can construct and return new XML nodes, in
+         addition to all possible XPath values.  XPath can create and return
+         values of the atomic types (numbers, strings, and so on) but can
+         only return XML nodes that were already present in documents
+         supplied as input to the expression.
+        </p></li><li class="listitem"><p>
+         XQuery has control constructs for iteration, sorting, and grouping.
+        </p></li><li class="listitem"><p>
+         XQuery allows declaration and use of local functions.
+        </p></li></ul></div><p>
+     </p><p>
+      Recent XPath versions begin to offer capabilities overlapping with
+      these (such as functional-style <code class="function">for-each</code> and
+      <code class="function">sort</code>, anonymous functions, and
+      <code class="function">parse-xml</code> to create a node from a string),
+      but such features were not available before XPath 3.0.
+     </p></div><div class="sect3" id="XML-XPATH-1-SPECIFICS"><div class="titlepage"><div><div><h4 class="title">D.3.1.2. Restriction of XPath to 1.0</h4></div></div></div><p>
+      For developers familiar with XQuery and XPath 2.0 or later, XPath 1.0
+      presents a number of differences to contend with:
+
+      </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+         The fundamental type of an XQuery/XPath expression, the
+         <code class="type">sequence</code>, which can contain XML nodes, atomic values,
+         or both, does not exist in XPath 1.0. A 1.0 expression can only
+         produce a node-set (containing zero or more XML nodes), or a single
+         atomic value.
+        </p></li><li class="listitem"><p>
+          Unlike an XQuery/XPath sequence, which can contain any desired
+          items in any desired order, an XPath 1.0 node-set has no
+          guaranteed order and, like any set, does not allow multiple
+          appearances of the same item.
+         </p><div class="note"><h3 class="title">Note</h3><p>
+           The <span class="application">libxml2</span> library does seem to
+           always return node-sets to <span class="productname">PostgreSQL</span>
+           with their members in the same relative order they had in the
+           input document.  Its documentation does not commit to this
+           behavior, and an XPath 1.0 expression cannot control it.
+          </p></div><p>
+        </p></li><li class="listitem"><p>
+         While XQuery/XPath provides all of the types defined in XML Schema
+         and many operators and functions over those types, XPath 1.0 has only
+         node-sets and the three atomic types <code class="type">boolean</code>,
+         <code class="type">double</code>, and <code class="type">string</code>.
+        </p></li><li class="listitem"><p>
+         XPath 1.0 has no conditional operator. An XQuery/XPath expression
+         such as <code class="literal">if ( hat ) then hat/@size else "no hat"</code>
+         has no XPath 1.0 equivalent.
+        </p></li><li class="listitem"><p>
+         XPath 1.0 has no ordering comparison operator for strings. Both
+         <code class="literal">"cat" &lt; "dog"</code> and
+         <code class="literal">"cat" &gt; "dog"</code> are false, because each is a
+         numeric comparison of two <code class="literal">NaN</code>s. In contrast,
+         <code class="literal">=</code> and <code class="literal">!=</code> do compare the strings
+         as strings.
+        </p></li><li class="listitem"><p>
+         XPath 1.0 blurs the distinction between
+         <em class="firstterm">value comparisons</em> and
+         <em class="firstterm">general comparisons</em> as XQuery/XPath define
+         them.  Both <code class="literal">sale/@hatsize = 7</code> and
+         <code class="literal">sale/@customer = "alice"</code> are existentially
+         quantified comparisons, true if there is
+         any <code class="literal">sale</code> with the given value for the
+         attribute, but <code class="literal">sale/@taxable = false()</code> is a
+         value comparison to the
+         <em class="firstterm">effective boolean value</em> of a whole node-set.
+         It is true only if no <code class="literal">sale</code> has
+         a <code class="literal">taxable</code> attribute at all.
+        </p></li><li class="listitem"><p>
+         In the XQuery/XPath data model, a <em class="firstterm">document
+         node</em> can have either document form (i.e., exactly one
+         top-level element, with only comments and processing instructions
+         outside of it) or content form (with those constraints
+         relaxed). Its equivalent in XPath 1.0, the
+         <em class="firstterm">root node</em>, can only be in document form.
+         This is part of the reason an <code class="type">xml</code> value passed as the
+         context item to any <span class="productname">PostgreSQL</span>
+         XPath-based function must be in document form.
+        </p></li></ul></div><p>
+     </p><p>
+      The differences highlighted here are not all of them. In XQuery and
+      the 2.0 and later versions of XPath, there is an XPath 1.0 compatibility
+      mode, and the W3C lists of
+      <a class="ulink" href="https://www.w3.org/TR/2010/REC-xpath-functions-20101214/#xpath1-compatibility" target="_top">function library changes</a>
+      and
+      <a class="ulink" href="https://www.w3.org/TR/xpath20/#id-backwards-compatibility" target="_top">language changes</a>
+      applied in that mode offer a more complete (but still not exhaustive)
+      account of the differences.  The compatibility mode cannot make the
+      later languages exactly equivalent to XPath 1.0.
+     </p></div><div class="sect3" id="FUNCTIONS-XML-LIMITS-CASTS"><div class="titlepage"><div><div><h4 class="title">D.3.1.3. Mappings between SQL and XML Data Types and Values</h4></div></div></div><p>
+      In SQL:2006 and later, both directions of conversion between standard SQL
+      data types and the XML Schema types are specified precisely. However, the
+      rules are expressed using the types and semantics of XQuery/XPath, and
+      have no direct application to the different data model of XPath 1.0.
+     </p><p>
+      When <span class="productname">PostgreSQL</span> maps SQL data values to XML
+      (as in <code class="function">xmlelement</code>), or XML to SQL (as in the output
+      columns of <code class="function">xmltable</code>), except for a few cases
+      treated specially, <span class="productname">PostgreSQL</span> simply assumes
+      that the XML data type's XPath 1.0 string form will be valid as the
+      text-input form of the SQL datatype, and conversely. This rule has the
+      virtue of simplicity while producing, for many data types, results similar
+      to the mappings specified in the standard.
+     </p><p>
+      Where interoperability with other systems is a concern, for some data
+      types, it may be necessary to use data type formatting functions (such
+      as those in <a class="xref" href="functions-formatting.html" title="9.8. Data Type Formatting Functions">Section 9.8</a>) explicitly to
+      produce the standard mappings.
+     </p></div></div><div class="sect2" id="FUNCTIONS-XML-LIMITS-POSTGRESQL"><div class="titlepage"><div><div><h3 class="title">D.3.2. Incidental Limits of the Implementation</h3></div></div></div><p>
+     This section concerns limits that are not inherent in the
+     <span class="application">libxml2</span> library, but apply to the current
+     implementation in <span class="productname">PostgreSQL</span>.
+    </p><div class="sect3" id="id-1.11.5.13.6.3"><div class="titlepage"><div><div><h4 class="title">D.3.2.1. Only <code class="literal">BY VALUE</code> Passing Mechanism Is Supported</h4></div></div></div><p>
+      The SQL standard defines two <em class="firstterm">passing mechanisms</em>
+      that apply when passing an XML argument from SQL to an XML function or
+      receiving a result: <code class="literal">BY REF</code>, in which a particular XML
+      value retains its node identity, and <code class="literal">BY VALUE</code>, in which
+      the content of the XML is passed but node identity is not preserved. A
+      mechanism can be specified before a list of parameters, as the default
+      mechanism for all of them, or after any parameter, to override the
+      default.
+     </p><p>
+      To illustrate the difference, if
+      <em class="replaceable"><code>x</code></em> is an XML value, these two queries in
+      an SQL:2006 environment would produce true and false, respectively:
+
+</p><pre class="programlisting">
+SELECT XMLQUERY('$a is $b' PASSING BY REF <em class="replaceable"><code>x</code></em> AS a, <em class="replaceable"><code>x</code></em> AS b NULL ON EMPTY);
+SELECT XMLQUERY('$a is $b' PASSING BY VALUE <em class="replaceable"><code>x</code></em> AS a, <em class="replaceable"><code>x</code></em> AS b NULL ON EMPTY);
+</pre><p>
+     </p><p>
+      <span class="productname">PostgreSQL</span> will accept
+      <code class="literal">BY VALUE</code> or <code class="literal">BY REF</code> in an
+      <code class="function">XMLEXISTS</code> or <code class="function">XMLTABLE</code>
+      construct, but it ignores them.  The <code class="type">xml</code> data type holds
+      a character-string serialized representation, so there is no node
+      identity to preserve, and passing is always effectively <code class="literal">BY
+      VALUE</code>.
+     </p></div><div class="sect3" id="id-1.11.5.13.6.4"><div class="titlepage"><div><div><h4 class="title">D.3.2.2. Cannot Pass Named Parameters to Queries</h4></div></div></div><p>
+      The XPath-based functions support passing one parameter to serve as the
+      XPath expression's context item, but do not support passing additional
+      values to be available to the expression as named parameters.
+     </p></div><div class="sect3" id="id-1.11.5.13.6.5"><div class="titlepage"><div><div><h4 class="title">D.3.2.3. No <code class="type">XML(SEQUENCE)</code> Type</h4></div></div></div><p>
+      The <span class="productname">PostgreSQL</span> <code class="type">xml</code> data type
+      can only hold a value in <code class="literal">DOCUMENT</code>
+      or <code class="literal">CONTENT</code> form.  An XQuery/XPath expression
+      context item must be a single XML node or atomic value, but XPath 1.0
+      further restricts it to be only an XML node, and has no node type
+      allowing <code class="literal">CONTENT</code>.  The upshot is that a
+      well-formed <code class="literal">DOCUMENT</code> is the only form of XML value
+      that <span class="productname">PostgreSQL</span> can supply as an XPath
+      context item.
+     </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="unsupported-features-sql-standard.html" title="D.2. Unsupported Features">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="features.html" title="Appendix D. SQL Conformance">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="release.html" title="Appendix E. Release Notes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">D.2. Unsupported Features </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Appendix E. Release Notes</td></tr></table></div></body></html>

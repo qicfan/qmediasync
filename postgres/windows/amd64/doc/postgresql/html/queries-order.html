@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>7.5. Sorting Rows (ORDER BY)</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="queries-union.html" title="7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" /><link rel="next" href="queries-limit.html" title="7.6. LIMIT and OFFSET" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">7.5. Sorting Rows (<code xmlns="http://www.w3.org/1999/xhtml" class="literal">ORDER BY</code>)</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="queries-union.html" title="7.4. Combining Queries (UNION, INTERSECT, EXCEPT)">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="queries.html" title="Chapter 7. Queries">Up</a></td><th width="60%" align="center">Chapter 7. Queries</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="queries-limit.html" title="7.6. LIMIT and OFFSET">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="QUERIES-ORDER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">7.5. Sorting Rows (<code class="literal">ORDER BY</code>)</h2></div></div></div><a id="id-1.5.6.9.2" class="indexterm"></a><a id="id-1.5.6.9.3" class="indexterm"></a><p>
+   After a query has produced an output table (after the select list
+   has been processed) it can optionally be sorted.  If sorting is not
+   chosen, the rows will be returned in an unspecified order.  The actual
+   order in that case will depend on the scan and join plan types and
+   the order on disk, but it must not be relied on.  A particular
+   output ordering can only be guaranteed if the sort step is explicitly
+   chosen.
+  </p><p>
+   The <code class="literal">ORDER BY</code> clause specifies the sort order:
+</p><pre class="synopsis">
+SELECT <em class="replaceable"><code>select_list</code></em>
+    FROM <em class="replaceable"><code>table_expression</code></em>
+    ORDER BY <em class="replaceable"><code>sort_expression1</code></em> [<span class="optional">ASC | DESC</span>] [<span class="optional">NULLS { FIRST | LAST }</span>]
+             [<span class="optional">, <em class="replaceable"><code>sort_expression2</code></em> [<span class="optional">ASC | DESC</span>] [<span class="optional">NULLS { FIRST | LAST }</span>] ...</span>]
+</pre><p>
+   The sort expression(s) can be any expression that would be valid in the
+   query's select list.  An example is:
+</p><pre class="programlisting">
+SELECT a, b FROM table1 ORDER BY a + b, c;
+</pre><p>
+   When more than one expression is specified,
+   the later values are used to sort rows that are equal according to the
+   earlier values.  Each expression can be followed by an optional
+   <code class="literal">ASC</code> or <code class="literal">DESC</code> keyword to set the sort direction to
+   ascending or descending.  <code class="literal">ASC</code> order is the default.
+   Ascending order puts smaller values first, where
+   <span class="quote">“<span class="quote">smaller</span>”</span> is defined in terms of the
+   <code class="literal">&lt;</code> operator.  Similarly, descending order is
+   determined with the <code class="literal">&gt;</code> operator.
+    <a href="#ftn.id-1.5.6.9.5.10" class="footnote"><sup class="footnote" id="id-1.5.6.9.5.10">[6]</sup></a>
+  </p><p>
+   The <code class="literal">NULLS FIRST</code> and <code class="literal">NULLS LAST</code> options can be
+   used to determine whether nulls appear before or after non-null values
+   in the sort ordering.  By default, null values sort as if larger than any
+   non-null value; that is, <code class="literal">NULLS FIRST</code> is the default for
+   <code class="literal">DESC</code> order, and <code class="literal">NULLS LAST</code> otherwise.
+  </p><p>
+   Note that the ordering options are considered independently for each
+   sort column.  For example <code class="literal">ORDER BY x, y DESC</code> means
+   <code class="literal">ORDER BY x ASC, y DESC</code>, which is not the same as
+   <code class="literal">ORDER BY x DESC, y DESC</code>.
+  </p><p>
+   A <em class="replaceable"><code>sort_expression</code></em> can also be the column label or number
+   of an output column, as in:
+</p><pre class="programlisting">
+SELECT a + b AS sum, c FROM table1 ORDER BY sum;
+SELECT a, max(b) FROM table1 GROUP BY a ORDER BY 1;
+</pre><p>
+   both of which sort by the first output column.  Note that an output
+   column name has to stand alone, that is, it cannot be used in an expression
+   — for example, this is <span class="emphasis"><em>not</em></span> correct:
+</p><pre class="programlisting">
+SELECT a + b AS sum, c FROM table1 ORDER BY sum + c;          -- wrong
+</pre><p>
+   This restriction is made to reduce ambiguity.  There is still
+   ambiguity if an <code class="literal">ORDER BY</code> item is a simple name that
+   could match either an output column name or a column from the table
+   expression.  The output column is used in such cases.  This would
+   only cause confusion if you use <code class="literal">AS</code> to rename an output
+   column to match some other table column's name.
+  </p><p>
+   <code class="literal">ORDER BY</code> can be applied to the result of a
+   <code class="literal">UNION</code>, <code class="literal">INTERSECT</code>, or <code class="literal">EXCEPT</code>
+   combination, but in this case it is only permitted to sort by
+   output column names or numbers, not by expressions.
+  </p><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.id-1.5.6.9.5.10" class="footnote"><p><a href="#id-1.5.6.9.5.10" class="para"><sup class="para">[6] </sup></a>
+      Actually, <span class="productname">PostgreSQL</span> uses the <em class="firstterm">default B-tree
+      operator class</em> for the expression's data type to determine the sort
+      ordering for <code class="literal">ASC</code> and <code class="literal">DESC</code>.  Conventionally,
+      data types will be set up so that the <code class="literal">&lt;</code> and
+      <code class="literal">&gt;</code> operators correspond to this sort ordering,
+      but a user-defined data type's designer could choose to do something
+      different.
+     </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="queries-union.html" title="7.4. Combining Queries (UNION, INTERSECT, EXCEPT)">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="queries.html" title="Chapter 7. Queries">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="queries-limit.html" title="7.6. LIMIT and OFFSET">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.4. Combining Queries (<code xmlns="http://www.w3.org/1999/xhtml" class="literal">UNION</code>, <code xmlns="http://www.w3.org/1999/xhtml" class="literal">INTERSECT</code>, <code xmlns="http://www.w3.org/1999/xhtml" class="literal">EXCEPT</code>) </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 7.6. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">LIMIT</code> and <code xmlns="http://www.w3.org/1999/xhtml" class="literal">OFFSET</code></td></tr></table></div></body></html>

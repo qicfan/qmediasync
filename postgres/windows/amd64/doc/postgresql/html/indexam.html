@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Chapter 62. Index Access Method Interface Definition</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="tableam.html" title="Chapter 61. Table Access Method Interface Definition" /><link rel="next" href="index-api.html" title="62.1. Basic API Structure for Indexes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">Chapter 62. Index Access Method Interface Definition</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="tableam.html" title="Chapter 61. Table Access Method Interface Definition">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><th width="60%" align="center">Part VII. Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="index-api.html" title="62.1. Basic API Structure for Indexes">Next</a></td></tr></table><hr></hr></div><div class="chapter" id="INDEXAM"><div class="titlepage"><div><div><h2 class="title">Chapter 62. Index Access Method Interface Definition</h2></div></div></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="sect1"><a href="index-api.html">62.1. Basic API Structure for Indexes</a></span></dt><dt><span class="sect1"><a href="index-functions.html">62.2. Index Access Method Functions</a></span></dt><dt><span class="sect1"><a href="index-scanning.html">62.3. Index Scanning</a></span></dt><dt><span class="sect1"><a href="index-locking.html">62.4. Index Locking Considerations</a></span></dt><dt><span class="sect1"><a href="index-unique-checks.html">62.5. Index Uniqueness Checks</a></span></dt><dt><span class="sect1"><a href="index-cost-estimation.html">62.6. Index Cost Estimation Functions</a></span></dt></dl></div><a id="id-1.10.14.2" class="indexterm"></a><a id="id-1.10.14.3" class="indexterm"></a><p>
+   This chapter defines the interface between the core
+   <span class="productname">PostgreSQL</span> system and <em class="firstterm">index access
+   methods</em>, which manage individual index types.  The core system
+   knows nothing about indexes beyond what is specified here, so it is
+   possible to develop entirely new index types by writing add-on code.
+  </p><p>
+   All indexes in <span class="productname">PostgreSQL</span> are what are known
+   technically as <em class="firstterm">secondary indexes</em>; that is, the index is
+   physically separate from the table file that it describes.  Each index
+   is stored as its own physical <em class="firstterm">relation</em> and so is described
+   by an entry in the <code class="structname">pg_class</code> catalog.  The contents of an
+   index are entirely under the control of its index access method.  In
+   practice, all index access methods divide indexes into standard-size
+   pages so that they can use the regular storage manager and buffer manager
+   to access the index contents.  (All the existing index access methods
+   furthermore use the standard page layout described in <a class="xref" href="storage-page-layout.html" title="70.6. Database Page Layout">Section 70.6</a>, and most use the same format for index
+   tuple headers; but these decisions are not forced on an access method.)
+  </p><p>
+   An index is effectively a mapping from some data key values to
+   <em class="firstterm">tuple identifiers</em>, or <acronym class="acronym">TIDs</acronym>, of row versions
+   (tuples) in the index's parent table.  A TID consists of a
+   block number and an item number within that block (see <a class="xref" href="storage-page-layout.html" title="70.6. Database Page Layout">Section 70.6</a>).  This is sufficient
+   information to fetch a particular row version from the table.
+   Indexes are not directly aware that under MVCC, there might be multiple
+   extant versions of the same logical row; to an index, each tuple is
+   an independent object that needs its own index entry.  Thus, an
+   update of a row always creates all-new index entries for the row, even if
+   the key values did not change.  (<a class="link" href="storage-hot.html" title="70.7. Heap-Only Tuples (HOT)">HOT
+   tuples</a> are an exception to this
+   statement; but indexes do not deal with those, either.)  Index entries for
+   dead tuples are reclaimed (by vacuuming) when the dead tuples themselves
+   are reclaimed.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tableam.html" title="Chapter 61. Table Access Method Interface Definition">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="index-api.html" title="62.1. Basic API Structure for Indexes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 61. Table Access Method Interface Definition </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 62.1. Basic API Structure for Indexes</td></tr></table></div></body></html>

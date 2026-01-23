@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE TABLE AS</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createtable.html" title="CREATE TABLE" /><link rel="next" href="sql-createtablespace.html" title="CREATE TABLESPACE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE TABLE AS</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createtable.html" title="CREATE TABLE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createtablespace.html" title="CREATE TABLESPACE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATETABLEAS"><div class="titlepage"></div><a id="id-1.9.3.86.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE TABLE AS</span></h2><p>CREATE TABLE AS — define a new table from the results of a query</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE [ [ GLOBAL | LOCAL ] { TEMPORARY | TEMP } | UNLOGGED ] TABLE [ IF NOT EXISTS ] <em class="replaceable"><code>table_name</code></em>
+    [ (<em class="replaceable"><code>column_name</code></em> [, ...] ) ]
+    [ USING <em class="replaceable"><code>method</code></em> ]
+    [ WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] ) | WITHOUT OIDS ]
+    [ ON COMMIT { PRESERVE ROWS | DELETE ROWS | DROP } ]
+    [ TABLESPACE <em class="replaceable"><code>tablespace_name</code></em> ]
+    AS <em class="replaceable"><code>query</code></em>
+    [ WITH [ NO ] DATA ]
+</pre></div><div class="refsect1" id="id-1.9.3.86.5"><h2>Description</h2><p>
+   <code class="command">CREATE TABLE AS</code> creates a table and fills it
+   with data computed by a <code class="command">SELECT</code> command.
+   The table columns have the
+   names and data types associated with the output columns of the
+   <code class="command">SELECT</code> (except that you can override the column
+   names by giving an explicit list of new column names).
+  </p><p>
+   <code class="command">CREATE TABLE AS</code> bears some resemblance to
+   creating a view, but it is really quite different: it creates a new
+   table and evaluates the query just once to fill the new table
+   initially.  The new table will not track subsequent changes to the
+   source tables of the query.  In contrast, a view re-evaluates its
+   defining <code class="command">SELECT</code> statement whenever it is
+   queried.
+  </p><p>
+   <code class="command">CREATE TABLE AS</code> requires <code class="literal">CREATE</code>
+   privilege on the schema used for the table.
+  </p></div><div class="refsect1" id="id-1.9.3.86.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">GLOBAL</code> or <code class="literal">LOCAL</code></span></dt><dd><p>
+      Ignored for compatibility.  Use of these keywords is deprecated;
+      refer to <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> for details.
+     </p></dd></dl></div><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">TEMPORARY</code> or <code class="literal">TEMP</code></span></dt><dd><p>
+      If specified, the table is created as a temporary table.
+      Refer to <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> for details.
+     </p></dd><dt><span class="term"><code class="literal">UNLOGGED</code></span></dt><dd><p>
+      If specified, the table is created as an unlogged table.
+      Refer to <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> for details.
+     </p></dd><dt><span class="term"><code class="literal">IF NOT EXISTS</code></span></dt><dd><p>
+      Do not throw an error if a relation with the same name already
+      exists; simply issue a notice and leave the table unmodified.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of the table to be created.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>column_name</code></em></span></dt><dd><p>
+      The name of a column in the new table.  If column names are not
+      provided, they are taken from the output column names of the query.
+     </p></dd><dt><span class="term"><code class="literal">USING <em class="replaceable"><code>method</code></em></code></span></dt><dd><p>
+      This optional clause specifies the table access method to use to store
+      the contents for the new table; the method needs be an access method of
+      type <code class="literal">TABLE</code>. See <a class="xref" href="tableam.html" title="Chapter 61. Table Access Method Interface Definition">Chapter 61</a> for more
+      information.  If this option is not specified, the default table access
+      method is chosen for the new table. See <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLE-ACCESS-METHOD">default_table_access_method</a> for more information.
+     </p></dd><dt><span class="term"><code class="literal">WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )</code></span></dt><dd><p>
+      This clause specifies optional storage parameters for the new table;
+      see <a class="xref" href="sql-createtable.html#SQL-CREATETABLE-STORAGE-PARAMETERS" title="Storage Parameters">Storage Parameters</a> in the
+      <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a> documentation for more
+      information.   For backward-compatibility the <code class="literal">WITH</code>
+      clause for a table can also include <code class="literal">OIDS=FALSE</code> to
+      specify that rows of the new table should contain no OIDs (object
+      identifiers), <code class="literal">OIDS=TRUE</code> is not supported anymore.
+     </p></dd><dt><span class="term"><code class="literal">WITHOUT OIDS</code></span></dt><dd><p>
+      This is backward-compatible syntax for declaring a table
+      <code class="literal">WITHOUT OIDS</code>, creating a table <code class="literal">WITH
+      OIDS</code> is not supported anymore.
+     </p></dd><dt><span class="term"><code class="literal">ON COMMIT</code></span></dt><dd><p>
+      The behavior of temporary tables at the end of a transaction
+      block can be controlled using <code class="literal">ON COMMIT</code>.
+      The three options are:
+
+      </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">PRESERVE ROWS</code></span></dt><dd><p>
+          No special action is taken at the ends of transactions.
+          This is the default behavior.
+         </p></dd><dt><span class="term"><code class="literal">DELETE ROWS</code></span></dt><dd><p>
+          All rows in the temporary table will be deleted at the end
+          of each transaction block.  Essentially, an automatic <a class="link" href="sql-truncate.html" title="TRUNCATE"><code class="command">TRUNCATE</code></a> is done
+          at each commit.
+         </p></dd><dt><span class="term"><code class="literal">DROP</code></span></dt><dd><p>
+          The temporary table will be dropped at the end of the current
+          transaction block.
+         </p></dd></dl></div></dd><dt><span class="term"><code class="literal">TABLESPACE <em class="replaceable"><code>tablespace_name</code></em></code></span></dt><dd><p>
+      The <em class="replaceable"><code>tablespace_name</code></em> is the name
+      of the tablespace in which the new table is to be created.
+      If not specified,
+      <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLESPACE">default_tablespace</a> is consulted, or
+      <a class="xref" href="runtime-config-client.html#GUC-TEMP-TABLESPACES">temp_tablespaces</a> if the table is temporary.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>query</code></em></span></dt><dd><p>
+      A <a class="link" href="sql-select.html" title="SELECT"><code class="command">SELECT</code></a>, <a class="link" href="sql-select.html#SQL-TABLE" title="TABLE Command"><code class="command">TABLE</code></a>, or <a class="link" href="sql-values.html" title="VALUES"><code class="command">VALUES</code></a>
+      command, or an <a class="link" href="sql-execute.html" title="EXECUTE"><code class="command">EXECUTE</code></a> command that runs a
+      prepared <code class="command">SELECT</code>, <code class="command">TABLE</code>, or
+      <code class="command">VALUES</code> query.
+     </p></dd><dt><span class="term"><code class="literal">WITH [ NO ] DATA</code></span></dt><dd><p>
+      This clause specifies whether or not the data produced by the query
+      should be copied into the new table.  If not, only the table structure
+      is copied.  The default is to copy the data.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.86.7"><h2>Notes</h2><p>
+   This command is functionally similar to <a class="xref" href="sql-selectinto.html" title="SELECT INTO"><span class="refentrytitle">SELECT INTO</span></a>, but it is
+   preferred since it is less likely to be confused with other uses of
+   the <code class="command">SELECT INTO</code> syntax. Furthermore, <code class="command">CREATE
+   TABLE AS</code> offers a superset of the functionality offered
+   by <code class="command">SELECT INTO</code>.
+  </p></div><div class="refsect1" id="id-1.9.3.86.8"><h2>Examples</h2><p>
+   Create a new table <code class="literal">films_recent</code> consisting of only
+   recent entries from the table <code class="literal">films</code>:
+
+</p><pre class="programlisting">
+CREATE TABLE films_recent AS
+  SELECT * FROM films WHERE date_prod &gt;= '2002-01-01';
+</pre><p>
+  </p><p>
+   To copy a table completely, the short form using
+   the <code class="literal">TABLE</code> command can also be used:
+
+</p><pre class="programlisting">
+CREATE TABLE films2 AS
+  TABLE films;
+</pre><p>
+  </p><p>
+   Create a new temporary table <code class="literal">films_recent</code>, consisting of
+   only recent entries from the table <code class="literal">films</code>, using a
+   prepared statement.  The new table will be dropped at commit:
+
+</p><pre class="programlisting">
+PREPARE recentfilms(date) AS
+  SELECT * FROM films WHERE date_prod &gt; $1;
+CREATE TEMP TABLE films_recent ON COMMIT DROP AS
+  EXECUTE recentfilms('2002-01-01');
+</pre></div><div class="refsect1" id="id-1.9.3.86.9"><h2>Compatibility</h2><p>
+   <code class="command">CREATE TABLE AS</code> conforms to the <acronym class="acronym">SQL</acronym>
+   standard.  The following are nonstandard extensions:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist compact" style="list-style-type: disc; "><li class="listitem"><p>
+      The standard requires parentheses around the subquery clause; in
+      <span class="productname">PostgreSQL</span>, these parentheses are
+      optional.
+     </p></li><li class="listitem"><p>
+      In the standard, the <code class="literal">WITH [ NO ] DATA</code> clause
+      is required; in PostgreSQL it is optional.
+     </p></li><li class="listitem"><p><span class="productname">PostgreSQL</span> handles temporary tables in a way
+      rather different from the standard; see
+      <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a>
+      for details.
+     </p></li><li class="listitem"><p>
+      The <code class="literal">WITH</code> clause is a <span class="productname">PostgreSQL</span>
+      extension; storage parameters are not in the standard.
+     </p></li><li class="listitem"><p>
+      The <span class="productname">PostgreSQL</span> concept of tablespaces is not
+      part of the standard.  Hence, the clause <code class="literal">TABLESPACE</code>
+      is an extension.
+     </p></li></ul></div></div><div class="refsect1" id="id-1.9.3.86.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-creatematerializedview.html" title="CREATE MATERIALIZED VIEW"><span class="refentrytitle">CREATE MATERIALIZED VIEW</span></a>, <a class="xref" href="sql-createtable.html" title="CREATE TABLE"><span class="refentrytitle">CREATE TABLE</span></a>, <a class="xref" href="sql-execute.html" title="EXECUTE"><span class="refentrytitle">EXECUTE</span></a>, <a class="xref" href="sql-select.html" title="SELECT"><span class="refentrytitle">SELECT</span></a>, <a class="xref" href="sql-selectinto.html" title="SELECT INTO"><span class="refentrytitle">SELECT INTO</span></a>, <a class="xref" href="sql-values.html" title="VALUES"><span class="refentrytitle">VALUES</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createtable.html" title="CREATE TABLE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createtablespace.html" title="CREATE TABLESPACE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE TABLE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE TABLESPACE</td></tr></table></div></body></html>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>31.4. Restrictions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="logical-replication-conflicts.html" title="31.3. Conflicts" /><link rel="next" href="logical-replication-architecture.html" title="31.5. Architecture" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">31.4. Restrictions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="logical-replication-conflicts.html" title="31.3. Conflicts">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="logical-replication.html" title="Chapter 31. Logical Replication">Up</a></td><th width="60%" align="center">Chapter 31. Logical Replication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="logical-replication-architecture.html" title="31.5. Architecture">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LOGICAL-REPLICATION-RESTRICTIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">31.4. Restrictions</h2></div></div></div><p>
+   Logical replication currently has the following restrictions or missing
+   functionality.  These might be addressed in future releases.
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     The database schema and DDL commands are not replicated.  The initial
+     schema can be copied by hand using <code class="literal">pg_dump
+     --schema-only</code>.  Subsequent schema changes would need to be kept
+     in sync manually.  (Note, however, that there is no need for the schemas
+     to be absolutely the same on both sides.)  Logical replication is robust
+     when schema definitions change in a live database: When the schema is
+     changed on the publisher and replicated data starts arriving at the
+     subscriber but does not fit into the table schema, replication will error
+     until the schema is updated.  In many cases, intermittent errors can be
+     avoided by applying additive schema changes to the subscriber first.
+    </p></li><li class="listitem"><p>
+     Sequence data is not replicated.  The data in serial or identity columns
+     backed by sequences will of course be replicated as part of the table,
+     but the sequence itself would still show the start value on the
+     subscriber.  If the subscriber is used as a read-only database, then this
+     should typically not be a problem.  If, however, some kind of switchover
+     or failover to the subscriber database is intended, then the sequences
+     would need to be updated to the latest values, either by copying the
+     current data from the publisher (perhaps
+     using <code class="command">pg_dump</code>) or by determining a sufficiently high
+     value from the tables themselves.
+    </p></li><li class="listitem"><p>
+     Replication of <code class="command">TRUNCATE</code> commands is supported, but
+     some care must be taken when truncating groups of tables connected by
+     foreign keys.  When replicating a truncate action, the subscriber will
+     truncate the same group of tables that was truncated on the publisher,
+     either explicitly specified or implicitly collected via
+     <code class="literal">CASCADE</code>, minus tables that are not part of the
+     subscription.  This will work correctly if all affected tables are part
+     of the same subscription.  But if some tables to be truncated on the
+     subscriber have foreign-key links to tables that are not part of the same
+     (or any) subscription, then the application of the truncate action on the
+     subscriber will fail.
+    </p></li><li class="listitem"><p>
+     Large objects (see <a class="xref" href="largeobjects.html" title="Chapter 35. Large Objects">Chapter 35</a>) are not replicated.
+     There is no workaround for that, other than storing data in normal
+     tables.
+    </p></li><li class="listitem"><p>
+     Replication is only supported by tables, including partitioned tables.
+     Attempts to replicate other types of relations, such as views, materialized
+     views, or foreign tables, will result in an error.
+    </p></li><li class="listitem"><p>
+     When replicating between partitioned tables, the actual replication
+     originates, by default, from the leaf partitions on the publisher, so
+     partitions on the publisher must also exist on the subscriber as valid
+     target tables. (They could either be leaf partitions themselves, or they
+     could be further subpartitioned, or they could even be independent
+     tables.)  Publications can also specify that changes are to be replicated
+     using the identity and schema of the partitioned root table instead of
+     that of the individual leaf partitions in which the changes actually
+     originate (see <a class="link" href="sql-createpublication.html" title="CREATE PUBLICATION"><code class="command">CREATE PUBLICATION</code></a>).
+    </p></li></ul></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="logical-replication-conflicts.html" title="31.3. Conflicts">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="logical-replication.html" title="Chapter 31. Logical Replication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="logical-replication-architecture.html" title="31.5. Architecture">Next</a></td></tr><tr><td width="40%" align="left" valign="top">31.3. Conflicts </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 31.5. Architecture</td></tr></table></div></body></html>

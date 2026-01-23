@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>22.4. Dropping Roles</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="role-membership.html" title="22.3. Role Membership" /><link rel="next" href="predefined-roles.html" title="22.5. Predefined Roles" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">22.4. Dropping Roles</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="role-membership.html" title="22.3. Role Membership">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="user-manag.html" title="Chapter 22. Database Roles">Up</a></td><th width="60%" align="center">Chapter 22. Database Roles</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="predefined-roles.html" title="22.5. Predefined Roles">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ROLE-REMOVAL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">22.4. Dropping Roles</h2></div></div></div><p>
+   Because roles can own database objects and can hold privileges
+   to access other objects, dropping a role is often not just a matter of a
+   quick <a class="link" href="sql-droprole.html" title="DROP ROLE"><code class="command">DROP ROLE</code></a>.  Any objects owned by the role must
+   first be dropped or reassigned to other owners; and any permissions
+   granted to the role must be revoked.
+  </p><p>
+   Ownership of objects can be transferred one at a time
+   using <code class="command">ALTER</code> commands, for example:
+</p><pre class="programlisting">
+ALTER TABLE bobs_table OWNER TO alice;
+</pre><p>
+   Alternatively, the <a class="link" href="sql-reassign-owned.html" title="REASSIGN OWNED"><code class="command">REASSIGN OWNED</code></a> command can be
+   used to reassign ownership of all objects owned by the role-to-be-dropped
+   to a single other role.  Because <code class="command">REASSIGN OWNED</code> cannot access
+   objects in other databases, it is necessary to run it in each database
+   that contains objects owned by the role.  (Note that the first
+   such <code class="command">REASSIGN OWNED</code> will change the ownership of any
+   shared-across-databases objects, that is databases or tablespaces, that
+   are owned by the role-to-be-dropped.)
+  </p><p>
+   Once any valuable objects have been transferred to new owners, any
+   remaining objects owned by the role-to-be-dropped can be dropped with
+   the <a class="link" href="sql-drop-owned.html" title="DROP OWNED"><code class="command">DROP OWNED</code></a> command.  Again, this command cannot
+   access objects in other databases, so it is necessary to run it in each
+   database that contains objects owned by the role.  Also, <code class="command">DROP
+   OWNED</code> will not drop entire databases or tablespaces, so it is
+   necessary to do that manually if the role owns any databases or
+   tablespaces that have not been transferred to new owners.
+  </p><p>
+   <code class="command">DROP OWNED</code> also takes care of removing any privileges granted
+   to the target role for objects that do not belong to it.
+   Because <code class="command">REASSIGN OWNED</code> does not touch such objects, it's
+   typically necessary to run both <code class="command">REASSIGN OWNED</code>
+   and <code class="command">DROP OWNED</code> (in that order!) to fully remove the
+   dependencies of a role to be dropped.
+  </p><p>
+   In short then, the most general recipe for removing a role that has been
+   used to own objects is:
+  </p><pre class="programlisting">
+REASSIGN OWNED BY doomed_role TO successor_role;
+DROP OWNED BY doomed_role;
+-- repeat the above commands in each database of the cluster
+DROP ROLE doomed_role;
+</pre><p>
+   When not all owned objects are to be transferred to the same successor
+   owner, it's best to handle the exceptions manually and then perform
+   the above steps to mop up.
+  </p><p>
+   If <code class="command">DROP ROLE</code> is attempted while dependent objects still
+   remain, it will issue messages identifying which objects need to be
+   reassigned or dropped.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="role-membership.html" title="22.3. Role Membership">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="user-manag.html" title="Chapter 22. Database Roles">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="predefined-roles.html" title="22.5. Predefined Roles">Next</a></td></tr><tr><td width="40%" align="left" valign="top">22.3. Role Membership </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 22.5. Predefined Roles</td></tr></table></div></body></html>

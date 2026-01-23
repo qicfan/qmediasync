@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.17. Sequence Manipulation Functions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-json.html" title="9.16. JSON Functions and Operators" /><link rel="next" href="functions-conditional.html" title="9.18. Conditional Expressions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.17. Sequence Manipulation Functions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-json.html" title="9.16. JSON Functions and Operators">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-conditional.html" title="9.18. Conditional Expressions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-SEQUENCE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.17. Sequence Manipulation Functions</h2></div></div></div><a id="id-1.5.8.23.2" class="indexterm"></a><p>
+   This section describes functions for operating on <em class="firstterm">sequence
+   objects</em>, also called sequence generators or just sequences.
+   Sequence objects are special single-row tables created with <a class="xref" href="sql-createsequence.html" title="CREATE SEQUENCE"><span class="refentrytitle">CREATE SEQUENCE</span></a>.
+   Sequence objects are commonly used to generate unique identifiers
+   for rows of a table.  The sequence functions, listed in <a class="xref" href="functions-sequence.html#FUNCTIONS-SEQUENCE-TABLE" title="Table 9.50. Sequence Functions">Table 9.50</a>, provide simple, multiuser-safe
+   methods for obtaining successive sequence values from sequence
+   objects.
+  </p><div class="table" id="FUNCTIONS-SEQUENCE-TABLE"><p class="title"><strong>Table 9.50. Sequence Functions</strong></p><div class="table-contents"><table class="table" summary="Sequence Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.23.4.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">nextval</code> ( <code class="type">regclass</code> )
+        → <code class="returnvalue">bigint</code>
+       </p>
+       <p>
+        Advances the sequence object to its next value and returns that value.
+        This is done atomically: even if multiple sessions
+        execute <code class="function">nextval</code> concurrently, each will safely
+        receive a distinct sequence value.
+        If the sequence object has been created with default parameters,
+        successive <code class="function">nextval</code> calls will return successive
+        values beginning with 1.  Other behaviors can be obtained by using
+        appropriate parameters in the <a class="xref" href="sql-createsequence.html" title="CREATE SEQUENCE"><span class="refentrytitle">CREATE SEQUENCE</span></a>
+        command.
+      </p>
+       <p>
+        This function requires <code class="literal">USAGE</code>
+        or <code class="literal">UPDATE</code> privilege on the sequence.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.23.4.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">setval</code> ( <code class="type">regclass</code>, <code class="type">bigint</code> [<span class="optional">, <code class="type">boolean</code> </span>] )
+        → <code class="returnvalue">bigint</code>
+       </p>
+       <p>
+        Sets the sequence object's current value, and optionally
+        its <code class="literal">is_called</code> flag.  The two-parameter
+        form sets the sequence's <code class="literal">last_value</code> field to the
+        specified value and sets its <code class="literal">is_called</code> field to
+        <code class="literal">true</code>, meaning that the next
+        <code class="function">nextval</code> will advance the sequence before
+        returning a value.  The value that will be reported
+        by <code class="function">currval</code> is also set to the specified value.
+        In the three-parameter form, <code class="literal">is_called</code> can be set
+        to either <code class="literal">true</code>
+        or <code class="literal">false</code>.  <code class="literal">true</code> has the same
+        effect as the two-parameter form. If it is set
+        to <code class="literal">false</code>, the next <code class="function">nextval</code>
+        will return exactly the specified value, and sequence advancement
+        commences with the following <code class="function">nextval</code>.
+        Furthermore, the value reported by <code class="function">currval</code> is not
+        changed in this case.  For example,
+</p><pre class="programlisting">
+SELECT setval('myseq', 42);           <em class="lineannotation"><span class="lineannotation">Next <code class="function">nextval</code> will return 43</span></em>
+SELECT setval('myseq', 42, true);     <em class="lineannotation"><span class="lineannotation">Same as above</span></em>
+SELECT setval('myseq', 42, false);    <em class="lineannotation"><span class="lineannotation">Next <code class="function">nextval</code> will return 42</span></em>
+</pre><p>
+        The result returned by <code class="function">setval</code> is just the value of its
+        second argument.
+       </p>
+       <p>
+        This function requires <code class="literal">UPDATE</code> privilege on the
+        sequence.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.23.4.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">currval</code> ( <code class="type">regclass</code> )
+        → <code class="returnvalue">bigint</code>
+       </p>
+       <p>
+        Returns the value most recently obtained
+        by <code class="function">nextval</code> for this sequence in the current
+        session.  (An error is reported if <code class="function">nextval</code> has
+        never been called for this sequence in this session.)  Because this is
+        returning a session-local value, it gives a predictable answer whether
+        or not other sessions have executed <code class="function">nextval</code> since
+        the current session did.
+       </p>
+       <p>
+        This function requires <code class="literal">USAGE</code>
+        or <code class="literal">SELECT</code> privilege on the sequence.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.23.4.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">lastval</code> ()
+        → <code class="returnvalue">bigint</code>
+       </p>
+       <p>
+        Returns the value most recently returned by
+        <code class="function">nextval</code> in the current session. This function is
+        identical to <code class="function">currval</code>, except that instead
+        of taking the sequence name as an argument it refers to whichever
+        sequence <code class="function">nextval</code> was most recently applied to
+        in the current session. It is an error to call
+        <code class="function">lastval</code> if <code class="function">nextval</code>
+        has not yet been called in the current session.
+       </p>
+       <p>
+        This function requires <code class="literal">USAGE</code>
+        or <code class="literal">SELECT</code> privilege on the last used sequence.
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><div class="caution"><h3 class="title">Caution</h3><p>
+    To avoid blocking concurrent transactions that obtain numbers from
+    the same sequence, the value obtained by <code class="function">nextval</code>
+    is not reclaimed for re-use if the calling transaction later aborts.
+    This means that transaction aborts or database crashes can result in
+    gaps in the sequence of assigned values.  That can happen without a
+    transaction abort, too.  For example an <code class="command">INSERT</code> with
+    an <code class="literal">ON CONFLICT</code> clause will compute the to-be-inserted
+    tuple, including doing any required <code class="function">nextval</code>
+    calls, before detecting any conflict that would cause it to follow
+    the <code class="literal">ON CONFLICT</code> rule instead.
+    Thus, <span class="productname">PostgreSQL</span> sequence
+    objects <span class="emphasis"><em>cannot be used to obtain <span class="quote">“<span class="quote">gapless</span>”</span>
+    sequences</em></span>.
+   </p><p>
+    Likewise, sequence state changes made by <code class="function">setval</code>
+    are immediately visible to other transactions, and are not undone if
+    the calling transaction rolls back.
+   </p><p>
+    If the database cluster crashes before committing a transaction
+    containing a <code class="function">nextval</code>
+    or <code class="function">setval</code> call, the sequence state change might
+    not have made its way to persistent storage, so that it is uncertain
+    whether the sequence will have its original or updated state after the
+    cluster restarts.  This is harmless for usage of the sequence within
+    the database, since other effects of uncommitted transactions will not
+    be visible either.  However, if you wish to use a sequence value for
+    persistent outside-the-database purposes, make sure that the
+    <code class="function">nextval</code> call has been committed before doing so.
+   </p></div><p>
+   The sequence to be operated on by a sequence function is specified by
+   a <code class="type">regclass</code> argument, which is simply the OID of the sequence in the
+   <code class="structname">pg_class</code> system catalog.  You do not have to look up the
+   OID by hand, however, since the <code class="type">regclass</code> data type's input
+   converter will do the work for you.  See <a class="xref" href="datatype-oid.html" title="8.19. Object Identifier Types">Section 8.19</a>
+   for details.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-json.html" title="9.16. JSON Functions and Operators">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-conditional.html" title="9.18. Conditional Expressions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.16. JSON Functions and Operators </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.18. Conditional Expressions</td></tr></table></div></body></html>

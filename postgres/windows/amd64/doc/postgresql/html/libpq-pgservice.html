@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>34.17. The Connection Service File</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="libpq-pgpass.html" title="34.16. The Password File" /><link rel="next" href="libpq-ldap.html" title="34.18. LDAP Lookup of Connection Parameters" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">34.17. The Connection Service File</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-pgpass.html" title="34.16. The Password File">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 34. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-ldap.html" title="34.18. LDAP Lookup of Connection Parameters">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-PGSERVICE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">34.17. The Connection Service File</h2></div></div></div><a id="id-1.7.3.24.2" class="indexterm"></a><a id="id-1.7.3.24.3" class="indexterm"></a><a id="id-1.7.3.24.4" class="indexterm"></a><p>
+   The connection service file allows libpq connection parameters to be
+   associated with a single service name. That service name can then be
+   specified in a libpq connection string, and the associated settings will be
+   used. This allows connection parameters to be modified without requiring
+   a recompile of the libpq-using application. The service name can also be
+   specified using the <code class="envar">PGSERVICE</code> environment variable.
+  </p><p>
+   Service names can be defined in either a per-user service file or a
+   system-wide file.  If the same service name exists in both the user
+   and the system file, the user file takes precedence.
+   By default, the per-user service file is named
+   <code class="filename">~/.pg_service.conf</code>.
+   On Microsoft Windows, it is named
+   <code class="filename">%APPDATA%\postgresql\.pg_service.conf</code> (where
+   <code class="filename">%APPDATA%</code> refers to the Application Data subdirectory
+   in the user's profile).  A different file name can be specified by
+   setting the environment variable <code class="envar">PGSERVICEFILE</code>.
+   The system-wide file is named <code class="filename">pg_service.conf</code>.
+   By default it is sought in the <code class="filename">etc</code> directory
+   of the <span class="productname">PostgreSQL</span> installation
+   (use <code class="literal">pg_config --sysconfdir</code> to identify this
+   directory precisely).  Another directory, but not a different file
+   name, can be specified by setting the environment variable
+   <code class="envar">PGSYSCONFDIR</code>.
+  </p><p>
+   Either service file uses an <span class="quote">“<span class="quote">INI file</span>”</span> format where the section
+   name is the service name and the parameters are connection
+   parameters; see <a class="xref" href="libpq-connect.html#LIBPQ-PARAMKEYWORDS" title="34.1.2. Parameter Key Words">Section 34.1.2</a> for a list.  For
+   example:
+</p><pre class="programlisting">
+# comment
+[mydb]
+host=somehost
+port=5433
+user=admin
+</pre><p>
+   An example file is provided in
+   the <span class="productname">PostgreSQL</span> installation at
+   <code class="filename">share/pg_service.conf.sample</code>.
+  </p><p>
+   Connection parameters obtained from a service file are combined with
+   parameters obtained from other sources.  A service file setting
+   overrides the corresponding environment variable, and in turn can be
+   overridden by a value given directly in the connection string.
+   For example, using the above service file, a connection string
+   <code class="literal">service=mydb port=5434</code> will use
+   host <code class="literal">somehost</code>, port <code class="literal">5434</code>,
+   user <code class="literal">admin</code>, and other parameters as set by
+   environment variables or built-in defaults.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-pgpass.html" title="34.16. The Password File">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-ldap.html" title="34.18. LDAP Lookup of Connection Parameters">Next</a></td></tr><tr><td width="40%" align="left" valign="top">34.16. The Password File </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 34.18. LDAP Lookup of Connection Parameters</td></tr></table></div></body></html>

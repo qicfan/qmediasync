@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>dblink_get_result</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="contrib-dblink-get-notify.html" title="dblink_get_notify" /><link rel="next" href="contrib-dblink-cancel-query.html" title="dblink_cancel_query" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">dblink_get_result</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="contrib-dblink-get-notify.html" title="dblink_get_notify">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="dblink.html" title="F.10. dblink">Up</a></td><th width="60%" align="center">F.10. dblink</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="contrib-dblink-cancel-query.html" title="dblink_cancel_query">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="CONTRIB-DBLINK-GET-RESULT"><div class="titlepage"></div><a id="id-1.11.7.19.18.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">dblink_get_result</span></h2><p>dblink_get_result — gets an async query result</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+dblink_get_result(text connname [, bool fail_on_error]) returns setof record
+</pre></div><div class="refsect1" id="id-1.11.7.19.18.5"><h2>Description</h2><p>
+    <code class="function">dblink_get_result</code> collects the results of an
+    asynchronous query previously sent with <code class="function">dblink_send_query</code>.
+    If the query is not already completed, <code class="function">dblink_get_result</code>
+    will wait until it is.
+   </p></div><div class="refsect1" id="id-1.11.7.19.18.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="parameter"><code>connname</code></em></span></dt><dd><p>
+       Name of the connection to use.
+      </p></dd><dt><span class="term"><em class="parameter"><code>fail_on_error</code></em></span></dt><dd><p>
+       If true (the default when omitted) then an error thrown on the
+       remote side of the connection causes an error to also be thrown
+       locally. If false, the remote error is locally reported as a NOTICE,
+       and the function returns no rows.
+      </p></dd></dl></div></div><div class="refsect1" id="id-1.11.7.19.18.7"><h2>Return Value</h2><p>
+    For an async query (that is, an SQL statement returning rows),
+    the function returns the row(s) produced by the query.  To use this
+    function, you will need to specify the expected set of columns,
+    as previously discussed for <code class="function">dblink</code>.
+   </p><p>
+    For an async command (that is, an SQL statement not returning rows),
+    the function returns a single row with a single text column containing
+    the command's status string.  It is still necessary to specify that
+    the result will have a single text column in the calling <code class="literal">FROM</code>
+    clause.
+   </p></div><div class="refsect1" id="id-1.11.7.19.18.8"><h2>Notes</h2><p>
+    This function <span class="emphasis"><em>must</em></span> be called if
+    <code class="function">dblink_send_query</code> returned 1.
+    It must be called once for each query
+    sent, and one additional time to obtain an empty set result,
+    before the connection can be used again.
+   </p><p>
+    When using <code class="function">dblink_send_query</code> and
+    <code class="function">dblink_get_result</code>, <span class="application">dblink</span> fetches the entire
+    remote query result before returning any of it to the local query
+    processor.  If the query returns a large number of rows, this can result
+    in transient memory bloat in the local session.  It may be better to open
+    such a query as a cursor with <code class="function">dblink_open</code> and then fetch a
+    manageable number of rows at a time.  Alternatively, use plain
+    <code class="function">dblink()</code>, which avoids memory bloat by spooling large result
+    sets to disk.
+   </p></div><div class="refsect1" id="id-1.11.7.19.18.9"><h2>Examples</h2><pre class="screen">
+contrib_regression=# SELECT dblink_connect('dtest1', 'dbname=contrib_regression');
+ dblink_connect
+----------------
+ OK
+(1 row)
+
+contrib_regression=# SELECT * FROM
+contrib_regression-# dblink_send_query('dtest1', 'select * from foo where f1 &lt; 3') AS t1;
+ t1
+----
+  1
+(1 row)
+
+contrib_regression=# SELECT * FROM dblink_get_result('dtest1') AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 |     f3
+----+----+------------
+  0 | a  | {a0,b0,c0}
+  1 | b  | {a1,b1,c1}
+  2 | c  | {a2,b2,c2}
+(3 rows)
+
+contrib_regression=# SELECT * FROM dblink_get_result('dtest1') AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 | f3
+----+----+----
+(0 rows)
+
+contrib_regression=# SELECT * FROM
+contrib_regression-# dblink_send_query('dtest1', 'select * from foo where f1 &lt; 3; select * from foo where f1 &gt; 6') AS t1;
+ t1
+----
+  1
+(1 row)
+
+contrib_regression=# SELECT * FROM dblink_get_result('dtest1') AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 |     f3
+----+----+------------
+  0 | a  | {a0,b0,c0}
+  1 | b  | {a1,b1,c1}
+  2 | c  | {a2,b2,c2}
+(3 rows)
+
+contrib_regression=# SELECT * FROM dblink_get_result('dtest1') AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 |      f3
+----+----+---------------
+  7 | h  | {a7,b7,c7}
+  8 | i  | {a8,b8,c8}
+  9 | j  | {a9,b9,c9}
+ 10 | k  | {a10,b10,c10}
+(4 rows)
+
+contrib_regression=# SELECT * FROM dblink_get_result('dtest1') AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 | f3
+----+----+----
+(0 rows)
+</pre></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="contrib-dblink-get-notify.html" title="dblink_get_notify">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="dblink.html" title="F.10. dblink">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="contrib-dblink-cancel-query.html" title="dblink_cancel_query">Next</a></td></tr><tr><td width="40%" align="left" valign="top">dblink_get_notify </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> dblink_cancel_query</td></tr></table></div></body></html>

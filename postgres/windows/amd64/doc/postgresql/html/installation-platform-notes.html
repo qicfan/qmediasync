@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>17.7. Platform-Specific Notes</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="supported-platforms.html" title="17.6. Supported Platforms" /><link rel="next" href="install-windows.html" title="Chapter 18. Installation from Source Code on Windows" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">17.7. Platform-Specific Notes</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="supported-platforms.html" title="17.6. Supported Platforms">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="installation.html" title="Chapter 17. Installation from Source Code">Up</a></td><th width="60%" align="center">Chapter 17. Installation from Source Code</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="install-windows.html" title="Chapter 18. Installation from Source Code on Windows">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INSTALLATION-PLATFORM-NOTES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">17.7. Platform-Specific Notes</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="installation-platform-notes.html#INSTALLATION-NOTES-AIX">17.7.1. AIX</a></span></dt><dt><span class="sect2"><a href="installation-platform-notes.html#INSTALLATION-NOTES-CYGWIN">17.7.2. Cygwin</a></span></dt><dt><span class="sect2"><a href="installation-platform-notes.html#INSTALLATION-NOTES-MACOS">17.7.3. macOS</a></span></dt><dt><span class="sect2"><a href="installation-platform-notes.html#INSTALLATION-NOTES-MINGW">17.7.4. MinGW/Native Windows</a></span></dt><dt><span class="sect2"><a href="installation-platform-notes.html#INSTALLATION-NOTES-SOLARIS">17.7.5. Solaris</a></span></dt></dl></div><p>
+   This section documents additional platform-specific issues
+   regarding the installation and setup of PostgreSQL.  Be sure to
+   read the installation instructions, and in
+   particular <a class="xref" href="install-requirements.html" title="17.2. Requirements">Section 17.2</a> as well.  Also,
+   check <a class="xref" href="regress.html" title="Chapter 33. Regression Tests">Chapter 33</a> regarding the
+   interpretation of regression test results.
+  </p><p>
+   Platforms that are not covered here have no known platform-specific
+   installation issues.
+  </p><div class="sect2" id="INSTALLATION-NOTES-AIX"><div class="titlepage"><div><div><h3 class="title">17.7.1. AIX</h3></div></div></div><a id="id-1.6.4.11.4.2" class="indexterm"></a><p>
+    PostgreSQL works on AIX, but AIX versions before about 6.1 have
+    various issues and are not recommended.
+    You can use GCC or the native IBM compiler <code class="command">xlc</code>.
+   </p><div class="sect3" id="id-1.6.4.11.4.4"><div class="titlepage"><div><div><h4 class="title">17.7.1.1. Memory Management</h4></div></div></div><p>
+     AIX can be somewhat peculiar with regards to the way it does
+     memory management.  You can have a server with many multiples of
+     gigabytes of RAM free, but still get out of memory or address
+     space errors when running applications.  One example
+     is loading of extensions failing with unusual errors.
+     For example, running as the owner of the PostgreSQL installation:
+</p><pre class="screen">
+=# CREATE EXTENSION plperl;
+ERROR:  could not load library "/opt/dbs/pgsql/lib/plperl.so": A memory address is not in the address space for the process.
+</pre><p>
+    Running as a non-owner in the group possessing the PostgreSQL
+    installation:
+</p><pre class="screen">
+=# CREATE EXTENSION plperl;
+ERROR:  could not load library "/opt/dbs/pgsql/lib/plperl.so": Bad address
+</pre><p>
+     Another example is out of memory errors in the PostgreSQL server
+     logs, with every memory allocation near or greater than 256 MB
+     failing.
+    </p><p>
+     The overall cause of all these problems is the default bittedness
+     and memory model used by the server process.  By default, all
+     binaries built on AIX are 32-bit.  This does not depend upon
+     hardware type or kernel in use.  These 32-bit processes are
+     limited to 4 GB of memory laid out in 256 MB segments using one
+     of a few models.  The default allows for less than 256 MB in the
+     heap as it shares a single segment with the stack.
+    </p><p>
+     In the case of the <code class="literal">plperl</code> example, above,
+     check your umask and the permissions of the binaries in your
+     PostgreSQL installation.  The binaries involved in that example
+     were 32-bit and installed as mode 750 instead of 755.  Due to the
+     permissions being set in this fashion, only the owner or a member
+     of the possessing group can load the library.  Since it isn't
+     world-readable, the loader places the object into the process'
+     heap instead of the shared library segments where it would
+     otherwise be placed.
+    </p><p>
+     The <span class="quote">“<span class="quote">ideal</span>”</span> solution for this is to use a 64-bit
+     build of PostgreSQL, but that is not always practical, because
+     systems with 32-bit processors can build, but not run, 64-bit
+     binaries.
+    </p><p>
+     If a 32-bit binary is desired, set <code class="symbol">LDR_CNTRL</code> to
+     <code class="literal">MAXDATA=0x<em class="replaceable"><code>n</code></em>0000000</code>,
+     where 1 &lt;= n &lt;= 8, before starting the PostgreSQL server,
+     and try different values and <code class="filename">postgresql.conf</code>
+     settings to find a configuration that works satisfactorily.  This
+     use of <code class="symbol">LDR_CNTRL</code> tells AIX that you want the
+     server to have <code class="symbol">MAXDATA</code> bytes set aside for the
+     heap, allocated in 256 MB segments.  When you find a workable
+     configuration,
+     <code class="command">ldedit</code> can be used to modify the binaries so
+     that they default to using the desired heap size.  PostgreSQL can
+     also be rebuilt, passing <code class="literal">configure
+     LDFLAGS="-Wl,-bmaxdata:0x<em class="replaceable"><code>n</code></em>0000000"</code>
+     to achieve the same effect.
+    </p><p>
+     For a 64-bit build, set <code class="envar">OBJECT_MODE</code> to 64 and
+     pass <code class="literal">CC="gcc -maix64"</code>
+     and <code class="literal">LDFLAGS="-Wl,-bbigtoc"</code>
+     to <code class="command">configure</code>.  (Options for
+    <code class="command">xlc</code> might differ.)  If you omit the export of
+    <code class="envar">OBJECT_MODE</code>, your build may fail with linker errors.  When
+    <code class="envar">OBJECT_MODE</code> is set, it tells AIX's build utilities
+    such as <code class="command">ar</code>, <code class="command">as</code>, and <code class="command">ld</code> what
+    type of objects to default to handling.
+    </p><p>
+     By default, overcommit of paging space can happen.  While we have
+     not seen this occur, AIX will kill processes when it runs out of
+     memory and the overcommit is accessed.  The closest to this that
+     we have seen is fork failing because the system decided that
+     there was not enough memory for another process.  Like many other
+     parts of AIX, the paging space allocation method and
+     out-of-memory kill is configurable on a system- or process-wide
+     basis if this becomes a problem.
+    </p></div></div><div class="sect2" id="INSTALLATION-NOTES-CYGWIN"><div class="titlepage"><div><div><h3 class="title">17.7.2. Cygwin</h3></div></div></div><a id="id-1.6.4.11.5.2" class="indexterm"></a><p>
+    PostgreSQL can be built using Cygwin, a Linux-like environment for
+    Windows, but that method is inferior to the native Windows build
+    <span class="phrase">(see <a class="xref" href="install-windows.html" title="Chapter 18. Installation from Source Code on Windows">Chapter 18</a>)</span> and
+    running a server under Cygwin is no longer recommended.
+   </p><p>
+    When building from source, proceed according to the Unix-style
+    installation procedure (i.e., <code class="literal">./configure;
+    make</code>; etc.), noting the following Cygwin-specific
+    differences:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       Set your path to use the Cygwin bin directory before the
+       Windows utilities.  This will help prevent problems with
+       compilation.
+      </p></li><li class="listitem"><p>
+       The <code class="command">adduser</code> command is not supported; use
+       the appropriate user management application on Windows NT,
+       2000, or XP.  Otherwise, skip this step.
+      </p></li><li class="listitem"><p>
+       The <code class="command">su</code> command is not supported; use ssh to
+       simulate su on Windows NT, 2000, or XP. Otherwise, skip this
+       step.
+      </p></li><li class="listitem"><p>
+       <span class="productname">OpenSSL</span> is not supported.
+      </p></li><li class="listitem"><p>
+       Start <code class="command">cygserver</code> for shared memory support.
+       To do this, enter the command <code class="literal">/usr/sbin/cygserver
+       &amp;</code>.  This program needs to be running anytime you
+       start the PostgreSQL server or initialize a database cluster
+       (<code class="command">initdb</code>).  The
+       default <code class="command">cygserver</code> configuration may need to
+       be changed (e.g., increase <code class="symbol">SEMMNS</code>) to prevent
+       PostgreSQL from failing due to a lack of system resources.
+      </p></li><li class="listitem"><p>
+        Building might fail on some systems where a locale other than
+        C is in use. To fix this, set the locale to C by doing
+        <code class="command">export LANG=C.utf8</code> before building, and then
+        setting it back to the previous setting after you have installed
+        PostgreSQL.
+      </p></li><li class="listitem"><p>
+       The parallel regression tests (<code class="literal">make check</code>)
+       can generate spurious regression test failures due to
+       overflowing the <code class="function">listen()</code> backlog queue
+       which causes connection refused errors or hangs.  You can limit
+       the number of connections using the make
+       variable <code class="varname">MAX_CONNECTIONS</code> thus:
+</p><pre class="programlisting">
+make MAX_CONNECTIONS=5 check
+</pre><p>
+       (On some systems you can have up to about 10 simultaneous
+       connections.)
+      </p></li></ul></div><p>
+   </p><p>
+    It is possible to install <code class="command">cygserver</code> and the
+    PostgreSQL server as Windows NT services.  For information on how
+    to do this, please refer to the <code class="filename">README</code>
+    document included with the PostgreSQL binary package on Cygwin.
+    It is installed in the
+    directory <code class="filename">/usr/share/doc/Cygwin</code>.
+   </p></div><div class="sect2" id="INSTALLATION-NOTES-MACOS"><div class="titlepage"><div><div><h3 class="title">17.7.3. macOS</h3></div></div></div><a id="id-1.6.4.11.6.2" class="indexterm"></a><p>
+    To build <span class="productname">PostgreSQL</span> from source
+    on <span class="productname">macOS</span>, you will need to install Apple's
+    command line developer tools, which can be done by issuing
+</p><pre class="programlisting">
+xcode-select --install
+</pre><p>
+    (note that this will pop up a GUI dialog window for confirmation).
+    You may or may not wish to also install Xcode.
+   </p><p>
+    On recent <span class="productname">macOS</span> releases, it's necessary to
+    embed the <span class="quote">“<span class="quote">sysroot</span>”</span> path in the include switches used to
+    find some system header files.  This results in the outputs of
+    the <span class="application">configure</span> script varying depending on
+    which SDK version was used during <span class="application">configure</span>.
+    That shouldn't pose any problem in simple scenarios, but if you are
+    trying to do something like building an extension on a different machine
+    than the server code was built on, you may need to force use of a
+    different sysroot path.  To do that, set <code class="varname">PG_SYSROOT</code>,
+    for example
+</p><pre class="programlisting">
+make PG_SYSROOT=<em class="replaceable"><code>/desired/path</code></em> all
+</pre><p>
+    To find out the appropriate path on your machine, run
+</p><pre class="programlisting">
+xcrun --show-sdk-path
+</pre><p>
+    Note that building an extension using a different sysroot version than
+    was used to build the core server is not really recommended; in the
+    worst case it could result in hard-to-debug ABI inconsistencies.
+   </p><p>
+    You can also select a non-default sysroot path when configuring, by
+    specifying <code class="varname">PG_SYSROOT</code>
+    to <span class="application">configure</span>:
+</p><pre class="programlisting">
+./configure ... PG_SYSROOT=<em class="replaceable"><code>/desired/path</code></em>
+</pre><p>
+    This would primarily be useful to cross-compile for some other
+    macOS version.  There is no guarantee that the resulting executables
+    will run on the current host.
+   </p><p>
+    To suppress the <code class="option">-isysroot</code> options altogether, use
+</p><pre class="programlisting">
+./configure ... PG_SYSROOT=none
+</pre><p>
+    (any nonexistent pathname will work).  This might be useful if you wish
+    to build with a non-Apple compiler, but beware that that case is not
+    tested or supported by the PostgreSQL developers.
+   </p><p>
+    <span class="productname">macOS</span>'s <span class="quote">“<span class="quote">System Integrity
+    Protection</span>”</span> (SIP) feature breaks <code class="literal">make check</code>,
+    because it prevents passing the needed setting
+    of <code class="literal">DYLD_LIBRARY_PATH</code> down to the executables being
+    tested.  You can work around that by doing <code class="literal">make
+    install</code> before <code class="literal">make check</code>.
+    Most PostgreSQL developers just turn off SIP, though.
+   </p></div><div class="sect2" id="INSTALLATION-NOTES-MINGW"><div class="titlepage"><div><div><h3 class="title">17.7.4. MinGW/Native Windows</h3></div></div></div><a id="id-1.6.4.11.7.2" class="indexterm"></a><p>
+    PostgreSQL for Windows can be built using MinGW, a Unix-like build
+    environment for Microsoft operating systems, or using
+    Microsoft's <span class="productname">Visual C++</span> compiler suite.
+    The MinGW build procedure uses the normal build system described in
+    this chapter; the Visual C++ build works completely differently
+    and is described in <a class="xref" href="install-windows.html" title="Chapter 18. Installation from Source Code on Windows">Chapter 18</a>.
+   </p><p>
+    The native Windows port requires a 32 or 64-bit version of Windows
+    2000 or later. Earlier operating systems do
+    not have sufficient infrastructure (but Cygwin may be used on
+    those).  MinGW, the Unix-like build tools, and MSYS, a collection
+    of Unix tools required to run shell scripts
+    like <code class="command">configure</code>, can be downloaded
+    from <a class="ulink" href="http://www.mingw.org/" target="_top">http://www.mingw.org/</a>.  Neither is
+    required to run the resulting binaries; they are needed only for
+    creating the binaries.
+   </p><p>
+     To build 64 bit binaries using MinGW, install the 64 bit tool set
+     from <a class="ulink" href="https://mingw-w64.org/" target="_top">https://mingw-w64.org/</a>, put its bin
+     directory in the <code class="envar">PATH</code>, and run
+     <code class="command">configure</code> with the
+     <code class="command">--host=x86_64-w64-mingw32</code> option.
+   </p><p>
+    After you have everything installed, it is suggested that you
+    run <span class="application">psql</span>
+    under <code class="command">CMD.EXE</code>, as the MSYS console has
+    buffering issues.
+   </p><div class="sect3" id="WINDOWS-CRASH-DUMPS"><div class="titlepage"><div><div><h4 class="title">17.7.4.1. Collecting Crash Dumps on Windows</h4></div></div></div><p>
+     If PostgreSQL on Windows crashes, it has the ability to generate
+     <span class="productname">minidumps</span> that can be used to track down the cause
+     for the crash, similar to core dumps on Unix. These dumps can be
+     read using the <span class="productname">Windows Debugger Tools</span> or using
+     <span class="productname">Visual Studio</span>. To enable the generation of dumps
+     on Windows, create a subdirectory named <code class="filename">crashdumps</code>
+     inside the cluster data directory. The dumps will then be written
+     into this directory with a unique name based on the identifier of
+     the crashing process and the current time of the crash.
+    </p></div></div><div class="sect2" id="INSTALLATION-NOTES-SOLARIS"><div class="titlepage"><div><div><h3 class="title">17.7.5. Solaris</h3></div></div></div><a id="id-1.6.4.11.8.2" class="indexterm"></a><p>
+    PostgreSQL is well-supported on Solaris.  The more up to date your
+    operating system, the fewer issues you will experience.
+   </p><div class="sect3" id="id-1.6.4.11.8.4"><div class="titlepage"><div><div><h4 class="title">17.7.5.1. Required Tools</h4></div></div></div><p>
+     You can build with either GCC or Sun's compiler suite.  For
+     better code optimization, Sun's compiler is strongly recommended
+     on the SPARC architecture.  If
+     you are using Sun's compiler, be careful not to select
+     <code class="filename">/usr/ucb/cc</code>;
+     use <code class="filename">/opt/SUNWspro/bin/cc</code>.
+    </p><p>
+     You can download Sun Studio
+     from <a class="ulink" href="https://www.oracle.com/technetwork/server-storage/solarisstudio/downloads/" target="_top">https://www.oracle.com/technetwork/server-storage/solarisstudio/downloads/</a>.
+     Many GNU tools are integrated into Solaris 10, or they are
+     present on the Solaris companion CD.  If you need packages for
+     older versions of Solaris, you can find these tools
+     at <a class="ulink" href="http://www.sunfreeware.com" target="_top">http://www.sunfreeware.com</a>.
+     If you prefer
+     sources, look
+     at <a class="ulink" href="https://www.gnu.org/prep/ftp" target="_top">https://www.gnu.org/prep/ftp</a>.
+    </p></div><div class="sect3" id="id-1.6.4.11.8.5"><div class="titlepage"><div><div><h4 class="title">17.7.5.2. configure Complains About a Failed Test Program</h4></div></div></div><p>
+     If <code class="command">configure</code> complains about a failed test
+     program, this is probably a case of the run-time linker being
+     unable to find some library, probably libz, libreadline or some
+     other non-standard library such as libssl.  To point it to the
+     right location, set the <code class="envar">LDFLAGS</code> environment
+     variable on the <code class="command">configure</code> command line, e.g.,
+</p><pre class="programlisting">
+configure ... LDFLAGS="-R /usr/sfw/lib:/opt/sfw/lib:/usr/local/lib"
+</pre><p>
+     See
+     the <span class="citerefentry"><span class="refentrytitle">ld</span></span>
+     man page for more information.
+    </p></div><div class="sect3" id="id-1.6.4.11.8.6"><div class="titlepage"><div><div><h4 class="title">17.7.5.3. Compiling for Optimal Performance</h4></div></div></div><p>
+     On the SPARC architecture, Sun Studio is strongly recommended for
+     compilation.  Try using the <code class="option">-xO5</code> optimization
+     flag to generate significantly faster binaries.  Do not use any
+     flags that modify behavior of floating-point operations
+     and <code class="varname">errno</code> processing (e.g.,
+     <code class="option">-fast</code>).
+    </p><p>
+     If you do not have a reason to use 64-bit binaries on SPARC,
+     prefer the 32-bit version.  The 64-bit operations are slower and
+     64-bit binaries are slower than the 32-bit variants.  On the
+     other hand, 32-bit code on the AMD64 CPU family is not native,
+     so 32-bit code is significantly slower on that CPU family.
+    </p></div><div class="sect3" id="id-1.6.4.11.8.7"><div class="titlepage"><div><div><h4 class="title">17.7.5.4. Using DTrace for Tracing PostgreSQL</h4></div></div></div><p>
+     Yes, using DTrace is possible.  See <a class="xref" href="dynamic-trace.html" title="28.5. Dynamic Tracing">Section 28.5</a> for
+     further information.
+    </p><p>
+     If you see the linking of the <code class="command">postgres</code> executable abort with an
+     error message like:
+</p><pre class="screen">
+Undefined                       first referenced
+ symbol                             in file
+AbortTransaction                    utils/probes.o
+CommitTransaction                   utils/probes.o
+ld: fatal: Symbol referencing errors. No output written to postgres
+collect2: ld returned 1 exit status
+make: *** [postgres] Error 1
+</pre><p>
+     your DTrace installation is too old to handle probes in static
+     functions.  You need Solaris 10u4 or newer to use DTrace.
+    </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="supported-platforms.html" title="17.6. Supported Platforms">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="installation.html" title="Chapter 17. Installation from Source Code">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="install-windows.html" title="Chapter 18. Installation from Source Code on Windows">Next</a></td></tr><tr><td width="40%" align="left" valign="top">17.6. Supported Platforms </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 18. Installation from Source Code on <span xmlns="http://www.w3.org/1999/xhtml" class="productname">Windows</span></td></tr></table></div></body></html>

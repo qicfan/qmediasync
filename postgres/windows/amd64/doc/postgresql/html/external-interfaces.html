@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>H.1. Client Interfaces</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="external-projects.html" title="Appendix H. External Projects" /><link rel="next" href="external-admin-tools.html" title="H.2. Administration Tools" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">H.1. Client Interfaces</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="external-projects.html" title="Appendix H. External Projects">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="external-projects.html" title="Appendix H. External Projects">Up</a></td><th width="60%" align="center">Appendix H. External Projects</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="external-admin-tools.html" title="H.2. Administration Tools">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="EXTERNAL-INTERFACES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">H.1. Client Interfaces</h2></div></div></div><a id="id-1.11.9.3.2" class="indexterm"></a><p>
+   There are only two client interfaces included in the base
+   <span class="productname">PostgreSQL</span> distribution:
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      <a class="link" href="libpq.html" title="Chapter 34. libpq — C Library">libpq</a> is included because it is the
+      primary C language interface, and because many other client interfaces
+      are built on top of it.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">ECPG</a> is included because it depends on the
+      server-side SQL grammar, and is therefore sensitive to changes in
+      <span class="productname">PostgreSQL</span> itself.
+     </p></li></ul></div><p>
+
+   All other language interfaces are external projects and are distributed
+   separately. A
+   <a class="ulink" href="https://wiki.postgresql.org/wiki/List_of_drivers" target="_top">list of language interfaces</a>
+   is maintained on the PostgreSQL wiki. Note that some of these packages are
+   not released under the same license as <span class="productname">PostgreSQL</span>.
+   For more information on each language interface, including licensing terms,
+   refer to its website and documentation.
+  </p><p>
+    <a class="ulink" href="https://wiki.postgresql.org/wiki/List_of_drivers" target="_top">https://wiki.postgresql.org/wiki/List_of_drivers</a>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="external-projects.html" title="Appendix H. External Projects">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="external-projects.html" title="Appendix H. External Projects">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="external-admin-tools.html" title="H.2. Administration Tools">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Appendix H. External Projects </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> H.2. Administration Tools</td></tr></table></div></body></html>

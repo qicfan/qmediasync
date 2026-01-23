@@ -837,12 +837,13 @@ func (sm *ScrapeMediaFile) ExtractSeasonEpisode(sp *ScrapePath) error {
 		helpers.AppLogger.Infof("从文件名中提取到季集: %s %d, %d", sm.VideoFilename, sm.SeasonNumber, sm.EpisodeNumber)
 	}
 	// 提取季相对目录（相对来源目录）
-	relSeasonPath, _ := filepath.Rel(sm.SourcePath, sm.Path)
+	relSeasonPath, _ := filepath.Rel(sm.SourcePath, sm.TvshowPath)
 	// 分割路径
 	pathPartCount := strings.Count(relSeasonPath, string(os.PathSeparator))
 	seasonFolderNumber := helpers.ExtractSeasonsFromSeasonPath(filepath.Base(sm.TvshowPath))
 	helpers.AppLogger.Infof("季相对目录: %s", relSeasonPath)
-	if seasonFolderNumber >= 0 && pathPartCount == 2 {
+	helpers.AppLogger.Infof("识别到的季编号：%d", seasonFolderNumber)
+	if seasonFolderNumber >= 0 && pathPartCount >= 2 {
 		// 有季文件夹
 		sm.Path = sm.TvshowPath
 		sm.PathId = sm.TvshowPathId

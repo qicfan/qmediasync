@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>21.10. LDAP Authentication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="auth-peer.html" title="21.9. Peer Authentication" /><link rel="next" href="auth-radius.html" title="21.11. RADIUS Authentication" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">21.10. LDAP Authentication</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="auth-peer.html" title="21.9. Peer Authentication">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><th width="60%" align="center">Chapter 21. Client Authentication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="auth-radius.html" title="21.11. RADIUS Authentication">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="AUTH-LDAP"><div class="titlepage"><div><div><h2 class="title" style="clear: both">21.10. LDAP Authentication</h2></div></div></div><a id="id-1.6.8.17.2" class="indexterm"></a><p>
+    This authentication method operates similarly to
+    <code class="literal">password</code> except that it uses LDAP
+    as the password verification method. LDAP is used only to validate
+    the user name/password pairs. Therefore the user must already
+    exist in the database before LDAP can be used for
+    authentication.
+   </p><p>
+    LDAP authentication can operate in two modes. In the first mode,
+    which we will call the simple bind mode,
+    the server will bind to the distinguished name constructed as
+    <em class="replaceable"><code>prefix</code></em> <em class="replaceable"><code>username</code></em> <em class="replaceable"><code>suffix</code></em>.
+    Typically, the <em class="replaceable"><code>prefix</code></em> parameter is used to specify
+    <code class="literal">cn=</code>, or <em class="replaceable"><code>DOMAIN</code></em><code class="literal">\</code> in an Active
+    Directory environment.  <em class="replaceable"><code>suffix</code></em> is used to specify the
+    remaining part of the DN in a non-Active Directory environment.
+   </p><p>
+    In the second mode, which we will call the search+bind mode,
+    the server first binds to the LDAP directory with
+    a fixed user name and password, specified with <em class="replaceable"><code>ldapbinddn</code></em>
+    and <em class="replaceable"><code>ldapbindpasswd</code></em>, and performs a search for the user trying
+    to log in to the database. If no user and password is configured, an
+    anonymous bind will be attempted to the directory. The search will be
+    performed over the subtree at <em class="replaceable"><code>ldapbasedn</code></em>, and will try to
+    do an exact match of the attribute specified in
+    <em class="replaceable"><code>ldapsearchattribute</code></em>.
+    Once the user has been found in
+    this search, the server disconnects and re-binds to the directory as
+    this user, using the password specified by the client, to verify that the
+    login is correct. This mode is the same as that used by LDAP authentication
+    schemes in other software, such as Apache <code class="literal">mod_authnz_ldap</code> and <code class="literal">pam_ldap</code>.
+    This method allows for significantly more flexibility
+    in where the user objects are located in the directory, but will cause
+    two separate connections to the LDAP server to be made.
+   </p><p>
+    The following configuration options are used in both modes:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">ldapserver</code></span></dt><dd><p>
+        Names or IP addresses of LDAP servers to connect to. Multiple
+        servers may be specified, separated by spaces.
+       </p></dd><dt><span class="term"><code class="literal">ldapport</code></span></dt><dd><p>
+        Port number on LDAP server to connect to. If no port is specified,
+        the LDAP library's default port setting will be used.
+       </p></dd><dt><span class="term"><code class="literal">ldapscheme</code></span></dt><dd><p>
+        Set to <code class="literal">ldaps</code> to use LDAPS.  This is a non-standard
+        way of using LDAP over SSL, supported by some LDAP server
+        implementations.  See also the <code class="literal">ldaptls</code> option for
+        an alternative.
+       </p></dd><dt><span class="term"><code class="literal">ldaptls</code></span></dt><dd><p>
+        Set to 1 to make the connection between PostgreSQL and the LDAP server
+        use TLS encryption.  This uses the <code class="literal">StartTLS</code>
+        operation per <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc4513" target="_top">RFC 4513</a>.
+        See also the <code class="literal">ldapscheme</code> option for an alternative.
+       </p></dd></dl></div><p>
+   </p><p>
+    Note that using <code class="literal">ldapscheme</code> or
+    <code class="literal">ldaptls</code> only encrypts the traffic between the
+    PostgreSQL server and the LDAP server.  The connection between the
+    PostgreSQL server and the PostgreSQL client will still be unencrypted
+    unless SSL is used there as well.
+   </p><p>
+    The following options are used in simple bind mode only:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">ldapprefix</code></span></dt><dd><p>
+        String to prepend to the user name when forming the DN to bind as,
+        when doing simple bind authentication.
+       </p></dd><dt><span class="term"><code class="literal">ldapsuffix</code></span></dt><dd><p>
+        String to append to the user name when forming the DN to bind as,
+        when doing simple bind authentication.
+       </p></dd></dl></div><p>
+   </p><p>
+    The following options are used in search+bind mode only:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">ldapbasedn</code></span></dt><dd><p>
+        Root DN to begin the search for the user in, when doing search+bind
+        authentication.
+       </p></dd><dt><span class="term"><code class="literal">ldapbinddn</code></span></dt><dd><p>
+        DN of user to bind to the directory with to perform the search when
+        doing search+bind authentication.
+       </p></dd><dt><span class="term"><code class="literal">ldapbindpasswd</code></span></dt><dd><p>
+        Password for user to bind to the directory with to perform the search
+        when doing search+bind authentication.
+       </p></dd><dt><span class="term"><code class="literal">ldapsearchattribute</code></span></dt><dd><p>
+         Attribute to match against the user name in the search when doing
+         search+bind authentication.  If no attribute is specified, the
+         <code class="literal">uid</code> attribute will be used.
+        </p></dd><dt><span class="term"><code class="literal">ldapsearchfilter</code></span></dt><dd><p>
+         The search filter to use when doing search+bind authentication.
+         Occurrences of <code class="literal">$username</code> will be replaced with the
+         user name.  This allows for more flexible search filters than
+         <code class="literal">ldapsearchattribute</code>.
+        </p></dd><dt><span class="term"><code class="literal">ldapurl</code></span></dt><dd><p>
+         An <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc4516" target="_top">RFC 4516</a>
+         LDAP URL.  This is an alternative way to write some of the
+         other LDAP options in a more compact and standard form.  The format is
+</p><pre class="synopsis">
+ldap[s]://<em class="replaceable"><code>host</code></em>[:<em class="replaceable"><code>port</code></em>]/<em class="replaceable"><code>basedn</code></em>[?[<em class="replaceable"><code>attribute</code></em>][?[<em class="replaceable"><code>scope</code></em>][?[<em class="replaceable"><code>filter</code></em>]]]]
+</pre><p>
+         <em class="replaceable"><code>scope</code></em> must be one
+         of <code class="literal">base</code>, <code class="literal">one</code>, <code class="literal">sub</code>,
+         typically the last.  (The default is <code class="literal">base</code>, which
+         is normally not useful in this application.)  <em class="replaceable"><code>attribute</code></em> can
+         nominate a single attribute, in which case it is used as a value for
+         <code class="literal">ldapsearchattribute</code>.  If
+         <em class="replaceable"><code>attribute</code></em> is empty then
+         <em class="replaceable"><code>filter</code></em> can be used as a value for
+         <code class="literal">ldapsearchfilter</code>.
+        </p><p>
+         The URL scheme <code class="literal">ldaps</code> chooses the LDAPS method for
+         making LDAP connections over SSL, equivalent to using
+         <code class="literal">ldapscheme=ldaps</code>.  To use encrypted LDAP
+         connections using the <code class="literal">StartTLS</code> operation, use the
+         normal URL scheme <code class="literal">ldap</code> and specify the
+         <code class="literal">ldaptls</code> option in addition to
+         <code class="literal">ldapurl</code>.
+        </p><p>
+         For non-anonymous binds, <code class="literal">ldapbinddn</code>
+         and <code class="literal">ldapbindpasswd</code> must be specified as separate
+         options.
+        </p><p>
+         LDAP URLs are currently only supported with
+         <span class="productname">OpenLDAP</span>, not on Windows.
+        </p></dd></dl></div><p>
+   </p><p>
+    It is an error to mix configuration options for simple bind with options
+    for search+bind.
+   </p><p>
+    When using search+bind mode, the search can be performed using a single
+    attribute specified with <code class="literal">ldapsearchattribute</code>, or using
+    a custom search filter specified with
+    <code class="literal">ldapsearchfilter</code>.
+    Specifying <code class="literal">ldapsearchattribute=foo</code> is equivalent to
+    specifying <code class="literal">ldapsearchfilter="(foo=$username)"</code>.  If neither
+    option is specified the default is
+    <code class="literal">ldapsearchattribute=uid</code>.
+   </p><p>
+     If <span class="productname">PostgreSQL</span> was compiled with
+     <span class="productname">OpenLDAP</span> as the LDAP client library, the
+     <code class="literal">ldapserver</code> setting may be omitted.  In that case, a
+     list of host names and ports is looked up via
+     <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc2782" target="_top">RFC 2782</a> DNS SRV records.
+     The name <code class="literal">_ldap._tcp.DOMAIN</code> is looked up, where
+     <code class="literal">DOMAIN</code> is extracted from <code class="literal">ldapbasedn</code>.
+   </p><p>
+    Here is an example for a simple-bind LDAP configuration:
+</p><pre class="programlisting">
+host ... ldap ldapserver=ldap.example.net ldapprefix="cn=" ldapsuffix=", dc=example, dc=net"
+</pre><p>
+    When a connection to the database server as database
+    user <code class="literal">someuser</code> is requested, PostgreSQL will attempt to
+    bind to the LDAP server using the DN <code class="literal">cn=someuser, dc=example,
+    dc=net</code> and the password provided by the client.  If that connection
+    succeeds, the database access is granted.
+   </p><p>
+    Here is an example for a search+bind configuration:
+</p><pre class="programlisting">
+host ... ldap ldapserver=ldap.example.net ldapbasedn="dc=example, dc=net" ldapsearchattribute=uid
+</pre><p>
+    When a connection to the database server as database
+    user <code class="literal">someuser</code> is requested, PostgreSQL will attempt to
+    bind anonymously (since <code class="literal">ldapbinddn</code> was not specified) to
+    the LDAP server, perform a search for <code class="literal">(uid=someuser)</code>
+    under the specified base DN.  If an entry is found, it will then attempt to
+    bind using that found information and the password supplied by the client.
+    If that second connection succeeds, the database access is granted.
+   </p><p>
+    Here is the same search+bind configuration written as a URL:
+</p><pre class="programlisting">
+host ... ldap ldapurl="ldap://ldap.example.net/dc=example,dc=net?uid?sub"
+</pre><p>
+    Some other software that supports authentication against LDAP uses the
+    same URL format, so it will be easier to share the configuration.
+   </p><p>
+    Here is an example for a search+bind configuration that uses
+    <code class="literal">ldapsearchfilter</code> instead of
+    <code class="literal">ldapsearchattribute</code> to allow authentication by
+    user ID or email address:
+</p><pre class="programlisting">
+host ... ldap ldapserver=ldap.example.net ldapbasedn="dc=example, dc=net" ldapsearchfilter="(|(uid=$username)(mail=$username))"
+</pre><p>
+   </p><p>
+    Here is an example for a search+bind configuration that uses DNS SRV
+    discovery to find the host name(s) and port(s) for the LDAP service for the
+    domain name <code class="literal">example.net</code>:
+</p><pre class="programlisting">
+host ... ldap ldapbasedn="dc=example,dc=net"
+</pre><p>
+   </p><div class="tip"><h3 class="title">Tip</h3><p>
+     Since LDAP often uses commas and spaces to separate the different
+     parts of a DN, it is often necessary to use double-quoted parameter
+     values when configuring LDAP options, as shown in the examples.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="auth-peer.html" title="21.9. Peer Authentication">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="auth-radius.html" title="21.11. RADIUS Authentication">Next</a></td></tr><tr><td width="40%" align="left" valign="top">21.9. Peer Authentication </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.11. RADIUS Authentication</td></tr></table></div></body></html>

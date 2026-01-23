@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Appendix D. SQL Conformance</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-keywords-appendix.html" title="Appendix C. SQL Key Words" /><link rel="next" href="features-sql-standard.html" title="D.1. Supported Features" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">Appendix D. SQL Conformance</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-keywords-appendix.html" title="Appendix C. SQL Key Words">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="appendixes.html" title="Part VIII. Appendixes">Up</a></td><th width="60%" align="center">Part VIII. Appendixes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="features-sql-standard.html" title="D.1. Supported Features">Next</a></td></tr></table><hr></hr></div><div class="appendix" id="FEATURES"><div class="titlepage"><div><div><h2 class="title">Appendix D. SQL Conformance</h2></div></div></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="sect1"><a href="features-sql-standard.html">D.1. Supported Features</a></span></dt><dt><span class="sect1"><a href="unsupported-features-sql-standard.html">D.2. Unsupported Features</a></span></dt><dt><span class="sect1"><a href="xml-limits-conformance.html">D.3. XML Limits and Conformance to SQL/XML</a></span></dt><dd><dl><dt><span class="sect2"><a href="xml-limits-conformance.html#FUNCTIONS-XML-LIMITS-XPATH1">D.3.1. Queries Are Restricted to XPath 1.0</a></span></dt><dt><span class="sect2"><a href="xml-limits-conformance.html#FUNCTIONS-XML-LIMITS-POSTGRESQL">D.3.2. Incidental Limits of the Implementation</a></span></dt></dl></dd></dl></div><p>
+  This section attempts to outline to what extent
+  <span class="productname">PostgreSQL</span> conforms to the current SQL
+  standard.  The following information is not a full statement of
+  conformance, but it presents the main topics in as much detail as is
+  both reasonable and useful for users.
+ </p><p>
+  The formal name of the SQL standard is ISO/IEC 9075 <span class="quote">“<span class="quote">Database
+  Language SQL</span>”</span>.  A revised version of the standard is released
+  from time to time; the most recent update appearing in 2016.
+  The 2016 version is referred to as ISO/IEC 9075:2016, or simply as SQL:2016.
+  The versions prior to that were SQL:2011, SQL:2008, SQL:2006, SQL:2003,
+  SQL:1999, and SQL-92.  Each version
+  replaces the previous one, so claims of conformance to earlier
+  versions have no official merit.
+  <span class="productname">PostgreSQL</span> development aims for
+  conformance with the latest official version of the standard where
+  such conformance does not contradict traditional features or common
+  sense.  Many of the features required by the SQL
+  standard are supported, though sometimes with slightly differing
+  syntax or function.  Further moves towards conformance can be
+  expected over time.
+ </p><p>
+  <acronym class="acronym">SQL-92</acronym> defined three feature sets for
+  conformance: Entry, Intermediate, and Full.  Most database
+  management systems claiming <acronym class="acronym">SQL</acronym> standard
+  conformance were conforming at only the Entry level, since the
+  entire set of features in the Intermediate and Full levels was
+  either too voluminous or in conflict with legacy behaviors.
+ </p><p>
+  Starting with <acronym class="acronym">SQL:1999</acronym>, the SQL standard defines
+  a large set of individual features rather than the ineffectively
+  broad three levels found in <acronym class="acronym">SQL-92</acronym>.  A large
+  subset of these features represents the <span class="quote">“<span class="quote">Core</span>”</span>
+  features, which every conforming SQL implementation must supply.
+  The rest of the features are purely optional.
+ </p><p>
+  The standard versions beginning with <acronym class="acronym">SQL:2003</acronym>
+  are also split into a number
+  of parts.  Each is known by a shorthand name.  Note that these parts
+  are not consecutively numbered.
+
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>ISO/IEC 9075-1 Framework (SQL/Framework)</p><a id="id-1.11.5.6.2.1.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-2 Foundation (SQL/Foundation)</p><a id="id-1.11.5.6.2.2.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-3 Call Level Interface (SQL/CLI)</p><a id="id-1.11.5.6.2.3.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-4 Persistent Stored Modules (SQL/PSM)</p><a id="id-1.11.5.6.2.4.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-9 Management of External Data (SQL/MED)</p><a id="id-1.11.5.6.2.5.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-10 Object Language Bindings (SQL/OLB)</p><a id="id-1.11.5.6.2.6.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-11 Information and Definition Schemas (SQL/Schemata)</p><a id="id-1.11.5.6.2.7.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-13 Routines and Types using the Java Language (SQL/JRT)</p><a id="id-1.11.5.6.2.8.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-14 XML-related specifications (SQL/XML)</p><a id="id-1.11.5.6.2.9.2" class="indexterm"></a></li><li class="listitem"><p>ISO/IEC 9075-15 Multi-dimensional arrays (SQL/MDA)</p><a id="id-1.11.5.6.2.10.2" class="indexterm"></a></li></ul></div><p>
+ </p><p>
+  The <span class="productname">PostgreSQL</span> core covers parts 1, 2, 9,
+  11, and 14.  Part 3 is covered by the ODBC driver, and part 13 is
+  covered by the PL/Java plug-in, but exact conformance is currently
+  not being verified for these components.  There are currently no
+  implementations of parts 4, 10, and 15
+  for <span class="productname">PostgreSQL</span>.
+ </p><p>
+  PostgreSQL supports most of the major features of SQL:2016.  Out of
+  177 mandatory features required for full Core conformance,
+  PostgreSQL conforms to at least 170.  In addition, there is a long
+  list of supported optional features.  It might be worth noting that at
+  the time of writing, no current version of any database management
+  system claims full conformance to Core SQL:2016.
+ </p><p>
+  In the following two sections, we provide a list of those features
+  that <span class="productname">PostgreSQL</span> supports, followed by a
+  list of the features defined in <acronym class="acronym">SQL:2016</acronym> which
+  are not yet supported in <span class="productname">PostgreSQL</span>.
+  Both of these lists are approximate: There might be minor details that
+  are nonconforming for a feature that is listed as supported, and
+  large parts of an unsupported feature might in fact be implemented.
+  The main body of the documentation always contains the most accurate
+  information about what does and does not work.
+ </p><div class="note"><h3 class="title">Note</h3><p>
+   Feature codes containing a hyphen are subfeatures.  Therefore, if a
+   particular subfeature is not supported, the main feature is listed
+   as unsupported even if some other subfeatures are supported.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-keywords-appendix.html" title="Appendix C. SQL Key Words">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="appendixes.html" title="Part VIII. Appendixes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="features-sql-standard.html" title="D.1. Supported Features">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Appendix C. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> Key Words </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> D.1. Supported Features</td></tr></table></div></body></html>

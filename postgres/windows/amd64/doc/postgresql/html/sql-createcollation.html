@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE COLLATION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createcast.html" title="CREATE CAST" /><link rel="next" href="sql-createconversion.html" title="CREATE CONVERSION" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE COLLATION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createcast.html" title="CREATE CAST">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createconversion.html" title="CREATE CONVERSION">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATECOLLATION"><div class="titlepage"></div><a id="id-1.9.3.59.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE COLLATION</span></h2><p>CREATE COLLATION — define a new collation</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE COLLATION [ IF NOT EXISTS ] <em class="replaceable"><code>name</code></em> (
+    [ LOCALE = <em class="replaceable"><code>locale</code></em>, ]
+    [ LC_COLLATE = <em class="replaceable"><code>lc_collate</code></em>, ]
+    [ LC_CTYPE = <em class="replaceable"><code>lc_ctype</code></em>, ]
+    [ PROVIDER = <em class="replaceable"><code>provider</code></em>, ]
+    [ DETERMINISTIC = <em class="replaceable"><code>boolean</code></em>, ]
+    [ VERSION = <em class="replaceable"><code>version</code></em> ]
+)
+CREATE COLLATION [ IF NOT EXISTS ] <em class="replaceable"><code>name</code></em> FROM <em class="replaceable"><code>existing_collation</code></em>
+</pre></div><div class="refsect1" id="SQL-CREATECOLLATION-DESCRIPTION"><h2>Description</h2><p>
+   <code class="command">CREATE COLLATION</code> defines a new collation using
+   the specified operating system locale settings,
+   or by copying an existing collation.
+ </p><p>
+   To be able to create a collation, you must
+   have <code class="literal">CREATE</code> privilege on the destination schema.
+  </p></div><div class="refsect1" id="id-1.9.3.59.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">IF NOT EXISTS</code></span></dt><dd><p>
+       Do not throw an error if a collation with the same name already exists.
+       A notice is issued in this case. Note that there is no guarantee that
+       the existing collation is anything like the one that would have been created.
+      </p></dd><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+       The name of the collation. The collation name can be
+       schema-qualified. If it is not, the collation is defined in the
+       current schema. The collation name must be unique within that
+       schema.  (The system catalogs can contain collations with the
+       same name for other encodings, but these are ignored if the
+       database encoding does not match.)
+      </p></dd><dt><span class="term"><em class="replaceable"><code>locale</code></em></span></dt><dd><p>
+       This is a shortcut for setting <code class="symbol">LC_COLLATE</code>
+       and <code class="symbol">LC_CTYPE</code> at once.  If you specify this,
+       you cannot specify either of those parameters.
+      </p></dd><dt><span class="term"><em class="replaceable"><code>lc_collate</code></em></span></dt><dd><p>
+       Use the specified operating system locale for
+       the <code class="symbol">LC_COLLATE</code> locale category.
+      </p></dd><dt><span class="term"><em class="replaceable"><code>lc_ctype</code></em></span></dt><dd><p>
+       Use the specified operating system locale for
+       the <code class="symbol">LC_CTYPE</code> locale category.
+      </p></dd><dt><span class="term"><em class="replaceable"><code>provider</code></em></span></dt><dd><p>
+       Specifies the provider to use for locale services associated with this
+       collation.  Possible values
+       are: <code class="literal">icu</code>,<a id="id-1.9.3.59.6.2.6.2.1.2" class="indexterm"></a>
+       <code class="literal">libc</code>.
+       <code class="literal">libc</code> is the default.
+       The available choices depend on the operating system and build options.
+      </p></dd><dt><span class="term"><code class="literal">DETERMINISTIC</code></span></dt><dd><p>
+       Specifies whether the collation should use deterministic comparisons.
+       The default is true.  A deterministic comparison considers strings that
+       are not byte-wise equal to be unequal even if they are considered
+       logically equal by the comparison.  PostgreSQL breaks ties using a
+       byte-wise comparison.  Comparison that is not deterministic can make the
+       collation be, say, case- or accent-insensitive.  For that, you need to
+       choose an appropriate <code class="literal">LOCALE</code> setting
+       <span class="emphasis"><em>and</em></span> set the collation to not deterministic here.
+      </p><p>
+       Nondeterministic collations are only supported with the ICU provider.
+      </p></dd><dt><span class="term"><em class="replaceable"><code>version</code></em></span></dt><dd><p>
+       Specifies the version string to store with the collation.  Normally,
+       this should be omitted, which will cause the version to be computed
+       from the actual version of the collation as provided by the operating
+       system.  This option is intended to be used
+       by <code class="command">pg_upgrade</code> for copying the version from an
+       existing installation.
+      </p><p>
+       See also <a class="xref" href="sql-altercollation.html" title="ALTER COLLATION"><span class="refentrytitle">ALTER COLLATION</span></a> for how to handle
+       collation version mismatches.
+      </p></dd><dt><span class="term"><em class="replaceable"><code>existing_collation</code></em></span></dt><dd><p>
+       The name of an existing collation to copy.  The new collation
+       will have the same properties as the existing one, but it
+       will be an independent object.
+      </p></dd></dl></div></div><div class="refsect1" id="SQL-CREATECOLLATION-NOTES"><h2>Notes</h2><p>
+   <code class="command">CREATE COLLATION</code> takes a <code class="literal">SHARE ROW
+   EXCLUSIVE</code> lock, which is self-conflicting, on the
+   <code class="structname">pg_collation</code> system catalog, so only one
+   <code class="command">CREATE COLLATION</code> command can run at a time.
+  </p><p>
+   Use <code class="command">DROP COLLATION</code> to remove user-defined collations.
+  </p><p>
+   See <a class="xref" href="collation.html#COLLATION-CREATE" title="24.2.2.3. Creating New Collation Objects">Section 24.2.2.3</a> for more information on how to create collations.
+  </p><p>
+   When using the <code class="literal">libc</code> collation provider, the locale must
+   be applicable to the current database encoding.
+   See <a class="xref" href="sql-createdatabase.html" title="CREATE DATABASE"><span class="refentrytitle">CREATE DATABASE</span></a> for the precise rules.
+  </p></div><div class="refsect1" id="SQL-CREATECOLLATION-EXAMPLES"><h2>Examples</h2><p>
+   To create a collation from the operating system locale
+   <code class="literal">fr_FR.utf8</code>
+   (assuming the current database encoding is <code class="literal">UTF8</code>):
+</p><pre class="programlisting">
+CREATE COLLATION french (locale = 'fr_FR.utf8');
+</pre><p>
+  </p><p>
+   To create a collation using the ICU provider using German phone book sort order:
+</p><pre class="programlisting">
+CREATE COLLATION german_phonebook (provider = icu, locale = 'de-u-co-phonebk');
+</pre><p>
+  </p><p>
+   To create a collation from an existing collation:
+</p><pre class="programlisting">
+CREATE COLLATION german FROM "de_DE";
+</pre><p>
+   This can be convenient to be able to use operating-system-independent
+   collation names in applications.
+  </p></div><div class="refsect1" id="SQL-CREATECOLLATION-COMPAT"><h2>Compatibility</h2><p>
+   There is a <code class="command">CREATE COLLATION</code> statement in the SQL
+   standard, but it is limited to copying an existing collation.  The
+   syntax to create a new collation is
+   a <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="SQL-CREATECOLLATION-SEEALSO"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-altercollation.html" title="ALTER COLLATION"><span class="refentrytitle">ALTER COLLATION</span></a>, <a class="xref" href="sql-dropcollation.html" title="DROP COLLATION"><span class="refentrytitle">DROP COLLATION</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createcast.html" title="CREATE CAST">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createconversion.html" title="CREATE CONVERSION">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE CAST </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE CONVERSION</td></tr></table></div></body></html>

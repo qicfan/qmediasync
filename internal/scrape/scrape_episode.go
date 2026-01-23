@@ -3,8 +3,10 @@ package scrape
 import (
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
+	"Q115-STRM/internal/notificationmanager"
 	"Q115-STRM/internal/tmdb"
 	"Q115-STRM/internal/v115open"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -198,7 +200,20 @@ func (t *tvShowScrapeImpl) FinishEpisode(mediaFile *models.ScrapeMediaFile) {
 	// 发送通知
 	helpers.AppLogger.Infof("电视剧 %s 刮削整理完成， 新路径：%s  季集：%s", mediaFile.Name, mediaFile.NewPathName, seasonStr)
 	if mediaFile.Media != nil {
-		helpers.GlobalNotificationManager.SendRenamedNotification(mediaFile.Media.PosterPath, mediaFile.Name, mediaFile.CategoryName, "电视剧", mediaFile.Resolution, seasonStr)
+		ctx := context.Background()
+		notif := &models.Notification{
+			Type:      models.ScrapeFinished,
+			Title:     fmt.Sprintf("✅ %s 刮削整理完成", mediaFile.Name),
+			Content:   fmt.Sprintf("📊 类型: 电视剧, 类别: %s, 分辨率: %s\n📺 季集: %s\n⏰ 时间: %s", mediaFile.CategoryName, mediaFile.Resolution, seasonStr, time.Now().Format("2006-01-02 15:04:05")),
+			Image:     mediaFile.Media.PosterPath,
+			Timestamp: time.Now(),
+			Priority:  models.NormalPriority,
+		}
+		if notificationmanager.GlobalEnhancedNotificationManager != nil {
+			if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+				helpers.AppLogger.Errorf("发送电视剧刮削完成通知失败: %v", err)
+			}
+		}
 	}
 	// 删除临时目录
 	if mediaFile.SourceType == models.SourceTypeLocal {
@@ -259,9 +274,17 @@ func (t *tvShowScrapeImpl) GenerateNewEpisodeName(mediaFile *models.ScrapeMediaF
 }
 
 func (t *tvShowScrapeImpl) GenerateEpisodeNfo(mediaFile *models.ScrapeMediaFile) error {
+	has, result := helpers.ChineseToPinyin(mediaFile.MediaEpisode.EpisodeName)
+	originalTitle := mediaFile.MediaEpisode.EpisodeName
+	SortTitle := mediaFile.MediaEpisode.EpisodeName
+	if has {
+		originalTitle = fmt.Sprintf("%s #(%s)", mediaFile.MediaEpisode.EpisodeName, result)
+		SortTitle = fmt.Sprintf("%s #(%s)", result, mediaFile.MediaEpisode.EpisodeName)
+	}
 	episode := &helpers.TVShowEpisode{
 		Title:         mediaFile.MediaEpisode.EpisodeName,
-		OriginalTitle: mediaFile.MediaEpisode.EpisodeName,
+		OriginalTitle: originalTitle,
+		SortTitle:     SortTitle,
 		Premiered:     mediaFile.MediaEpisode.ReleaseDate,
 		Releasedate:   mediaFile.MediaEpisode.ReleaseDate,
 		Year:          mediaFile.MediaEpisode.Year,

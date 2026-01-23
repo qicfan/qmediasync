@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SET SESSION AUTHORIZATION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-set-role.html" title="SET ROLE" /><link rel="next" href="sql-set-transaction.html" title="SET TRANSACTION" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SET SESSION AUTHORIZATION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-set-role.html" title="SET ROLE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-set-transaction.html" title="SET TRANSACTION">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-SET-SESSION-AUTHORIZATION"><div class="titlepage"></div><a id="id-1.9.3.176.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SET SESSION AUTHORIZATION</span></h2><p>SET SESSION AUTHORIZATION — set the session user identifier and the current user identifier of the current session</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+SET [ SESSION | LOCAL ] SESSION AUTHORIZATION <em class="replaceable"><code>user_name</code></em>
+SET [ SESSION | LOCAL ] SESSION AUTHORIZATION DEFAULT
+RESET SESSION AUTHORIZATION
+</pre></div><div class="refsect1" id="id-1.9.3.176.5"><h2>Description</h2><p>
+   This command sets the session user identifier and the current user
+   identifier of the current SQL session to be <em class="replaceable"><code>user_name</code></em>.  The user name can be
+   written as either an identifier or a string literal.  Using this
+   command, it is possible, for example, to temporarily become an
+   unprivileged user and later switch back to being a superuser.
+  </p><p>
+   The session user identifier is initially set to be the (possibly
+   authenticated) user name provided by the client.  The current user
+   identifier is normally equal to the session user identifier, but
+   might change temporarily in the context of <code class="literal">SECURITY DEFINER</code>
+   functions and similar mechanisms; it can also be changed by
+   <a class="link" href="sql-set-role.html" title="SET ROLE"><code class="command">SET ROLE</code></a>.
+   The current user identifier is relevant for permission checking.
+  </p><p>
+   The session user identifier can be changed only if the initial session
+   user (the <em class="firstterm">authenticated user</em>) had the
+   superuser privilege.  Otherwise, the command is accepted only if it
+   specifies the authenticated user name.
+  </p><p>
+   The <code class="literal">SESSION</code> and <code class="literal">LOCAL</code> modifiers act the same
+   as for the regular <a class="link" href="sql-set.html" title="SET"><code class="command">SET</code></a>
+   command.
+  </p><p>
+   The <code class="literal">DEFAULT</code> and <code class="literal">RESET</code> forms reset the session
+   and current user identifiers to be the originally authenticated user
+   name.  These forms can be executed by any user.
+  </p></div><div class="refsect1" id="id-1.9.3.176.6"><h2>Notes</h2><p>
+   <code class="command">SET SESSION AUTHORIZATION</code> cannot be used within a
+   <code class="literal">SECURITY DEFINER</code> function.
+  </p></div><div class="refsect1" id="id-1.9.3.176.7"><h2>Examples</h2><pre class="programlisting">
+SELECT SESSION_USER, CURRENT_USER;
+
+ session_user | current_user 
+--------------+--------------
+ peter        | peter
+
+SET SESSION AUTHORIZATION 'paul';
+
+SELECT SESSION_USER, CURRENT_USER;
+
+ session_user | current_user 
+--------------+--------------
+ paul         | paul
+</pre></div><div class="refsect1" id="id-1.9.3.176.8"><h2>Compatibility</h2><p>
+   The SQL standard allows some other expressions to appear in place
+   of the literal <em class="replaceable"><code>user_name</code></em>, but these options
+   are not important in practice.  <span class="productname">PostgreSQL</span>
+   allows identifier syntax (<code class="literal">"<em class="replaceable"><code>username</code></em>"</code>), which SQL
+   does not.  SQL does not allow this command during a transaction;
+   <span class="productname">PostgreSQL</span> does not make this
+   restriction because there is no reason to.
+   The <code class="literal">SESSION</code> and <code class="literal">LOCAL</code> modifiers are a
+   <span class="productname">PostgreSQL</span> extension, as is the
+   <code class="literal">RESET</code> syntax.
+  </p><p>
+   The privileges necessary to execute this command are left
+   implementation-defined by the standard.
+  </p></div><div class="refsect1" id="id-1.9.3.176.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-set-role.html" title="SET ROLE"><span class="refentrytitle">SET ROLE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-set-role.html" title="SET ROLE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-set-transaction.html" title="SET TRANSACTION">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SET ROLE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SET TRANSACTION</td></tr></table></div></body></html>

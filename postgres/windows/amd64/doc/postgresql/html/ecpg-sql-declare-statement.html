@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>DECLARE STATEMENT</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-sql-declare.html" title="DECLARE" /><link rel="next" href="ecpg-sql-describe.html" title="DESCRIBE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">DECLARE STATEMENT</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-sql-declare.html" title="DECLARE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><th width="60%" align="center">36.14. Embedded SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-sql-describe.html" title="DESCRIBE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="ECPG-SQL-DECLARE-STATEMENT"><div class="titlepage"></div><div class="refnamediv"><h2>DECLARE STATEMENT</h2><p>DECLARE STATEMENT — declare SQL statement identifier</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+EXEC SQL [ AT <em class="replaceable"><code>connection_name</code></em> ] DECLARE <em class="replaceable"><code>statement_name</code></em> STATEMENT
+</pre></div><div class="refsect1" id="id-1.7.5.20.7.3"><h2>Description</h2><p>
+     <code class="command">DECLARE STATEMENT</code> declares an SQL statement identifier.
+     SQL statement identifier can be associated with the connection.
+     When the identifier is used by dynamic SQL statements, the statements
+     are executed using the associated connection.
+     The namespace of the declaration is the precompile unit, and multiple
+     declarations to the same SQL statement identifier are not allowed.
+     Note that if the precompiler runs in Informix compatibility mode and
+     some SQL statement is declared, "database" can not be used as a cursor
+     name.
+    </p></div><div class="refsect1" id="id-1.7.5.20.7.4"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>connection_name</code></em></span></dt><dd><p>
+        A database connection name established by the <code class="command">CONNECT</code> command.
+       </p><p>
+        AT clause can be omitted, but such statement has no meaning.
+       </p></dd></dl></div><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>statement_name</code></em></span></dt><dd><p>
+        The name of an SQL statement identifier, either as an SQL identifier or a host variable.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.7.5.20.7.5"><h2>Notes</h2><p>
+     This association is valid only if the declaration is physically placed on top of a dynamic statement.
+    </p></div><div class="refsect1" id="id-1.7.5.20.7.6"><h2>Examples</h2><pre class="programlisting">
+EXEC SQL CONNECT TO postgres AS con1;
+EXEC SQL AT con1 DECLARE sql_stmt STATEMENT;
+EXEC SQL DECLARE cursor_name CURSOR FOR sql_stmt;
+EXEC SQL PREPARE sql_stmt FROM :dyn_string;
+EXEC SQL OPEN cursor_name;
+EXEC SQL FETCH cursor_name INTO :column1;
+EXEC SQL CLOSE cursor_name;
+</pre></div><div class="refsect1" id="id-1.7.5.20.7.7"><h2>Compatibility</h2><p>
+     <code class="command">DECLARE STATEMENT</code> is an extension of the SQL standard,
+     but can be used in famous DBMSs.
+    </p></div><div class="refsect1" id="id-1.7.5.20.7.8"><h2>See Also</h2><span class="simplelist"><a class="xref" href="ecpg-sql-connect.html" title="CONNECT">CONNECT</a>, <a class="xref" href="ecpg-sql-declare.html" title="DECLARE">DECLARE</a>, <a class="xref" href="ecpg-sql-open.html" title="OPEN">OPEN</a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-sql-declare.html" title="DECLARE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-sql-describe.html" title="DESCRIBE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">DECLARE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> DESCRIBE</td></tr></table></div></body></html>

@@ -25,4 +25,5 @@ verify_yaml.py
 *.zip
 release_body.txt
 test_guid.sh
-/postgres/windows/amd64
+q115strm_test.exe
+q115strm.exe

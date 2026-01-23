@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>40.4. A Complete Event Trigger Example</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="event-trigger-interface.html" title="40.3. Writing Event Trigger Functions in C" /><link rel="next" href="event-trigger-table-rewrite-example.html" title="40.5. A Table Rewrite Event Trigger Example" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">40.4. A Complete Event Trigger Example</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="event-trigger-interface.html" title="40.3. Writing Event Trigger Functions in C">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="event-triggers.html" title="Chapter 40. Event Triggers">Up</a></td><th width="60%" align="center">Chapter 40. Event Triggers</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="event-trigger-table-rewrite-example.html" title="40.5. A Table Rewrite Event Trigger Example">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="EVENT-TRIGGER-EXAMPLE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">40.4. A Complete Event Trigger Example</h2></div></div></div><p>
+    Here is a very simple example of an event trigger function written in C.
+    (Examples of triggers written in procedural languages can be found in
+    the documentation of the procedural languages.)
+   </p><p>
+    The function <code class="function">noddl</code> raises an exception each time it is called.
+    The event trigger definition associated the function with
+    the <code class="literal">ddl_command_start</code> event.  The effect is that all DDL
+    commands (with the exceptions mentioned
+    in <a class="xref" href="event-trigger-definition.html" title="40.1. Overview of Event Trigger Behavior">Section 40.1</a>) are prevented from running.
+   </p><p>
+    This is the source code of the trigger function:
+</p><pre class="programlisting">
+#include "postgres.h"
+#include "commands/event_trigger.h"
+
+
+PG_MODULE_MAGIC;
+
+PG_FUNCTION_INFO_V1(noddl);
+
+Datum
+noddl(PG_FUNCTION_ARGS)
+{
+    EventTriggerData *trigdata;
+
+    if (!CALLED_AS_EVENT_TRIGGER(fcinfo))  /* internal error */
+        elog(ERROR, "not fired by event trigger manager");
+
+    trigdata = (EventTriggerData *) fcinfo-&gt;context;
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
+             errmsg("command \"%s\" denied",
+                    GetCommandTagName(trigdata-&gt;tag))));
+
+    PG_RETURN_NULL();
+}
+</pre><p>
+   </p><p>
+    After you have compiled the source code (see <a class="xref" href="xfunc-c.html#DFUNC" title="38.10.5. Compiling and Linking Dynamically-Loaded Functions">Section 38.10.5</a>),
+    declare the function and the triggers:
+</p><pre class="programlisting">
+CREATE FUNCTION noddl() RETURNS event_trigger
+    AS 'noddl' LANGUAGE C;
+
+CREATE EVENT TRIGGER noddl ON ddl_command_start
+    EXECUTE FUNCTION noddl();
+</pre><p>
+   </p><p>
+    Now you can test the operation of the trigger:
+</p><pre class="screen">
+=# \dy
+                     List of event triggers
+ Name  |       Event       | Owner | Enabled | Function | Tags
+-------+-------------------+-------+---------+----------+------
+ noddl | ddl_command_start | dim   | enabled | noddl    |
+(1 row)
+
+=# CREATE TABLE foo(id serial);
+ERROR:  command "CREATE TABLE" denied
+</pre><p>
+   </p><p>
+    In this situation, in order to be able to run some DDL commands when you
+    need to do so, you have to either drop the event trigger or disable it.  It
+    can be convenient to disable the trigger for only the duration of a
+    transaction:
+</p><pre class="programlisting">
+BEGIN;
+ALTER EVENT TRIGGER noddl DISABLE;
+CREATE TABLE foo (id serial);
+ALTER EVENT TRIGGER noddl ENABLE;
+COMMIT;
+</pre><p>
+    (Recall that DDL commands on event triggers themselves are not affected by
+    event triggers.)
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="event-trigger-interface.html" title="40.3. Writing Event Trigger Functions in C">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="event-triggers.html" title="Chapter 40. Event Triggers">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="event-trigger-table-rewrite-example.html" title="40.5. A Table Rewrite Event Trigger Example">Next</a></td></tr><tr><td width="40%" align="left" valign="top">40.3. Writing Event Trigger Functions in C </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 40.5. A Table Rewrite Event Trigger Example</td></tr></table></div></body></html>

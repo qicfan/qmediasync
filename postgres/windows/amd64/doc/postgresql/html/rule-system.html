@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>51.4. The PostgreSQL Rule System</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="parser-stage.html" title="51.3. The Parser Stage" /><link rel="next" href="planner-optimizer.html" title="51.5. Planner/Optimizer" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">51.4. The <span xmlns="http://www.w3.org/1999/xhtml" class="productname">PostgreSQL</span> Rule System</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="parser-stage.html" title="51.3. The Parser Stage">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Up</a></td><th width="60%" align="center">Chapter 51. Overview of PostgreSQL Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="planner-optimizer.html" title="51.5. Planner/Optimizer">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RULE-SYSTEM"><div class="titlepage"><div><div><h2 class="title" style="clear: both">51.4. The <span class="productname">PostgreSQL</span> Rule System</h2></div></div></div><p>
+    <span class="productname">PostgreSQL</span> supports a powerful
+    <em class="firstterm">rule system</em> for the specification
+    of <em class="firstterm">views</em> and ambiguous <em class="firstterm">view updates</em>.
+    Originally the <span class="productname">PostgreSQL</span>
+    rule system consisted of two implementations:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       The first one worked using <em class="firstterm">row level</em> processing and was
+       implemented deep in the <em class="firstterm">executor</em>. The rule system was
+       called whenever an individual row had been accessed. This
+       implementation was removed in 1995 when the last official release
+       of the <span class="productname">Berkeley Postgres</span> project was
+       transformed into <span class="productname">Postgres95</span>.
+      </p></li><li class="listitem"><p>
+       The second implementation of the rule system is a technique
+       called <em class="firstterm">query rewriting</em>.
+       The <em class="firstterm">rewrite system</em> is a module
+       that exists between the <em class="firstterm">parser stage</em> and the
+       <em class="firstterm">planner/optimizer</em>. This technique is still implemented.
+      </p></li></ul></div><p>
+   </p><p>
+    The query rewriter is discussed in some detail in
+    <a class="xref" href="rules.html" title="Chapter 41. The Rule System">Chapter 41</a>, so there is no need to cover it here.
+    We will only point out that both the input and the output of the
+    rewriter are query trees, that is, there is no change in the
+    representation or level of semantic detail in the trees.  Rewriting
+    can be thought of as a form of macro expansion.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="parser-stage.html" title="51.3. The Parser Stage">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="planner-optimizer.html" title="51.5. Planner/Optimizer">Next</a></td></tr><tr><td width="40%" align="left" valign="top">51.3. The Parser Stage </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 51.5. Planner/Optimizer</td></tr></table></div></body></html>

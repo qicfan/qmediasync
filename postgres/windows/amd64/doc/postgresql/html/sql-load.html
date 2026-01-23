@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>LOAD</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-listen.html" title="LISTEN" /><link rel="next" href="sql-lock.html" title="LOCK" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">LOAD</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-listen.html" title="LISTEN">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-lock.html" title="LOCK">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-LOAD"><div class="titlepage"></div><a id="id-1.9.3.154.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">LOAD</span></h2><p>LOAD — load a shared library file</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+LOAD '<em class="replaceable"><code>filename</code></em>'
+</pre></div><div class="refsect1" id="SQL-LOAD-DESCRIPTION"><h2>Description</h2><p>
+   This command loads a shared library file into the <span class="productname">PostgreSQL</span>
+   server's address space.  If the file has been loaded already,
+   the command does nothing.  Shared library files that contain C functions
+   are automatically loaded whenever one of their functions is called.
+   Therefore, an explicit <code class="command">LOAD</code> is usually only needed to
+   load a library that modifies the server's behavior through <span class="quote">“<span class="quote">hooks</span>”</span>
+   rather than providing a set of functions.
+  </p><p>
+   The library file name is typically given as just a bare file name,
+   which is sought in the server's library search path (set
+   by <a class="xref" href="runtime-config-client.html#GUC-DYNAMIC-LIBRARY-PATH">dynamic_library_path</a>).  Alternatively it can be
+   given as a full path name.  In either case the platform's standard shared
+   library file name extension may be omitted.
+   See <a class="xref" href="xfunc-c.html#XFUNC-C-DYNLOAD" title="38.10.1. Dynamic Loading">Section 38.10.1</a> for more information on this topic.
+  </p><a id="id-1.9.3.154.5.4" class="indexterm"></a><p>
+   Non-superusers can only apply <code class="command">LOAD</code> to library files
+   located in <code class="filename">$libdir/plugins/</code> — the specified
+   <em class="replaceable"><code>filename</code></em> must begin
+   with exactly that string.  (It is the database administrator's
+   responsibility to ensure that only <span class="quote">“<span class="quote">safe</span>”</span> libraries
+   are installed there.)
+  </p></div><div class="refsect1" id="SQL-LOAD-COMPAT"><h2>Compatibility</h2><p>
+   <code class="command">LOAD</code> is a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.154.7"><h2>See Also</h2><p>
+   <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-listen.html" title="LISTEN">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-lock.html" title="LOCK">Next</a></td></tr><tr><td width="40%" align="left" valign="top">LISTEN </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> LOCK</td></tr></table></div></body></html>

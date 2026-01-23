@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.31. pgstattuple</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="pgstatstatements.html" title="F.30. pg_stat_statements" /><link rel="next" href="pgsurgery.html" title="F.32. pg_surgery" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.31. pgstattuple</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="pgstatstatements.html" title="F.30. pg_stat_statements">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="pgsurgery.html" title="F.32. pg_surgery">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PGSTATTUPLE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.31. pgstattuple</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="pgstattuple.html#id-1.11.7.40.5">F.31.1. Functions</a></span></dt><dt><span class="sect2"><a href="pgstattuple.html#id-1.11.7.40.6">F.31.2. Authors</a></span></dt></dl></div><a id="id-1.11.7.40.2" class="indexterm"></a><p>
+  The <code class="filename">pgstattuple</code> module provides various functions to
+  obtain tuple-level statistics.
+ </p><p>
+  Because these functions return detailed page-level information, access is
+  restricted by default.  By default, only the
+  role <code class="literal">pg_stat_scan_tables</code> has <code class="literal">EXECUTE</code>
+  privilege.  Superusers of course bypass this restriction.  After the
+  extension has been installed, users may issue <code class="command">GRANT</code>
+  commands to change the privileges on the functions to allow others to
+  execute them.  However, it might be preferable to add those users to
+  the <code class="literal">pg_stat_scan_tables</code> role instead.
+ </p><div class="sect2" id="id-1.11.7.40.5"><div class="titlepage"><div><div><h3 class="title">F.31.1. Functions</h3></div></div></div><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+     <a id="id-1.11.7.40.5.2.1.1.1" class="indexterm"></a>
+     <code class="function">pgstattuple(regclass) returns record</code>
+    </span></dt><dd><p>
+      <code class="function">pgstattuple</code> returns a relation's physical length,
+      percentage of <span class="quote">“<span class="quote">dead</span>”</span> tuples, and other info. This may help users
+      to determine whether vacuum is necessary or not.  The argument is the
+      target relation's name (optionally schema-qualified) or OID.
+      For example:
+</p><pre class="programlisting">
+test=&gt; SELECT * FROM pgstattuple('pg_catalog.pg_proc');
+-[ RECORD 1 ]------+-------
+table_len          | 458752
+tuple_count        | 1470
+tuple_len          | 438896
+tuple_percent      | 95.67
+dead_tuple_count   | 11
+dead_tuple_len     | 3157
+dead_tuple_percent | 0.69
+free_space         | 8932
+free_percent       | 1.95
+</pre><p>
+     The output columns are described in <a class="xref" href="pgstattuple.html#PGSTATTUPLE-COLUMNS" title="Table F.23. pgstattuple Output Columns">Table F.23</a>.
+    </p><div class="table" id="PGSTATTUPLE-COLUMNS"><p class="title"><strong>Table F.23. <code class="function">pgstattuple</code> Output Columns</strong></p><div class="table-contents"><table class="table" summary="pgstattuple Output Columns" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="structfield">table_len</code></td><td><code class="type">bigint</code></td><td>Physical relation length in bytes</td></tr><tr><td><code class="structfield">tuple_count</code></td><td><code class="type">bigint</code></td><td>Number of live tuples</td></tr><tr><td><code class="structfield">tuple_len</code></td><td><code class="type">bigint</code></td><td>Total length of live tuples in bytes</td></tr><tr><td><code class="structfield">tuple_percent</code></td><td><code class="type">float8</code></td><td>Percentage of live tuples</td></tr><tr><td><code class="structfield">dead_tuple_count</code></td><td><code class="type">bigint</code></td><td>Number of dead tuples</td></tr><tr><td><code class="structfield">dead_tuple_len</code></td><td><code class="type">bigint</code></td><td>Total length of dead tuples in bytes</td></tr><tr><td><code class="structfield">dead_tuple_percent</code></td><td><code class="type">float8</code></td><td>Percentage of dead tuples</td></tr><tr><td><code class="structfield">free_space</code></td><td><code class="type">bigint</code></td><td>Total free space in bytes</td></tr><tr><td><code class="structfield">free_percent</code></td><td><code class="type">float8</code></td><td>Percentage of free space</td></tr></tbody></table></div></div><br class="table-break" /><div class="note"><h3 class="title">Note</h3><p>
+      The <code class="literal">table_len</code> will always be greater than the sum
+      of the <code class="literal">tuple_len</code>, <code class="literal">dead_tuple_len</code>
+      and <code class="literal">free_space</code>. The difference is accounted for by
+      fixed page overhead, the per-page table of pointers to tuples, and
+      padding to ensure that tuples are correctly aligned.
+     </p></div><p>
+     <code class="function">pgstattuple</code> acquires only a read lock on the
+     relation. So the results do not reflect an instantaneous snapshot;
+     concurrent updates will affect them.
+    </p><p>
+     <code class="function">pgstattuple</code> judges a tuple is <span class="quote">“<span class="quote">dead</span>”</span> if
+     <code class="function">HeapTupleSatisfiesDirty</code> returns false.
+    </p></dd><dt><span class="term">
+     <code class="function">pgstattuple(text) returns record</code>
+    </span></dt><dd><p>
+      This is the same as <code class="function">pgstattuple(regclass)</code>, except
+      that the target relation is specified as TEXT. This function is kept
+      because of backward-compatibility so far, and will be deprecated in
+      some future release.
+     </p></dd><dt><span class="term">
+    <a id="id-1.11.7.40.5.2.3.1.1" class="indexterm"></a>
+     <code class="function">pgstatindex(regclass) returns record</code>
+    </span></dt><dd><p>
+      <code class="function">pgstatindex</code> returns a record showing information
+      about a B-tree index.  For example:
+</p><pre class="programlisting">
+test=&gt; SELECT * FROM pgstatindex('pg_cast_oid_index');
+-[ RECORD 1 ]------+------
+version            | 2
+tree_level         | 0
+index_size         | 16384
+root_block_no      | 1
+internal_pages     | 0
+leaf_pages         | 1
+empty_pages        | 0
+deleted_pages      | 0
+avg_leaf_density   | 54.27
+leaf_fragmentation | 0
+</pre><p>
+     </p><p>
+     The output columns are:
+
+    </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="structfield">version</code></td><td><code class="type">integer</code></td><td>B-tree version number</td></tr><tr><td><code class="structfield">tree_level</code></td><td><code class="type">integer</code></td><td>Tree level of the root page</td></tr><tr><td><code class="structfield">index_size</code></td><td><code class="type">bigint</code></td><td>Total index size in bytes</td></tr><tr><td><code class="structfield">root_block_no</code></td><td><code class="type">bigint</code></td><td>Location of root page (zero if none)</td></tr><tr><td><code class="structfield">internal_pages</code></td><td><code class="type">bigint</code></td><td>Number of <span class="quote">“<span class="quote">internal</span>”</span> (upper-level) pages</td></tr><tr><td><code class="structfield">leaf_pages</code></td><td><code class="type">bigint</code></td><td>Number of leaf pages</td></tr><tr><td><code class="structfield">empty_pages</code></td><td><code class="type">bigint</code></td><td>Number of empty pages</td></tr><tr><td><code class="structfield">deleted_pages</code></td><td><code class="type">bigint</code></td><td>Number of deleted pages</td></tr><tr><td><code class="structfield">avg_leaf_density</code></td><td><code class="type">float8</code></td><td>Average density of leaf pages</td></tr><tr><td><code class="structfield">leaf_fragmentation</code></td><td><code class="type">float8</code></td><td>Leaf page fragmentation</td></tr></tbody></table></div><p>
+    </p><p>
+     The reported <code class="literal">index_size</code> will normally correspond to one more
+     page than is accounted for by <code class="literal">internal_pages + leaf_pages +
+     empty_pages + deleted_pages</code>, because it also includes the
+     index's metapage.
+    </p><p>
+     As with <code class="function">pgstattuple</code>, the results are accumulated
+     page-by-page, and should not be expected to represent an
+     instantaneous snapshot of the whole index.
+    </p></dd><dt><span class="term">
+     <code class="function">pgstatindex(text) returns record</code>
+    </span></dt><dd><p>
+      This is the same as <code class="function">pgstatindex(regclass)</code>, except
+      that the target index is specified as TEXT. This function is kept
+      because of backward-compatibility so far, and will be deprecated in
+      some future release.
+     </p></dd><dt><span class="term">
+     <a id="id-1.11.7.40.5.2.5.1.1" class="indexterm"></a>
+     <code class="function">pgstatginindex(regclass) returns record</code>
+    </span></dt><dd><p>
+      <code class="function">pgstatginindex</code> returns a record showing information
+      about a GIN index.  For example:
+</p><pre class="programlisting">
+test=&gt; SELECT * FROM pgstatginindex('test_gin_index');
+-[ RECORD 1 ]--+--
+version        | 1
+pending_pages  | 0
+pending_tuples | 0
+</pre><p>
+     </p><p>
+     The output columns are:
+
+    </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="structfield">version</code></td><td><code class="type">integer</code></td><td>GIN version number</td></tr><tr><td><code class="structfield">pending_pages</code></td><td><code class="type">integer</code></td><td>Number of pages in the pending list</td></tr><tr><td><code class="structfield">pending_tuples</code></td><td><code class="type">bigint</code></td><td>Number of tuples in the pending list</td></tr></tbody></table></div><p>
+    </p></dd><dt><span class="term">
+     <a id="id-1.11.7.40.5.2.6.1.1" class="indexterm"></a>
+     <code class="function">pgstathashindex(regclass) returns record</code>
+    </span></dt><dd><p>
+      <code class="function">pgstathashindex</code> returns a record showing information
+      about a HASH index.  For example:
+</p><pre class="programlisting">
+test=&gt; select * from pgstathashindex('con_hash_index');
+-[ RECORD 1 ]--+-----------------
+version        | 4
+bucket_pages   | 33081
+overflow_pages | 0
+bitmap_pages   | 1
+unused_pages   | 32455
+live_items     | 10204006
+dead_items     | 0
+free_percent   | 61.8005949100872
+</pre><p>
+     </p><p>
+     The output columns are:
+
+    </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="structfield">version</code></td><td><code class="type">integer</code></td><td>HASH version number</td></tr><tr><td><code class="structfield">bucket_pages</code></td><td><code class="type">bigint</code></td><td>Number of bucket pages</td></tr><tr><td><code class="structfield">overflow_pages</code></td><td><code class="type">bigint</code></td><td>Number of overflow pages</td></tr><tr><td><code class="structfield">bitmap_pages</code></td><td><code class="type">bigint</code></td><td>Number of bitmap pages</td></tr><tr><td><code class="structfield">unused_pages</code></td><td><code class="type">bigint</code></td><td>Number of unused pages</td></tr><tr><td><code class="structfield">live_items</code></td><td><code class="type">bigint</code></td><td>Number of live tuples</td></tr><tr><td><code class="structfield">dead_tuples</code></td><td><code class="type">bigint</code></td><td>Number of dead tuples</td></tr><tr><td><code class="structfield">free_percent</code></td><td><code class="type">float</code></td><td>Percentage of free space</td></tr></tbody></table></div><p>
+    </p></dd><dt><span class="term">
+     <a id="id-1.11.7.40.5.2.7.1.1" class="indexterm"></a>
+     <code class="function">pg_relpages(regclass) returns bigint</code>
+    </span></dt><dd><p>
+      <code class="function">pg_relpages</code> returns the number of pages in the
+      relation.
+     </p></dd><dt><span class="term">
+     <code class="function">pg_relpages(text) returns bigint</code>
+    </span></dt><dd><p>
+      This is the same as <code class="function">pg_relpages(regclass)</code>, except
+      that the target relation is specified as TEXT. This function is kept
+      because of backward-compatibility so far, and will be deprecated in
+      some future release.
+     </p></dd><dt><span class="term">
+     <a id="id-1.11.7.40.5.2.9.1.1" class="indexterm"></a>
+     <code class="function">pgstattuple_approx(regclass) returns record</code>
+    </span></dt><dd><p>
+      <code class="function">pgstattuple_approx</code> is a faster alternative to
+      <code class="function">pgstattuple</code> that returns approximate results.
+      The argument is the target relation's name or OID.
+      For example:
+</p><pre class="programlisting">
+test=&gt; SELECT * FROM pgstattuple_approx('pg_catalog.pg_proc'::regclass);
+-[ RECORD 1 ]--------+-------
+table_len            | 573440
+scanned_percent      | 2
+approx_tuple_count   | 2740
+approx_tuple_len     | 561210
+approx_tuple_percent | 97.87
+dead_tuple_count     | 0
+dead_tuple_len       | 0
+dead_tuple_percent   | 0
+approx_free_space    | 11996
+approx_free_percent  | 2.09
+</pre><p>
+      The output columns are described in <a class="xref" href="pgstattuple.html#PGSTATAPPROX-COLUMNS" title="Table F.24. pgstattuple_approx Output Columns">Table F.24</a>.
+     </p><p>
+      Whereas <code class="function">pgstattuple</code> always performs a
+      full-table scan and returns an exact count of live and dead tuples
+      (and their sizes) and free space, <code class="function">pgstattuple_approx</code>
+      tries to avoid the full-table scan and returns exact dead tuple
+      statistics along with an approximation of the number and
+      size of live tuples and free space.
+     </p><p>
+      It does this by skipping pages that have only visible tuples
+      according to the visibility map (if a page has the corresponding VM
+      bit set, then it is assumed to contain no dead tuples). For such
+      pages, it derives the free space value from the free space map, and
+      assumes that the rest of the space on the page is taken up by live
+      tuples.
+     </p><p>
+      For pages that cannot be skipped, it scans each tuple, recording its
+      presence and size in the appropriate counters, and adding up the
+      free space on the page. At the end, it estimates the total number of
+      live tuples based on the number of pages and tuples scanned (in the
+      same way that VACUUM estimates pg_class.reltuples).
+     </p><div class="table" id="PGSTATAPPROX-COLUMNS"><p class="title"><strong>Table F.24. <code class="function">pgstattuple_approx</code> Output Columns</strong></p><div class="table-contents"><table class="table" summary="pgstattuple_approx Output Columns" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code class="structfield">table_len</code></td><td><code class="type">bigint</code></td><td>Physical relation length in bytes (exact)</td></tr><tr><td><code class="structfield">scanned_percent</code></td><td><code class="type">float8</code></td><td>Percentage of table scanned</td></tr><tr><td><code class="structfield">approx_tuple_count</code></td><td><code class="type">bigint</code></td><td>Number of live tuples (estimated)</td></tr><tr><td><code class="structfield">approx_tuple_len</code></td><td><code class="type">bigint</code></td><td>Total length of live tuples in bytes (estimated)</td></tr><tr><td><code class="structfield">approx_tuple_percent</code></td><td><code class="type">float8</code></td><td>Percentage of live tuples</td></tr><tr><td><code class="structfield">dead_tuple_count</code></td><td><code class="type">bigint</code></td><td>Number of dead tuples (exact)</td></tr><tr><td><code class="structfield">dead_tuple_len</code></td><td><code class="type">bigint</code></td><td>Total length of dead tuples in bytes (exact)</td></tr><tr><td><code class="structfield">dead_tuple_percent</code></td><td><code class="type">float8</code></td><td>Percentage of dead tuples</td></tr><tr><td><code class="structfield">approx_free_space</code></td><td><code class="type">bigint</code></td><td>Total free space in bytes (estimated)</td></tr><tr><td><code class="structfield">approx_free_percent</code></td><td><code class="type">float8</code></td><td>Percentage of free space</td></tr></tbody></table></div></div><br class="table-break" /><p>
+      In the above output, the free space figures may not match the
+      <code class="function">pgstattuple</code> output exactly, because the free
+      space map gives us an exact figure, but is not guaranteed to be
+      accurate to the byte.
+     </p></dd></dl></div></div><div class="sect2" id="id-1.11.7.40.6"><div class="titlepage"><div><div><h3 class="title">F.31.2. Authors</h3></div></div></div><p>
+   Tatsuo Ishii, Satoshi Nagayasu and Abhijit Menon-Sen
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="pgstatstatements.html" title="F.30. pg_stat_statements">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="pgsurgery.html" title="F.32. pg_surgery">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.30. pg_stat_statements </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.32. pg_surgery</td></tr></table></div></body></html>

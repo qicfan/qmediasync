@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>37.46. schemata</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="infoschema-routines.html" title="37.45. routines" /><link rel="next" href="infoschema-sequences.html" title="37.47. sequences" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">37.46. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">schemata</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="infoschema-routines.html" title="37.45. routines">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><th width="60%" align="center">Chapter 37. The Information Schema</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="infoschema-sequences.html" title="37.47. sequences">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INFOSCHEMA-SCHEMATA"><div class="titlepage"><div><div><h2 class="title" style="clear: both">37.46. <code class="literal">schemata</code></h2></div></div></div><p>
+   The view <code class="literal">schemata</code> contains all schemas in the current
+   database that the current user has access to (by way of being the owner or
+   having some privilege).
+  </p><div class="table" id="id-1.7.6.50.3"><p class="title"><strong>Table 37.44. <code class="structname">schemata</code> Columns</strong></p><div class="table-contents"><table class="table" summary="schemata Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">catalog_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database that the schema is contained in (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">schema_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">schema_owner</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the owner of the schema
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">default_character_set_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Applies to a feature not available in <span class="productname">PostgreSQL</span>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">default_character_set_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Applies to a feature not available in <span class="productname">PostgreSQL</span>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">default_character_set_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Applies to a feature not available in <span class="productname">PostgreSQL</span>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">sql_path</code> <code class="type">character_data</code>
+      </p>
+      <p>
+       Applies to a feature not available in <span class="productname">PostgreSQL</span>
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="infoschema-routines.html" title="37.45. routines">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="infoschema-sequences.html" title="37.47. sequences">Next</a></td></tr><tr><td width="40%" align="left" valign="top">37.45. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">routines</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 37.47. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">sequences</code></td></tr></table></div></body></html>

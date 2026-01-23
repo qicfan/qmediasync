@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>21.2. User Name Maps</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File" /><link rel="next" href="auth-methods.html" title="21.3. Authentication Methods" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">21.2. User Name Maps</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><th width="60%" align="center">Chapter 21. Client Authentication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="auth-methods.html" title="21.3. Authentication Methods">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="AUTH-USERNAME-MAPS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">21.2. User Name Maps</h2></div></div></div><a id="id-1.6.8.9.2" class="indexterm"></a><p>
+   When using an external authentication system such as Ident or GSSAPI,
+   the name of the operating system user that initiated the connection
+   might not be the same as the database user (role) that is to be used.
+   In this case, a user name map can be applied to map the operating system
+   user name to a database user.  To use user name mapping, specify
+   <code class="literal">map</code>=<em class="replaceable"><code>map-name</code></em>
+   in the options field in <code class="filename">pg_hba.conf</code>. This option is
+   supported for all authentication methods that receive external user names.
+   Since different mappings might be needed for different connections,
+   the name of the map to be used is specified in the
+   <em class="replaceable"><code>map-name</code></em> parameter in <code class="filename">pg_hba.conf</code>
+   to indicate which map to use for each individual connection.
+  </p><p>
+   User name maps are defined in the ident map file, which by default is named
+   <code class="filename">pg_ident.conf</code><a id="id-1.6.8.9.4.2" class="indexterm"></a>
+   and is stored in the
+   cluster's data directory.  (It is possible to place the map file
+   elsewhere, however; see the <a class="xref" href="runtime-config-file-locations.html#GUC-IDENT-FILE">ident_file</a>
+   configuration parameter.)
+   The ident map file contains lines of the general form:
+</p><pre class="synopsis">
+<em class="replaceable"><code>map-name</code></em> <em class="replaceable"><code>system-username</code></em> <em class="replaceable"><code>database-username</code></em>
+</pre><p>
+   Comments, whitespace and line continuations are handled in the same way as in
+   <code class="filename">pg_hba.conf</code>.  The
+   <em class="replaceable"><code>map-name</code></em> is an arbitrary name that will be used to
+   refer to this mapping in <code class="filename">pg_hba.conf</code>. The other
+   two fields specify an operating system user name and a matching
+   database user name. The same <em class="replaceable"><code>map-name</code></em> can be
+   used repeatedly to specify multiple user-mappings within a single map.
+  </p><p>
+   There is no restriction regarding how many database users a given
+   operating system user can correspond to, nor vice versa.  Thus, entries
+   in a map should be thought of as meaning <span class="quote">“<span class="quote">this operating system
+   user is allowed to connect as this database user</span>”</span>, rather than
+   implying that they are equivalent.  The connection will be allowed if
+   there is any map entry that pairs the user name obtained from the
+   external authentication system with the database user name that the
+   user has requested to connect as.
+  </p><p>
+   If the <em class="replaceable"><code>system-username</code></em> field starts with a slash (<code class="literal">/</code>),
+   the remainder of the field is treated as a regular expression.
+   (See <a class="xref" href="functions-matching.html#POSIX-SYNTAX-DETAILS" title="9.7.3.1. Regular Expression Details">Section 9.7.3.1</a> for details of
+   <span class="productname">PostgreSQL</span>'s regular expression syntax.)  The regular
+   expression can include a single capture, or parenthesized subexpression,
+   which can then be referenced in the <em class="replaceable"><code>database-username</code></em>
+   field as <code class="literal">\1</code> (backslash-one).  This allows the mapping of
+   multiple user names in a single line, which is particularly useful for
+   simple syntax substitutions.  For example, these entries
+</p><pre class="programlisting">
+mymap   /^(.*)@mydomain\.com$      \1
+mymap   /^(.*)@otherdomain\.com$   guest
+</pre><p>
+   will remove the domain part for users with system user names that end with
+   <code class="literal">@mydomain.com</code>, and allow any user whose system name ends with
+   <code class="literal">@otherdomain.com</code> to log in as <code class="literal">guest</code>.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    Keep in mind that by default, a regular expression can match just part of
+    a string.  It's usually wise to use <code class="literal">^</code> and <code class="literal">$</code>, as
+    shown in the above example, to force the match to be to the entire
+    system user name.
+   </p></div><p>
+   The <code class="filename">pg_ident.conf</code> file is read on start-up and
+   when the main server process receives a
+   <span class="systemitem">SIGHUP</span><a id="id-1.6.8.9.8.3" class="indexterm"></a>
+   signal. If you edit the file on an
+   active system, you will need to signal the postmaster
+   (using <code class="literal">pg_ctl reload</code>, calling the SQL function
+   <code class="function">pg_reload_conf()</code>, or using <code class="literal">kill
+   -HUP</code>) to make it re-read the file.
+  </p><p>
+   A <code class="filename">pg_ident.conf</code> file that could be used in
+   conjunction with the <code class="filename">pg_hba.conf</code> file in <a class="xref" href="auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF" title="Example 21.1. Example pg_hba.conf Entries">Example 21.1</a> is shown in <a class="xref" href="auth-username-maps.html#EXAMPLE-PG-IDENT.CONF" title="Example 21.2. An Example pg_ident.conf File">Example 21.2</a>. In this example, anyone
+   logged in to a machine on the 192.168 network that does not have the
+   operating system user name <code class="literal">bryanh</code>, <code class="literal">ann</code>, or
+   <code class="literal">robert</code> would not be granted access. Unix user
+   <code class="literal">robert</code> would only be allowed access when he tries to
+   connect as <span class="productname">PostgreSQL</span> user <code class="literal">bob</code>, not
+   as <code class="literal">robert</code> or anyone else. <code class="literal">ann</code> would
+   only be allowed to connect as <code class="literal">ann</code>. User
+   <code class="literal">bryanh</code> would be allowed to connect as either
+   <code class="literal">bryanh</code> or as <code class="literal">guest1</code>.
+  </p><div class="example" id="EXAMPLE-PG-IDENT.CONF"><p class="title"><strong>Example 21.2. An Example <code class="filename">pg_ident.conf</code> File</strong></p><div class="example-contents"><pre class="programlisting">
+# MAPNAME       SYSTEM-USERNAME         PG-USERNAME
+
+omicron         bryanh                  bryanh
+omicron         ann                     ann
+# bob has user name robert on these machines
+omicron         robert                  bob
+# bryanh can also connect as guest1
+omicron         bryanh                  guest1
+</pre></div></div><br class="example-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="auth-methods.html" title="21.3. Authentication Methods">Next</a></td></tr><tr><td width="40%" align="left" valign="top">21.1. The <code xmlns="http://www.w3.org/1999/xhtml" class="filename">pg_hba.conf</code> File </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.3. Authentication Methods</td></tr></table></div></body></html>

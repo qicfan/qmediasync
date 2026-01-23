@@ -10,6 +10,7 @@ type TVShow struct {
 	XMLName       xml.Name `xml:"tvshow"`
 	Title         string   `xml:"title,omitempty"`
 	OriginalTitle string   `xml:"originaltitle,omitempty"`
+	SortTitle     string   `xml:"sorttitle,omitempty"`
 	ShowTitle     string   `xml:"showtitle,omitempty"`
 	Ratings       struct {
 		Rating []Rating `xml:"rating,omitempty"`

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>71.3. BKI File Format</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="system-catalog-initial-data.html" title="71.2. System Catalog Initial Data" /><link rel="next" href="bki-commands.html" title="71.4. BKI Commands" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">71.3. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">BKI</acronym> File Format</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="system-catalog-initial-data.html" title="71.2. System Catalog Initial Data">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Up</a></td><th width="60%" align="center">Chapter 71. System Catalog Declarations and Initial Contents</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="bki-commands.html" title="71.4. BKI Commands">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BKI-FORMAT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">71.3. <acronym class="acronym">BKI</acronym> File Format</h2></div></div></div><p>
+   This section describes how the <span class="productname">PostgreSQL</span>
+   backend interprets <acronym class="acronym">BKI</acronym> files.  This description
+   will be easier to understand if the <code class="filename">postgres.bki</code>
+   file is at hand as an example.
+  </p><p>
+   <acronym class="acronym">BKI</acronym> input consists of a sequence of commands.  Commands are made up
+   of a number of tokens, depending on the syntax of the command.
+   Tokens are usually separated by whitespace, but need not be if
+   there is no ambiguity.  There is no special command separator; the
+   next token that syntactically cannot belong to the preceding
+   command starts a new one.  (Usually you would put a new command on
+   a new line, for clarity.)  Tokens can be certain key words, special
+   characters (parentheses, commas, etc.), identifiers, numbers, or
+   single-quoted strings.  Everything is case sensitive.
+  </p><p>
+   Lines starting with <code class="literal">#</code> are ignored.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="system-catalog-initial-data.html" title="71.2. System Catalog Initial Data">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="bki-commands.html" title="71.4. BKI Commands">Next</a></td></tr><tr><td width="40%" align="left" valign="top">71.2. System Catalog Initial Data </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 71.4. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">BKI</acronym> Commands</td></tr></table></div></body></html>

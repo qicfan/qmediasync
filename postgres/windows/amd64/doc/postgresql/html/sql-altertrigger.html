@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER TRIGGER</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altertstemplate.html" title="ALTER TEXT SEARCH TEMPLATE" /><link rel="next" href="sql-altertype.html" title="ALTER TYPE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER TRIGGER</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altertstemplate.html" title="ALTER TEXT SEARCH TEMPLATE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-altertype.html" title="ALTER TYPE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERTRIGGER"><div class="titlepage"></div><a id="id-1.9.3.41.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER TRIGGER</span></h2><p>ALTER TRIGGER — change the definition of a trigger</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER TRIGGER <em class="replaceable"><code>name</code></em> ON <em class="replaceable"><code>table_name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER TRIGGER <em class="replaceable"><code>name</code></em> ON <em class="replaceable"><code>table_name</code></em> [ NO ] DEPENDS ON EXTENSION <em class="replaceable"><code>extension_name</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.41.5"><h2>Description</h2><p>
+   <code class="command">ALTER TRIGGER</code> changes properties of an existing
+   trigger.  The <code class="literal">RENAME</code> clause changes the name of
+   the given trigger without otherwise changing the trigger
+   definition.  The <code class="literal">DEPENDS ON EXTENSION</code> clause marks
+   the trigger as dependent on an extension, such that if the extension is
+   dropped, the trigger will automatically be dropped as well.
+  </p><p>
+   You must own the table on which the trigger acts to be allowed to change its properties.
+  </p></div><div class="refsect1" id="id-1.9.3.41.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of an existing trigger to alter.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      The name of the table on which this trigger acts.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name for the trigger.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>extension_name</code></em></span></dt><dd><p>
+      The name of the extension that the trigger is to depend on (or no longer
+      dependent on, if <code class="literal">NO</code> is specified).  A trigger
+      that's marked as dependent on an extension is automatically dropped when
+      the extension is dropped.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.41.7"><h2>Notes</h2><p>
+    The ability to temporarily enable or disable a trigger is provided by
+    <a class="link" href="sql-altertable.html" title="ALTER TABLE"><code class="command">ALTER TABLE</code></a>, not by
+    <code class="command">ALTER TRIGGER</code>, because <code class="command">ALTER TRIGGER</code> has no
+    convenient way to express the option of enabling or disabling all of
+    a table's triggers at once.
+   </p></div><div class="refsect1" id="id-1.9.3.41.8"><h2>Examples</h2><p>
+   To rename an existing trigger:
+</p><pre class="programlisting">
+ALTER TRIGGER emp_stamp ON emp RENAME TO emp_track_chgs;
+</pre><p>
+   To mark a trigger as being dependent on an extension:
+</p><pre class="programlisting">
+ALTER TRIGGER emp_stamp ON emp DEPENDS ON EXTENSION emplib;
+</pre></div><div class="refsect1" id="id-1.9.3.41.9"><h2>Compatibility</h2><p>
+   <code class="command">ALTER TRIGGER</code> is a <span class="productname">PostgreSQL</span>
+   extension of the SQL standard.
+  </p></div><div class="refsect1" id="id-1.9.3.41.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-altertable.html" title="ALTER TABLE"><span class="refentrytitle">ALTER TABLE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altertstemplate.html" title="ALTER TEXT SEARCH TEMPLATE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-altertype.html" title="ALTER TYPE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER TEXT SEARCH TEMPLATE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER TYPE</td></tr></table></div></body></html>

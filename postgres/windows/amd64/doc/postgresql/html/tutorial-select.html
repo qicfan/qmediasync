@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>2.5. Querying a Table</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="tutorial-populate.html" title="2.4. Populating a Table With Rows" /><link rel="next" href="tutorial-join.html" title="2.6. Joins Between Tables" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">2.5. Querying a Table</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="tutorial-populate.html" title="2.4. Populating a Table With Rows">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="tutorial-sql.html" title="Chapter 2. The SQL Language">Up</a></td><th width="60%" align="center">Chapter 2. The <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="tutorial-join.html" title="2.6. Joins Between Tables">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TUTORIAL-SELECT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">2.5. Querying a Table</h2></div></div></div><p>
+    <a id="id-1.4.4.6.2.1" class="indexterm"></a>
+    <a id="id-1.4.4.6.2.2" class="indexterm"></a>
+
+    To retrieve data from a table, the table is
+    <em class="firstterm">queried</em>.  An <acronym class="acronym">SQL</acronym>
+    <code class="command">SELECT</code> statement is used to do this.  The
+    statement is divided into a select list (the part that lists the
+    columns to be returned), a table list (the part that lists the
+    tables from which to retrieve the data), and an optional
+    qualification (the part that specifies any restrictions).  For
+    example, to retrieve all the rows of table
+    <code class="structname">weather</code>, type:
+</p><pre class="programlisting">
+SELECT * FROM weather;
+</pre><p>
+    Here <code class="literal">*</code> is a shorthand for <span class="quote">“<span class="quote">all columns</span>”</span>.
+     <a href="#ftn.id-1.4.4.6.2.10" class="footnote"><sup class="footnote" id="id-1.4.4.6.2.10">[2]</sup></a>
+    So the same result would be had with:
+</p><pre class="programlisting">
+SELECT city, temp_lo, temp_hi, prcp, date FROM weather;
+</pre><p>
+
+    The output should be:
+
+</p><pre class="screen">
+     city      | temp_lo | temp_hi | prcp |    date
+---------------+---------+---------+------+------------
+ San Francisco |      46 |      50 | 0.25 | 1994-11-27
+ San Francisco |      43 |      57 |    0 | 1994-11-29
+ Hayward       |      37 |      54 |      | 1994-11-29
+(3 rows)
+</pre><p>
+   </p><p>
+    You can write expressions, not just simple column references, in the
+    select list.  For example, you can do:
+</p><pre class="programlisting">
+SELECT city, (temp_hi+temp_lo)/2 AS temp_avg, date FROM weather;
+</pre><p>
+    This should give:
+</p><pre class="screen">
+     city      | temp_avg |    date
+---------------+----------+------------
+ San Francisco |       48 | 1994-11-27
+ San Francisco |       50 | 1994-11-29
+ Hayward       |       45 | 1994-11-29
+(3 rows)
+</pre><p>
+    Notice how the <code class="literal">AS</code> clause is used to relabel the
+    output column.  (The <code class="literal">AS</code> clause is optional.)
+   </p><p>
+    A query can be <span class="quote">“<span class="quote">qualified</span>”</span> by adding a <code class="literal">WHERE</code>
+    clause that specifies which rows are wanted.  The <code class="literal">WHERE</code>
+    clause contains a Boolean (truth value) expression, and only rows for
+    which the Boolean expression is true are returned.  The usual
+    Boolean operators (<code class="literal">AND</code>,
+    <code class="literal">OR</code>, and <code class="literal">NOT</code>) are allowed in
+    the qualification.  For example, the following
+    retrieves the weather of San Francisco on rainy days:
+
+</p><pre class="programlisting">
+SELECT * FROM weather
+    WHERE city = 'San Francisco' AND prcp &gt; 0.0;
+</pre><p>
+    Result:
+</p><pre class="screen">
+     city      | temp_lo | temp_hi | prcp |    date
+---------------+---------+---------+------+------------
+ San Francisco |      46 |      50 | 0.25 | 1994-11-27
+(1 row)
+</pre><p>
+   </p><p>
+    <a id="id-1.4.4.6.5.1" class="indexterm"></a>
+
+    You can request that the results of a query
+    be returned in sorted order:
+
+</p><pre class="programlisting">
+SELECT * FROM weather
+    ORDER BY city;
+</pre><p>
+
+</p><pre class="screen">
+     city      | temp_lo | temp_hi | prcp |    date
+---------------+---------+---------+------+------------
+ Hayward       |      37 |      54 |      | 1994-11-29
+ San Francisco |      43 |      57 |    0 | 1994-11-29
+ San Francisco |      46 |      50 | 0.25 | 1994-11-27
+</pre><p>
+
+    In this example, the sort order isn't fully specified, and so you
+    might get the San Francisco rows in either order.  But you'd always
+    get the results shown above if you do:
+
+</p><pre class="programlisting">
+SELECT * FROM weather
+    ORDER BY city, temp_lo;
+</pre><p>
+   </p><p>
+    <a id="id-1.4.4.6.6.1" class="indexterm"></a>
+    <a id="id-1.4.4.6.6.2" class="indexterm"></a>
+
+    You can request that duplicate rows be removed from the result of
+    a query:
+
+</p><pre class="programlisting">
+SELECT DISTINCT city
+    FROM weather;
+</pre><p>
+
+</p><pre class="screen">
+     city
+---------------
+ Hayward
+ San Francisco
+(2 rows)
+</pre><p>
+
+    Here again, the result row ordering might vary.
+    You can ensure consistent results by using <code class="literal">DISTINCT</code> and
+    <code class="literal">ORDER BY</code> together:
+     <a href="#ftn.id-1.4.4.6.6.7" class="footnote"><sup class="footnote" id="id-1.4.4.6.6.7">[3]</sup></a>
+
+</p><pre class="programlisting">
+SELECT DISTINCT city
+    FROM weather
+    ORDER BY city;
+</pre><p>
+   </p><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.id-1.4.4.6.2.10" class="footnote"><p><a href="#id-1.4.4.6.2.10" class="para"><sup class="para">[2] </sup></a>
+       While <code class="literal">SELECT *</code> is useful for off-the-cuff
+       queries, it is widely considered bad style in production code,
+       since adding a column to the table would change the results.
+      </p></div><div id="ftn.id-1.4.4.6.6.7" class="footnote"><p><a href="#id-1.4.4.6.6.7" class="para"><sup class="para">[3] </sup></a>
+       In some database systems, including older versions of
+       <span class="productname">PostgreSQL</span>, the implementation of
+       <code class="literal">DISTINCT</code> automatically orders the rows and
+       so <code class="literal">ORDER BY</code> is unnecessary.  But this is not
+       required by the SQL standard, and current
+       <span class="productname">PostgreSQL</span> does not guarantee that
+       <code class="literal">DISTINCT</code> causes the rows to be ordered.
+      </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tutorial-populate.html" title="2.4. Populating a Table With Rows">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="tutorial-sql.html" title="Chapter 2. The SQL Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="tutorial-join.html" title="2.6. Joins Between Tables">Next</a></td></tr><tr><td width="40%" align="left" valign="top">2.4. Populating a Table With Rows </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 2.6. Joins Between Tables</td></tr></table></div></body></html>

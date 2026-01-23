@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>6.4. Returning Data from Modified Rows</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="dml-delete.html" title="6.3. Deleting Data" /><link rel="next" href="queries.html" title="Chapter 7. Queries" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">6.4. Returning Data from Modified Rows</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="dml-delete.html" title="6.3. Deleting Data">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="dml.html" title="Chapter 6. Data Manipulation">Up</a></td><th width="60%" align="center">Chapter 6. Data Manipulation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="queries.html" title="Chapter 7. Queries">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DML-RETURNING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">6.4. Returning Data from Modified Rows</h2></div></div></div><a id="id-1.5.5.6.2" class="indexterm"></a><a id="id-1.5.5.6.3" class="indexterm"></a><a id="id-1.5.5.6.4" class="indexterm"></a><a id="id-1.5.5.6.5" class="indexterm"></a><p>
+   Sometimes it is useful to obtain data from modified rows while they are
+   being manipulated.  The <code class="command">INSERT</code>, <code class="command">UPDATE</code>,
+   and <code class="command">DELETE</code> commands all have an
+   optional <code class="literal">RETURNING</code> clause that supports this.  Use
+   of <code class="literal">RETURNING</code> avoids performing an extra database query to
+   collect the data, and is especially valuable when it would otherwise be
+   difficult to identify the modified rows reliably.
+  </p><p>
+   The allowed contents of a <code class="literal">RETURNING</code> clause are the same as
+   a <code class="command">SELECT</code> command's output list
+   (see <a class="xref" href="queries-select-lists.html" title="7.3. Select Lists">Section 7.3</a>).  It can contain column
+   names of the command's target table, or value expressions using those
+   columns.  A common shorthand is <code class="literal">RETURNING *</code>, which selects
+   all columns of the target table in order.
+  </p><p>
+   In an <code class="command">INSERT</code>, the data available to <code class="literal">RETURNING</code> is
+   the row as it was inserted.  This is not so useful in trivial inserts,
+   since it would just repeat the data provided by the client.  But it can
+   be very handy when relying on computed default values.  For example,
+   when using a <a class="link" href="datatype-numeric.html#DATATYPE-SERIAL" title="8.1.4. Serial Types"><code class="type">serial</code></a>
+   column to provide unique identifiers, <code class="literal">RETURNING</code> can return
+   the ID assigned to a new row:
+</p><pre class="programlisting">
+CREATE TABLE users (firstname text, lastname text, id serial primary key);
+
+INSERT INTO users (firstname, lastname) VALUES ('Joe', 'Cool') RETURNING id;
+</pre><p>
+   The <code class="literal">RETURNING</code> clause is also very useful
+   with <code class="literal">INSERT ... SELECT</code>.
+  </p><p>
+   In an <code class="command">UPDATE</code>, the data available to <code class="literal">RETURNING</code> is
+   the new content of the modified row.  For example:
+</p><pre class="programlisting">
+UPDATE products SET price = price * 1.10
+  WHERE price &lt;= 99.99
+  RETURNING name, price AS new_price;
+</pre><p>
+  </p><p>
+   In a <code class="command">DELETE</code>, the data available to <code class="literal">RETURNING</code> is
+   the content of the deleted row.  For example:
+</p><pre class="programlisting">
+DELETE FROM products
+  WHERE obsoletion_date = 'today'
+  RETURNING *;
+</pre><p>
+  </p><p>
+   If there are triggers (<a class="xref" href="triggers.html" title="Chapter 39. Triggers">Chapter 39</a>) on the target table,
+   the data available to <code class="literal">RETURNING</code> is the row as modified by
+   the triggers.  Thus, inspecting columns computed by triggers is another
+   common use-case for <code class="literal">RETURNING</code>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="dml-delete.html" title="6.3. Deleting Data">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="dml.html" title="Chapter 6. Data Manipulation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="queries.html" title="Chapter 7. Queries">Next</a></td></tr><tr><td width="40%" align="left" valign="top">6.3. Deleting Data </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 7. Queries</td></tr></table></div></body></html>

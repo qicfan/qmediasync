@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>DECLARE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-deallocate.html" title="DEALLOCATE" /><link rel="next" href="sql-delete.html" title="DELETE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">DECLARE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-deallocate.html" title="DEALLOCATE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-delete.html" title="DELETE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-DECLARE"><div class="titlepage"></div><a id="id-1.9.3.99.1" class="indexterm"></a><a id="id-1.9.3.99.2" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">DECLARE</span></h2><p>DECLARE — define a cursor</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+DECLARE <em class="replaceable"><code>name</code></em> [ BINARY ] [ ASENSITIVE | INSENSITIVE ] [ [ NO ] SCROLL ]
+    CURSOR [ { WITH | WITHOUT } HOLD ] FOR <em class="replaceable"><code>query</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.99.6"><h2>Description</h2><p>
+   <code class="command">DECLARE</code> allows a user to create cursors, which
+   can be used to retrieve
+   a small number of rows at a time out of a larger query.
+   After the cursor is created, rows are fetched from it using
+   <a class="link" href="sql-fetch.html" title="FETCH"><code class="command">FETCH</code></a>.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    This page describes usage of cursors at the SQL command level.
+    If you are trying to use cursors inside a <span class="application">PL/pgSQL</span>
+    function, the rules are different —
+    see <a class="xref" href="plpgsql-cursors.html" title="43.7. Cursors">Section 43.7</a>.
+   </p></div></div><div class="refsect1" id="id-1.9.3.99.7"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of the cursor to be created.
+     </p></dd><dt><span class="term"><code class="literal">BINARY</code></span></dt><dd><p>
+      Causes the cursor to return data in binary rather than in text format.
+     </p></dd><dt><span class="term"><code class="literal">ASENSITIVE</code><br /></span><span class="term"><code class="literal">INSENSITIVE</code></span></dt><dd><p>
+      Cursor sensitivity determines whether changes to the data underlying the
+      cursor, done in the same transaction, after the cursor has been
+      declared, are visible in the cursor.  <code class="literal">INSENSITIVE</code>
+      means they are not visible, <code class="literal">ASENSITIVE</code> means the
+      behavior is implementation-dependent.  A third behavior,
+      <code class="literal">SENSITIVE</code>, meaning that such changes are visible in
+      the cursor, is not available in <span class="productname">PostgreSQL</span>.
+      In <span class="productname">PostgreSQL</span>, all cursors are insensitive;
+      so these key words have no effect and are only accepted for
+      compatibility with the SQL standard.
+     </p><p>
+      Specifying <code class="literal">INSENSITIVE</code> together with <code class="literal">FOR
+      UPDATE</code> or <code class="literal">FOR SHARE</code> is an error.
+     </p></dd><dt><span class="term"><code class="literal">SCROLL</code><br /></span><span class="term"><code class="literal">NO SCROLL</code></span></dt><dd><p><code class="literal">SCROLL</code> specifies that the cursor can be used
+      to retrieve rows in a nonsequential fashion (e.g.,
+      backward). Depending upon the complexity of the query's
+      execution plan, specifying <code class="literal">SCROLL</code> might impose
+      a performance penalty on the query's execution time.
+      <code class="literal">NO SCROLL</code> specifies that the cursor cannot be
+      used to retrieve rows in a nonsequential fashion.  The default is to
+      allow scrolling in some cases; this is not the same as specifying
+      <code class="literal">SCROLL</code>. See <a class="xref" href="sql-declare.html#SQL-DECLARE-NOTES" title="Notes">Notes</a>
+      below for details.
+     </p></dd><dt><span class="term"><code class="literal">WITH HOLD</code><br /></span><span class="term"><code class="literal">WITHOUT HOLD</code></span></dt><dd><p><code class="literal">WITH HOLD</code> specifies that the cursor can
+      continue to be used after the transaction that created it
+      successfully commits.  <code class="literal">WITHOUT HOLD</code> specifies
+      that the cursor cannot be used outside of the transaction that
+      created it. If neither <code class="literal">WITHOUT HOLD</code> nor
+      <code class="literal">WITH HOLD</code> is specified, <code class="literal">WITHOUT
+      HOLD</code> is the default.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>query</code></em></span></dt><dd><p>
+      A <a class="link" href="sql-select.html" title="SELECT"><code class="command">SELECT</code></a> or
+      <a class="link" href="sql-values.html" title="VALUES"><code class="command">VALUES</code></a> command
+      which will provide the rows to be returned by the cursor.
+     </p></dd></dl></div><p>
+   The key words <code class="literal">ASENSITIVE</code>, <code class="literal">BINARY</code>,
+   <code class="literal">INSENSITIVE</code>, and <code class="literal">SCROLL</code> can
+   appear in any order.
+  </p></div><div class="refsect1" id="SQL-DECLARE-NOTES"><h2>Notes</h2><p>
+   Normal cursors return data in text format, the same as a
+   <code class="command">SELECT</code> would produce.  The <code class="literal">BINARY</code> option
+   specifies that the cursor should return data in binary format.
+   This reduces conversion effort for both the server and client,
+   at the cost of more programmer effort to deal with platform-dependent
+   binary data formats.
+   As an example, if a query returns a value of one from an integer column,
+   you would get a string of <code class="literal">1</code> with a default cursor,
+   whereas with a binary cursor you would get
+   a 4-byte field containing the internal representation of the value
+   (in big-endian byte order).
+  </p><p>
+   Binary cursors should be used carefully.  Many applications,
+   including <span class="application">psql</span>, are not prepared to
+   handle binary cursors and expect data to come back in the text
+   format.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    When the client application uses the <span class="quote">“<span class="quote">extended query</span>”</span> protocol
+    to issue a <code class="command">FETCH</code> command, the Bind protocol message
+    specifies whether data is to be retrieved in text or binary format.
+    This choice overrides the way that the cursor is defined.  The concept
+    of a binary cursor as such is thus obsolete when using extended query
+    protocol — any cursor can be treated as either text or binary.
+   </p></div><p>
+    Unless <code class="literal">WITH HOLD</code> is specified, the cursor
+    created by this command can only be used within the current
+    transaction.  Thus, <code class="command">DECLARE</code> without <code class="literal">WITH
+    HOLD</code> is useless outside a transaction block: the cursor would
+    survive only to the completion of the statement.  Therefore
+    <span class="productname">PostgreSQL</span> reports an error if such a
+    command is used outside a transaction block.
+    Use
+    <a class="link" href="sql-begin.html" title="BEGIN"><code class="command">BEGIN</code></a> and
+    <a class="link" href="sql-commit.html" title="COMMIT"><code class="command">COMMIT</code></a>
+    (or <a class="link" href="sql-rollback.html" title="ROLLBACK"><code class="command">ROLLBACK</code></a>)
+    to define a transaction block.
+   </p><p>
+    If <code class="literal">WITH HOLD</code> is specified and the transaction
+    that created the cursor successfully commits, the cursor can
+    continue to be accessed by subsequent transactions in the same
+    session.  (But if the creating transaction is aborted, the cursor
+    is removed.)  A cursor created with <code class="literal">WITH HOLD</code>
+    is closed when an explicit <code class="command">CLOSE</code> command is
+    issued on it, or the session ends.  In the current implementation,
+    the rows represented by a held cursor are copied into a temporary
+    file or memory area so that they remain available for subsequent
+    transactions.
+   </p><p>
+    <code class="literal">WITH HOLD</code> may not be specified when the query
+    includes <code class="literal">FOR UPDATE</code> or <code class="literal">FOR SHARE</code>.
+   </p><p>
+    The <code class="literal">SCROLL</code> option should be specified when defining a
+    cursor that will be used to fetch backwards.  This is required by
+    the SQL standard.  However, for compatibility with earlier
+    versions, <span class="productname">PostgreSQL</span> will allow
+    backward fetches without <code class="literal">SCROLL</code>, if the cursor's query
+    plan is simple enough that no extra overhead is needed to support
+    it. However, application developers are advised not to rely on
+    using backward fetches from a cursor that has not been created
+    with <code class="literal">SCROLL</code>.  If <code class="literal">NO SCROLL</code> is
+    specified, then backward fetches are disallowed in any case.
+   </p><p>
+    Backward fetches are also disallowed when the query
+    includes <code class="literal">FOR UPDATE</code> or <code class="literal">FOR SHARE</code>; therefore
+    <code class="literal">SCROLL</code> may not be specified in this case.
+   </p><div class="caution"><h3 class="title">Caution</h3><p>
+     Scrollable cursors may give unexpected
+     results if they invoke any volatile functions (see <a class="xref" href="xfunc-volatility.html" title="38.7. Function Volatility Categories">Section 38.7</a>).  When a previously fetched row is
+     re-fetched, the functions might be re-executed, perhaps leading to
+     results different from the first time.  It's best to
+     specify <code class="literal">NO SCROLL</code> for a query involving volatile
+     functions.  If that is not practical, one workaround
+     is to declare the cursor <code class="literal">SCROLL WITH HOLD</code> and commit the
+     transaction before reading any rows from it.  This will force the
+     entire output of the cursor to be materialized in temporary storage,
+     so that volatile functions are executed exactly once for each row.
+    </p></div><p>
+    If the cursor's query includes <code class="literal">FOR UPDATE</code> or <code class="literal">FOR
+    SHARE</code>, then returned rows are locked at the time they are first
+    fetched, in the same way as for a regular
+    <a class="link" href="sql-select.html" title="SELECT"><code class="command">SELECT</code></a> command with
+    these options.
+    In addition, the returned rows will be the most up-to-date versions.
+   </p><div class="caution"><h3 class="title">Caution</h3><p>
+     It is generally recommended to use <code class="literal">FOR UPDATE</code> if the cursor
+     is intended to be used with <code class="command">UPDATE ... WHERE CURRENT OF</code> or
+     <code class="command">DELETE ... WHERE CURRENT OF</code>.  Using <code class="literal">FOR UPDATE</code>
+     prevents other sessions from changing the rows between the time they are
+     fetched and the time they are updated.  Without <code class="literal">FOR UPDATE</code>,
+     a subsequent <code class="literal">WHERE CURRENT OF</code> command will have no effect if
+     the row was changed since the cursor was created.
+    </p><p>
+     Another reason to use <code class="literal">FOR UPDATE</code> is that without it, a
+     subsequent <code class="literal">WHERE CURRENT OF</code> might fail if the cursor query
+     does not meet the SQL standard's rules for being <span class="quote">“<span class="quote">simply
+     updatable</span>”</span> (in particular, the cursor must reference just one table
+     and not use grouping or <code class="literal">ORDER BY</code>).  Cursors
+     that are not simply updatable might work, or might not, depending on plan
+     choice details; so in the worst case, an application might work in testing
+     and then fail in production.  If <code class="literal">FOR UPDATE</code> is
+     specified, the cursor is guaranteed to be updatable.
+    </p><p>
+     The main reason not to use <code class="literal">FOR UPDATE</code> with <code class="literal">WHERE
+     CURRENT OF</code> is if you need the cursor to be scrollable, or to be
+     isolated from concurrent updates (that is, continue to show the old
+     data).  If this is a requirement, pay close heed to the caveats shown
+     above.
+    </p></div><p>
+    The SQL standard only makes provisions for cursors in embedded
+    <acronym class="acronym">SQL</acronym>.  The <span class="productname">PostgreSQL</span>
+    server does not implement an <code class="command">OPEN</code> statement for
+    cursors; a cursor is considered to be open when it is declared.
+    However, <span class="application">ECPG</span>, the embedded SQL
+    preprocessor for <span class="productname">PostgreSQL</span>, supports
+    the standard SQL cursor conventions, including those involving
+    <code class="command">DECLARE</code> and <code class="command">OPEN</code> statements.
+   </p><p>
+    You can see all available cursors by querying the <a class="link" href="view-pg-cursors.html" title="52.69. pg_cursors"><code class="structname">pg_cursors</code></a>
+    system view.
+   </p></div><div class="refsect1" id="id-1.9.3.99.9"><h2>Examples</h2><p>
+   To declare a cursor:
+</p><pre class="programlisting">
+DECLARE liahona CURSOR FOR SELECT * FROM films;
+</pre><p>
+   See <a class="xref" href="sql-fetch.html" title="FETCH"><span class="refentrytitle">FETCH</span></a> for more
+   examples of cursor usage.
+  </p></div><div class="refsect1" id="id-1.9.3.99.10"><h2>Compatibility</h2><p>
+   The SQL standard allows cursors only in embedded
+   <acronym class="acronym">SQL</acronym> and in modules. <span class="productname">PostgreSQL</span>
+   permits cursors to be used interactively.
+  </p><p>
+   According to the SQL standard, changes made to insensitive cursors by
+   <code class="literal">UPDATE ... WHERE CURRENT OF</code> and <code class="literal">DELETE
+   ... WHERE CURRENT OF</code> statements are visible in that same
+   cursor.  <span class="productname">PostgreSQL</span> treats these statements like
+   all other data changing statements in that they are not visible in
+   insensitive cursors.
+  </p><p>
+   Binary cursors are a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.99.11"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-close.html" title="CLOSE"><span class="refentrytitle">CLOSE</span></a>, <a class="xref" href="sql-fetch.html" title="FETCH"><span class="refentrytitle">FETCH</span></a>, <a class="xref" href="sql-move.html" title="MOVE"><span class="refentrytitle">MOVE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-deallocate.html" title="DEALLOCATE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-delete.html" title="DELETE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">DEALLOCATE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> DELETE</td></tr></table></div></body></html>

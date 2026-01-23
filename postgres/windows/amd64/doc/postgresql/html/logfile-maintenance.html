@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>25.3. Log File Maintenance</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="routine-reindex.html" title="25.2. Routine Reindexing" /><link rel="next" href="backup.html" title="Chapter 26. Backup and Restore" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">25.3. Log File Maintenance</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="routine-reindex.html" title="25.2. Routine Reindexing">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Up</a></td><th width="60%" align="center">Chapter 25. Routine Database Maintenance Tasks</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="backup.html" title="Chapter 26. Backup and Restore">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LOGFILE-MAINTENANCE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">25.3. Log File Maintenance</h2></div></div></div><a id="id-1.6.12.12.2" class="indexterm"></a><p>
+   It is a good idea to save the database server's log output
+   somewhere, rather than just discarding it via <code class="filename">/dev/null</code>.
+   The log output is invaluable when diagnosing
+   problems.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    The server log can contain sensitive information and needs to be protected,
+    no matter how or where it is stored, or the destination to which it is routed.
+    For example, some DDL statements might contain plaintext passwords or other
+    authentication details. Logged statements at the <code class="literal">ERROR</code>
+    level might show the SQL source code for applications
+    and might also contain some parts of data rows. Recording data, events and
+    related information is the intended function of this facility, so this is
+    not a leakage or a bug. Please ensure the server logs are visible only to
+    appropriately authorized people.
+   </p></div><p>
+   Log output tends to be voluminous
+   (especially at higher debug levels) so you won't want to save it
+   indefinitely.  You need to <span class="emphasis"><em>rotate</em></span> the log files so that
+   new log files are started and old ones removed after a reasonable
+   period of time.
+  </p><p>
+   If you simply direct the <span class="systemitem">stderr</span> of
+   <code class="command">postgres</code> into a
+   file, you will have log output, but
+   the only way to truncate the log file is to stop and restart
+   the server. This might be acceptable if you are using
+   <span class="productname">PostgreSQL</span> in a development environment,
+   but few production servers would find this behavior acceptable.
+  </p><p>
+   A better approach is to send the server's
+   <span class="systemitem">stderr</span> output to some type of log rotation program.
+   There is a built-in log rotation facility, which you can use by
+   setting the configuration parameter <code class="varname">logging_collector</code> to
+   <code class="literal">true</code> in <code class="filename">postgresql.conf</code>.  The control
+   parameters for this program are described in <a class="xref" href="runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHERE" title="20.8.1. Where to Log">Section 20.8.1</a>. You can also use this approach
+   to capture the log data in machine readable <acronym class="acronym">CSV</acronym>
+   (comma-separated values) format.
+  </p><p>
+   Alternatively, you might prefer to use an external log rotation
+   program if you have one that you are already using with other
+   server software. For example, the <span class="application">rotatelogs</span>
+   tool included in the <span class="productname">Apache</span> distribution
+   can be used with <span class="productname">PostgreSQL</span>.  One way to
+   do this is to pipe the server's
+   <span class="systemitem">stderr</span> output to the desired program.
+   If you start the server with
+   <code class="command">pg_ctl</code>, then <span class="systemitem">stderr</span>
+   is already redirected to <span class="systemitem">stdout</span>, so you just need a
+   pipe command, for example:
+
+</p><pre class="programlisting">
+pg_ctl start | rotatelogs /var/log/pgsql_log 86400
+</pre><p>
+  </p><p>
+   You can combine these approaches by setting up <span class="application">logrotate</span>
+   to collect log files produced by <span class="productname">PostgreSQL</span> built-in
+   logging collector.  In this case, the logging collector defines the names and
+   location of the log files, while <span class="application">logrotate</span>
+   periodically archives these files.  When initiating log rotation,
+   <span class="application">logrotate</span> must ensure that the application
+   sends further output to the new file.  This is commonly done with a
+   <code class="literal">postrotate</code> script that sends a <code class="literal">SIGHUP</code>
+   signal to the application, which then reopens the log file.
+   In <span class="productname">PostgreSQL</span>, you can run <code class="command">pg_ctl</code>
+   with the <code class="literal">logrotate</code> option instead.  When the server receives
+   this command, the server either switches to a new log file or reopens the
+   existing file, depending on the logging configuration
+   (see <a class="xref" href="runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHERE" title="20.8.1. Where to Log">Section 20.8.1</a>).
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    When using static log file names, the server might fail to reopen the log
+    file if the max open file limit is reached or a file table overflow occurs.
+    In this case, log messages are sent to the old log file until a
+    successful log rotation. If <span class="application">logrotate</span> is
+    configured to compress the log file and delete it, the server may lose
+    the messages logged in this time frame. To avoid this issue, you can
+    configure the logging collector to dynamically assign log file names
+    and use a <code class="literal">prerotate</code> script to ignore open log files.
+    </p></div><p>
+   Another production-grade approach to managing log output is to
+   send it to <span class="application">syslog</span> and let
+   <span class="application">syslog</span> deal with file rotation. To do this, set the
+   configuration parameter <code class="varname">log_destination</code> to <code class="literal">syslog</code>
+   (to log to <span class="application">syslog</span> only) in
+   <code class="filename">postgresql.conf</code>. Then you can send a <code class="literal">SIGHUP</code>
+   signal to the <span class="application">syslog</span> daemon whenever you want to force it
+   to start writing a new log file.  If you want to automate log
+   rotation, the <span class="application">logrotate</span> program can be
+   configured to work with log files from
+   <span class="application">syslog</span>.
+  </p><p>
+   On many systems, however, <span class="application">syslog</span> is not very reliable,
+   particularly with large log messages; it might truncate or drop messages
+   just when you need them the most.  Also, on <span class="productname">Linux</span>,
+   <span class="application">syslog</span> will flush each message to disk, yielding poor
+   performance.  (You can use a <span class="quote">“<span class="quote"><code class="literal">-</code></span>”</span> at the start of the file name
+   in the <span class="application">syslog</span> configuration file to disable syncing.)
+  </p><p>
+   Note that all the solutions described above take care of starting new
+   log files at configurable intervals, but they do not handle deletion
+   of old, no-longer-useful log files.  You will probably want to set
+   up a batch job to periodically delete old log files.  Another possibility
+   is to configure the rotation program so that old log files are overwritten
+   cyclically.
+  </p><p>
+   <a class="ulink" href="https://pgbadger.darold.net/" target="_top"><span class="productname">pgBadger</span></a>
+   is an external project that does sophisticated log file analysis.
+   <a class="ulink" href="https://bucardo.org/check_postgres/" target="_top"><span class="productname">check_postgres</span></a>
+   provides Nagios alerts when important messages appear in the log
+   files, as well as detection of many other extraordinary conditions.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="routine-reindex.html" title="25.2. Routine Reindexing">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="backup.html" title="Chapter 26. Backup and Restore">Next</a></td></tr><tr><td width="40%" align="left" valign="top">25.2. Routine Reindexing </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 26. Backup and Restore</td></tr></table></div></body></html>

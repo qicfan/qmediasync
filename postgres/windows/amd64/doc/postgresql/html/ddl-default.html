@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5.2. Default Values</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ddl-basics.html" title="5.1. Table Basics" /><link rel="next" href="ddl-generated-columns.html" title="5.3. Generated Columns" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">5.2. Default Values</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ddl-basics.html" title="5.1. Table Basics">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><th width="60%" align="center">Chapter 5. Data Definition</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ddl-generated-columns.html" title="5.3. Generated Columns">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DDL-DEFAULT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">5.2. Default Values</h2></div></div></div><a id="id-1.5.4.4.2" class="indexterm"></a><p>
+   A column can be assigned a default value.  When a new row is
+   created and no values are specified for some of the columns, those
+   columns will be filled with their respective default values.  A
+   data manipulation command can also request explicitly that a column
+   be set to its default value, without having to know what that value is.
+   (Details about data manipulation commands are in <a class="xref" href="dml.html" title="Chapter 6. Data Manipulation">Chapter 6</a>.)
+  </p><p>
+   <a id="id-1.5.4.4.4.1" class="indexterm"></a>
+   If no default value is declared explicitly, the default value is the
+   null value.  This usually makes sense because a null value can
+   be considered to represent unknown data.
+  </p><p>
+   In a table definition, default values are listed after the column
+   data type.  For example:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer,
+    name text,
+    price numeric <span class="emphasis"><strong>DEFAULT 9.99</strong></span>
+);
+</pre><p>
+  </p><p>
+   The default value can be an expression, which will be
+   evaluated whenever the default value is inserted
+   (<span class="emphasis"><em>not</em></span> when the table is created).  A common example
+   is for a <code class="type">timestamp</code> column to have a default of <code class="literal">CURRENT_TIMESTAMP</code>,
+   so that it gets set to the time of row insertion.  Another common
+   example is generating a <span class="quote">“<span class="quote">serial number</span>”</span> for each row.
+   In <span class="productname">PostgreSQL</span> this is typically done by
+   something like:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no integer <span class="emphasis"><strong>DEFAULT nextval('products_product_no_seq')</strong></span>,
+    ...
+);
+</pre><p>
+   where the <code class="literal">nextval()</code> function supplies successive values
+   from a <em class="firstterm">sequence object</em> (see <a class="xref" href="functions-sequence.html" title="9.17. Sequence Manipulation Functions">Section 9.17</a>). This arrangement is sufficiently common
+   that there's a special shorthand for it:
+</p><pre class="programlisting">
+CREATE TABLE products (
+    product_no <span class="emphasis"><strong>SERIAL</strong></span>,
+    ...
+);
+</pre><p>
+   The <code class="literal">SERIAL</code> shorthand is discussed further in <a class="xref" href="datatype-numeric.html#DATATYPE-SERIAL" title="8.1.4. Serial Types">Section 8.1.4</a>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ddl-basics.html" title="5.1. Table Basics">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ddl-generated-columns.html" title="5.3. Generated Columns">Next</a></td></tr><tr><td width="40%" align="left" valign="top">5.1. Table Basics </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 5.3. Generated Columns</td></tr></table></div></body></html>

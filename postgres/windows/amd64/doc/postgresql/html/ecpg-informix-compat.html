@@ -1,0 +1,892 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>36.15. Informix Compatibility Mode</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-sql-whenever.html" title="WHENEVER" /><link rel="next" href="ecpg-oracle-compat.html" title="36.16. Oracle Compatibility Mode" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">36.15. <span xmlns="http://www.w3.org/1999/xhtml" class="productname">Informix</span> Compatibility Mode</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-sql-whenever.html" title="WHENEVER">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><th width="60%" align="center">Chapter 36. <span xmlns="http://www.w3.org/1999/xhtml" class="application">ECPG</span> — Embedded <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> in C</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-oracle-compat.html" title="36.16. Oracle Compatibility Mode">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ECPG-INFORMIX-COMPAT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">36.15. <span class="productname">Informix</span> Compatibility Mode</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ecpg-informix-compat.html#ECPG-INFORMIX-TYPES">36.15.1. Additional Types</a></span></dt><dt><span class="sect2"><a href="ecpg-informix-compat.html#ECPG-INFORMIX-STATEMENTS">36.15.2. Additional/Missing Embedded SQL Statements</a></span></dt><dt><span class="sect2"><a href="ecpg-informix-compat.html#ECPG-INFORMIX-SQLDA">36.15.3. Informix-compatible SQLDA Descriptor Areas</a></span></dt><dt><span class="sect2"><a href="ecpg-informix-compat.html#ECPG-INFORMIX-FUNCTIONS">36.15.4. Additional Functions</a></span></dt><dt><span class="sect2"><a href="ecpg-informix-compat.html#ECPG-INFORMIX-CONSTANTS">36.15.5. Additional Constants</a></span></dt></dl></div><p>
+   <code class="command">ecpg</code> can be run in a so-called <em class="firstterm">Informix compatibility mode</em>. If
+   this mode is active, it tries to behave as if it were the <span class="productname">Informix</span>
+   precompiler for <span class="productname">Informix</span> E/SQL. Generally spoken this will allow you to use
+   the dollar sign instead of the <code class="literal">EXEC SQL</code> primitive to introduce
+   embedded SQL commands:
+</p><pre class="programlisting">
+$int j = 3;
+$CONNECT TO :dbname;
+$CREATE TABLE test(i INT PRIMARY KEY, j INT);
+$INSERT INTO test(i, j) VALUES (7, :j);
+$COMMIT;
+</pre><p>
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    There must not be any white space between the <code class="literal">$</code>
+    and a following preprocessor directive, that is,
+    <code class="literal">include</code>, <code class="literal">define</code>, <code class="literal">ifdef</code>,
+    etc.  Otherwise, the preprocessor will parse the token as a host
+    variable.
+   </p></div><p>
+   There are two compatibility modes: <code class="literal">INFORMIX</code>, <code class="literal">INFORMIX_SE</code>
+  </p><p>
+   When linking programs that use this compatibility mode, remember to link
+   against <code class="literal">libcompat</code> that is shipped with ECPG.
+  </p><p>
+   Besides the previously explained syntactic sugar, the <span class="productname">Informix</span> compatibility
+   mode ports some functions for input, output and transformation of data as
+   well as embedded SQL statements known from E/SQL to ECPG.
+  </p><p>
+   <span class="productname">Informix</span> compatibility mode is closely connected to the pgtypeslib library
+   of ECPG. pgtypeslib maps SQL data types to data types within the C host
+   program and most of the additional functions of the <span class="productname">Informix</span> compatibility
+   mode allow you to operate on those C host program types. Note however that
+   the extent of the compatibility is limited. It does not try to copy <span class="productname">Informix</span>
+   behavior; it allows you to do more or less the same operations and gives
+   you functions that have the same name and the same basic behavior but it is
+   no drop-in replacement if you are using <span class="productname">Informix</span> at the moment. Moreover,
+   some of the data types are different. For example,
+   <span class="productname">PostgreSQL's</span> datetime and interval types do not
+   know about ranges like for example <code class="literal">YEAR TO MINUTE</code> so you won't
+   find support in ECPG for that either.
+  </p><div class="sect2" id="ECPG-INFORMIX-TYPES"><div class="titlepage"><div><div><h3 class="title">36.15.1. Additional Types</h3></div></div></div><p>
+    The Informix-special "string" pseudo-type for storing right-trimmed character string data is now
+    supported in Informix-mode without using <code class="literal">typedef</code>. In fact, in Informix-mode,
+    ECPG refuses to process source files that contain <code class="literal">typedef sometype string;</code>
+</p><pre class="programlisting">
+EXEC SQL BEGIN DECLARE SECTION;
+string userid; /* this variable will contain trimmed data */
+EXEC SQL END DECLARE SECTION;
+
+EXEC SQL FETCH MYCUR INTO :userid;
+</pre><p>
+   </p></div><div class="sect2" id="ECPG-INFORMIX-STATEMENTS"><div class="titlepage"><div><div><h3 class="title">36.15.2. Additional/Missing Embedded SQL Statements</h3></div></div></div><p>
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">CLOSE DATABASE</code></span></dt><dd><p>
+        This statement closes the current connection. In fact, this is a
+        synonym for ECPG's <code class="literal">DISCONNECT CURRENT</code>:
+</p><pre class="programlisting">
+$CLOSE DATABASE;                /* close the current connection */
+EXEC SQL CLOSE DATABASE;
+</pre><p>
+       </p></dd><dt><span class="term"><code class="literal">FREE cursor_name</code></span></dt><dd><p>
+        Due to the differences how ECPG works compared to Informix's ESQL/C (i.e., which steps
+        are purely grammar transformations and which steps rely on the underlying run-time library)
+        there is no <code class="literal">FREE cursor_name</code> statement in ECPG. This is because in ECPG,
+        <code class="literal">DECLARE CURSOR</code> doesn't translate to a function call into
+        the run-time library that uses to the cursor name. This means that there's no run-time
+        bookkeeping of SQL cursors in the ECPG run-time library, only in the PostgreSQL server.
+       </p></dd><dt><span class="term"><code class="literal">FREE statement_name</code></span></dt><dd><p>
+        <code class="literal">FREE statement_name</code> is a synonym for <code class="literal">DEALLOCATE PREPARE statement_name</code>.
+       </p></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-INFORMIX-SQLDA"><div class="titlepage"><div><div><h3 class="title">36.15.3. Informix-compatible SQLDA Descriptor Areas</h3></div></div></div><p>
+    Informix-compatible mode supports a different structure than the one described in
+    <a class="xref" href="ecpg-descriptors.html#ECPG-SQLDA-DESCRIPTORS" title="36.7.2. SQLDA Descriptor Areas">Section 36.7.2</a>. See below:
+</p><pre class="programlisting">
+struct sqlvar_compat
+{
+    short   sqltype;
+    int     sqllen;
+    char   *sqldata;
+    short  *sqlind;
+    char   *sqlname;
+    char   *sqlformat;
+    short   sqlitype;
+    short   sqlilen;
+    char   *sqlidata;
+    int     sqlxid;
+    char   *sqltypename;
+    short   sqltypelen;
+    short   sqlownerlen;
+    short   sqlsourcetype;
+    char   *sqlownername;
+    int     sqlsourceid;
+    char   *sqlilongdata;
+    int     sqlflags;
+    void   *sqlreserved;
+};
+
+struct sqlda_compat
+{
+    short  sqld;
+    struct sqlvar_compat *sqlvar;
+    char   desc_name[19];
+    short  desc_occ;
+    struct sqlda_compat *desc_next;
+    void  *reserved;
+};
+
+typedef struct sqlvar_compat    sqlvar_t;
+typedef struct sqlda_compat     sqlda_t;
+</pre><p>
+   </p><p>
+    The global properties are:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">sqld</code></span></dt><dd><p>
+        The number of fields in the <code class="literal">SQLDA</code> descriptor.
+       </p></dd><dt><span class="term"><code class="literal">sqlvar</code></span></dt><dd><p>
+        Pointer to the per-field properties.
+       </p></dd><dt><span class="term"><code class="literal">desc_name</code></span></dt><dd><p>
+        Unused, filled with zero-bytes.
+       </p></dd><dt><span class="term"><code class="literal">desc_occ</code></span></dt><dd><p>
+        Size of the allocated structure.
+       </p></dd><dt><span class="term"><code class="literal">desc_next</code></span></dt><dd><p>
+        Pointer to the next SQLDA structure if the result set contains more than one record.
+       </p></dd><dt><span class="term"><code class="literal">reserved</code></span></dt><dd><p>
+        Unused pointer, contains NULL. Kept for Informix-compatibility.
+       </p></dd></dl></div><p>
+
+    The per-field properties are below, they are stored in the <code class="literal">sqlvar</code> array:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">sqltype</code></span></dt><dd><p>
+        Type of the field. Constants are in <code class="literal">sqltypes.h</code>
+       </p></dd><dt><span class="term"><code class="literal">sqllen</code></span></dt><dd><p>
+        Length of the field data.
+       </p></dd><dt><span class="term"><code class="literal">sqldata</code></span></dt><dd><p>
+        Pointer to the field data. The pointer is of <code class="literal">char *</code> type,
+        the data pointed by it is in a binary format. Example:
+</p><pre class="programlisting">
+int intval;
+
+switch (sqldata-&gt;sqlvar[i].sqltype)
+{
+    case SQLINTEGER:
+        intval = *(int *)sqldata-&gt;sqlvar[i].sqldata;
+        break;
+  ...
+}
+</pre><p>
+       </p></dd><dt><span class="term"><code class="literal">sqlind</code></span></dt><dd><p>
+        Pointer to the NULL indicator. If returned by DESCRIBE or FETCH then it's always a valid pointer.
+        If used as input for <code class="literal">EXECUTE ... USING sqlda;</code> then NULL-pointer value means
+        that the value for this field is non-NULL. Otherwise a valid pointer and <code class="literal">sqlitype</code>
+        has to be properly set. Example:
+</p><pre class="programlisting">
+if (*(int2 *)sqldata-&gt;sqlvar[i].sqlind != 0)
+    printf("value is NULL\n");
+</pre><p>
+       </p></dd><dt><span class="term"><code class="literal">sqlname</code></span></dt><dd><p>
+        Name of the field. 0-terminated string.
+       </p></dd><dt><span class="term"><code class="literal">sqlformat</code></span></dt><dd><p>
+        Reserved in Informix, value of <a class="xref" href="libpq-exec.html#LIBPQ-PQFFORMAT"><code class="function">PQfformat</code></a> for the field.
+       </p></dd><dt><span class="term"><code class="literal">sqlitype</code></span></dt><dd><p>
+        Type of the NULL indicator data. It's always SQLSMINT when returning data from the server.
+        When the <code class="literal">SQLDA</code> is used for a parameterized query, the data is treated
+        according to the set type.
+       </p></dd><dt><span class="term"><code class="literal">sqlilen</code></span></dt><dd><p>
+        Length of the NULL indicator data.
+       </p></dd><dt><span class="term"><code class="literal">sqlxid</code></span></dt><dd><p>
+        Extended type of the field, result of <a class="xref" href="libpq-exec.html#LIBPQ-PQFTYPE"><code class="function">PQftype</code></a>.
+       </p></dd><dt><span class="term"><code class="literal">sqltypename</code><br /></span><span class="term"><code class="literal">sqltypelen</code><br /></span><span class="term"><code class="literal">sqlownerlen</code><br /></span><span class="term"><code class="literal">sqlsourcetype</code><br /></span><span class="term"><code class="literal">sqlownername</code><br /></span><span class="term"><code class="literal">sqlsourceid</code><br /></span><span class="term"><code class="literal">sqlflags</code><br /></span><span class="term"><code class="literal">sqlreserved</code></span></dt><dd><p>
+        Unused.
+       </p></dd><dt><span class="term"><code class="literal">sqlilongdata</code></span></dt><dd><p>
+        It equals to <code class="literal">sqldata</code> if <code class="literal">sqllen</code> is larger than 32kB.
+       </p></dd></dl></div><p>
+
+    Example:
+</p><pre class="programlisting">
+EXEC SQL INCLUDE sqlda.h;
+
+    sqlda_t        *sqlda; /* This doesn't need to be under embedded DECLARE SECTION */
+
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *prep_stmt = "select * from table1";
+    int i;
+    EXEC SQL END DECLARE SECTION;
+
+    ...
+
+    EXEC SQL PREPARE mystmt FROM :prep_stmt;
+
+    EXEC SQL DESCRIBE mystmt INTO sqlda;
+
+    printf("# of fields: %d\n", sqlda-&gt;sqld);
+    for (i = 0; i &lt; sqlda-&gt;sqld; i++)
+      printf("field %d: \"%s\"\n", sqlda-&gt;sqlvar[i]-&gt;sqlname);
+
+    EXEC SQL DECLARE mycursor CURSOR FOR mystmt;
+    EXEC SQL OPEN mycursor;
+    EXEC SQL WHENEVER NOT FOUND GOTO out;
+
+    while (1)
+    {
+      EXEC SQL FETCH mycursor USING sqlda;
+    }
+
+    EXEC SQL CLOSE mycursor;
+
+    free(sqlda); /* The main structure is all to be free(),
+                  * sqlda and sqlda-&gt;sqlvar is in one allocated area */
+</pre><p>
+    For more information, see the <code class="literal">sqlda.h</code> header and the
+    <code class="literal">src/interfaces/ecpg/test/compat_informix/sqlda.pgc</code> regression test.
+   </p></div><div class="sect2" id="ECPG-INFORMIX-FUNCTIONS"><div class="titlepage"><div><div><h3 class="title">36.15.4. Additional Functions</h3></div></div></div><p>
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">decadd</code></span></dt><dd><p>
+        Add two decimal type values.
+</p><pre class="synopsis">
+int decadd(decimal *arg1, decimal *arg2, decimal *sum);
+</pre><p>
+        The function receives a pointer to the first operand of type decimal
+        (<code class="literal">arg1</code>), a pointer to the second operand of type decimal
+        (<code class="literal">arg2</code>) and a pointer to a value of type decimal that will
+        contain the sum (<code class="literal">sum</code>). On success, the function returns 0.
+        <code class="symbol">ECPG_INFORMIX_NUM_OVERFLOW</code> is returned in case of overflow and
+        <code class="symbol">ECPG_INFORMIX_NUM_UNDERFLOW</code> in case of underflow. -1 is returned for
+        other failures and <code class="varname">errno</code> is set to the respective <code class="varname">errno</code> number of the
+        pgtypeslib.
+       </p></dd><dt><span class="term"><code class="function">deccmp</code></span></dt><dd><p>
+        Compare two variables of type decimal.
+</p><pre class="synopsis">
+int deccmp(decimal *arg1, decimal *arg2);
+</pre><p>
+        The function receives a pointer to the first decimal value
+        (<code class="literal">arg1</code>), a pointer to the second decimal value
+        (<code class="literal">arg2</code>) and returns an integer value that indicates which is
+        the bigger value.
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           1, if the value that <code class="literal">arg1</code> points to is bigger than the
+           value that <code class="literal">var2</code> points to
+          </p></li><li class="listitem"><p>
+           -1, if the value that <code class="literal">arg1</code> points to is smaller than the
+           value that <code class="literal">arg2</code> points to </p></li><li class="listitem"><p>
+           0, if the value that <code class="literal">arg1</code> points to and the value that
+           <code class="literal">arg2</code> points to are equal
+          </p></li></ul></div><p>
+       </p></dd><dt><span class="term"><code class="function">deccopy</code></span></dt><dd><p>
+        Copy a decimal value.
+</p><pre class="synopsis">
+void deccopy(decimal *src, decimal *target);
+</pre><p>
+        The function receives a pointer to the decimal value that should be
+        copied as the first argument (<code class="literal">src</code>) and a pointer to the
+        target structure of type decimal (<code class="literal">target</code>) as the second
+        argument.
+       </p></dd><dt><span class="term"><code class="function">deccvasc</code></span></dt><dd><p>
+        Convert a value from its ASCII representation into a decimal type.
+</p><pre class="synopsis">
+int deccvasc(char *cp, int len, decimal *np);
+</pre><p>
+        The function receives a pointer to string that contains the string
+        representation of the number to be converted (<code class="literal">cp</code>) as well
+        as its length <code class="literal">len</code>. <code class="literal">np</code> is a pointer to the
+        decimal value that saves the result of the operation.
+       </p><p>
+        Valid formats are for example:
+         <code class="literal">-2</code>,
+         <code class="literal">.794</code>,
+         <code class="literal">+3.44</code>,
+         <code class="literal">592.49E07</code> or
+         <code class="literal">-32.84e-4</code>.
+       </p><p>
+        The function returns 0 on success. If overflow or underflow occurred,
+        <code class="literal">ECPG_INFORMIX_NUM_OVERFLOW</code> or
+        <code class="literal">ECPG_INFORMIX_NUM_UNDERFLOW</code> is returned. If the ASCII
+        representation could not be parsed,
+        <code class="literal">ECPG_INFORMIX_BAD_NUMERIC</code> is returned or
+        <code class="literal">ECPG_INFORMIX_BAD_EXPONENT</code> if this problem occurred while
+        parsing the exponent.
+       </p></dd><dt><span class="term"><code class="function">deccvdbl</code></span></dt><dd><p>
+        Convert a value of type double to a value of type decimal.
+</p><pre class="synopsis">
+int deccvdbl(double dbl, decimal *np);
+</pre><p>
+        The function receives the variable of type double that should be
+        converted as its first argument (<code class="literal">dbl</code>). As the second
+        argument (<code class="literal">np</code>), the function receives a pointer to the
+        decimal variable that should hold the result of the operation.
+       </p><p>
+        The function returns 0 on success and a negative value if the
+        conversion failed.
+       </p></dd><dt><span class="term"><code class="function">deccvint</code></span></dt><dd><p>
+        Convert a value of type int to a value of type decimal.
+</p><pre class="synopsis">
+int deccvint(int in, decimal *np);
+</pre><p>
+        The function receives the variable of type int that should be
+        converted as its first argument (<code class="literal">in</code>). As the second
+        argument (<code class="literal">np</code>), the function receives a pointer to the
+        decimal variable that should hold the result of the operation.
+       </p><p>
+        The function returns 0 on success and a negative value if the
+        conversion failed.
+       </p></dd><dt><span class="term"><code class="function">deccvlong</code></span></dt><dd><p>
+        Convert a value of type long to a value of type decimal.
+</p><pre class="synopsis">
+int deccvlong(long lng, decimal *np);
+</pre><p>
+        The function receives the variable of type long that should be
+        converted as its first argument (<code class="literal">lng</code>). As the second
+        argument (<code class="literal">np</code>), the function receives a pointer to the
+        decimal variable that should hold the result of the operation.
+       </p><p>
+        The function returns 0 on success and a negative value if the
+        conversion failed.
+       </p></dd><dt><span class="term"><code class="function">decdiv</code></span></dt><dd><p>
+        Divide two variables of type decimal.
+</p><pre class="synopsis">
+int decdiv(decimal *n1, decimal *n2, decimal *result);
+</pre><p>
+        The function receives pointers to the variables that are the first
+        (<code class="literal">n1</code>) and the second (<code class="literal">n2</code>) operands and
+        calculates <code class="literal">n1</code>/<code class="literal">n2</code>. <code class="literal">result</code> is a
+        pointer to the variable that should hold the result of the operation.
+       </p><p>
+        On success, 0 is returned and a negative value if the division fails.
+        If overflow or underflow occurred, the function returns
+        <code class="literal">ECPG_INFORMIX_NUM_OVERFLOW</code> or
+        <code class="literal">ECPG_INFORMIX_NUM_UNDERFLOW</code> respectively. If an attempt to
+        divide by zero is observed, the function returns
+        <code class="literal">ECPG_INFORMIX_DIVIDE_ZERO</code>.
+       </p></dd><dt><span class="term"><code class="function">decmul</code></span></dt><dd><p>
+        Multiply two decimal values.
+</p><pre class="synopsis">
+int decmul(decimal *n1, decimal *n2, decimal *result);
+</pre><p>
+        The function receives pointers to the variables that are the first
+        (<code class="literal">n1</code>) and the second (<code class="literal">n2</code>) operands and
+        calculates <code class="literal">n1</code>*<code class="literal">n2</code>. <code class="literal">result</code> is a
+        pointer to the variable that should hold the result of the operation.
+       </p><p>
+        On success, 0 is returned and a negative value if the multiplication
+        fails. If overflow or underflow occurred, the function returns
+        <code class="literal">ECPG_INFORMIX_NUM_OVERFLOW</code> or
+        <code class="literal">ECPG_INFORMIX_NUM_UNDERFLOW</code> respectively.
+       </p></dd><dt><span class="term"><code class="function">decsub</code></span></dt><dd><p>
+        Subtract one decimal value from another.
+</p><pre class="synopsis">
+int decsub(decimal *n1, decimal *n2, decimal *result);
+</pre><p>
+        The function receives pointers to the variables that are the first
+        (<code class="literal">n1</code>) and the second (<code class="literal">n2</code>) operands and
+        calculates <code class="literal">n1</code>-<code class="literal">n2</code>. <code class="literal">result</code> is a
+        pointer to the variable that should hold the result of the operation.
+       </p><p>
+        On success, 0 is returned and a negative value if the subtraction
+        fails. If overflow or underflow occurred, the function returns
+        <code class="literal">ECPG_INFORMIX_NUM_OVERFLOW</code> or
+        <code class="literal">ECPG_INFORMIX_NUM_UNDERFLOW</code> respectively.
+       </p></dd><dt><span class="term"><code class="function">dectoasc</code></span></dt><dd><p>
+        Convert a variable of type decimal to its ASCII representation in a C
+        char* string.
+</p><pre class="synopsis">
+int dectoasc(decimal *np, char *cp, int len, int right)
+</pre><p>
+        The function receives a pointer to a variable of type decimal
+        (<code class="literal">np</code>) that it converts to its textual representation.
+        <code class="literal">cp</code> is the buffer that should hold the result of the
+        operation. The parameter <code class="literal">right</code> specifies, how many digits
+        right of the decimal point should be included in the output. The result
+        will be rounded to this number of decimal digits. Setting
+        <code class="literal">right</code> to -1 indicates that all available decimal digits
+        should be included in the output. If the length of the output buffer,
+        which is indicated by <code class="literal">len</code> is not sufficient to hold the
+        textual representation including the trailing zero byte, only a
+        single <code class="literal">*</code> character is stored in the result and -1 is
+        returned.
+       </p><p>
+        The function returns either -1 if the buffer <code class="literal">cp</code> was too
+        small or <code class="literal">ECPG_INFORMIX_OUT_OF_MEMORY</code> if memory was
+        exhausted.
+       </p></dd><dt><span class="term"><code class="function">dectodbl</code></span></dt><dd><p>
+        Convert a variable of type decimal to a double.
+</p><pre class="synopsis">
+int dectodbl(decimal *np, double *dblp);
+</pre><p>
+        The function receives a pointer to the decimal value to convert
+        (<code class="literal">np</code>) and a pointer to the double variable that
+        should hold the result of the operation (<code class="literal">dblp</code>).
+       </p><p>
+        On success, 0 is returned and a negative value if the conversion
+        failed.
+       </p></dd><dt><span class="term"><code class="function">dectoint</code></span></dt><dd><p>
+        Convert a variable of type decimal to an integer.
+</p><pre class="synopsis">
+int dectoint(decimal *np, int *ip);
+</pre><p>
+        The function receives a pointer to the decimal value to convert
+        (<code class="literal">np</code>) and a pointer to the integer variable that
+        should hold the result of the operation (<code class="literal">ip</code>).
+       </p><p>
+        On success, 0 is returned and a negative value if the conversion
+        failed. If an overflow occurred, <code class="literal">ECPG_INFORMIX_NUM_OVERFLOW</code>
+        is returned.
+       </p><p>
+        Note that the ECPG implementation differs from the <span class="productname">Informix</span>
+        implementation. <span class="productname">Informix</span> limits an integer to the range from -32767 to
+        32767, while the limits in the ECPG implementation depend on the
+        architecture (<code class="literal">INT_MIN .. INT_MAX</code>).
+       </p></dd><dt><span class="term"><code class="function">dectolong</code></span></dt><dd><p>
+        Convert a variable of type decimal to a long integer.
+</p><pre class="synopsis">
+int dectolong(decimal *np, long *lngp);
+</pre><p>
+        The function receives a pointer to the decimal value to convert
+        (<code class="literal">np</code>) and a pointer to the long variable that
+        should hold the result of the operation (<code class="literal">lngp</code>).
+       </p><p>
+        On success, 0 is returned and a negative value if the conversion
+        failed. If an overflow occurred, <code class="literal">ECPG_INFORMIX_NUM_OVERFLOW</code>
+        is returned.
+       </p><p>
+        Note that the ECPG implementation differs from the <span class="productname">Informix</span>
+        implementation. <span class="productname">Informix</span> limits a long integer to the range from
+        -2,147,483,647 to 2,147,483,647, while the limits in the ECPG
+        implementation depend on the architecture (<code class="literal">-LONG_MAX ..
+        LONG_MAX</code>).
+       </p></dd><dt><span class="term"><code class="function">rdatestr</code></span></dt><dd><p>
+        Converts a date to a C char* string.
+</p><pre class="synopsis">
+int rdatestr(date d, char *str);
+</pre><p>
+        The function receives two arguments, the first one is the date to
+        convert (<code class="literal">d</code>) and the second one is a pointer to the target
+        string. The output format is always <code class="literal">yyyy-mm-dd</code>, so you need
+        to allocate at least 11 bytes (including the zero-byte terminator) for the
+        string.
+       </p><p>
+        The function returns 0 on success and a negative value in case of
+        error.
+       </p><p>
+        Note that ECPG's implementation differs from the <span class="productname">Informix</span>
+        implementation. In <span class="productname">Informix</span> the format can be influenced by setting
+        environment variables. In ECPG however, you cannot change the output
+        format.
+       </p></dd><dt><span class="term"><code class="function">rstrdate</code></span></dt><dd><p>
+        Parse the textual representation of a date.
+</p><pre class="synopsis">
+int rstrdate(char *str, date *d);
+</pre><p>
+        The function receives the textual representation of the date to convert
+        (<code class="literal">str</code>) and a pointer to a variable of type date
+        (<code class="literal">d</code>). This function does not allow you to specify a format
+        mask. It uses the default format mask of <span class="productname">Informix</span> which is
+        <code class="literal">mm/dd/yyyy</code>. Internally, this function is implemented by
+        means of <code class="function">rdefmtdate</code>. Therefore, <code class="function">rstrdate</code> is
+        not faster and if you have the choice you should opt for
+        <code class="function">rdefmtdate</code> which allows you to specify the format mask
+        explicitly.
+       </p><p>
+        The function returns the same values as <code class="function">rdefmtdate</code>.
+       </p></dd><dt><span class="term"><code class="function">rtoday</code></span></dt><dd><p>
+        Get the current date.
+</p><pre class="synopsis">
+void rtoday(date *d);
+</pre><p>
+        The function receives a pointer to a date variable (<code class="literal">d</code>)
+        that it sets to the current date.
+       </p><p>
+        Internally this function uses the <a class="xref" href="ecpg-pgtypes.html#PGTYPESDATETODAY"><code class="function">PGTYPESdate_today</code></a>
+        function.
+       </p></dd><dt><span class="term"><code class="function">rjulmdy</code></span></dt><dd><p>
+        Extract the values for the day, the month and the year from a variable
+        of type date.
+</p><pre class="synopsis">
+int rjulmdy(date d, short mdy[3]);
+</pre><p>
+        The function receives the date <code class="literal">d</code> and a pointer to an array
+        of 3 short integer values <code class="literal">mdy</code>. The variable name indicates
+        the sequential order: <code class="literal">mdy[0]</code> will be set to contain the
+        number of the month, <code class="literal">mdy[1]</code> will be set to the value of the
+        day and <code class="literal">mdy[2]</code> will contain the year.
+       </p><p>
+        The function always returns 0 at the moment.
+       </p><p>
+        Internally the function uses the <a class="xref" href="ecpg-pgtypes.html#PGTYPESDATEJULMDY"><code class="function">PGTYPESdate_julmdy</code></a>
+        function.
+       </p></dd><dt><span class="term"><code class="function">rdefmtdate</code></span></dt><dd><p>
+        Use a format mask to convert a character string to a value of type
+        date.
+</p><pre class="synopsis">
+int rdefmtdate(date *d, char *fmt, char *str);
+</pre><p>
+        The function receives a pointer to the date value that should hold the
+        result of the operation (<code class="literal">d</code>), the format mask to use for
+        parsing the date (<code class="literal">fmt</code>) and the C char* string containing
+        the textual representation of the date (<code class="literal">str</code>). The textual
+        representation is expected to match the format mask. However you do not
+        need to have a 1:1 mapping of the string to the format mask. The
+        function only analyzes the sequential order and looks for the literals
+        <code class="literal">yy</code> or <code class="literal">yyyy</code> that indicate the
+        position of the year, <code class="literal">mm</code> to indicate the position of
+        the month and <code class="literal">dd</code> to indicate the position of the
+        day.
+       </p><p>
+        The function returns the following values:
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           0 - The function terminated successfully.
+          </p></li><li class="listitem"><p>
+           <code class="literal">ECPG_INFORMIX_ENOSHORTDATE</code> - The date does not contain
+           delimiters between day, month and year. In this case the input
+           string must be exactly 6 or 8 bytes long but isn't.
+          </p></li><li class="listitem"><p>
+           <code class="literal">ECPG_INFORMIX_ENOTDMY</code> - The format string did not
+           correctly indicate the sequential order of year, month and day.
+          </p></li><li class="listitem"><p>
+           <code class="literal">ECPG_INFORMIX_BAD_DAY</code> - The input string does not
+           contain a valid day.
+          </p></li><li class="listitem"><p>
+           <code class="literal">ECPG_INFORMIX_BAD_MONTH</code> - The input string does not
+           contain a valid month.
+          </p></li><li class="listitem"><p>
+           <code class="literal">ECPG_INFORMIX_BAD_YEAR</code> - The input string does not
+           contain a valid year.
+          </p></li></ul></div><p>
+       </p><p>
+        Internally this function is implemented to use the <a class="xref" href="ecpg-pgtypes.html#PGTYPESDATEDEFMTASC"><code class="function">PGTYPESdate_defmt_asc</code></a> function. See the reference there for a
+        table of example input.
+       </p></dd><dt><span class="term"><code class="function">rfmtdate</code></span></dt><dd><p>
+        Convert a variable of type date to its textual representation using a
+        format mask.
+</p><pre class="synopsis">
+int rfmtdate(date d, char *fmt, char *str);
+</pre><p>
+        The function receives the date to convert (<code class="literal">d</code>), the format
+        mask (<code class="literal">fmt</code>) and the string that will hold the textual
+        representation of the date (<code class="literal">str</code>).
+       </p><p>
+        On success, 0 is returned and a negative value if an error occurred.
+       </p><p>
+        Internally this function uses the <a class="xref" href="ecpg-pgtypes.html#PGTYPESDATEFMTASC"><code class="function">PGTYPESdate_fmt_asc</code></a>
+        function, see the reference there for examples.
+       </p></dd><dt><span class="term"><code class="function">rmdyjul</code></span></dt><dd><p>
+        Create a date value from an array of 3 short integers that specify the
+        day, the month and the year of the date.
+</p><pre class="synopsis">
+int rmdyjul(short mdy[3], date *d);
+</pre><p>
+        The function receives the array of the 3 short integers
+        (<code class="literal">mdy</code>) and a pointer to a variable of type date that should
+        hold the result of the operation.
+       </p><p>
+        Currently the function returns always 0.
+       </p><p>
+        Internally the function is implemented to use the function <a class="xref" href="ecpg-pgtypes.html#PGTYPESDATEMDYJUL"><code class="function">PGTYPESdate_mdyjul</code></a>.
+       </p></dd><dt><span class="term"><code class="function">rdayofweek</code></span></dt><dd><p>
+        Return a number representing the day of the week for a date value.
+</p><pre class="synopsis">
+int rdayofweek(date d);
+</pre><p>
+        The function receives the date variable <code class="literal">d</code> as its only
+        argument and returns an integer that indicates the day of the week for
+        this date.
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           0 - Sunday
+          </p></li><li class="listitem"><p>
+           1 - Monday
+          </p></li><li class="listitem"><p>
+           2 - Tuesday
+          </p></li><li class="listitem"><p>
+           3 - Wednesday
+          </p></li><li class="listitem"><p>
+           4 - Thursday
+          </p></li><li class="listitem"><p>
+           5 - Friday
+          </p></li><li class="listitem"><p>
+           6 - Saturday
+          </p></li></ul></div><p>
+       </p><p>
+        Internally the function is implemented to use the function <a class="xref" href="ecpg-pgtypes.html#PGTYPESDATEDAYOFWEEK"><code class="function">PGTYPESdate_dayofweek</code></a>.
+       </p></dd><dt><span class="term"><code class="function">dtcurrent</code></span></dt><dd><p>
+        Retrieve the current timestamp.
+</p><pre class="synopsis">
+void dtcurrent(timestamp *ts);
+</pre><p>
+        The function retrieves the current timestamp and saves it into the
+        timestamp variable that <code class="literal">ts</code> points to.
+       </p></dd><dt><span class="term"><code class="function">dtcvasc</code></span></dt><dd><p>
+        Parses a timestamp from its textual representation
+        into a timestamp variable.
+</p><pre class="synopsis">
+int dtcvasc(char *str, timestamp *ts);
+</pre><p>
+        The function receives the string to parse (<code class="literal">str</code>) and a
+        pointer to the timestamp variable that should hold the result of the
+        operation (<code class="literal">ts</code>).
+       </p><p>
+        The function returns 0 on success and a negative value in case of
+        error.
+       </p><p>
+        Internally this function uses the <a class="xref" href="ecpg-pgtypes.html#PGTYPESTIMESTAMPFROMASC"><code class="function">PGTYPEStimestamp_from_asc</code></a> function. See the reference there
+        for a table with example inputs.
+       </p></dd><dt><span class="term"><code class="function">dtcvfmtasc</code></span></dt><dd><p>
+        Parses a timestamp from its textual representation
+        using a format mask into a timestamp variable.
+</p><pre class="synopsis">
+dtcvfmtasc(char *inbuf, char *fmtstr, timestamp *dtvalue)
+</pre><p>
+        The function receives the string to parse (<code class="literal">inbuf</code>), the
+        format mask to use (<code class="literal">fmtstr</code>) and a pointer to the timestamp
+        variable that should hold the result of the operation
+        (<code class="literal">dtvalue</code>).
+       </p><p>
+        This function is implemented by means of the <a class="xref" href="ecpg-pgtypes.html#PGTYPESTIMESTAMPDEFMTASC"><code class="function">PGTYPEStimestamp_defmt_asc</code></a> function. See the documentation
+        there for a list of format specifiers that can be used.
+       </p><p>
+        The function returns 0 on success and a negative value in case of
+        error.
+       </p></dd><dt><span class="term"><code class="function">dtsub</code></span></dt><dd><p>
+        Subtract one timestamp from another and return a variable of type
+        interval.
+</p><pre class="synopsis">
+int dtsub(timestamp *ts1, timestamp *ts2, interval *iv);
+</pre><p>
+        The function will subtract the timestamp variable that <code class="literal">ts2</code>
+        points to from the timestamp variable that <code class="literal">ts1</code> points to
+        and will store the result in the interval variable that <code class="literal">iv</code>
+        points to.
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p></dd><dt><span class="term"><code class="function">dttoasc</code></span></dt><dd><p>
+        Convert a timestamp variable to a C char* string.
+</p><pre class="synopsis">
+int dttoasc(timestamp *ts, char *output);
+</pre><p>
+        The function receives a pointer to the timestamp variable to convert
+        (<code class="literal">ts</code>) and the string that should hold the result of the
+        operation (<code class="literal">output</code>). It converts <code class="literal">ts</code> to its
+        textual representation according to the SQL standard, which is
+        be <code class="literal">YYYY-MM-DD HH:MM:SS</code>.
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p></dd><dt><span class="term"><code class="function">dttofmtasc</code></span></dt><dd><p>
+        Convert a timestamp variable to a C char* using a format mask.
+</p><pre class="synopsis">
+int dttofmtasc(timestamp *ts, char *output, int str_len, char *fmtstr);
+</pre><p>
+        The function receives a pointer to the timestamp to convert as its
+        first argument (<code class="literal">ts</code>), a pointer to the output buffer
+        (<code class="literal">output</code>), the maximal length that has been allocated for
+        the output buffer (<code class="literal">str_len</code>) and the format mask to
+        use for the conversion (<code class="literal">fmtstr</code>).
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p><p>
+        Internally, this function uses the <a class="xref" href="ecpg-pgtypes.html#PGTYPESTIMESTAMPFMTASC"><code class="function">PGTYPEStimestamp_fmt_asc</code></a> function. See the reference there for
+        information on what format mask specifiers can be used.
+       </p></dd><dt><span class="term"><code class="function">intoasc</code></span></dt><dd><p>
+        Convert an interval variable to a C char* string.
+</p><pre class="synopsis">
+int intoasc(interval *i, char *str);
+</pre><p>
+        The function receives a pointer to the interval variable to convert
+        (<code class="literal">i</code>) and the string that should hold the result of the
+        operation (<code class="literal">str</code>). It converts <code class="literal">i</code> to its
+        textual representation according to the SQL standard, which is
+        be <code class="literal">YYYY-MM-DD HH:MM:SS</code>.
+       </p><p>
+        Upon success, the function returns 0 and a negative value if an
+        error occurred.
+       </p></dd><dt><span class="term"><code class="function">rfmtlong</code></span></dt><dd><p>
+        Convert a long integer value to its textual representation using a
+        format mask.
+</p><pre class="synopsis">
+int rfmtlong(long lng_val, char *fmt, char *outbuf);
+</pre><p>
+        The function receives the long value <code class="literal">lng_val</code>, the format
+        mask <code class="literal">fmt</code> and a pointer to the output buffer
+        <code class="literal">outbuf</code>. It converts the long value according to the format
+        mask to its textual representation.
+       </p><p>
+        The format mask can be composed of the following format specifying
+        characters:
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           <code class="literal">*</code> (asterisk) - if this position would be blank
+           otherwise, fill it with an asterisk.
+          </p></li><li class="listitem"><p>
+           <code class="literal">&amp;</code> (ampersand) - if this position would be
+           blank otherwise, fill it with a zero.
+          </p></li><li class="listitem"><p>
+           <code class="literal">#</code> - turn leading zeroes into blanks.
+          </p></li><li class="listitem"><p>
+           <code class="literal">&lt;</code> - left-justify the number in the string.
+          </p></li><li class="listitem"><p>
+           <code class="literal">,</code> (comma) - group numbers of four or more digits
+           into groups of three digits separated by a comma.
+          </p></li><li class="listitem"><p>
+           <code class="literal">.</code> (period) - this character separates the
+           whole-number part of the number from the fractional part.
+          </p></li><li class="listitem"><p>
+           <code class="literal">-</code> (minus) - the minus sign appears if the number
+           is a negative value.
+          </p></li><li class="listitem"><p>
+           <code class="literal">+</code> (plus) - the plus sign appears if the number is
+           a positive value.
+          </p></li><li class="listitem"><p>
+           <code class="literal">(</code> - this replaces the minus sign in front of the
+           negative number. The minus sign will not appear.
+          </p></li><li class="listitem"><p>
+           <code class="literal">)</code> - this character replaces the minus and is
+           printed behind the negative value.
+          </p></li><li class="listitem"><p>
+           <code class="literal">$</code> - the currency symbol.
+          </p></li></ul></div><p>
+       </p></dd><dt><span class="term"><code class="function">rupshift</code></span></dt><dd><p>
+        Convert a string to upper case.
+</p><pre class="synopsis">
+void rupshift(char *str);
+</pre><p>
+        The function receives a pointer to the string and transforms every
+        lower case character to upper case.
+       </p></dd><dt><span class="term"><code class="function">byleng</code></span></dt><dd><p>
+        Return the number of characters in a string without counting trailing
+        blanks.
+</p><pre class="synopsis">
+int byleng(char *str, int len);
+</pre><p>
+        The function expects a fixed-length string as its first argument
+        (<code class="literal">str</code>) and its length as its second argument
+        (<code class="literal">len</code>). It returns the number of significant characters,
+        that is the length of the string without trailing blanks.
+       </p></dd><dt><span class="term"><code class="function">ldchar</code></span></dt><dd><p>
+        Copy a fixed-length string into a null-terminated string.
+</p><pre class="synopsis">
+void ldchar(char *src, int len, char *dest);
+</pre><p>
+        The function receives the fixed-length string to copy
+        (<code class="literal">src</code>), its length (<code class="literal">len</code>) and a pointer to the
+        destination memory (<code class="literal">dest</code>). Note that you need to reserve at
+        least <code class="literal">len+1</code> bytes for the string that <code class="literal">dest</code>
+        points to. The function copies at most <code class="literal">len</code> bytes to the new
+        location (less if the source string has trailing blanks) and adds the
+        null-terminator.
+       </p></dd><dt><span class="term"><code class="function">rgetmsg</code></span></dt><dd><p>
+</p><pre class="synopsis">
+int rgetmsg(int msgnum, char *s, int maxsize);
+</pre><p>
+        This function exists but is not implemented at the moment!
+       </p></dd><dt><span class="term"><code class="function">rtypalign</code></span></dt><dd><p>
+</p><pre class="synopsis">
+int rtypalign(int offset, int type);
+</pre><p>
+        This function exists but is not implemented at the moment!
+       </p></dd><dt><span class="term"><code class="function">rtypmsize</code></span></dt><dd><p>
+</p><pre class="synopsis">
+int rtypmsize(int type, int len);
+</pre><p>
+        This function exists but is not implemented at the moment!
+       </p></dd><dt><span class="term"><code class="function">rtypwidth</code></span></dt><dd><p>
+</p><pre class="synopsis">
+int rtypwidth(int sqltype, int sqllen);
+</pre><p>
+        This function exists but is not implemented at the moment!
+       </p></dd><dt id="RSETNULL"><span class="term"><code class="function">rsetnull</code></span></dt><dd><p>
+        Set a variable to NULL.
+</p><pre class="synopsis">
+int rsetnull(int t, char *ptr);
+</pre><p>
+        The function receives an integer that indicates the type of the
+        variable and a pointer to the variable itself that is cast to a C
+        char* pointer.
+       </p><p>
+        The following types exist:
+        </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+           <code class="literal">CCHARTYPE</code> - For a variable of type <code class="type">char</code> or <code class="type">char*</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CSHORTTYPE</code> - For a variable of type <code class="type">short int</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CINTTYPE</code> - For a variable of type <code class="type">int</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CBOOLTYPE</code> - For a variable of type <code class="type">boolean</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CFLOATTYPE</code> - For a variable of type <code class="type">float</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CLONGTYPE</code> - For a variable of type <code class="type">long</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CDOUBLETYPE</code> - For a variable of type <code class="type">double</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CDECIMALTYPE</code> - For a variable of type <code class="type">decimal</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CDATETYPE</code> - For a variable of type <code class="type">date</code>
+          </p></li><li class="listitem"><p>
+           <code class="literal">CDTIMETYPE</code> - For a variable of type <code class="type">timestamp</code>
+          </p></li></ul></div><p>
+       </p><p>
+        Here is an example of a call to this function:
+</p><pre class="programlisting">
+$char c[] = "abc       ";
+$short s = 17;
+$int i = -74874;
+
+rsetnull(CCHARTYPE, (char *) c);
+rsetnull(CSHORTTYPE, (char *) &amp;s);
+rsetnull(CINTTYPE, (char *) &amp;i);
+
+</pre><p>
+       </p></dd><dt><span class="term"><code class="function">risnull</code></span></dt><dd><p>
+        Test if a variable is NULL.
+</p><pre class="synopsis">
+int risnull(int t, char *ptr);
+</pre><p>
+        The function receives the type of the variable to test (<code class="literal">t</code>)
+        as well a pointer to this variable (<code class="literal">ptr</code>). Note that the
+        latter needs to be cast to a char*. See the function <a class="xref" href="ecpg-informix-compat.html#RSETNULL"><code class="function">rsetnull</code></a> for a list of possible variable types.
+       </p><p>
+        Here is an example of how to use this function:
+</p><pre class="programlisting">
+$char c[] = "abc       ";
+$short s = 17;
+$int i = -74874;
+
+risnull(CCHARTYPE, (char *) c);
+risnull(CSHORTTYPE, (char *) &amp;s);
+risnull(CINTTYPE, (char *) &amp;i);
+
+</pre><p>
+       </p></dd></dl></div><p>
+   </p></div><div class="sect2" id="ECPG-INFORMIX-CONSTANTS"><div class="titlepage"><div><div><h3 class="title">36.15.5. Additional Constants</h3></div></div></div><p>
+    Note that all constants here describe errors and all of them are defined
+    to represent negative values. In the descriptions of the different
+    constants you can also find the value that the constants represent in the
+    current implementation. However you should not rely on this number. You can
+    however rely on the fact all of them are defined to represent negative
+    values.
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">ECPG_INFORMIX_NUM_OVERFLOW</code></span></dt><dd><p>
+        Functions return this value if an overflow occurred in a
+        calculation. Internally it is defined as -1200 (the <span class="productname">Informix</span>
+        definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_NUM_UNDERFLOW</code></span></dt><dd><p>
+        Functions return this value if an underflow occurred in a calculation.
+        Internally it is defined as -1201 (the <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_DIVIDE_ZERO</code></span></dt><dd><p>
+        Functions return this value if an attempt to divide by zero is
+        observed. Internally it is defined as -1202 (the <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_BAD_YEAR</code></span></dt><dd><p>
+        Functions return this value if a bad value for a year was found while
+        parsing a date. Internally it is defined as -1204 (the <span class="productname">Informix</span>
+        definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_BAD_MONTH</code></span></dt><dd><p>
+        Functions return this value if a bad value for a month was found while
+        parsing a date. Internally it is defined as -1205 (the <span class="productname">Informix</span>
+        definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_BAD_DAY</code></span></dt><dd><p>
+        Functions return this value if a bad value for a day was found while
+        parsing a date. Internally it is defined as -1206 (the <span class="productname">Informix</span>
+        definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_ENOSHORTDATE</code></span></dt><dd><p>
+        Functions return this value if a parsing routine needs a short date
+        representation but did not get the date string in the right length.
+        Internally it is defined as -1209 (the <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_DATE_CONVERT</code></span></dt><dd><p>
+        Functions return this value if an error occurred during date
+        formatting.  Internally it is defined as -1210 (the
+        <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_OUT_OF_MEMORY</code></span></dt><dd><p>
+        Functions return this value if memory was exhausted during
+        their operation.  Internally it is defined as -1211 (the
+        <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_ENOTDMY</code></span></dt><dd><p>
+        Functions return this value if a parsing routine was supposed to get a
+        format mask (like <code class="literal">mmddyy</code>) but not all fields were listed
+        correctly. Internally it is defined as -1212 (the <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_BAD_NUMERIC</code></span></dt><dd><p>
+        Functions return this value either if a parsing routine cannot parse
+        the textual representation for a numeric value because it contains
+        errors or if a routine cannot complete a calculation involving numeric
+        variables because at least one of the numeric variables is invalid.
+        Internally it is defined as -1213 (the <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_BAD_EXPONENT</code></span></dt><dd><p>
+        Functions return this value if a parsing routine cannot parse
+        an exponent.  Internally it is defined as -1216 (the
+        <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_BAD_DATE</code></span></dt><dd><p>
+        Functions return this value if a parsing routine cannot parse
+        a date.  Internally it is defined as -1218 (the
+        <span class="productname">Informix</span> definition).
+       </p></dd><dt><span class="term"><code class="literal">ECPG_INFORMIX_EXTRA_CHARS</code></span></dt><dd><p>
+        Functions return this value if a parsing routine is passed extra
+        characters it cannot parse.  Internally it is defined as -1264 (the
+        <span class="productname">Informix</span> definition).
+       </p></dd></dl></div><p>
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-sql-whenever.html" title="WHENEVER">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-oracle-compat.html" title="36.16. Oracle Compatibility Mode">Next</a></td></tr><tr><td width="40%" align="left" valign="top">WHENEVER </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 36.16. <span xmlns="http://www.w3.org/1999/xhtml" class="productname">Oracle</span> Compatibility Mode</td></tr></table></div></body></html>

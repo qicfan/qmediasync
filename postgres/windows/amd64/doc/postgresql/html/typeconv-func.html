@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>10.3. Functions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="typeconv-oper.html" title="10.2. Operators" /><link rel="next" href="typeconv-query.html" title="10.4. Value Storage" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">10.3. Functions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="typeconv-oper.html" title="10.2. Operators">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="typeconv.html" title="Chapter 10. Type Conversion">Up</a></td><th width="60%" align="center">Chapter 10. Type Conversion</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="typeconv-query.html" title="10.4. Value Storage">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TYPECONV-FUNC"><div class="titlepage"><div><div><h2 class="title" style="clear: both">10.3. Functions</h2></div></div></div><a id="id-1.5.9.8.2" class="indexterm"></a><p>
+   The specific function that is referenced by a function call
+   is determined using the following procedure.
+  </p><div class="procedure" id="id-1.5.9.8.4"><p class="title"><strong>Function Type Resolution</strong></p><ol class="procedure" type="1"><li class="step"><p>
+Select the functions to be considered from the
+<code class="classname">pg_proc</code> system catalog.  If a non-schema-qualified
+function name was used, the functions
+considered are those with the matching name and argument count that are
+visible in the current search path (see <a class="xref" href="ddl-schemas.html#DDL-SCHEMAS-PATH" title="5.9.3. The Schema Search Path">Section 5.9.3</a>).
+If a qualified function name was given, only functions in the specified
+schema are considered.
+</p><ol type="a" class="substeps"><li class="step"><p>
+If the search path finds multiple functions of identical argument types,
+only the one appearing earliest in the path is considered.  Functions of
+different argument types are considered on an equal footing regardless of
+search path position.
+</p></li><li class="step"><p>
+If a function is declared with a <code class="literal">VARIADIC</code> array parameter, and
+the call does not use the <code class="literal">VARIADIC</code> keyword, then the function
+is treated as if the array parameter were replaced by one or more occurrences
+of its element type, as needed to match the call.  After such expansion the
+function might have effective argument types identical to some non-variadic
+function.  In that case the function appearing earlier in the search path is
+used, or if the two functions are in the same schema, the non-variadic one is
+preferred.
+</p><p>
+This creates a security hazard when calling, via qualified name
+  <a href="#ftn.FUNC-QUALIFIED-SECURITY" class="footnote"><sup class="footnote" id="FUNC-QUALIFIED-SECURITY">[10]</sup></a>,
+a variadic function found in a schema that permits untrusted users to create
+objects.  A malicious user can take control and execute arbitrary SQL
+functions as though you executed them.  Substitute a call bearing
+the <code class="literal">VARIADIC</code> keyword, which bypasses this hazard.  Calls
+populating <code class="literal">VARIADIC "any"</code> parameters often have no
+equivalent formulation containing the <code class="literal">VARIADIC</code> keyword.  To
+issue those calls safely, the function's schema must permit only trusted users
+to create objects.
+</p></li><li class="step"><p>
+Functions that have default values for parameters are considered to match any
+call that omits zero or more of the defaultable parameter positions.  If more
+than one such function matches a call, the one appearing earliest in the
+search path is used.  If there are two or more such functions in the same
+schema with identical parameter types in the non-defaulted positions (which is
+possible if they have different sets of defaultable parameters), the system
+will not be able to determine which to prefer, and so an <span class="quote">“<span class="quote">ambiguous
+function call</span>”</span> error will result if no better match to the call can be
+found.
+</p><p>
+This creates an availability hazard when calling, via qualified
+name<a href="typeconv-func.html#ftn.FUNC-QUALIFIED-SECURITY" class="footnoteref"><sup class="footnoteref">[10]</sup></a>, any function found in a
+schema that permits untrusted users to create objects.  A malicious user can
+create a function with the name of an existing function, replicating that
+function's parameters and appending novel parameters having default values.
+This precludes new calls to the original function.  To forestall this hazard,
+place functions in schemas that permit only trusted users to create objects.
+</p></li></ol></li><li class="step"><p>
+Check for a function accepting exactly the input argument types.
+If one exists (there can be only one exact match in the set of
+functions considered), use it.  Lack of an exact match creates a security
+hazard when calling, via qualified
+name<a href="typeconv-func.html#ftn.FUNC-QUALIFIED-SECURITY" class="footnoteref"><sup class="footnoteref">[10]</sup></a>, a function found in a
+schema that permits untrusted users to create objects.  In such situations,
+cast arguments to force an exact match.  (Cases involving <code class="type">unknown</code>
+will never find a match at this step.)
+</p></li><li class="step"><p>
+If no exact match is found, see if the function call appears
+to be a special type conversion request.  This happens if the function call
+has just one argument and the function name is the same as the (internal)
+name of some data type.  Furthermore, the function argument must be either
+an unknown-type literal, or a type that is binary-coercible to the named
+data type, or a type that could be converted to the named data type by
+applying that type's I/O functions (that is, the conversion is either to or
+from one of the standard string types).  When these conditions are met,
+the function call is treated as a form of <code class="literal">CAST</code> specification.
+  <a href="#ftn.id-1.5.9.8.4.4.1.2" class="footnote"><sup class="footnote" id="id-1.5.9.8.4.4.1.2">[11]</sup></a>
+</p></li><li class="step"><p>
+Look for the best match.
+</p><ol type="a" class="substeps"><li class="step"><p>
+Discard candidate functions for which the input types do not match
+and cannot be converted (using an implicit conversion) to match.
+<code class="type">unknown</code> literals are
+assumed to be convertible to anything for this purpose.  If only one
+candidate remains, use it; else continue to the next step.
+</p></li><li class="step"><p>
+If any input argument is of a domain type, treat it as being of the
+domain's base type for all subsequent steps.  This ensures that domains
+act like their base types for purposes of ambiguous-function resolution.
+</p></li><li class="step"><p>
+Run through all candidates and keep those with the most exact matches
+on input types.  Keep all candidates if none have exact matches.
+If only one candidate remains, use it; else continue to the next step.
+</p></li><li class="step"><p>
+Run through all candidates and keep those that accept preferred types (of the
+input data type's type category) at the most positions where type conversion
+will be required.
+Keep all candidates if none accept preferred types.
+If only one candidate remains, use it; else continue to the next step.
+</p></li><li class="step"><p>
+If any input arguments are <code class="type">unknown</code>, check the type categories
+accepted
+at those argument positions by the remaining candidates.  At each position,
+select the <code class="type">string</code> category if any candidate accepts that category.
+(This bias towards string
+is appropriate since an unknown-type literal looks like a string.)
+Otherwise, if all the remaining candidates accept the same type category,
+select that category; otherwise fail because
+the correct choice cannot be deduced without more clues.
+Now discard candidates that do not accept the selected type category.
+Furthermore, if any candidate accepts a preferred type in that category,
+discard candidates that accept non-preferred types for that argument.
+Keep all candidates if none survive these tests.
+If only one candidate remains, use it; else continue to the next step.
+</p></li><li class="step"><p>
+If there are both <code class="type">unknown</code> and known-type arguments, and all
+the known-type arguments have the same type, assume that the
+<code class="type">unknown</code> arguments are also of that type, and check which
+candidates can accept that type at the <code class="type">unknown</code>-argument
+positions.  If exactly one candidate passes this test, use it.
+Otherwise, fail.
+</p></li></ol></li></ol></div><p>
+Note that the <span class="quote">“<span class="quote">best match</span>”</span> rules are identical for operator and
+function type resolution.
+Some examples follow.
+</p><div class="example" id="id-1.5.9.8.6"><p class="title"><strong>Example 10.6. Rounding Function Argument Type Resolution</strong></p><div class="example-contents"><p>
+There is only one <code class="function">round</code> function that takes two
+arguments; it takes a first argument of type <code class="type">numeric</code> and
+a second argument of type <code class="type">integer</code>.
+So the following query automatically converts
+the first argument of type <code class="type">integer</code> to
+<code class="type">numeric</code>:
+
+</p><pre class="screen">
+SELECT round(4, 4);
+
+ round
+--------
+ 4.0000
+(1 row)
+</pre><p>
+
+That query is actually transformed by the parser to:
+</p><pre class="screen">
+SELECT round(CAST (4 AS numeric), 4);
+</pre><p>
+</p><p>
+Since numeric constants with decimal points are initially assigned the
+type <code class="type">numeric</code>, the following query will require no type
+conversion and therefore might be slightly more efficient:
+</p><pre class="screen">
+SELECT round(4.0, 4);
+</pre><p>
+</p></div></div><br class="example-break" /><div class="example" id="id-1.5.9.8.7"><p class="title"><strong>Example 10.7. Variadic Function Resolution</strong></p><div class="example-contents"><p>
+</p><pre class="screen">
+CREATE FUNCTION public.variadic_example(VARIADIC numeric[]) RETURNS int
+  LANGUAGE sql AS 'SELECT 1';
+CREATE FUNCTION
+</pre><p>
+
+This function accepts, but does not require, the VARIADIC keyword.  It
+tolerates both integer and numeric arguments:
+
+</p><pre class="screen">
+SELECT public.variadic_example(0),
+       public.variadic_example(0.0),
+       public.variadic_example(VARIADIC array[0.0]);
+ variadic_example | variadic_example | variadic_example
+------------------+------------------+------------------
+                1 |                1 |                1
+(1 row)
+</pre><p>
+
+However, the first and second calls will prefer more-specific functions, if
+available:
+
+</p><pre class="screen">
+CREATE FUNCTION public.variadic_example(numeric) RETURNS int
+  LANGUAGE sql AS 'SELECT 2';
+CREATE FUNCTION
+
+CREATE FUNCTION public.variadic_example(int) RETURNS int
+  LANGUAGE sql AS 'SELECT 3';
+CREATE FUNCTION
+
+SELECT public.variadic_example(0),
+       public.variadic_example(0.0),
+       public.variadic_example(VARIADIC array[0.0]);
+ variadic_example | variadic_example | variadic_example
+------------------+------------------+------------------
+                3 |                2 |                1
+(1 row)
+</pre><p>
+
+Given the default configuration and only the first function existing, the
+first and second calls are insecure.  Any user could intercept them by
+creating the second or third function.  By matching the argument type exactly
+and using the <code class="literal">VARIADIC</code> keyword, the third call is secure.
+</p></div></div><br class="example-break" /><div class="example" id="id-1.5.9.8.8"><p class="title"><strong>Example 10.8. Substring Function Type Resolution</strong></p><div class="example-contents"><p>
+There are several <code class="function">substr</code> functions, one of which
+takes types <code class="type">text</code> and <code class="type">integer</code>.  If called
+with a string constant of unspecified type, the system chooses the
+candidate function that accepts an argument of the preferred category
+<code class="literal">string</code> (namely of type <code class="type">text</code>).
+
+</p><pre class="screen">
+SELECT substr('1234', 3);
+
+ substr
+--------
+     34
+(1 row)
+</pre><p>
+</p><p>
+If the string is declared to be of type <code class="type">varchar</code>, as might be the case
+if it comes from a table, then the parser will try to convert it to become <code class="type">text</code>:
+</p><pre class="screen">
+SELECT substr(varchar '1234', 3);
+
+ substr
+--------
+     34
+(1 row)
+</pre><p>
+
+This is transformed by the parser to effectively become:
+</p><pre class="screen">
+SELECT substr(CAST (varchar '1234' AS text), 3);
+</pre><p>
+</p><p>
+</p><div class="note"><h3 class="title">Note</h3><p>
+The parser learns from the <code class="structname">pg_cast</code> catalog that
+<code class="type">text</code> and <code class="type">varchar</code>
+are binary-compatible, meaning that one can be passed to a function that
+accepts the other without doing any physical conversion.  Therefore, no
+type conversion call is really inserted in this case.
+</p></div><p>
+</p><p>
+And, if the function is called with an argument of type <code class="type">integer</code>,
+the parser will try to convert that to <code class="type">text</code>:
+</p><pre class="screen">
+SELECT substr(1234, 3);
+ERROR:  function substr(integer, integer) does not exist
+HINT:  No function matches the given name and argument types. You might need
+to add explicit type casts.
+</pre><p>
+
+This does not work because <code class="type">integer</code> does not have an implicit cast
+to <code class="type">text</code>.  An explicit cast will work, however:
+</p><pre class="screen">
+SELECT substr(CAST (1234 AS text), 3);
+
+ substr
+--------
+     34
+(1 row)
+</pre><p>
+</p></div></div><br class="example-break" /><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.FUNC-QUALIFIED-SECURITY" class="footnote"><p><a href="#FUNC-QUALIFIED-SECURITY" class="para"><sup class="para">[10] </sup></a>
+    The hazard does not arise with a non-schema-qualified name, because a
+    search path containing schemas that permit untrusted users to create
+    objects is not a <a class="link" href="ddl-schemas.html#DDL-SCHEMAS-PATTERNS" title="5.9.6. Usage Patterns">secure schema usage
+    pattern</a>.
+   </p></div><div id="ftn.id-1.5.9.8.4.4.1.2" class="footnote"><p><a href="#id-1.5.9.8.4.4.1.2" class="para"><sup class="para">[11] </sup></a>
+    The reason for this step is to support function-style cast specifications
+    in cases where there is not an actual cast function.  If there is a cast
+    function, it is conventionally named after its output type, and so there
+    is no need to have a special case.  See
+    <a class="xref" href="sql-createcast.html" title="CREATE CAST"><span class="refentrytitle">CREATE CAST</span></a>
+    for additional commentary.
+   </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="typeconv-oper.html" title="10.2. Operators">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="typeconv.html" title="Chapter 10. Type Conversion">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="typeconv-query.html" title="10.4. Value Storage">Next</a></td></tr><tr><td width="40%" align="left" valign="top">10.2. Operators </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 10.4. Value Storage</td></tr></table></div></body></html>

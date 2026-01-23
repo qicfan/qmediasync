@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>34.18. LDAP Lookup of Connection Parameters</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="libpq-pgservice.html" title="34.17. The Connection Service File" /><link rel="next" href="libpq-ssl.html" title="34.19. SSL Support" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">34.18. LDAP Lookup of Connection Parameters</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-pgservice.html" title="34.17. The Connection Service File">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 34. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-ssl.html" title="34.19. SSL Support">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-LDAP"><div class="titlepage"><div><div><h2 class="title" style="clear: both">34.18. LDAP Lookup of Connection Parameters</h2></div></div></div><a id="id-1.7.3.25.2" class="indexterm"></a><p>
+   If <span class="application">libpq</span> has been compiled with LDAP support (option
+   <code class="literal"><code class="option">--with-ldap</code></code> for <code class="command">configure</code>)
+   it is possible to retrieve connection options like <code class="literal">host</code>
+   or <code class="literal">dbname</code> via LDAP from a central server.
+   The advantage is that if the connection parameters for a database change,
+   the connection information doesn't have to be updated on all client machines.
+  </p><p>
+   LDAP connection parameter lookup uses the connection service file
+   <code class="filename">pg_service.conf</code> (see <a class="xref" href="libpq-pgservice.html" title="34.17. The Connection Service File">Section 34.17</a>).  A line in a
+   <code class="filename">pg_service.conf</code> stanza that starts with
+   <code class="literal">ldap://</code> will be recognized as an LDAP URL and an
+   LDAP query will be performed. The result must be a list of
+   <code class="literal">keyword = value</code> pairs which will be used to set
+   connection options.  The URL must conform to
+   <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc1959" target="_top">RFC 1959</a>
+   and be of the form
+</p><pre class="synopsis">
+ldap://[<em class="replaceable"><code>hostname</code></em>[:<em class="replaceable"><code>port</code></em>]]/<em class="replaceable"><code>search_base</code></em>?<em class="replaceable"><code>attribute</code></em>?<em class="replaceable"><code>search_scope</code></em>?<em class="replaceable"><code>filter</code></em>
+</pre><p>
+   where <em class="replaceable"><code>hostname</code></em> defaults to
+   <code class="literal">localhost</code> and <em class="replaceable"><code>port</code></em>
+   defaults to 389.
+  </p><p>
+   Processing of <code class="filename">pg_service.conf</code> is terminated after
+   a successful LDAP lookup, but is continued if the LDAP server cannot
+   be contacted.  This is to provide a fallback with further LDAP URL
+   lines that point to different LDAP servers, classical <code class="literal">keyword
+   = value</code> pairs, or default connection options.  If you would
+   rather get an error message in this case, add a syntactically incorrect
+   line after the LDAP URL.
+  </p><p>
+   A sample LDAP entry that has been created with the LDIF file
+</p><pre class="programlisting">
+version:1
+dn:cn=mydatabase,dc=mycompany,dc=com
+changetype:add
+objectclass:top
+objectclass:device
+cn:mydatabase
+description:host=dbserver.mycompany.com
+description:port=5439
+description:dbname=mydb
+description:user=mydb_user
+description:sslmode=require
+</pre><p>
+   might be queried with the following LDAP URL:
+</p><pre class="programlisting">
+ldap://ldap.mycompany.com/dc=mycompany,dc=com?description?one?(cn=mydatabase)
+</pre><p>
+  </p><p>
+   You can also mix regular service file entries with LDAP lookups.
+   A complete example for a stanza in <code class="filename">pg_service.conf</code>
+   would be:
+</p><pre class="programlisting">
+# only host and port are stored in LDAP, specify dbname and user explicitly
+[customerdb]
+dbname=customer
+user=appuser
+ldap://ldap.acme.com/cn=dbserver,cn=hosts?pgconnectinfo?base?(objectclass=*)
+</pre><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-pgservice.html" title="34.17. The Connection Service File">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-ssl.html" title="34.19. SSL Support">Next</a></td></tr><tr><td width="40%" align="left" valign="top">34.17. The Connection Service File </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 34.19. SSL Support</td></tr></table></div></body></html>

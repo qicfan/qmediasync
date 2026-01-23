@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>21.13. PAM Authentication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="auth-cert.html" title="21.12. Certificate Authentication" /><link rel="next" href="auth-bsd.html" title="21.14. BSD Authentication" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">21.13. PAM Authentication</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="auth-cert.html" title="21.12. Certificate Authentication">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><th width="60%" align="center">Chapter 21. Client Authentication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="auth-bsd.html" title="21.14. BSD Authentication">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="AUTH-PAM"><div class="titlepage"><div><div><h2 class="title" style="clear: both">21.13. PAM Authentication</h2></div></div></div><a id="id-1.6.8.20.2" class="indexterm"></a><p>
+    This authentication method operates similarly to
+    <code class="literal">password</code> except that it uses PAM (Pluggable
+    Authentication Modules) as the authentication mechanism. The
+    default PAM service name is <code class="literal">postgresql</code>.
+    PAM is used only to validate user name/password pairs and optionally the
+    connected remote host name or IP address. Therefore the user must already
+    exist in the database before PAM can be used for authentication.  For more
+    information about PAM, please read the
+    <a class="ulink" href="https://www.kernel.org/pub/linux/libs/pam/" target="_top">
+    <span class="productname">Linux-PAM</span> Page</a>.
+   </p><p>
+    The following configuration options are supported for PAM:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">pamservice</code></span></dt><dd><p>
+        PAM service name.
+       </p></dd><dt><span class="term"><code class="literal">pam_use_hostname</code></span></dt><dd><p>
+        Determines whether the remote IP address or the host name is provided
+        to PAM modules through the <code class="symbol">PAM_RHOST</code> item.  By
+        default, the IP address is used.  Set this option to 1 to use the
+        resolved host name instead.  Host name resolution can lead to login
+        delays.  (Most PAM configurations don't use this information, so it is
+        only necessary to consider this setting if a PAM configuration was
+        specifically created to make use of it.)
+       </p></dd></dl></div><p>
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     If PAM is set up to read <code class="filename">/etc/shadow</code>, authentication
+     will fail because the PostgreSQL server is started by a non-root
+     user.  However, this is not an issue when PAM is configured to use
+     LDAP or other authentication methods.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="auth-cert.html" title="21.12. Certificate Authentication">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="auth-bsd.html" title="21.14. BSD Authentication">Next</a></td></tr><tr><td width="40%" align="left" valign="top">21.12. Certificate Authentication </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.14. BSD Authentication</td></tr></table></div></body></html>

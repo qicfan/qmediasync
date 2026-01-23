@@ -1,0 +1,1380 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>53.7. Message Formats</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="protocol-message-types.html" title="53.6. Message Data Types" /><link rel="next" href="protocol-error-fields.html" title="53.8. Error and Notice Message Fields" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">53.7. Message Formats</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="protocol-message-types.html" title="53.6. Message Data Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="protocol.html" title="Chapter 53. Frontend/Backend Protocol">Up</a></td><th width="60%" align="center">Chapter 53. Frontend/Backend Protocol</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="protocol-error-fields.html" title="53.8. Error and Notice Message Fields">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PROTOCOL-MESSAGE-FORMATS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">53.7. Message Formats</h2></div></div></div><p>
+This section describes the detailed format of each message.  Each is marked to
+indicate that it can be sent by a frontend (F), a backend (B), or both
+(F &amp; B).
+Notice that although each message includes a byte count at the beginning,
+the message format is defined so that the message end can be found without
+reference to the byte count.  This aids validity checking.  (The CopyData
+message is an exception, because it forms part of a data stream; the contents
+of any individual CopyData message cannot be interpretable on their own.)
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+AuthenticationOk (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(0)
+</span></dt><dd><p>
+                Specifies that the authentication was successful.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationKerberosV5 (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(2)
+</span></dt><dd><p>
+                Specifies that Kerberos V5 authentication is required.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+AuthenticationCleartextPassword (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(3)
+</span></dt><dd><p>
+                Specifies that a clear-text password is required.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+AuthenticationMD5Password (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32(12)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(5)
+</span></dt><dd><p>
+                Specifies that an MD5-encrypted password is required.
+</p></dd><dt><span class="term">
+        Byte4
+</span></dt><dd><p>
+                The salt to use when encrypting the password.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationSCMCredential (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(6)
+</span></dt><dd><p>
+                Specifies that an SCM credentials message is required.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationGSS (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(7)
+</span></dt><dd><p>
+                Specifies that GSSAPI authentication is required.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationGSSContinue (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Specifies that this message contains GSSAPI or SSPI data.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                GSSAPI or SSPI authentication data.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationSSPI (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(9)
+</span></dt><dd><p>
+                Specifies that SSPI authentication is required.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationSASL (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(10)
+</span></dt><dd><p>
+                Specifies that SASL authentication is required.
+</p></dd></dl></div><p>
+The message body is a list of SASL authentication mechanisms, in the
+server's order of preference. A zero byte is required as terminator after
+the last authentication mechanism name. For each mechanism, there is the
+following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        String
+</span></dt><dd><p>
+                Name of a SASL authentication mechanism.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationSASLContinue (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(11)
+</span></dt><dd><p>
+                Specifies that this message contains a SASL challenge.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                SASL data, specific to the SASL mechanism being used.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+AuthenticationSASLFinal (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('R')
+</span></dt><dd><p>
+                Identifies the message as an authentication request.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(12)
+</span></dt><dd><p>
+                Specifies that SASL authentication has completed.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                SASL outcome "additional data", specific to the SASL mechanism
+                being used.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+BackendKeyData (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('K')
+</span></dt><dd><p>
+                Identifies the message as cancellation key data.
+                The frontend must save these values if it wishes to be
+                able to issue CancelRequest messages later.
+</p></dd><dt><span class="term">
+        Int32(12)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The process ID of this backend.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The secret key of this backend.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+Bind (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('B')
+</span></dt><dd><p>
+                Identifies the message as a Bind command.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the destination portal
+                (an empty string selects the unnamed portal).
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the source prepared statement
+                (an empty string selects the unnamed prepared statement).
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of parameter format codes that follow
+                (denoted <em class="replaceable"><code>C</code></em> below).
+                This can be zero to indicate that there are no parameters
+                or that the parameters all use the default format (text);
+                or one, in which case the specified format code is applied
+                to all parameters; or it can equal the actual number of
+                parameters.
+</p></dd><dt><span class="term">
+        Int16[<em class="replaceable"><code>C</code></em>]
+</span></dt><dd><p>
+                The parameter format codes.  Each must presently be
+                zero (text) or one (binary).
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of parameter values that follow (possibly zero).
+                This must match the number of parameters needed by the query.
+</p></dd></dl></div><p>
+        Next, the following pair of fields appear for each parameter:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The length of the parameter value, in bytes (this count
+                does not include itself).  Can be zero.
+                As a special case, -1 indicates a NULL parameter value.
+                No value bytes follow in the NULL case.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                The value of the parameter, in the format indicated by the
+                associated format code.
+                <em class="replaceable"><code>n</code></em> is the above length.
+</p></dd></dl></div><p>
+        After the last parameter, the following fields appear:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of result-column format codes that follow
+                (denoted <em class="replaceable"><code>R</code></em> below).
+                This can be zero to indicate that there are no result columns
+                or that the result columns should all use the default format
+                (text);
+                or one, in which case the specified format code is applied
+                to all result columns (if any); or it can equal the actual
+                number of result columns of the query.
+</p></dd><dt><span class="term">
+        Int16[<em class="replaceable"><code>R</code></em>]
+</span></dt><dd><p>
+                The result-column format codes.  Each must presently be
+                zero (text) or one (binary).
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+BindComplete (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('2')
+</span></dt><dd><p>
+                Identifies the message as a Bind-complete indicator.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+CancelRequest (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32(16)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(80877102)
+</span></dt><dd><p>
+                The cancel request code.  The value is chosen to contain
+                <code class="literal">1234</code> in the most significant 16 bits, and <code class="literal">5678</code> in the
+                least significant 16 bits.  (To avoid confusion, this code
+                must not be the same as any protocol version number.)
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The process ID of the target backend.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The secret key for the target backend.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+Close (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('C')
+</span></dt><dd><p>
+                Identifies the message as a Close command.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Byte1
+</span></dt><dd><p>
+                '<code class="literal">S</code>' to close a prepared statement; or
+                '<code class="literal">P</code>' to close a portal.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the prepared statement or portal to close
+                (an empty string selects the unnamed prepared statement
+                or portal).
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+CloseComplete (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('3')
+</span></dt><dd><p>
+                Identifies the message as a Close-complete indicator.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+CommandComplete (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('C')
+</span></dt><dd><p>
+                Identifies the message as a command-completed response.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+        The command tag.  This is usually a single
+        word that identifies which SQL command was completed.
+       </p><p>
+        For an <code class="command">INSERT</code> command, the tag is
+        <code class="literal">INSERT <em class="replaceable"><code>oid</code></em>
+        <em class="replaceable"><code>rows</code></em></code>, where
+        <em class="replaceable"><code>rows</code></em> is the number of rows
+        inserted. <em class="replaceable"><code>oid</code></em> used to be the object ID
+        of the inserted row if <em class="replaceable"><code>rows</code></em> was 1
+        and the target table had OIDs, but OIDs system columns are
+        not supported anymore; therefore <em class="replaceable"><code>oid</code></em>
+        is always 0.
+       </p><p>
+        For a <code class="command">DELETE</code> command, the tag is
+        <code class="literal">DELETE <em class="replaceable"><code>rows</code></em></code> where
+        <em class="replaceable"><code>rows</code></em> is the number of rows deleted.
+       </p><p>
+        For an <code class="command">UPDATE</code> command, the tag is
+        <code class="literal">UPDATE <em class="replaceable"><code>rows</code></em></code> where
+        <em class="replaceable"><code>rows</code></em> is the number of rows updated.
+       </p><p>
+        For a <code class="command">SELECT</code> or <code class="command">CREATE TABLE AS</code>
+        command, the tag is <code class="literal">SELECT <em class="replaceable"><code>rows</code></em></code>
+        where <em class="replaceable"><code>rows</code></em> is the number of rows retrieved.
+       </p><p>
+        For a <code class="command">MOVE</code> command, the tag is
+        <code class="literal">MOVE <em class="replaceable"><code>rows</code></em></code> where
+        <em class="replaceable"><code>rows</code></em> is the number of rows the
+        cursor's position has been changed by.
+       </p><p>
+        For a <code class="command">FETCH</code> command, the tag is
+        <code class="literal">FETCH <em class="replaceable"><code>rows</code></em></code> where
+        <em class="replaceable"><code>rows</code></em> is the number of rows that
+        have been retrieved from the cursor.
+       </p><p>
+        For a <code class="command">COPY</code> command, the tag is
+        <code class="literal">COPY <em class="replaceable"><code>rows</code></em></code> where
+        <em class="replaceable"><code>rows</code></em> is the number of rows copied.
+        (Note: the row count appears only in
+        <span class="productname">PostgreSQL</span> 8.2 and later.)
+       </p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+CopyData (F &amp; B)
+</span></dt><dd><p>
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('d')
+</span></dt><dd><p>
+                Identifies the message as <code class="command">COPY</code> data.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                Data that forms part of a <code class="command">COPY</code> data stream.  Messages sent
+                from the backend will always correspond to single data rows,
+                but messages sent by frontends might divide the data stream
+                arbitrarily.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+CopyDone (F &amp; B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('c')
+</span></dt><dd><p>
+                Identifies the message as a <code class="command">COPY</code>-complete indicator.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+CopyFail (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('f')
+</span></dt><dd><p>
+                Identifies the message as a <code class="command">COPY</code>-failure indicator.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                An error message to report as the cause of failure.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+CopyInResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('G')
+</span></dt><dd><p>
+                Identifies the message as a Start Copy In response.
+                The frontend must now send copy-in data (if not
+                prepared to do so, send a CopyFail message).
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int8
+</span></dt><dd><p>
+                0 indicates the overall <code class="command">COPY</code> format is textual (rows
+                separated by newlines, columns separated by separator
+                characters, etc).
+                1 indicates the overall copy format is binary (similar
+                to DataRow format).
+                See <a class="xref" href="sql-copy.html" title="COPY"><span class="refentrytitle">COPY</span></a>
+                for more information.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of columns in the data to be copied
+                (denoted <em class="replaceable"><code>N</code></em> below).
+</p></dd><dt><span class="term">
+        Int16[<em class="replaceable"><code>N</code></em>]
+</span></dt><dd><p>
+                The format codes to be used for each column.
+                Each must presently be zero (text) or one (binary).
+                All must be zero if the overall copy format is textual.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+CopyOutResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('H')
+</span></dt><dd><p>
+                Identifies the message as a Start Copy Out response.
+                This message will be followed by copy-out data.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int8
+</span></dt><dd><p>
+                0 indicates the overall <code class="command">COPY</code> format
+                is textual (rows separated by newlines, columns
+                separated by separator characters, etc). 1 indicates
+                the overall copy format is binary (similar to DataRow
+                format). See <a class="xref" href="sql-copy.html" title="COPY"><span class="refentrytitle">COPY</span></a> for more information.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of columns in the data to be copied
+                (denoted <em class="replaceable"><code>N</code></em> below).
+</p></dd><dt><span class="term">
+        Int16[<em class="replaceable"><code>N</code></em>]
+</span></dt><dd><p>
+                The format codes to be used for each column.
+                Each must presently be zero (text) or one (binary).
+                All must be zero if the overall copy format is textual.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+CopyBothResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('W')
+</span></dt><dd><p>
+                Identifies the message as a Start Copy Both response.
+                This message is used only for Streaming Replication.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int8
+</span></dt><dd><p>
+                0 indicates the overall <code class="command">COPY</code> format
+                is textual (rows separated by newlines, columns
+                separated by separator characters, etc). 1 indicates
+                the overall copy format is binary (similar to DataRow
+                format). See <a class="xref" href="sql-copy.html" title="COPY"><span class="refentrytitle">COPY</span></a> for more information.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of columns in the data to be copied
+                (denoted <em class="replaceable"><code>N</code></em> below).
+</p></dd><dt><span class="term">
+        Int16[<em class="replaceable"><code>N</code></em>]
+</span></dt><dd><p>
+                The format codes to be used for each column.
+                Each must presently be zero (text) or one (binary).
+                All must be zero if the overall copy format is textual.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+DataRow (B)
+</span></dt><dd><p>
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('D')
+</span></dt><dd><p>
+                Identifies the message as a data row.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of column values that follow (possibly zero).
+</p></dd></dl></div><p>
+        Next, the following pair of fields appear for each column:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The length of the column value, in bytes (this count
+                does not include itself).  Can be zero.
+                As a special case, -1 indicates a NULL column value.
+                No value bytes follow in the NULL case.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                The value of the column, in the format indicated by the
+                associated format code.
+                <em class="replaceable"><code>n</code></em> is the above length.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+Describe (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('D')
+</span></dt><dd><p>
+                Identifies the message as a Describe command.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Byte1
+</span></dt><dd><p>
+                '<code class="literal">S</code>' to describe a prepared statement; or
+                '<code class="literal">P</code>' to describe a portal.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the prepared statement or portal to describe
+                (an empty string selects the unnamed prepared statement
+                or portal).
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+EmptyQueryResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('I')
+</span></dt><dd><p>
+                Identifies the message as a response to an empty query string.
+                (This substitutes for CommandComplete.)
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+ErrorResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('E')
+</span></dt><dd><p>
+                Identifies the message as an error.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+        The message body consists of one or more identified fields,
+        followed by a zero byte as a terminator.  Fields can appear in
+        any order.  For each field there is the following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1
+</span></dt><dd><p>
+                A code identifying the field type; if zero, this is
+                the message terminator and no string follows.
+                The presently defined field types are listed in
+                <a class="xref" href="protocol-error-fields.html" title="53.8. Error and Notice Message Fields">Section 53.8</a>.
+                Since more field types might be added in future,
+                frontends should silently ignore fields of unrecognized
+                type.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The field value.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+Execute (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('E')
+</span></dt><dd><p>
+                Identifies the message as an Execute command.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the portal to execute
+                (an empty string selects the unnamed portal).
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Maximum number of rows to return, if portal contains
+                a query that returns rows (ignored otherwise).  Zero
+                denotes <span class="quote">“<span class="quote">no limit</span>”</span>.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+Flush (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('H')
+</span></dt><dd><p>
+                Identifies the message as a Flush command.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+FunctionCall (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('F')
+</span></dt><dd><p>
+                Identifies the message as a function call.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Specifies the object ID of the function to call.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of argument format codes that follow
+                (denoted <em class="replaceable"><code>C</code></em> below).
+                This can be zero to indicate that there are no arguments
+                or that the arguments all use the default format (text);
+                or one, in which case the specified format code is applied
+                to all arguments; or it can equal the actual number of
+                arguments.
+</p></dd><dt><span class="term">
+        Int16[<em class="replaceable"><code>C</code></em>]
+</span></dt><dd><p>
+                The argument format codes.  Each must presently be
+                zero (text) or one (binary).
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                Specifies the number of arguments being supplied to the
+                function.
+</p></dd></dl></div><p>
+        Next, the following pair of fields appear for each argument:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The length of the argument value, in bytes (this count
+                does not include itself).  Can be zero.
+                As a special case, -1 indicates a NULL argument value.
+                No value bytes follow in the NULL case.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                The value of the argument, in the format indicated by the
+                associated format code.
+                <em class="replaceable"><code>n</code></em> is the above length.
+</p></dd></dl></div><p>
+        After the last argument, the following field appears:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The format code for the function result. Must presently be
+                zero (text) or one (binary).
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+FunctionCallResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('V')
+</span></dt><dd><p>
+                Identifies the message as a function call result.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The length of the function result value, in bytes (this count
+                does not include itself).  Can be zero.
+                As a special case, -1 indicates a NULL function result.
+                No value bytes follow in the NULL case.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                The value of the function result, in the format indicated by
+                the associated format code.
+                <em class="replaceable"><code>n</code></em> is the above length.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+GSSENCRequest (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(80877104)
+</span></dt><dd><p>
+                The <acronym class="acronym">GSSAPI</acronym> Encryption request code.  The value is chosen to contain
+                <code class="literal">1234</code> in the most significant 16 bits, and <code class="literal">5680</code> in the
+                least significant 16 bits.  (To avoid confusion, this code
+                must not be the same as any protocol version number.)
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+GSSResponse (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('p')
+</span></dt><dd><p>
+                Identifies the message as a GSSAPI or SSPI response. Note that
+                this is also used for SASL and password response messages.
+                The exact message type can be deduced from the context.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                GSSAPI/SSPI specific message data.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+NegotiateProtocolVersion (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('v')
+</span></dt><dd><p>
+                Identifies the message as a protocol version negotiation
+                message.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Newest minor protocol version supported by the server
+                for the major protocol version requested by the client.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Number of protocol options not recognized by the server.
+</p></dd></dl></div><p>
+        Then, for protocol option not recognized by the server, there
+        is the following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The option name.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+NoData (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('n')
+</span></dt><dd><p>
+                Identifies the message as a no-data indicator.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+NoticeResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('N')
+</span></dt><dd><p>
+                Identifies the message as a notice.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+        The message body consists of one or more identified fields,
+        followed by a zero byte as a terminator.  Fields can appear in
+        any order.  For each field there is the following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1
+</span></dt><dd><p>
+                A code identifying the field type; if zero, this is
+                the message terminator and no string follows.
+                The presently defined field types are listed in
+                <a class="xref" href="protocol-error-fields.html" title="53.8. Error and Notice Message Fields">Section 53.8</a>.
+                Since more field types might be added in future,
+                frontends should silently ignore fields of unrecognized
+                type.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The field value.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+NotificationResponse (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('A')
+</span></dt><dd><p>
+                Identifies the message as a notification response.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The process ID of the notifying backend process.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the channel that the notify has been raised on.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The <span class="quote">“<span class="quote">payload</span>”</span> string passed from the notifying process.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+ParameterDescription (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('t')
+</span></dt><dd><p>
+                Identifies the message as a parameter description.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of parameters used by the statement
+                (can be zero).
+</p></dd></dl></div><p>
+        Then, for each parameter, there is the following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Specifies the object ID of the parameter data type.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+ParameterStatus (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('S')
+</span></dt><dd><p>
+                Identifies the message as a run-time parameter status report.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the run-time parameter being reported.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The current value of the parameter.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+Parse (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('P')
+</span></dt><dd><p>
+                Identifies the message as a Parse command.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The name of the destination prepared statement
+                (an empty string selects the unnamed prepared statement).
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The query string to be parsed.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The number of parameter data types specified
+                (can be zero).  Note that this is not an indication of
+                the number of parameters that might appear in the
+                query string, only the number that the frontend wants to
+                prespecify types for.
+</p></dd></dl></div><p>
+        Then, for each parameter, there is the following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Specifies the object ID of the parameter data type.
+                Placing a zero here is equivalent to leaving the type
+                unspecified.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+ParseComplete (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('1')
+</span></dt><dd><p>
+                Identifies the message as a Parse-complete indicator.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+PasswordMessage (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('p')
+</span></dt><dd><p>
+                Identifies the message as a password response. Note that
+                this is also used for GSSAPI, SSPI and SASL response messages.
+                The exact message type can be deduced from the context.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The password (encrypted, if requested).
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+PortalSuspended (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('s')
+</span></dt><dd><p>
+                Identifies the message as a portal-suspended indicator.
+                Note this only appears if an Execute message's row-count limit
+                was reached.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+Query (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('Q')
+</span></dt><dd><p>
+                Identifies the message as a simple query.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The query string itself.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+ReadyForQuery (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('Z')
+</span></dt><dd><p>
+                Identifies the message type.  ReadyForQuery is sent
+                whenever the backend is ready for a new query cycle.
+</p></dd><dt><span class="term">
+        Int32(5)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Byte1
+</span></dt><dd><p>
+                Current backend transaction status indicator.
+                Possible values are '<code class="literal">I</code>' if idle (not in
+                a transaction block); '<code class="literal">T</code>' if in a transaction
+                block; or '<code class="literal">E</code>' if in a failed transaction
+                block (queries will be rejected until block is ended).
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+RowDescription (B)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('T')
+</span></dt><dd><p>
+                Identifies the message as a row description.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                Specifies the number of fields in a row (can be zero).
+</p></dd></dl></div><p>
+        Then, for each field, there is the following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The field name.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                If the field can be identified as a column of a specific
+                table, the object ID of the table; otherwise zero.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                If the field can be identified as a column of a specific
+                table, the attribute number of the column; otherwise zero.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The object ID of the field's data type.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The data type size (see <code class="varname">pg_type.typlen</code>).
+                Note that negative values denote variable-width types.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                The type modifier (see <code class="varname">pg_attribute.atttypmod</code>).
+                The meaning of the modifier is type-specific.
+</p></dd><dt><span class="term">
+        Int16
+</span></dt><dd><p>
+                The format code being used for the field.  Currently will
+                be zero (text) or one (binary).  In a RowDescription
+                returned from the statement variant of Describe, the
+                format code is not yet known and will always be zero.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+SASLInitialResponse (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('p')
+</span></dt><dd><p>
+                Identifies the message as an initial SASL response. Note that
+                this is also used for GSSAPI, SSPI and password response messages.
+                The exact message type is deduced from the context.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                Name of the SASL authentication mechanism that the client
+                selected.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of SASL mechanism specific "Initial Client Response" that
+                follows, or -1 if there is no Initial Response.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                SASL mechanism specific "Initial Response".
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+SASLResponse (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('p')
+</span></dt><dd><p>
+                Identifies the message as a SASL response. Note that
+                this is also used for GSSAPI, SSPI and password response messages.
+                The exact message type can be deduced from the context.
+</p></dd><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Byte<em class="replaceable"><code>n</code></em>
+</span></dt><dd><p>
+                SASL mechanism specific message data.
+</p></dd></dl></div><p>
+</p></dd><dt><span class="term">
+SSLRequest (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32(8)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(80877103)
+</span></dt><dd><p>
+                The <acronym class="acronym">SSL</acronym> request code.  The value is chosen to contain
+                <code class="literal">1234</code> in the most significant 16 bits, and <code class="literal">5679</code> in the
+                least significant 16 bits.  (To avoid confusion, this code
+                must not be the same as any protocol version number.)
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+StartupMessage (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Int32
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd><dt><span class="term">
+        Int32(196608)
+</span></dt><dd><p>
+                The protocol version number.  The most significant 16 bits are
+                the major version number (3 for the protocol described here).
+                The least significant 16 bits are the minor version number
+                (0 for the protocol described here).
+</p></dd></dl></div><p>
+        The protocol version number is followed by one or more pairs of
+        parameter name and value strings.  A zero byte is required as a
+        terminator after the last name/value pair.
+        Parameters can appear in any
+        order.  <code class="literal">user</code> is required, others are optional.
+        Each parameter is specified as:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The parameter name.  Currently recognized names are:
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+                <code class="literal">user</code>
+</span></dt><dd><p>
+                        The database user name to connect as.  Required;
+                        there is no default.
+</p></dd><dt><span class="term">
+                <code class="literal">database</code>
+</span></dt><dd><p>
+                        The database to connect to.  Defaults to the user name.
+</p></dd><dt><span class="term">
+                <code class="literal">options</code>
+</span></dt><dd><p>
+                        Command-line arguments for the backend.  (This is
+                        deprecated in favor of setting individual run-time
+                        parameters.)  Spaces within this string are
+                        considered to separate arguments, unless escaped with
+                        a backslash (<code class="literal">\</code>); write <code class="literal">\\</code> to
+                        represent a literal backslash.
+</p></dd><dt><span class="term">
+                <code class="literal">replication</code>
+</span></dt><dd><p>
+                        Used to connect in streaming replication mode, where
+                        a small set of replication commands can be issued
+                        instead of SQL statements. Value can be
+                        <code class="literal">true</code>, <code class="literal">false</code>, or
+                        <code class="literal">database</code>, and the default is
+                        <code class="literal">false</code>. See
+                        <a class="xref" href="protocol-replication.html" title="53.4. Streaming Replication Protocol">Section 53.4</a> for details.
+</p></dd></dl></div><p>
+
+                In addition to the above, other parameters may be listed.
+                Parameter names beginning with <code class="literal">_pq_.</code> are
+                reserved for use as protocol extensions, while others are
+                treated as run-time parameters to be set at backend start
+                time.  Such settings will be applied during backend start
+                (after parsing the command-line arguments if any) and will
+                act as session defaults.
+</p></dd><dt><span class="term">
+        String
+</span></dt><dd><p>
+                The parameter value.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+Sync (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('S')
+</span></dt><dd><p>
+                Identifies the message as a Sync command.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd><dt><span class="term">
+Terminate (F)
+</span></dt><dd><p>
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+        Byte1('X')
+</span></dt><dd><p>
+                Identifies the message as a termination.
+</p></dd><dt><span class="term">
+        Int32(4)
+</span></dt><dd><p>
+                Length of message contents in bytes, including self.
+</p></dd></dl></div><p>
+
+</p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="protocol-message-types.html" title="53.6. Message Data Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="protocol.html" title="Chapter 53. Frontend/Backend Protocol">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="protocol-error-fields.html" title="53.8. Error and Notice Message Fields">Next</a></td></tr><tr><td width="40%" align="left" valign="top">53.6. Message Data Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 53.8. Error and Notice Message Fields</td></tr></table></div></body></html>

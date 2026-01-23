@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>E.2. Release 14.11</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="release-14-12.html" title="E.1. Release 14.12" /><link rel="next" href="release-14-10.html" title="E.3. Release 14.10" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">E.2. Release 14.11</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="release-14-12.html" title="E.1. Release 14.12">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><th width="60%" align="center">Appendix E. Release Notes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="release-14-10.html" title="E.3. Release 14.10">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RELEASE-14-11"><div class="titlepage"><div><div><h2 class="title" style="clear: both">E.2. Release 14.11</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="release-14-11.html#id-1.11.6.6.4">E.2.1. Migration to Version 14.11</a></span></dt><dt><span class="sect2"><a href="release-14-11.html#id-1.11.6.6.5">E.2.2. Changes</a></span></dt></dl></div><p><strong>Release date: </strong>2024-02-08</p><p>
+   This release contains a variety of fixes from 14.10.
+   For information about new features in major release 14, see
+   <a class="xref" href="release-14.html" title="E.13. Release 14">Section E.13</a>.
+  </p><div class="sect2" id="id-1.11.6.6.4"><div class="titlepage"><div><div><h3 class="title">E.2.1. Migration to Version 14.11</h3></div></div></div><p>
+    A dump/restore is not required for those running 14.X.
+   </p><p>
+    However, one bug was fixed that could have resulted in corruption of
+    GIN indexes during concurrent updates.  If you suspect such
+    corruption, reindex affected indexes after installing this update.
+   </p><p>
+    Also, if you are upgrading from a version earlier than 14.10,
+    see <a class="xref" href="release-14-10.html" title="E.3. Release 14.10">Section E.3</a>.
+   </p></div><div class="sect2" id="id-1.11.6.6.5"><div class="titlepage"><div><div><h3 class="title">E.2.2. Changes</h3></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Tighten security restrictions within <code class="command">REFRESH MATERIALIZED
+      VIEW CONCURRENTLY</code> (Heikki Linnakangas)
+     </p><p>
+      One step of a concurrent refresh command was run under weak security
+      restrictions.  If a materialized view's owner could persuade a
+      superuser or other high-privileged user to perform a concurrent
+      refresh on that view, the view's owner could control code executed
+      with the privileges of the user running <code class="command">REFRESH</code>.
+      Fix things so that all user-determined code is run as the view's
+      owner, as expected.
+     </p><p>
+      The only known exploit for this error does not work
+      in <span class="productname">PostgreSQL</span> 16.0 and later, so it may
+      be that v16 is not vulnerable in practice.
+     </p><p>
+      The <span class="productname">PostgreSQL</span> Project thanks Pedro
+      Gallegos for reporting this problem.
+      (CVE-2024-0985) 
+     </p></li><li class="listitem"><p>
+      Fix memory leak when performing JIT inlining (Andres Freund,
+      Daniel Gustafsson)
+     </p><p>
+      There have been multiple reports of backend processes suffering
+      out-of-memory conditions after sufficiently many JIT compilations.
+      This fix should resolve that.
+     </p></li><li class="listitem"><p>
+      When dequeueing from an LWLock, avoid needing to search the list of
+      waiting processes (Andres Freund)
+     </p><p>
+      This fixes O(N^2) behavior when the list of waiters is long.  In
+      some use-cases this results in substantial throughput improvements.
+     </p></li><li class="listitem"><p>
+      Avoid generating incorrect partitioned-join plans (Richard Guo)
+     </p><p>
+      Some uncommon situations involving lateral references could create
+      incorrect plans.  Affected queries could produce wrong answers, or
+      odd failures such as <span class="quote">“<span class="quote">variable not found in subplan target
+      list</span>”</span>, or executor crashes.
+     </p></li><li class="listitem"><p>
+      Fix incorrect wrapping of subquery output expressions in
+      PlaceHolderVars (Tom Lane)
+     </p><p>
+      This fixes incorrect results when a subquery is underneath an outer
+      join and has an output column that laterally references something
+      outside the outer join's scope.  The output column might not appear
+      as NULL when it should do so due to the action of the outer join.
+     </p></li><li class="listitem"><p>
+      Prevent access to a no-longer-pinned buffer in <code class="literal">BEFORE ROW
+      UPDATE</code> triggers (Alexander Lakhin, Tom Lane)
+     </p><p>
+      If the tuple being updated had just been updated and moved to
+      another page by another session, there was a narrow window where
+      we would attempt to fetch data from the new tuple version without
+      any pin on its buffer.  In principle this could result in garbage
+      data appearing in non-updated columns of the proposed new tuple.
+      The odds of problems in practice seem rather low, however.
+     </p></li><li class="listitem"><p>
+      Avoid requesting an oversize shared-memory area in parallel hash
+      join (Thomas Munro, Andrei Lepikhov, Alexander Korotkov)
+     </p><p>
+      The limiting value was too large, allowing <span class="quote">“<span class="quote">invalid DSA memory
+      alloc request size</span>”</span> errors to occur with sufficiently large
+      expected hash table sizes.
+     </p></li><li class="listitem"><p>
+      Avoid assertion failures in <code class="function">heap_update()</code>
+      and <code class="function">heap_delete()</code> when a tuple to be updated by
+      a foreign-key enforcement trigger fails the extra visibility
+      crosscheck (Alexander Lakhin)
+     </p><p>
+      This error had no impact in non-assert builds.
+     </p></li><li class="listitem"><p>
+      Fix overly tight assertion
+      about <code class="varname">false_positive_rate</code> parameter of
+      BRIN bloom operator classes (Alexander Lakhin)
+     </p><p>
+      This error had no impact in non-assert builds, either.
+     </p></li><li class="listitem"><p>
+      Fix possible failure during <code class="command">ALTER TABLE ADD
+      COLUMN</code> on a complex inheritance tree (Tender Wang)
+     </p><p>
+      If a grandchild table would inherit the new column via multiple
+      intermediate parents, the command failed with <span class="quote">“<span class="quote">tuple already
+      updated by self</span>”</span>.
+     </p></li><li class="listitem"><p>
+      Fix problems with duplicate token names in <code class="command">ALTER TEXT
+      SEARCH CONFIGURATION ... MAPPING</code> commands (Tender Wang,
+      Michael Paquier)
+     </p></li><li class="listitem"><p>
+      Properly lock the associated table during <code class="command">DROP
+      STATISTICS</code> (Tomas Vondra)
+     </p><p>
+      Failure to acquire the lock could result in <span class="quote">“<span class="quote">tuple
+      concurrently deleted</span>”</span> errors if the <code class="command">DROP</code>
+      executes concurrently with <code class="command">ANALYZE</code>.
+     </p></li><li class="listitem"><p>
+      Fix function volatility checking for <code class="literal">GENERATED</code>
+      and <code class="literal">DEFAULT</code> expressions (Tom Lane)
+     </p><p>
+      These places could fail to detect insertion of a volatile function
+      default-argument expression, or decide that a polymorphic function
+      is volatile although it is actually immutable on the datatype of
+      interest.  This could lead to improperly rejecting or accepting
+      a <code class="literal">GENERATED</code> clause, or to mistakenly applying the
+      constant-default-value optimization in <code class="command">ALTER TABLE ADD
+      COLUMN</code>.
+     </p></li><li class="listitem"><p>
+      Detect that a new catalog cache entry became stale while detoasting
+      its fields (Tom Lane)
+     </p><p>
+      We expand any out-of-line fields in a catalog tuple before inserting
+      it into the catalog caches.  That involves database access which
+      might cause invalidation of catalog cache entries — but the
+      new entry isn't in the cache yet, so we would miss noticing that it
+      should get invalidated.  The result is a race condition in which an
+      already-stale cache entry could get made, and then persist
+      indefinitely.  This would lead to hard-to-predict misbehavior.
+      Fix by rechecking the tuple's visibility after detoasting.
+     </p></li><li class="listitem"><p>
+      Fix edge-case integer overflow detection bug on some platforms (Dean
+      Rasheed)
+     </p><p>
+      Computing <code class="literal">0 - INT64_MIN</code> should result in an
+      overflow error, and did on most platforms.  However, platforms with
+      neither integer overflow builtins nor 128-bit integers would fail to
+      spot the overflow, instead returning <code class="literal">INT64_MIN</code>.
+     </p></li><li class="listitem"><p>
+      Detect Julian-date overflow when adding or subtracting
+      an <code class="type">interval</code> to/from a <code class="type">timestamp</code> (Tom Lane)
+     </p><p>
+      Some cases that should cause an out-of-range error produced an
+      incorrect result instead.
+     </p></li><li class="listitem"><p>
+      Add more checks for overflow in <code class="function">interval_mul()</code>
+      and <code class="function">interval_div()</code> (Dean Rasheed)
+     </p><p>
+      Some cases that should cause an out-of-range error produced an
+      incorrect result instead.
+     </p></li><li class="listitem"><p>
+      Make the <code class="structname">pg_file_settings</code> view check
+      validity of unapplied values for settings
+      with <code class="literal">backend</code>
+      or <code class="literal">superuser-backend</code> context (Tom Lane)
+     </p><p>
+      Invalid values were not noted in the view as intended.  This escaped
+      detection because there are very few settings in these groups.
+     </p></li><li class="listitem"><p>
+      Match collation too when matching an existing index to a new
+      partitioned index (Peter Eisentraut)
+     </p><p>
+      Previously we could accept an index that has a different collation
+      from the corresponding element of the partition key, possibly
+      leading to misbehavior.
+     </p></li><li class="listitem"><p>
+      Avoid failure if a child index is dropped concurrently
+      with <code class="command">REINDEX INDEX</code> on a partitioned index
+      (Fei Changhong)
+     </p></li><li class="listitem"><p>
+      Fix insufficient locking when cleaning up an incomplete split of
+      a GIN index's internal page (Fei Changhong, Heikki Linnakangas)
+     </p><p>
+      The code tried to do this with shared rather than exclusive lock on
+      the buffer.  This could lead to index corruption if two processes
+      attempted the cleanup concurrently.
+     </p></li><li class="listitem"><p>
+      Avoid premature release of buffer pin in GIN index insertion
+      (Tom Lane)
+     </p><p>
+      If an index root page split occurs concurrently with our own
+      insertion, the code could fail with <span class="quote">“<span class="quote">buffer NNNN is not owned
+      by resource owner</span>”</span>.
+     </p></li><li class="listitem"><p>
+      Avoid failure with partitioned SP-GiST indexes (Tom Lane)
+     </p><p>
+      Trying to use an index of this kind could lead to <span class="quote">“<span class="quote">No such
+      file or directory</span>”</span> errors.
+     </p></li><li class="listitem"><p>
+      Fix ownership change reporting for large objects (Tom Lane)
+     </p><p>
+      A no-op <code class="command">ALTER LARGE OBJECT OWNER</code> command (that
+      is, one selecting the existing owner) passed the wrong class ID to
+      the <code class="varname">PostAlterHook</code>, probably confusing any
+      extension using that hook.
+     </p></li><li class="listitem"><p>
+      Prevent standby servers from incorrectly processing dead index
+      tuples during subtransactions (Fei Changhong)
+     </p><p>
+      The <code class="structfield">startedInRecovery</code> flag was not
+      correctly set for a subtransaction.  This affects only processing of
+      dead index tuples.  It could allow a query in a subtransaction to
+      ignore index entries that it should return (if they are already dead
+      on the primary server, but not dead to the standby transaction), or
+      to prematurely mark index entries as dead that are not yet dead on
+      the primary.  It is not clear that the latter case has any serious
+      consequences, but it's not the intended behavior.
+     </p></li><li class="listitem"><p>
+      Fix deadlock between a logical replication apply worker, its
+      tablesync worker, and a session process trying to alter the
+      subscription (Shlok Kyal)
+     </p><p>
+      One edge of the deadlock loop did not involve a lock wait, so the
+      deadlock went undetected and would persist until manual
+      intervention.
+     </p></li><li class="listitem"><p>
+      Prevent examining system catalogs with the wrong snapshot during
+      logical decoding (Fei Changhong)
+     </p><p>
+      If decoding begins partway through a transaction that modifies
+      system catalogs, the decoder may not recognize that, causing it to
+      fail to treat that transaction as in-progress for catalog lookups.
+      This fix deals with the case that a top-level transaction is already
+      marked as containing catalog changes, but its subtransaction(s) are
+      not.
+     </p></li><li class="listitem"><p>
+      Return the correct status code when a new client disconnects without
+      responding to the server's password challenge (Liu Lang, Tom Lane)
+     </p><p>
+      In some cases we'd treat this as a loggable error, which was not the
+      intention and tends to create log spam, since common clients
+      like <span class="application">psql</span> frequently do this.  It may
+      also confuse extensions that
+      use <code class="varname">ClientAuthentication_hook</code>.
+     </p></li><li class="listitem"><p>
+      Fix incompatibility with <span class="application">OpenSSL</span> 3.2
+      (Tristan Partin, Bo Andreson)
+     </p><p>
+      Use the BIO <span class="quote">“<span class="quote">app_data</span>”</span> field for our private storage,
+      instead of assuming it's okay to use the <span class="quote">“<span class="quote">data</span>”</span> field.
+      This mistake didn't cause problems before, but with 3.2 it leads
+      to crashes and complaints about double frees.
+     </p></li><li class="listitem"><p>
+      Be more wary about <span class="application">OpenSSL</span> not
+      setting <code class="varname">errno</code> on error (Tom Lane)
+     </p><p>
+      If <code class="varname">errno</code> isn't set, assume the cause of the
+      reported failure is read EOF.  This fixes rare cases of strange
+      error reports like <span class="quote">“<span class="quote">could not accept SSL connection:
+      Success</span>”</span>.
+     </p></li><li class="listitem"><p>
+      Fix file descriptor leakage when a foreign data
+      wrapper's <code class="function">ForeignAsyncRequest</code> function fails
+      (Heikki Linnakangas)
+     </p></li><li class="listitem"><p>
+      Report <span class="systemitem">ENOMEM</span> errors from file-related system
+      calls as <code class="literal">ERRCODE_OUT_OF_MEMORY</code>,
+      not <code class="literal">ERRCODE_INTERNAL_ERROR</code> (Alexander Kuzmenkov)
+     </p></li><li class="listitem"><p>
+      In <span class="application">PL/pgSQL</span>, support SQL commands that
+      are <code class="command">CREATE FUNCTION</code>/<code class="command">CREATE
+      PROCEDURE</code> with SQL-standard bodies (Tom Lane)
+     </p><p>
+      Previously, such cases failed with parsing errors due to the
+      semicolon(s) appearing in the function body.
+     </p></li><li class="listitem"><p>
+      Fix <span class="application">libpq</span>'s
+      handling of errors in pipelines (Álvaro Herrera)
+     </p><p>
+      The pipeline state could get out of sync if an error is returned
+      for reasons other than a query problem (for example, if the
+      connection is lost).  Potentially this would lead to a busy-loop in
+      the calling application.
+     </p></li><li class="listitem"><p>
+      Make <span class="application">libpq</span>'s
+      <code class="function">PQsendFlushRequest()</code> function flush the client
+      output buffer under the same rules as
+      other <code class="literal">PQsend</code> functions (Jelte Fennema-Nio)
+     </p><p>
+      In pipeline mode, it may still be necessary to
+      call <code class="function">PQflush()</code> as well; but this change removes
+      some inconsistency.
+     </p></li><li class="listitem"><p>
+      Avoid race condition when <span class="application">libpq</span>
+      initializes OpenSSL support concurrently in two different threads
+      (Willi Mann, Michael Paquier)
+     </p></li><li class="listitem"><p>
+      Fix timing-dependent failure in GSSAPI data transmission (Tom Lane)
+     </p><p>
+      When using GSSAPI encryption in non-blocking
+      mode, <span class="application">libpq</span> sometimes failed
+      with <span class="quote">“<span class="quote">GSSAPI caller failed to retransmit all data needing to
+      be retried</span>”</span>.
+     </p></li><li class="listitem"><p>
+      In <span class="application">pg_dump</span>, don't dump RLS policies or
+      security labels for extension member objects (Tom Lane, Jacob
+      Champion)
+     </p><p>
+      Previously, commands would be included in the dump to set these
+      properties, which is really incorrect since they should be
+      considered as internal affairs of the extension.  Moreover, the
+      restoring user might not have adequate privilege to set them, and
+      indeed the dumping user might not have enough privilege to dump them
+      (since dumping RLS policies requires acquiring lock on their table).
+     </p></li><li class="listitem"><p>
+      In <span class="application">pg_dump</span>, don't dump an extended
+      statistics object if its underlying table isn't being dumped
+      (Rian McGuire, Tom Lane)
+     </p><p>
+      This conforms to the behavior for other dependent objects such as
+      indexes.
+     </p></li><li class="listitem"><p>
+      Make it an error for a <span class="application">pgbench</span> script to
+      end with an open pipeline (Anthonin Bonnefoy)
+     </p><p>
+      Previously, <span class="application">pgbench</span> would behave oddly if
+      a <code class="command">\startpipeline</code> command lacked a
+      matching <code class="command">\endpipeline</code>.  This seems like a
+      scripting mistake rather than a case
+      that <span class="application">pgbench</span> needs to handle nicely, so
+      throw an error.
+     </p></li><li class="listitem"><p>
+      Fix crash in <code class="filename">contrib/intarray</code> if an array with
+      an element equal to <code class="literal">INT_MAX</code> is inserted into
+      a <code class="literal">gist__int_ops</code> index
+      (Alexander Lakhin, Tom Lane)
+     </p></li><li class="listitem"><p>
+      Report a better error
+      when <code class="filename">contrib/pageinspect</code>'s
+      <code class="function">hash_bitmap_info()</code> function is applied to a
+      partitioned hash index (Alexander Lakhin, Michael Paquier)
+     </p></li><li class="listitem"><p>
+      Report a better error
+      when <code class="filename">contrib/pgstattuple</code>'s
+      <code class="function">pgstathashindex()</code> function is applied to a
+      partitioned hash index (Alexander Lakhin)
+     </p></li><li class="listitem"><p>
+      On Windows, suppress autorun options when launching subprocesses
+      in <span class="application">pg_ctl</span>
+      and <span class="application">pg_regress</span> (Kyotaro Horiguchi)
+     </p><p>
+      When launching a child process via <code class="filename">cmd.exe</code>,
+      pass the <code class="option">/D</code> flag to prevent executing any autorun
+      commands specified in the registry.  This avoids possibly-surprising
+      side effects.
+     </p></li><li class="listitem"><p>
+      Fix compilation failures with <span class="application">libxml2</span>
+      version 2.12.0 and later (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix compilation failure of <code class="literal">WAL_DEBUG</code> code on
+      Windows (Bharath Rupireddy)
+     </p></li><li class="listitem"><p>
+      Suppress compiler warnings from Python's header files
+      (Peter Eisentraut, Tom Lane)
+     </p><p>
+      Our preferred compiler options provoke warnings about constructs
+      appearing in recent versions of Python's header files.  When using
+      <span class="application">gcc</span>, we can suppress these warnings with
+      a pragma.
+     </p></li><li class="listitem"><p>
+      Avoid deprecation warning when compiling with LLVM 18 (Thomas Munro)
+     </p></li><li class="listitem"><p>
+      Update time zone data files to <span class="application">tzdata</span>
+      release 2024a for DST law changes in Greenland, Kazakhstan, and
+      Palestine, plus corrections for the Antarctic stations Casey and
+      Vostok.  Also historical corrections for Vietnam, Toronto, and
+      Miquelon.
+     </p></li></ul></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="release-14-12.html" title="E.1. Release 14.12">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="release-14-10.html" title="E.3. Release 14.10">Next</a></td></tr><tr><td width="40%" align="left" valign="top">E.1. Release 14.12 </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> E.3. Release 14.10</td></tr></table></div></body></html>

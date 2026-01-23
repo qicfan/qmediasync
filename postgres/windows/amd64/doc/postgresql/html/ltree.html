@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.21. ltree</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="lo.html" title="F.20. lo" /><link rel="next" href="oldsnapshot.html" title="F.22. old_snapshot" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.21. ltree</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="lo.html" title="F.20. lo">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="oldsnapshot.html" title="F.22. old_snapshot">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LTREE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.21. ltree</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ltree.html#id-1.11.7.30.5">F.21.1. Definitions</a></span></dt><dt><span class="sect2"><a href="ltree.html#id-1.11.7.30.6">F.21.2. Operators and Functions</a></span></dt><dt><span class="sect2"><a href="ltree.html#id-1.11.7.30.7">F.21.3. Indexes</a></span></dt><dt><span class="sect2"><a href="ltree.html#id-1.11.7.30.8">F.21.4. Example</a></span></dt><dt><span class="sect2"><a href="ltree.html#id-1.11.7.30.9">F.21.5. Transforms</a></span></dt><dt><span class="sect2"><a href="ltree.html#id-1.11.7.30.10">F.21.6. Authors</a></span></dt></dl></div><a id="id-1.11.7.30.2" class="indexterm"></a><p>
+  This module implements a data type <code class="type">ltree</code> for representing
+  labels of data stored in a hierarchical tree-like structure.
+  Extensive facilities for searching through label trees are provided.
+ </p><p>
+  This module is considered <span class="quote">“<span class="quote">trusted</span>”</span>, that is, it can be
+  installed by non-superusers who have <code class="literal">CREATE</code> privilege
+  on the current database.
+ </p><div class="sect2" id="id-1.11.7.30.5"><div class="titlepage"><div><div><h3 class="title">F.21.1. Definitions</h3></div></div></div><p>
+   A <em class="firstterm">label</em> is a sequence of alphanumeric characters
+   and underscores (for example, in C locale the characters
+   <code class="literal">A-Za-z0-9_</code> are allowed).
+   Labels must be less than 256 characters long.
+  </p><p>
+   Examples: <code class="literal">42</code>, <code class="literal">Personal_Services</code>
+  </p><p>
+   A <em class="firstterm">label path</em> is a sequence of zero or more
+   labels separated by dots, for example <code class="literal">L1.L2.L3</code>, representing
+   a path from the root of a hierarchical tree to a particular node.  The
+   length of a label path cannot exceed 65535 labels.
+  </p><p>
+   Example: <code class="literal">Top.Countries.Europe.Russia</code>
+  </p><p>
+   The <code class="filename">ltree</code> module provides several data types:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     <code class="type">ltree</code> stores a label path.
+    </p></li><li class="listitem"><p>
+     <code class="type">lquery</code> represents a regular-expression-like pattern
+     for matching <code class="type">ltree</code> values.  A simple word matches that
+     label within a path.  A star symbol (<code class="literal">*</code>) matches zero
+     or more labels.  These can be joined with dots to form a pattern that
+     must match the whole label path.  For example:
+</p><pre class="synopsis">
+foo         <em class="lineannotation"><span class="lineannotation">Match the exact label path <code class="literal">foo</code></span></em>
+*.foo.*     <em class="lineannotation"><span class="lineannotation">Match any label path containing the label <code class="literal">foo</code></span></em>
+*.foo       <em class="lineannotation"><span class="lineannotation">Match any label path whose last label is <code class="literal">foo</code></span></em>
+</pre><p>
+    </p><p>
+     Both star symbols and simple words can be quantified to restrict how many
+     labels they can match:
+</p><pre class="synopsis">
+*{<em class="replaceable"><code>n</code></em>}        <em class="lineannotation"><span class="lineannotation">Match exactly <em class="replaceable"><code>n</code></em> labels</span></em>
+*{<em class="replaceable"><code>n</code></em>,}       <em class="lineannotation"><span class="lineannotation">Match at least <em class="replaceable"><code>n</code></em> labels</span></em>
+*{<em class="replaceable"><code>n</code></em>,<em class="replaceable"><code>m</code></em>}      <em class="lineannotation"><span class="lineannotation">Match at least <em class="replaceable"><code>n</code></em> but not more than <em class="replaceable"><code>m</code></em> labels</span></em>
+*{,<em class="replaceable"><code>m</code></em>}       <em class="lineannotation"><span class="lineannotation">Match at most <em class="replaceable"><code>m</code></em> labels — same as </span></em>*{0,<em class="replaceable"><code>m</code></em>}
+foo{<em class="replaceable"><code>n</code></em>,<em class="replaceable"><code>m</code></em>}    <em class="lineannotation"><span class="lineannotation">Match at least <em class="replaceable"><code>n</code></em> but not more than <em class="replaceable"><code>m</code></em> occurrences of <code class="literal">foo</code></span></em>
+foo{,}      <em class="lineannotation"><span class="lineannotation">Match any number of occurrences of <code class="literal">foo</code>, including zero</span></em>
+</pre><p>
+     In the absence of any explicit quantifier, the default for a star symbol
+     is to match any number of labels (that is, <code class="literal">{,}</code>) while
+     the default for a non-star item is to match exactly once (that
+     is, <code class="literal">{1}</code>).
+    </p><p>
+     There are several modifiers that can be put at the end of a non-star
+     <code class="type">lquery</code> item to make it match more than just the exact match:
+</p><pre class="synopsis">
+@           <em class="lineannotation"><span class="lineannotation">Match case-insensitively, for example <code class="literal">a@</code> matches <code class="literal">A</code></span></em>
+*           <em class="lineannotation"><span class="lineannotation">Match any label with this prefix, for example <code class="literal">foo*</code> matches <code class="literal">foobar</code></span></em>
+%           <em class="lineannotation"><span class="lineannotation">Match initial underscore-separated words</span></em>
+</pre><p>
+     The behavior of <code class="literal">%</code> is a bit complicated.  It tries to match
+     words rather than the entire label.  For example
+     <code class="literal">foo_bar%</code> matches <code class="literal">foo_bar_baz</code> but not
+     <code class="literal">foo_barbaz</code>.  If combined with <code class="literal">*</code>, prefix
+     matching applies to each word separately, for example
+     <code class="literal">foo_bar%*</code> matches <code class="literal">foo1_bar2_baz</code> but
+     not <code class="literal">foo1_br2_baz</code>.
+    </p><p>
+     Also, you can write several possibly-modified non-star items separated with
+     <code class="literal">|</code> (OR) to match any of those items, and you can put
+     <code class="literal">!</code> (NOT) at the start of a non-star group to match any
+     label that doesn't match any of the alternatives.  A quantifier, if any,
+     goes at the end of the group; it means some number of matches for the
+     group as a whole (that is, some number of labels matching or not matching
+     any of the alternatives).
+    </p><p>
+     Here's an annotated example of <code class="type">lquery</code>:
+</p><pre class="programlisting">
+Top.*{0,2}.sport*@.!football|tennis{1,}.Russ*|Spain
+a.  b.     c.      d.                   e.
+</pre><p>
+     This query will match any label path that:
+    </p><div class="orderedlist"><ol class="orderedlist" type="a"><li class="listitem"><p>
+       begins with the label <code class="literal">Top</code>
+      </p></li><li class="listitem"><p>
+       and next has zero to two labels before
+      </p></li><li class="listitem"><p>
+       a label beginning with the case-insensitive prefix <code class="literal">sport</code>
+      </p></li><li class="listitem"><p>
+       then has one or more labels, none of which
+       match <code class="literal">football</code> nor <code class="literal">tennis</code>
+      </p></li><li class="listitem"><p>
+       and then ends with a label beginning with <code class="literal">Russ</code> or
+       exactly matching <code class="literal">Spain</code>.
+      </p></li></ol></div></li><li class="listitem"><p><code class="type">ltxtquery</code> represents a full-text-search-like
+    pattern for matching <code class="type">ltree</code> values.  An
+    <code class="type">ltxtquery</code> value contains words, possibly with the
+    modifiers <code class="literal">@</code>, <code class="literal">*</code>, <code class="literal">%</code> at the end;
+    the modifiers have the same meanings as in <code class="type">lquery</code>.
+    Words can be combined with <code class="literal">&amp;</code> (AND),
+    <code class="literal">|</code> (OR), <code class="literal">!</code> (NOT), and parentheses.
+    The key difference from
+    <code class="type">lquery</code> is that <code class="type">ltxtquery</code> matches words without
+    regard to their position in the label path.
+    </p><p>
+     Here's an example <code class="type">ltxtquery</code>:
+</p><pre class="programlisting">
+Europe &amp; Russia*@ &amp; !Transportation
+</pre><p>
+     This will match paths that contain the label <code class="literal">Europe</code> and
+     any label beginning with <code class="literal">Russia</code> (case-insensitive),
+     but not paths containing the label <code class="literal">Transportation</code>.
+     The location of these words within the path is not important.
+     Also, when <code class="literal">%</code> is used, the word can be matched to any
+     underscore-separated word within a label, regardless of position.
+    </p></li></ul></div><p>
+   Note: <code class="type">ltxtquery</code> allows whitespace between symbols, but
+   <code class="type">ltree</code> and <code class="type">lquery</code> do not.
+  </p></div><div class="sect2" id="id-1.11.7.30.6"><div class="titlepage"><div><div><h3 class="title">F.21.2. Operators and Functions</h3></div></div></div><p>
+   Type <code class="type">ltree</code> has the usual comparison operators
+   <code class="literal">=</code>, <code class="literal">&lt;&gt;</code>,
+   <code class="literal">&lt;</code>, <code class="literal">&gt;</code>, <code class="literal">&lt;=</code>, <code class="literal">&gt;=</code>.
+   Comparison sorts in the order of a tree traversal, with the children
+   of a node sorted by label text.  In addition, the specialized
+   operators shown in <a class="xref" href="ltree.html#LTREE-OP-TABLE" title="Table F.13. ltree Operators">Table F.13</a> are available.
+  </p><div class="table" id="LTREE-OP-TABLE"><p class="title"><strong>Table F.13. <code class="type">ltree</code> Operators</strong></p><div class="table-contents"><table class="table" summary="ltree Operators" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Operator
+       </p>
+       <p>
+        Description
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">@&gt;</code> <code class="type">ltree</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is left argument an ancestor of right (or equal)?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">&lt;@</code> <code class="type">ltree</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is left argument a descendant of right (or equal)?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">~</code> <code class="type">lquery</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">lquery</code> <code class="literal">~</code> <code class="type">ltree</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does <code class="type">ltree</code> match <code class="type">lquery</code>?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">?</code> <code class="type">lquery[]</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">lquery[]</code> <code class="literal">?</code> <code class="type">ltree</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does <code class="type">ltree</code> match any <code class="type">lquery</code> in array?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">@</code> <code class="type">ltxtquery</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">ltxtquery</code> <code class="literal">@</code> <code class="type">ltree</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does <code class="type">ltree</code> match <code class="type">ltxtquery</code>?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">||</code> <code class="type">ltree</code>
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Concatenates <code class="type">ltree</code> paths.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">||</code> <code class="type">text</code>
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">text</code> <code class="literal">||</code> <code class="type">ltree</code>
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Converts text to <code class="type">ltree</code> and concatenates.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">@&gt;</code> <code class="type">ltree</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">&lt;@</code> <code class="type">ltree[]</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does array contain an ancestor of <code class="type">ltree</code>?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">&lt;@</code> <code class="type">ltree</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">ltree</code> <code class="literal">@&gt;</code> <code class="type">ltree[]</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does array contain a descendant of <code class="type">ltree</code>?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">~</code> <code class="type">lquery</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">lquery</code> <code class="literal">~</code> <code class="type">ltree[]</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does array contain any path matching <code class="type">lquery</code>?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">?</code> <code class="type">lquery[]</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">lquery[]</code> <code class="literal">?</code> <code class="type">ltree[]</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does <code class="type">ltree</code> array contain any path matching
+        any <code class="type">lquery</code>?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">@</code> <code class="type">ltxtquery</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p class="func_signature">
+        <code class="type">ltxtquery</code> <code class="literal">@</code> <code class="type">ltree[]</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does array contain any path matching <code class="type">ltxtquery</code>?
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">?@&gt;</code> <code class="type">ltree</code>
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Returns first array entry that is an ancestor of <code class="type">ltree</code>,
+        or <code class="literal">NULL</code> if none.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">?&lt;@</code> <code class="type">ltree</code>
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Returns first array entry that is a descendant of <code class="type">ltree</code>,
+        or <code class="literal">NULL</code> if none.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">?~</code> <code class="type">lquery</code>
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Returns first array entry that matches <code class="type">lquery</code>,
+        or <code class="literal">NULL</code> if none.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">ltree[]</code> <code class="literal">?@</code> <code class="type">ltxtquery</code>
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Returns first array entry that matches <code class="type">ltxtquery</code>,
+        or <code class="literal">NULL</code> if none.
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   The operators <code class="literal">&lt;@</code>, <code class="literal">@&gt;</code>,
+   <code class="literal">@</code> and <code class="literal">~</code> have analogues
+   <code class="literal">^&lt;@</code>, <code class="literal">^@&gt;</code>, <code class="literal">^@</code>,
+   <code class="literal">^~</code>, which are the same except they do not use
+   indexes.  These are useful only for testing purposes.
+  </p><p>
+   The available functions are shown in <a class="xref" href="ltree.html#LTREE-FUNC-TABLE" title="Table F.14. ltree Functions">Table F.14</a>.
+  </p><div class="table" id="LTREE-FUNC-TABLE"><p class="title"><strong>Table F.14. <code class="type">ltree</code> Functions</strong></p><div class="table-contents"><table class="table" summary="ltree Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.30.6.6.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">subltree</code> ( <code class="type">ltree</code>, <em class="parameter"><code>start</code></em> <code class="type">integer</code>, <em class="parameter"><code>end</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Returns subpath of <code class="type">ltree</code> from
+        position <em class="parameter"><code>start</code></em> to
+        position <em class="parameter"><code>end</code></em>-1 (counting from 0).
+       </p>
+       <p>
+        <code class="literal">subltree('Top.Child1.Child2', 1, 2)</code>
+        → <code class="returnvalue">Child1</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.30.6.6.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">subpath</code> ( <code class="type">ltree</code>, <em class="parameter"><code>offset</code></em> <code class="type">integer</code>, <em class="parameter"><code>len</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Returns subpath of <code class="type">ltree</code> starting at
+        position <em class="parameter"><code>offset</code></em>, with
+        length <em class="parameter"><code>len</code></em>.  If <em class="parameter"><code>offset</code></em>
+        is negative, subpath starts that far from the end of the path.
+        If <em class="parameter"><code>len</code></em> is negative, leaves that many labels off
+        the end of the path.
+       </p>
+       <p>
+        <code class="literal">subpath('Top.Child1.Child2', 0, 2)</code>
+        → <code class="returnvalue">Top.Child1</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">subpath</code> ( <code class="type">ltree</code>, <em class="parameter"><code>offset</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Returns subpath of <code class="type">ltree</code> starting at
+        position <em class="parameter"><code>offset</code></em>, extending to end of path.
+        If <em class="parameter"><code>offset</code></em> is negative, subpath starts that far
+        from the end of the path.
+       </p>
+       <p>
+        <code class="literal">subpath('Top.Child1.Child2', 1)</code>
+        → <code class="returnvalue">Child1.Child2</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.30.6.6.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">nlevel</code> ( <code class="type">ltree</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns number of labels in path.
+       </p>
+       <p>
+        <code class="literal">nlevel('Top.Child1.Child2')</code>
+        → <code class="returnvalue">3</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.30.6.6.2.2.5.1.1.1" class="indexterm"></a>
+        <code class="function">index</code> ( <em class="parameter"><code>a</code></em> <code class="type">ltree</code>, <em class="parameter"><code>b</code></em> <code class="type">ltree</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns position of first occurrence of <em class="parameter"><code>b</code></em> in
+        <em class="parameter"><code>a</code></em>, or -1 if not found.
+       </p>
+       <p>
+        <code class="literal">index('0.1.2.3.5.4.5.6.8.5.6.8', '5.6')</code>
+        → <code class="returnvalue">6</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">index</code> ( <em class="parameter"><code>a</code></em> <code class="type">ltree</code>,  <em class="parameter"><code>b</code></em> <code class="type">ltree</code>, <em class="parameter"><code>offset</code></em> <code class="type">integer</code> )
+        → <code class="returnvalue">integer</code>
+       </p>
+       <p>
+        Returns position of first occurrence of <em class="parameter"><code>b</code></em>
+        in <em class="parameter"><code>a</code></em>, or -1 if not found.  The search starts at
+        position <em class="parameter"><code>offset</code></em>;
+        negative <em class="parameter"><code>offset</code></em> means
+        start <em class="parameter"><code>-offset</code></em> labels from the end of the path.
+       </p>
+       <p>
+        <code class="literal">index('0.1.2.3.5.4.5.6.8.5.6.8', '5.6', -4)</code>
+        → <code class="returnvalue">9</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.30.6.6.2.2.7.1.1.1" class="indexterm"></a>
+        <code class="function">text2ltree</code> ( <code class="type">text</code> )
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Casts <code class="type">text</code> to <code class="type">ltree</code>.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.30.6.6.2.2.8.1.1.1" class="indexterm"></a>
+        <code class="function">ltree2text</code> ( <code class="type">ltree</code> )
+        → <code class="returnvalue">text</code>
+       </p>
+       <p>
+        Casts <code class="type">ltree</code> to <code class="type">text</code>.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.30.6.6.2.2.9.1.1.1" class="indexterm"></a>
+        <code class="function">lca</code> ( <code class="type">ltree</code> [<span class="optional">, <code class="type">ltree</code> [<span class="optional">, ... </span>]</span>] )
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Computes longest common ancestor of paths
+        (up to 8 arguments are supported).
+       </p>
+       <p>
+        <code class="literal">lca('1.2.3', '1.2.3.4.5.6')</code>
+        → <code class="returnvalue">1.2</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="function">lca</code> ( <code class="type">ltree[]</code> )
+        → <code class="returnvalue">ltree</code>
+       </p>
+       <p>
+        Computes longest common ancestor of paths in array.
+       </p>
+       <p>
+        <code class="literal">lca(array['1.2.3'::ltree,'1.2.3.4'])</code>
+        → <code class="returnvalue">1.2</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div class="sect2" id="id-1.11.7.30.7"><div class="titlepage"><div><div><h3 class="title">F.21.3. Indexes</h3></div></div></div><p>
+   <code class="filename">ltree</code> supports several types of indexes that can speed
+   up the indicated operators:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     B-tree index over <code class="type">ltree</code>:
+     <code class="literal">&lt;</code>, <code class="literal">&lt;=</code>, <code class="literal">=</code>,
+     <code class="literal">&gt;=</code>, <code class="literal">&gt;</code>
+    </p></li><li class="listitem"><p>
+     GiST index over <code class="type">ltree</code> (<code class="literal">gist_ltree_ops</code>
+     opclass):
+     <code class="literal">&lt;</code>, <code class="literal">&lt;=</code>, <code class="literal">=</code>,
+     <code class="literal">&gt;=</code>, <code class="literal">&gt;</code>,
+     <code class="literal">@&gt;</code>, <code class="literal">&lt;@</code>,
+     <code class="literal">@</code>, <code class="literal">~</code>, <code class="literal">?</code>
+    </p><p>
+     <code class="literal">gist_ltree_ops</code> GiST opclass approximates a set of
+     path labels as a bitmap signature.  Its optional integer parameter
+     <code class="literal">siglen</code> determines the
+     signature length in bytes.  The default signature length is 8 bytes.
+     The length must be a positive multiple of <code class="type">int</code> alignment
+     (4 bytes on most machines)) up to 2024.  Longer
+     signatures lead to a more precise search (scanning a smaller fraction of the index and
+     fewer heap pages), at the cost of a larger index.
+    </p><p>
+     Example of creating such an index with the default signature length of 8 bytes:
+    </p><pre class="programlisting">
+CREATE INDEX path_gist_idx ON test USING GIST (path);
+</pre><p>
+     Example of creating such an index with a signature length of 100 bytes:
+    </p><pre class="programlisting">
+CREATE INDEX path_gist_idx ON test USING GIST (path gist_ltree_ops(siglen=100));
+</pre></li><li class="listitem"><p>
+     GiST index over <code class="type">ltree[]</code> (<code class="literal">gist__ltree_ops</code>
+     opclass):
+     <code class="literal">ltree[] &lt;@ ltree</code>, <code class="literal">ltree @&gt; ltree[]</code>,
+     <code class="literal">@</code>, <code class="literal">~</code>, <code class="literal">?</code>
+    </p><p>
+     <code class="literal">gist__ltree_ops</code> GiST opclass works similarly to
+     <code class="literal">gist_ltree_ops</code> and also takes signature length as
+     a parameter.  The default value of <code class="literal">siglen</code> in
+      <code class="literal">gist__ltree_ops</code> is 28 bytes.
+    </p><p>
+     Example of creating such an index with the default signature length of 28 bytes:
+    </p><pre class="programlisting">
+CREATE INDEX path_gist_idx ON test USING GIST (array_path);
+</pre><p>
+     Example of creating such an index with a signature length of 100 bytes:
+    </p><pre class="programlisting">
+CREATE INDEX path_gist_idx ON test USING GIST (array_path gist__ltree_ops(siglen=100));
+</pre><p>
+     Note: This index type is lossy.
+    </p></li></ul></div></div><div class="sect2" id="id-1.11.7.30.8"><div class="titlepage"><div><div><h3 class="title">F.21.4. Example</h3></div></div></div><p>
+   This example uses the following data (also available in file
+   <code class="filename">contrib/ltree/ltreetest.sql</code> in the source distribution):
+  </p><pre class="programlisting">
+CREATE TABLE test (path ltree);
+INSERT INTO test VALUES ('Top');
+INSERT INTO test VALUES ('Top.Science');
+INSERT INTO test VALUES ('Top.Science.Astronomy');
+INSERT INTO test VALUES ('Top.Science.Astronomy.Astrophysics');
+INSERT INTO test VALUES ('Top.Science.Astronomy.Cosmology');
+INSERT INTO test VALUES ('Top.Hobbies');
+INSERT INTO test VALUES ('Top.Hobbies.Amateurs_Astronomy');
+INSERT INTO test VALUES ('Top.Collections');
+INSERT INTO test VALUES ('Top.Collections.Pictures');
+INSERT INTO test VALUES ('Top.Collections.Pictures.Astronomy');
+INSERT INTO test VALUES ('Top.Collections.Pictures.Astronomy.Stars');
+INSERT INTO test VALUES ('Top.Collections.Pictures.Astronomy.Galaxies');
+INSERT INTO test VALUES ('Top.Collections.Pictures.Astronomy.Astronauts');
+CREATE INDEX path_gist_idx ON test USING GIST (path);
+CREATE INDEX path_idx ON test USING BTREE (path);
+</pre><p>
+   Now, we have a table <code class="structname">test</code> populated with data describing
+   the hierarchy shown below:
+  </p><pre class="literallayout">
+                        Top
+                     /   |  \
+             Science Hobbies Collections
+                 /       |              \
+        Astronomy   Amateurs_Astronomy Pictures
+           /  \                            |
+Astrophysics  Cosmology                Astronomy
+                                        /  |    \
+                                 Galaxies Stars Astronauts
+</pre><p>
+   We can do inheritance:
+</p><pre class="screen">
+ltreetest=&gt; SELECT path FROM test WHERE path &lt;@ 'Top.Science';
+                path
+------------------------------------
+ Top.Science
+ Top.Science.Astronomy
+ Top.Science.Astronomy.Astrophysics
+ Top.Science.Astronomy.Cosmology
+(4 rows)
+</pre><p>
+  </p><p>
+   Here are some examples of path matching:
+</p><pre class="screen">
+ltreetest=&gt; SELECT path FROM test WHERE path ~ '*.Astronomy.*';
+                     path
+-----------------------------------------------
+ Top.Science.Astronomy
+ Top.Science.Astronomy.Astrophysics
+ Top.Science.Astronomy.Cosmology
+ Top.Collections.Pictures.Astronomy
+ Top.Collections.Pictures.Astronomy.Stars
+ Top.Collections.Pictures.Astronomy.Galaxies
+ Top.Collections.Pictures.Astronomy.Astronauts
+(7 rows)
+
+ltreetest=&gt; SELECT path FROM test WHERE path ~ '*.!pictures@.Astronomy.*';
+                path
+------------------------------------
+ Top.Science.Astronomy
+ Top.Science.Astronomy.Astrophysics
+ Top.Science.Astronomy.Cosmology
+(3 rows)
+</pre><p>
+  </p><p>
+   Here are some examples of full text search:
+</p><pre class="screen">
+ltreetest=&gt; SELECT path FROM test WHERE path @ 'Astro*% &amp; !pictures@';
+                path
+------------------------------------
+ Top.Science.Astronomy
+ Top.Science.Astronomy.Astrophysics
+ Top.Science.Astronomy.Cosmology
+ Top.Hobbies.Amateurs_Astronomy
+(4 rows)
+
+ltreetest=&gt; SELECT path FROM test WHERE path @ 'Astro* &amp; !pictures@';
+                path
+------------------------------------
+ Top.Science.Astronomy
+ Top.Science.Astronomy.Astrophysics
+ Top.Science.Astronomy.Cosmology
+(3 rows)
+</pre><p>
+  </p><p>
+   Path construction using functions:
+</p><pre class="screen">
+ltreetest=&gt; SELECT subpath(path,0,2)||'Space'||subpath(path,2) FROM test WHERE path &lt;@ 'Top.Science.Astronomy';
+                 ?column?
+------------------------------------------
+ Top.Science.Space.Astronomy
+ Top.Science.Space.Astronomy.Astrophysics
+ Top.Science.Space.Astronomy.Cosmology
+(3 rows)
+</pre><p>
+  </p><p>
+   We could simplify this by creating an SQL function that inserts a label
+   at a specified position in a path:
+</p><pre class="screen">
+CREATE FUNCTION ins_label(ltree, int, text) RETURNS ltree
+    AS 'select subpath($1,0,$2) || $3 || subpath($1,$2);'
+    LANGUAGE SQL IMMUTABLE;
+
+ltreetest=&gt; SELECT ins_label(path,2,'Space') FROM test WHERE path &lt;@ 'Top.Science.Astronomy';
+                ins_label
+------------------------------------------
+ Top.Science.Space.Astronomy
+ Top.Science.Space.Astronomy.Astrophysics
+ Top.Science.Space.Astronomy.Cosmology
+(3 rows)
+</pre><p>
+  </p></div><div class="sect2" id="id-1.11.7.30.9"><div class="titlepage"><div><div><h3 class="title">F.21.5. Transforms</h3></div></div></div><p>
+   Additional extensions are available that implement transforms for
+   the <code class="type">ltree</code> type for PL/Python.  The extensions are
+   called <code class="literal">ltree_plpythonu</code>, <code class="literal">ltree_plpython2u</code>,
+   and <code class="literal">ltree_plpython3u</code>
+   (see <a class="xref" href="plpython-python23.html" title="46.1. Python 2 vs. Python 3">Section 46.1</a> for the PL/Python naming
+   convention).  If you install these transforms and specify them when
+   creating a function, <code class="type">ltree</code> values are mapped to Python lists.
+   (The reverse is currently not supported, however.)
+  </p><div class="caution"><h3 class="title">Caution</h3><p>
+    It is strongly recommended that the transform extensions be installed in
+    the same schema as <code class="filename">ltree</code>.  Otherwise there are
+    installation-time security hazards if a transform extension's schema
+    contains objects defined by a hostile user.
+   </p></div></div><div class="sect2" id="id-1.11.7.30.10"><div class="titlepage"><div><div><h3 class="title">F.21.6. Authors</h3></div></div></div><p>
+   All work was done by Teodor Sigaev (<code class="email">&lt;<a class="email" href="mailto:teodor@stack.net">teodor@stack.net</a>&gt;</code>) and
+   Oleg Bartunov (<code class="email">&lt;<a class="email" href="mailto:oleg@sai.msu.su">oleg@sai.msu.su</a>&gt;</code>). See
+   <a class="ulink" href="http://www.sai.msu.su/~megera/postgres/gist/" target="_top">http://www.sai.msu.su/~megera/postgres/gist/</a> for
+   additional information. Authors would like to thank Eugeny Rodichev for
+   helpful discussions. Comments and bug reports are welcome.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="lo.html" title="F.20. lo">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="oldsnapshot.html" title="F.22. old_snapshot">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.20. lo </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.22. old_snapshot</td></tr></table></div></body></html>

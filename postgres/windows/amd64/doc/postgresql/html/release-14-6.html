@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>E.7. Release 14.6</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="release-14-7.html" title="E.6. Release 14.7" /><link rel="next" href="release-14-5.html" title="E.8. Release 14.5" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">E.7. Release 14.6</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="release-14-7.html" title="E.6. Release 14.7">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><th width="60%" align="center">Appendix E. Release Notes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="release-14-5.html" title="E.8. Release 14.5">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RELEASE-14-6"><div class="titlepage"><div><div><h2 class="title" style="clear: both">E.7. Release 14.6</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="release-14-6.html#id-1.11.6.11.4">E.7.1. Migration to Version 14.6</a></span></dt><dt><span class="sect2"><a href="release-14-6.html#id-1.11.6.11.5">E.7.2. Changes</a></span></dt></dl></div><p><strong>Release date: </strong>2022-11-10</p><p>
+   This release contains a variety of fixes from 14.5.
+   For information about new features in major release 14, see
+   <a class="xref" href="release-14.html" title="E.13. Release 14">Section E.13</a>.
+  </p><div class="sect2" id="id-1.11.6.11.4"><div class="titlepage"><div><div><h3 class="title">E.7.1. Migration to Version 14.6</h3></div></div></div><p>
+    A dump/restore is not required for those running 14.X.
+   </p><p>
+    However, if you are upgrading from a version earlier than 14.4,
+    see <a class="xref" href="release-14-4.html" title="E.9. Release 14.4">Section E.9</a>.
+   </p></div><div class="sect2" id="id-1.11.6.11.5"><div class="titlepage"><div><div><h3 class="title">E.7.2. Changes</h3></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Avoid rare PANIC during updates occurring concurrently
+      with <code class="command">VACUUM</code> (Tom Lane, Jeff Davis)
+     </p><p>
+      If a concurrent <code class="command">VACUUM</code> sets the all-visible flag
+      bit in a page that <code class="command">UPDATE</code>
+      or <code class="command">DELETE</code> is in process of modifying, the
+      updating command needs to clear that bit again; but some code paths
+      failed to do so, ending in a PANIC exit and database restart.
+     </p><p>
+      This is known to be possible in versions 14 and 15.  It may be only
+      latent in previous branches.
+     </p></li><li class="listitem"><p>
+      Fix handling of <code class="literal">DEFAULT</code> tokens that appear
+      in a multi-row <code class="literal">VALUES</code> clause of an
+      <code class="command">INSERT</code> on an updatable view (Tom Lane)
+     </p><p>
+      This oversight could lead to <span class="quote">“<span class="quote">cache lookup failed for
+      type</span>”</span> errors, or in older branches even to crashes.
+     </p></li><li class="listitem"><p>
+      Disallow rules named <code class="literal">_RETURN</code> that are
+      not <code class="literal">ON SELECT</code> (Tom Lane)
+     </p><p>
+      This avoids confusion between a view's <code class="literal">ON SELECT</code>
+      rule and any other rules it may have.
+     </p></li><li class="listitem"><p>
+      Fix resource management bug in saving tuples
+      for <code class="literal">AFTER</code> triggers (Tom Lane)
+     </p><p>
+      Given the right circumstances, this manifested as a <span class="quote">“<span class="quote">tupdesc
+      reference <em class="replaceable"><code>NNNN</code></em> is not owned by resource
+      owner</span>”</span> error followed by a PANIC exit.
+     </p></li><li class="listitem"><p>
+      Avoid failure in <code class="command">EXPLAIN VERBOSE</code> for a query
+      using <code class="literal">SEARCH BREADTH FIRST</code> with constant
+      initial values (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix construction of per-partition foreign key constraints while
+      doing <code class="command">ALTER TABLE ATTACH PARTITION</code>
+      (Jehan-Guillaume de Rorthais, Álvaro Herrera)
+     </p><p>
+      Previously, incorrect or duplicate constraints could be constructed
+      for the newly-added partition.
+     </p></li><li class="listitem"><p>
+      Fix generation of constraint names for per-partition foreign key
+      constraints (Jehan-Guillaume de Rorthais)
+     </p><p>
+      If the initially-given name is already in use for some constraint of
+      the partition, a new one is selected; but it wasn't being spelled as
+      intended.
+     </p></li><li class="listitem"><p>
+      Fix incorrect matching of index expressions and predicates when
+      creating a partitioned index (Richard Guo, Tom Lane)
+     </p><p>
+      While creating a partitioned index, we try to identify any existing
+      indexes on the partitions that match the partitioned index, so that
+      we can absorb those as child indexes instead of building new ones.
+      Matching of expressions was not done right, so that a usable child
+      index might be ignored, leading to creation of a duplicative index.
+     </p></li><li class="listitem"><p>
+      Prevent WAL corruption after a standby promotion (Dilip Kumar,
+      Robert Haas)
+     </p><p>
+      When a <span class="productname">PostgreSQL</span> instance performing
+      archive recovery (but not using standby mode) is promoted, and the
+      last WAL segment that it attempted to read ended in a partial
+      record, the instance would write an invalid WAL segment on the new
+      timeline.
+     </p></li><li class="listitem"><p>
+      Fix mis-ordering of WAL operations in fast insert path for GIN
+      indexes (Matthias van de Meent, Zhang Mingli)
+     </p><p>
+      This mistake is not known to have any negative consequences within
+      core <span class="productname">PostgreSQL</span>, but it did cause issues
+      for some extensions.
+     </p></li><li class="listitem"><p>
+      Fix bugs in logical decoding when replay starts from a point
+      between the beginning of a transaction and the beginning of its
+      subtransaction (Masahiko Sawada, Kuroda Hayato)
+     </p><p>
+      These errors could lead to assertion failures in debug builds, and
+      otherwise to memory leaks.
+     </p></li><li class="listitem"><p>
+      Prevent examining system catalogs with the wrong snapshot during
+      logical decoding (Masahiko Sawada)
+     </p><p>
+      If decoding begins partway through a transaction that modifies
+      system catalogs, the decoder may not recognize that, causing it to
+      fail to treat that transaction as in-progress for catalog lookups.
+     </p></li><li class="listitem"><p>
+      Accept interrupts in more places during logical decoding (Amit
+      Kapila, Masahiko Sawada)
+     </p><p>
+      This ameliorates problems with slow shutdown of replication workers.
+     </p></li><li class="listitem"><p>
+      Prevent attempts to replicate into a foreign-table partition in
+      replication workers (Shi Yu, Tom Lane)
+     </p><p>
+      Although partitioned tables can have foreign tables as partitions,
+      replicating into such a partition isn't currently supported.
+      The logical replication worker process would crash if it was
+      attempted.  Now, an error is thrown.
+     </p></li><li class="listitem"><p>
+      Remove pointless check on replica identity setting of partitioned
+      tables (Hou Zhijie)
+     </p><p>
+      What matters is the replica identity setting of the leaf partitions,
+      so there's no need to throw error if it's not set on the parent.
+     </p></li><li class="listitem"><p>
+      Avoid crash after function syntax error in replication workers
+      (Maxim Orlov, Anton Melnikov, Masahiko Sawada, Tom Lane)
+     </p><p>
+      If a syntax error occurred in a SQL-language or PL/pgSQL-language
+      <code class="command">CREATE FUNCTION</code> or <code class="command">DO</code> command
+      executed in a logical replication worker, the worker process would
+      crash with a null pointer dereference or assertion failure.
+     </p></li><li class="listitem"><p>
+      Fix handling of read-write expanded datums that are passed to SQL
+      functions (Tom Lane)
+     </p><p>
+      If a non-inlined SQL function uses a parameter in more than one
+      place, and one of those functions expects to be able to modify
+      read-write datums in place, then later uses of the parameter would
+      observe the wrong value.  (Within
+      core <span class="productname">PostgreSQL</span>, the expanded-datum
+      mechanism is only used for array and composite-type values; but
+      extensions might use it for other structured types.)
+     </p></li><li class="listitem"><p>
+      Fix type <code class="type">circle</code>'s equality comparator to handle NaNs
+      properly (Ranier Vilela)
+     </p><p>
+      If the left-hand circle had a floating-point NaN for its radius,
+      it would be considered equal to a circle with the same center and
+      any radius.
+     </p></li><li class="listitem"><p>
+      In Snowball dictionaries, don't try to stem excessively-long words
+      (Olly Betts, Tom Lane)
+     </p><p>
+      If the input word exceeds 1000 bytes, return it as-is after case
+      folding, rather than trying to run it through the Snowball code.
+      This restriction protects against a known
+      recursion-to-stack-overflow problem in the Turkish stemmer, and it
+      seems like good insurance against any other safety or performance
+      issues that may exist in the Snowball stemmers.  Such a long string
+      is surely not a word in any human language, so it's doubtful that
+      the stemmer would have done anything desirable with it anyway.
+     </p></li><li class="listitem"><p>
+      Fix use-after-free hazard in string comparisons (Tom Lane)
+     </p><p>
+      Improper memory management in the string comparison functions
+      could result in scribbling on no-longer-allocated buffers,
+      potentially breaking things for whatever is using that memory
+      now.  This would only happen with fairly long strings (more than
+      1kB), and only if an ICU collation is in use.
+     </p></li><li class="listitem"><p>
+      Add plan-time check for attempted access to a table that has no
+      table access method (Tom Lane)
+     </p><p>
+      This prevents a crash in some catalog-corruption scenarios, for
+      example use of a view whose <code class="literal">ON SELECT</code> rule is
+      missing.
+     </p></li><li class="listitem"><p>
+      Prevent postmaster crash when shared-memory state is corrupted
+      (Tom Lane)
+     </p><p>
+      The postmaster process is supposed to survive and initiate a
+      database restart if shared memory becomes corrupted, but one
+      bit of code was being insufficiently cautious about that.
+     </p></li><li class="listitem"><p>
+      Add some more defenses against recursion till stack overrun
+      (Richard Guo, Tom Lane)
+     </p></li><li class="listitem"><p>
+      Avoid misbehavior when choosing hash table size with very
+      small <code class="varname">work_mem</code> and large tuples (Zhang Mingli)
+     </p></li><li class="listitem"><p>
+      Avoid long-term memory leakage in the autovacuum launcher process
+      (Reid Thompson)
+     </p><p>
+      The lack of field reports suggests that this problem is only latent
+      in pre-v15 branches; but it's not very clear why, so back-patch the
+      fix anyway.
+     </p></li><li class="listitem"><p>
+      Improve <span class="application">PL/pgSQL</span>'s ability to handle
+      parameters declared as <code class="type">RECORD</code> (Tom Lane)
+     </p><p>
+      Build a separate function cache entry for each concrete type passed
+      to the <code class="type">RECORD</code> parameter during a session, much as we do
+      for polymorphic parameters.  This allows some usages to work that
+      previously failed with errors such as <span class="quote">“<span class="quote">type of parameter does
+      not match that when preparing the plan</span>”</span>.
+     </p></li><li class="listitem"><p>
+      In <span class="application">libpq</span>, handle single-row mode
+      correctly when pipelining (Denis Laxalde)
+     </p><p>
+      The single-row flag was not reset at the correct time if pipeline
+      mode was also active.
+     </p></li><li class="listitem"><p>
+      Add missing guards for <code class="literal">NULL</code> connection pointer
+      in <span class="application">libpq</span> (Daniele Varrazzo, Tom Lane)
+     </p><p>
+      There's a convention that <span class="application">libpq</span> functions
+      should check for a NULL PGconn argument, and fail gracefully instead
+      of crashing.  <code class="function">PQflush()</code>
+      and <code class="function">PQisnonblocking()</code> didn't get that memo, so
+      fix them.
+     </p></li><li class="listitem"><p>
+      In <span class="application">ecpg</span>, fix omission of variable storage
+      classes when multiple <code class="type">varchar</code> or <code class="type">bytea</code>
+      variables are declared in the same declaration (Andrey Sokolov)
+     </p><p>
+      For example, <span class="application">ecpg</span>
+      translated <code class="literal">static varchar str1[10], str2[20],
+      str3[30];</code> in such a way that only <code class="varname">str1</code>
+      was marked <code class="literal">static</code>.
+     </p></li><li class="listitem"><p>
+      Allow cross-platform tablespace relocation
+      in <span class="application">pg_basebackup</span> (Robert Haas)
+     </p><p>
+      Allow the remote path in <code class="option">--tablespace-mapping</code> to be
+      either a Unix-style or Windows-style absolute path, since the source
+      server could be on a different OS than the local system.
+     </p></li><li class="listitem"><p>
+      In <span class="application">pg_stat_statements</span>, fix access to
+      already-freed memory (zhaoqigui)
+     </p><p>
+      This occurred if <span class="application">pg_stat_statements</span>
+      tracked a <code class="command">ROLLBACK</code> command issued via extended
+      query protocol.  In debug builds it consistently led to an assertion
+      failure.  In production builds there would often be no visible ill
+      effect; but if the freed memory had already been reused, the likely
+      result would be to store garbage for the query string.
+     </p></li><li class="listitem"><p>
+      In <span class="application">postgres_fdw</span>, ensure that target lists
+      constructed for EvalPlanQual plans will have all required columns
+      (Richard Guo, Etsuro Fujita)
+     </p><p>
+      This avoids <span class="quote">“<span class="quote">variable not found in subplan target list</span>”</span>
+      errors in rare cases.
+     </p></li><li class="listitem"><p>
+      Reject unwanted output from the platform's
+      <code class="function">uuid_create()</code> function (Nazir Bilal Yavuz)
+     </p><p>
+      The <span class="application">uuid-ossp</span> module expects
+      libc's <code class="function">uuid_create()</code> to produce a version-1
+      UUID, but recent NetBSD releases produce a version-4 (random) UUID
+      instead.  Check for that, and complain if so.  Drop the
+      documentation's claim that the NetBSD implementation is usable
+      for <span class="application">uuid-ossp</span>.
+      (If a version-4 UUID is okay for your purposes, you don't
+      need <span class="application">uuid-ossp</span> at all; just
+      use <code class="function">gen_random_uuid()</code>.)
+     </p></li><li class="listitem"><p>
+      Include new Perl test modules in standard installations
+      (Álvaro Herrera)
+     </p><p>
+      Add <code class="filename">PostgreSQL/Test/Cluster.pm</code> and
+      <code class="filename">PostgreSQL/Test/Utils.pm</code> to the standard
+      installation file set in pre-version-15 branches.  This is for the
+      benefit of extensions that want to use newly-written test code in
+      older branches.
+     </p></li><li class="listitem"><p>
+      On NetBSD, force dynamic symbol resolution at postmaster start
+      (Andres Freund, Tom Lane)
+     </p><p>
+      This avoids a risk of deadlock in the dynamic linker on NetBSD 10.
+     </p></li><li class="listitem"><p>
+      Fix incompatibilities with LLVM 15 (Thomas Munro, Andres Freund)
+     </p></li><li class="listitem"><p>
+      Allow use of <code class="function">__sync_lock_test_and_set()</code> for
+      spinlocks on any machine (Tom Lane)
+     </p><p>
+      This eases porting to new machine architectures, at least if you're
+      using a compiler that supports this GCC builtin function.
+     </p></li><li class="listitem"><p>
+      Rename symbol <code class="literal">REF</code> to <code class="literal">REF_P</code> to
+      avoid compile failure on recent macOS (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Avoid using <code class="function">sprintf</code>, to avoid compile-time
+      deprecation warnings (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Silence assorted compiler warnings from clang 15 and later (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Update time zone data files to <span class="application">tzdata</span>
+      release 2022f for DST law changes in Chile, Fiji, Iran, Jordan,
+      Mexico, Palestine, and Syria, plus historical corrections for Chile,
+      Crimea, Iran, and Mexico.
+     </p><p>
+      Also, the Europe/Kiev zone has been renamed to Europe/Kyiv.
+      Also, the following zones have been merged into nearby,
+      more-populous zones whose clocks have agreed with them since 1970:
+      Antarctica/Vostok, Asia/Brunei,
+      Asia/Kuala_Lumpur, Atlantic/Reykjavik, Europe/Amsterdam,
+      Europe/Copenhagen, Europe/Luxembourg, Europe/Monaco, Europe/Oslo,
+      Europe/Stockholm, Indian/Christmas, Indian/Cocos, Indian/Kerguelen,
+      Indian/Mahe, Indian/Reunion, Pacific/Chuuk, Pacific/Funafuti,
+      Pacific/Majuro, Pacific/Pohnpei, Pacific/Wake and Pacific/Wallis.
+      (This indirectly affects zones that were already links to one of
+      these: Arctic/Longyearbyen, Atlantic/Jan_Mayen, Iceland,
+      Pacific/Ponape, Pacific/Truk, and Pacific/Yap.)  America/Nipigon,
+      America/Rainy_River, America/Thunder_Bay, Europe/Uzhgorod, and
+      Europe/Zaporozhye were also merged into nearby zones after
+      discovering that their claimed post-1970 differences from those
+      zones seem to have been errors.
+      In all these cases, the previous zone name remains as an alias;
+      but the actual data is that of the zone that was merged into.
+     </p><p>
+      These zone mergers result in loss of pre-1970 timezone history for
+      the merged zones, which may be troublesome for applications
+      expecting consistency of <code class="type">timestamptz</code> display.  As an
+      example, the stored value <code class="literal">1944-06-01 12:00 UTC</code>
+      would previously display as <code class="literal">1944-06-01
+      13:00:00+01</code> if the Europe/Stockholm zone is selected, but
+      now it will read out as <code class="literal">1944-06-01 14:00:00+02</code>.
+     </p><p>
+      It is possible to build the time zone data files with options that
+      will restore the older zone data, but that choice also inserts a lot
+      of other old (and typically poorly-attested) zone data, resulting in
+      more total changes from the previous release than accepting these
+      upstream changes does.  <span class="productname">PostgreSQL</span> has
+      chosen to ship the <span class="productname">tzdb</span> data
+      as-recommended, and so far as we are aware most major operating
+      system distributions are doing likewise.  However, if these changes
+      cause significant problems for your application, a possible solution
+      is to install a local build of the time zone data files using
+      <span class="productname">tzdb</span>'s backwards-compatibility options
+      (see their <code class="literal">PACKRATDATA</code>
+      and <code class="literal">PACKRATLIST</code> options).
+     </p></li></ul></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="release-14-7.html" title="E.6. Release 14.7">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="release-14-5.html" title="E.8. Release 14.5">Next</a></td></tr><tr><td width="40%" align="left" valign="top">E.6. Release 14.7 </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> E.8. Release 14.5</td></tr></table></div></body></html>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SPI_execute_with_args</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spi-spi-execute-extended.html" title="SPI_execute_extended" /><link rel="next" href="spi-spi-prepare.html" title="SPI_prepare" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SPI_execute_with_args</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spi-spi-execute-extended.html" title="SPI_execute_extended">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spi-interface.html" title="47.1. Interface Functions">Up</a></td><th width="60%" align="center">47.1. Interface Functions</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spi-spi-prepare.html" title="SPI_prepare">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SPI-SPI-EXECUTE-WITH-ARGS"><div class="titlepage"></div><a id="id-1.8.12.8.7.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SPI_execute_with_args</span></h2><p>SPI_execute_with_args — execute a command with out-of-line parameters</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+int SPI_execute_with_args(const char *<em class="parameter"><code>command</code></em>,
+                          int <em class="parameter"><code>nargs</code></em>, Oid *<em class="parameter"><code>argtypes</code></em>,
+                          Datum *<em class="parameter"><code>values</code></em>, const char *<em class="parameter"><code>nulls</code></em>,
+                          bool <em class="parameter"><code>read_only</code></em>, long <em class="parameter"><code>count</code></em>)
+</pre></div><div class="refsect1" id="id-1.8.12.8.7.5"><h2>Description</h2><p>
+   <code class="function">SPI_execute_with_args</code> executes a command that might
+   include references to externally supplied parameters.  The command text
+   refers to a parameter as <code class="literal">$<em class="replaceable"><code>n</code></em></code>, and
+   the call specifies data types and values for each such symbol.
+   <em class="parameter"><code>read_only</code></em> and <em class="parameter"><code>count</code></em> have
+   the same interpretation as in <code class="function">SPI_execute</code>.
+  </p><p>
+   The main advantage of this routine compared to
+   <code class="function">SPI_execute</code> is that data values can be inserted
+   into the command without tedious quoting/escaping, and thus with much
+   less risk of SQL-injection attacks.
+  </p><p>
+   Similar results can be achieved with <code class="function">SPI_prepare</code> followed by
+   <code class="function">SPI_execute_plan</code>; however, when using this function
+   the query plan is always customized to the specific parameter values
+   provided.
+   For one-time query execution, this function should be preferred.
+   If the same command is to be executed with many different parameters,
+   either method might be faster, depending on the cost of re-planning
+   versus the benefit of custom plans.
+  </p></div><div class="refsect1" id="id-1.8.12.8.7.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">const char * <em class="parameter"><code>command</code></em></code></span></dt><dd><p>
+      command string
+     </p></dd><dt><span class="term"><code class="literal">int <em class="parameter"><code>nargs</code></em></code></span></dt><dd><p>
+      number of input parameters (<code class="literal">$1</code>, <code class="literal">$2</code>, etc.)
+     </p></dd><dt><span class="term"><code class="literal">Oid * <em class="parameter"><code>argtypes</code></em></code></span></dt><dd><p>
+      an array of length <em class="parameter"><code>nargs</code></em>, containing the
+      <acronym class="acronym">OID</acronym>s of the data types of the parameters
+     </p></dd><dt><span class="term"><code class="literal">Datum * <em class="parameter"><code>values</code></em></code></span></dt><dd><p>
+      an array of length <em class="parameter"><code>nargs</code></em>, containing the actual
+      parameter values
+     </p></dd><dt><span class="term"><code class="literal">const char * <em class="parameter"><code>nulls</code></em></code></span></dt><dd><p>
+      an array of length <em class="parameter"><code>nargs</code></em>, describing which
+      parameters are null
+     </p><p>
+      If <em class="parameter"><code>nulls</code></em> is <code class="symbol">NULL</code> then
+      <code class="function">SPI_execute_with_args</code> assumes that no parameters
+      are null.  Otherwise, each entry of the <em class="parameter"><code>nulls</code></em>
+      array should be <code class="literal">' '</code> if the corresponding parameter
+      value is non-null, or <code class="literal">'n'</code> if the corresponding parameter
+      value is null.  (In the latter case, the actual value in the
+      corresponding <em class="parameter"><code>values</code></em> entry doesn't matter.)  Note
+      that <em class="parameter"><code>nulls</code></em> is not a text string, just an array:
+      it does not need a <code class="literal">'\0'</code> terminator.
+     </p></dd><dt><span class="term"><code class="literal">bool <em class="parameter"><code>read_only</code></em></code></span></dt><dd><p><code class="literal">true</code> for read-only execution</p></dd><dt><span class="term"><code class="literal">long <em class="parameter"><code>count</code></em></code></span></dt><dd><p>
+      maximum number of rows to return,
+      or <code class="literal">0</code> for no limit
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.8.12.8.7.7"><h2>Return Value</h2><p>
+   The return value is the same as for <code class="function">SPI_execute</code>.
+  </p><p>
+   <code class="varname">SPI_processed</code> and
+   <code class="varname">SPI_tuptable</code> are set as in
+   <code class="function">SPI_execute</code> if successful.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spi-spi-execute-extended.html" title="SPI_execute_extended">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spi-interface.html" title="47.1. Interface Functions">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spi-spi-prepare.html" title="SPI_prepare">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SPI_execute_extended </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SPI_prepare</td></tr></table></div></body></html>

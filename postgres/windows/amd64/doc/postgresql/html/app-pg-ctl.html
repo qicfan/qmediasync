@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_ctl</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-pgcontroldata.html" title="pg_controldata" /><link rel="next" href="app-pgresetwal.html" title="pg_resetwal" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_ctl</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-pgcontroldata.html" title="pg_controldata">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><th width="60%" align="center">PostgreSQL Server Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="app-pgresetwal.html" title="pg_resetwal">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-PG-CTL"><div class="titlepage"></div><a id="id-1.9.5.7.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_ctl</span></span></h2><p>pg_ctl — initialize, start, stop, or control a <span class="productname">PostgreSQL</span> server</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.5.7.4.1"><code class="command">pg_ctl</code>  <code class="option">init[db]</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-s</code>] [<code class="option">-o</code> <em class="replaceable"><code>initdb-options</code></em>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.2"><code class="command">pg_ctl</code>  <code class="option">start</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-l</code> <em class="replaceable"><code>filename</code></em>] [<code class="option">-W</code>] [<code class="option">-t</code> <em class="replaceable"><code>seconds</code></em>] [<code class="option">-s</code>] [<code class="option">-o</code> <em class="replaceable"><code>options</code></em>] [<code class="option">-p</code> <em class="replaceable"><code>path</code></em>] [<code class="option">-c</code>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.3"><code class="command">pg_ctl</code>  <code class="option">stop</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-m</code>
+        <code class="option">s[mart]</code>  |   <code class="option">f[ast]</code>  |   <code class="option">i[mmediate]</code>  
+   ] [<code class="option">-W</code>] [<code class="option">-t</code> <em class="replaceable"><code>seconds</code></em>] [<code class="option">-s</code>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.4"><code class="command">pg_ctl</code>  <code class="option">restart</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-m</code>
+        <code class="option">s[mart]</code>  |   <code class="option">f[ast]</code>  |   <code class="option">i[mmediate]</code>  
+   ] [<code class="option">-W</code>] [<code class="option">-t</code> <em class="replaceable"><code>seconds</code></em>] [<code class="option">-s</code>] [<code class="option">-o</code> <em class="replaceable"><code>options</code></em>] [<code class="option">-c</code>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.5"><code class="command">pg_ctl</code>  <code class="option">reload</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-s</code>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.6"><code class="command">pg_ctl</code>  <code class="option">status</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.7"><code class="command">pg_ctl</code>  <code class="option">promote</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-W</code>] [<code class="option">-t</code> <em class="replaceable"><code>seconds</code></em>] [<code class="option">-s</code>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.8"><code class="command">pg_ctl</code>  <code class="option">logrotate</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-s</code>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.9"><code class="command">pg_ctl</code>  <code class="option">kill</code>   <em class="replaceable"><code>signal_name</code></em>   <em class="replaceable"><code>process_id</code></em> </p></div><p>On Microsoft Windows, also:</p><div class="cmdsynopsis"><p id="id-1.9.5.7.4.11"><code class="command">pg_ctl</code>  <code class="option">register</code>  [<code class="option">-D</code> <em class="replaceable"><code>datadir</code></em>] [<code class="option">-N</code> <em class="replaceable"><code>servicename</code></em>] [<code class="option">-U</code> <em class="replaceable"><code>username</code></em>] [<code class="option">-P</code> <em class="replaceable"><code>password</code></em>] [<code class="option">-S</code>
+        <code class="option">a[uto]</code>  |   <code class="option">d[emand]</code>  
+   ] [<code class="option">-e</code> <em class="replaceable"><code>source</code></em>] [<code class="option">-W</code>] [<code class="option">-t</code> <em class="replaceable"><code>seconds</code></em>] [<code class="option">-s</code>] [<code class="option">-o</code> <em class="replaceable"><code>options</code></em>]</p></div><div class="cmdsynopsis"><p id="id-1.9.5.7.4.12"><code class="command">pg_ctl</code>  <code class="option">unregister</code>  [<code class="option">-N</code> <em class="replaceable"><code>servicename</code></em>]</p></div></div><div class="refsect1" id="APP-PG-CTL-DESCRIPTION"><h2>Description</h2><p>
+   <span class="application">pg_ctl</span> is a utility for initializing a
+   <span class="productname">PostgreSQL</span> database cluster, starting,
+   stopping, or restarting the <span class="productname">PostgreSQL</span>
+   database server (<a class="xref" href="app-postgres.html" title="postgres"><span class="refentrytitle"><span class="application">postgres</span></span></a>), or displaying the
+   status of a running server.  Although the server can be started
+   manually, <span class="application">pg_ctl</span> encapsulates tasks such
+   as redirecting log output and properly detaching from the terminal
+   and process group. It also provides convenient options for
+   controlled shutdown.
+  </p><p>
+   The <code class="option">init</code> or <code class="option">initdb</code> mode creates a new
+   <span class="productname">PostgreSQL</span> database cluster, that is,
+   a collection of databases that will be managed by a single
+   server instance.  This mode invokes the <code class="command">initdb</code>
+   command.  See <a class="xref" href="app-initdb.html" title="initdb"><span class="refentrytitle"><span class="application">initdb</span></span></a> for details.
+  </p><p>
+   <code class="option">start</code> mode launches a new server.  The
+   server is started in the background, and its standard input is attached
+   to <code class="filename">/dev/null</code> (or <code class="literal">nul</code> on Windows).
+   On Unix-like systems, by default, the server's standard output and
+   standard error are sent to <span class="application">pg_ctl</span>'s
+   standard output (not standard error).  The standard output of
+   <span class="application">pg_ctl</span> should then be redirected to a
+   file or piped to another process such as a log rotating program
+   like <span class="application">rotatelogs</span>; otherwise <code class="command">postgres</code>
+   will write its output to the controlling terminal (from the
+   background) and will not leave the shell's process group.  On
+   Windows, by default the server's standard output and standard error
+   are sent to the terminal.  These default behaviors can be changed
+   by using <code class="option">-l</code> to append the server's output to a log file.
+   Use of either <code class="option">-l</code> or output redirection is recommended.
+  </p><p>
+   <code class="option">stop</code> mode shuts down the server that is running in
+   the specified data directory.  Three different
+   shutdown methods can be selected with the <code class="option">-m</code>
+   option.  <span class="quote">“<span class="quote">Smart</span>”</span> mode disallows new connections, then waits
+   for all existing clients to disconnect and any online backup to finish.
+   If the server is in hot standby, recovery and streaming replication
+   will be terminated once all clients have disconnected.
+   <span class="quote">“<span class="quote">Fast</span>”</span> mode (the default) does not wait for clients to disconnect and
+   will terminate an online backup in progress.  All active transactions are
+   rolled back and clients are forcibly disconnected, then the
+   server is shut down.  <span class="quote">“<span class="quote">Immediate</span>”</span> mode will abort
+   all server processes immediately, without a clean shutdown.  This choice
+   will lead to a crash-recovery cycle during the next server start.
+  </p><p>
+   <code class="option">restart</code> mode effectively executes a stop followed
+   by a start.  This allows changing the <code class="command">postgres</code>
+   command-line options, or changing configuration-file options that
+   cannot be changed without restarting the server.
+   If relative paths were used on the command line during server
+   start, <code class="option">restart</code> might fail unless
+   <span class="application">pg_ctl</span> is executed in the same current
+   directory as it was during server start.
+  </p><p>
+   <code class="option">reload</code> mode simply sends the
+   <code class="command">postgres</code> server process a <span class="systemitem">SIGHUP</span>
+   signal, causing it to reread its configuration files
+   (<code class="filename">postgresql.conf</code>,
+   <code class="filename">pg_hba.conf</code>, etc.).  This allows changing
+   configuration-file options that do not require a full server restart
+   to take effect.
+  </p><p>
+   <code class="option">status</code> mode checks whether a server is running in
+   the specified data directory. If it is, the server's <acronym class="acronym">PID</acronym>
+   and the command line options that were used to invoke it are displayed.
+   If the server is not running, <span class="application">pg_ctl</span> returns
+   an exit status of 3.  If an accessible data directory is not
+   specified, <span class="application">pg_ctl</span> returns an exit status of 4.
+  </p><p>
+   <code class="option">promote</code> mode commands the standby server that is
+   running in the specified data directory to end standby mode
+   and begin read-write operations.
+  </p><p>
+   <code class="option">logrotate</code> mode rotates the server log file.
+   For details on how to use this mode with external log rotation tools, see
+   <a class="xref" href="logfile-maintenance.html" title="25.3. Log File Maintenance">Section 25.3</a>.
+  </p><p>
+   <code class="option">kill</code> mode sends a signal to a specified process.
+   This is primarily valuable on <span class="productname">Microsoft Windows</span>
+   which does not have a built-in <span class="application">kill</span> command.  Use
+   <code class="literal">--help</code> to see a list of supported signal names.
+  </p><p>
+   <code class="option">register</code> mode registers the <span class="productname">PostgreSQL</span>
+   server as a system service on <span class="productname">Microsoft Windows</span>.
+   The <code class="option">-S</code> option allows selection of service start type,
+   either <span class="quote">“<span class="quote">auto</span>”</span> (start service automatically on system startup)
+   or <span class="quote">“<span class="quote">demand</span>”</span> (start service on demand).
+  </p><p>
+   <code class="option">unregister</code> mode unregisters a system service
+   on <span class="productname">Microsoft Windows</span>.  This undoes the effects of the
+   <code class="option">register</code> command.
+  </p></div><div class="refsect1" id="APP-PG-CTL-OPTIONS"><h2>Options</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-c</code><br /></span><span class="term"><code class="option">--core-files</code></span></dt><dd><p>
+        Attempt to allow server crashes to produce core files, on platforms
+        where this is possible, by lifting any soft resource limit placed on
+        core files.
+        This is useful in debugging or diagnosing problems by allowing a
+        stack trace to be obtained from a failed server process.
+       </p></dd><dt><span class="term"><code class="option">-D <em class="replaceable"><code>datadir</code></em></code><br /></span><span class="term"><code class="option">--pgdata=<em class="replaceable"><code>datadir</code></em></code></span></dt><dd><p>
+        Specifies the file system location of the database configuration files.  If
+        this option is omitted, the environment variable
+        <code class="envar">PGDATA</code> is used.
+       </p></dd><dt><span class="term"><code class="option">-l <em class="replaceable"><code>filename</code></em></code><br /></span><span class="term"><code class="option">--log=<em class="replaceable"><code>filename</code></em></code></span></dt><dd><p>
+        Append the server log output to
+        <em class="replaceable"><code>filename</code></em>.  If the file does not
+        exist, it is created.  The <span class="systemitem">umask</span> is set to 077,
+        so access to the log file is disallowed to other users by default.
+       </p></dd><dt><span class="term"><code class="option">-m <em class="replaceable"><code>mode</code></em></code><br /></span><span class="term"><code class="option">--mode=<em class="replaceable"><code>mode</code></em></code></span></dt><dd><p>
+        Specifies the shutdown mode.  <em class="replaceable"><code>mode</code></em>
+        can be <code class="literal">smart</code>, <code class="literal">fast</code>, or
+        <code class="literal">immediate</code>, or the first letter of one of
+        these three.  If this option is omitted, <code class="literal">fast</code> is
+        the default.
+       </p></dd><dt><span class="term"><code class="option">-o <em class="replaceable"><code>options</code></em></code><br /></span><span class="term"><code class="option">--options=<em class="replaceable"><code>options</code></em></code></span></dt><dd><p>
+        Specifies options to be passed directly to the
+        <code class="command">postgres</code> command.
+        <code class="option">-o</code> can be specified multiple times, with all the given
+        options being passed through.
+       </p><p>
+        The <em class="replaceable"><code>options</code></em> should usually be surrounded by single or
+        double quotes to ensure that they are passed through as a group.
+       </p></dd><dt><span class="term"><code class="option">-o <em class="replaceable"><code>initdb-options</code></em></code><br /></span><span class="term"><code class="option">--options=<em class="replaceable"><code>initdb-options</code></em></code></span></dt><dd><p>
+        Specifies options to be passed directly to the
+        <code class="command">initdb</code> command.
+        <code class="option">-o</code> can be specified multiple times, with all the given
+        options being passed through.
+       </p><p>
+        The <em class="replaceable"><code>initdb-options</code></em> should usually be surrounded by single or
+        double quotes to ensure that they are passed through as a group.
+       </p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>path</code></em></code></span></dt><dd><p>
+        Specifies the location of the <code class="filename">postgres</code>
+        executable.  By default the <code class="filename">postgres</code> executable is taken from the same
+        directory as <code class="command">pg_ctl</code>, or failing that, the hard-wired
+        installation directory.  It is not necessary to use this
+        option unless you are doing something unusual and get errors
+        that the <code class="filename">postgres</code> executable was not found.
+       </p><p>
+        In <code class="literal">init</code> mode, this option analogously
+        specifies the location of the <code class="filename">initdb</code>
+        executable.
+       </p></dd><dt><span class="term"><code class="option">-s</code><br /></span><span class="term"><code class="option">--silent</code></span></dt><dd><p>
+        Print only errors, no informational messages.
+       </p></dd><dt><span class="term"><code class="option">-t <em class="replaceable"><code>seconds</code></em></code><br /></span><span class="term"><code class="option">--timeout=<em class="replaceable"><code>seconds</code></em></code></span></dt><dd><p>
+        Specifies the maximum number of seconds to wait when waiting for an
+        operation to complete (see option <code class="option">-w</code>).  Defaults to
+        the value of the <code class="envar">PGCTLTIMEOUT</code> environment variable or, if
+        not set, to 60 seconds.
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+         Print the <span class="application">pg_ctl</span> version and exit.
+        </p></dd><dt><span class="term"><code class="option">-w</code><br /></span><span class="term"><code class="option">--wait</code></span></dt><dd><p>
+        Wait for the operation to complete.  This is supported for the
+        modes <code class="literal">start</code>, <code class="literal">stop</code>,
+        <code class="literal">restart</code>, <code class="literal">promote</code>,
+        and <code class="literal">register</code>, and is the default for those modes.
+       </p><p>
+        When waiting, <code class="command">pg_ctl</code> repeatedly checks the
+        server's <acronym class="acronym">PID</acronym> file, sleeping for a short amount
+        of time between checks.  Startup is considered complete when
+        the <acronym class="acronym">PID</acronym> file indicates that the server is ready to
+        accept connections.  Shutdown is considered complete when the server
+        removes the <acronym class="acronym">PID</acronym> file.
+        <code class="command">pg_ctl</code> returns an exit code based on the
+        success of the startup or shutdown.
+       </p><p>
+        If the operation does not complete within the timeout (see
+        option <code class="option">-t</code>), then <code class="command">pg_ctl</code> exits with
+        a nonzero exit status.  But note that the operation might continue in
+        the background and eventually succeed.
+       </p></dd><dt><span class="term"><code class="option">-W</code><br /></span><span class="term"><code class="option">--no-wait</code></span></dt><dd><p>
+        Do not wait for the operation to complete.  This is the opposite of
+        the option <code class="option">-w</code>.
+       </p><p>
+        If waiting is disabled, the requested action is triggered, but there
+        is no feedback about its success.  In that case, the server log file
+        or an external monitoring system would have to be used to check the
+        progress and success of the operation.
+       </p><p>
+        In prior releases of PostgreSQL, this was the default except for
+        the <code class="literal">stop</code> mode.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+        Show help about <span class="application">pg_ctl</span> command line
+        arguments, and exit.
+       </p></dd></dl></div><p>
+   If an option is specified that is valid, but not relevant to the selected
+   operating mode, <span class="application">pg_ctl</span> ignores it.
+  </p><div class="refsect2" id="APP-PG-CTL-WINDOWS-OPTIONS"><h3>Options for Windows</h3><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-e <em class="replaceable"><code>source</code></em></code></span></dt><dd><p>
+       Name of the event source for <span class="application">pg_ctl</span> to use
+       for logging to the event log when running as a Windows service.  The
+       default is <code class="literal">PostgreSQL</code>.  Note that this only controls
+       messages sent from <span class="application">pg_ctl</span> itself; once
+       started, the server will use the event source specified
+       by its <a class="xref" href="runtime-config-logging.html#GUC-EVENT-SOURCE">event_source</a> parameter.  Should the server
+       fail very early in startup, before that parameter has been set,
+       it might also log using the default event
+       source name <code class="literal">PostgreSQL</code>.
+      </p></dd><dt><span class="term"><code class="option">-N <em class="replaceable"><code>servicename</code></em></code></span></dt><dd><p>
+       Name of the system service to register. This name will be used
+       as both the service name and the display name.
+       The default is <code class="literal">PostgreSQL</code>.
+      </p></dd><dt><span class="term"><code class="option">-P <em class="replaceable"><code>password</code></em></code></span></dt><dd><p>
+       Password for the user to run the service as.
+      </p></dd><dt><span class="term"><code class="option">-S <em class="replaceable"><code>start-type</code></em></code></span></dt><dd><p>
+       Start type of the system service.  <em class="replaceable"><code>start-type</code></em> can
+       be <code class="literal">auto</code>, or <code class="literal">demand</code>, or
+       the first letter of one of these two. If this option is omitted,
+       <code class="literal">auto</code> is the default.
+      </p></dd><dt><span class="term"><code class="option">-U <em class="replaceable"><code>username</code></em></code></span></dt><dd><p>
+       User name for the user to run the service as. For domain users, use the
+       format <code class="literal">DOMAIN\username</code>.
+      </p></dd></dl></div></div></div><div class="refsect1" id="id-1.9.5.7.7"><h2>Environment</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="envar">PGCTLTIMEOUT</code></span></dt><dd><p>
+      Default limit on the number of seconds to wait when waiting for startup
+      or shutdown to complete.  If not set, the default is 60 seconds.
+     </p></dd><dt><span class="term"><code class="envar">PGDATA</code></span></dt><dd><p>
+      Default data directory location.
+     </p></dd></dl></div><p>
+   Most <code class="command">pg_ctl</code> modes require knowing the data directory
+   location; therefore, the <code class="option">-D</code> option is required
+   unless <code class="envar">PGDATA</code> is set.
+  </p><p>
+   <code class="command">pg_ctl</code>, like most other <span class="productname">PostgreSQL</span>
+   utilities,
+   also uses the environment variables supported by <span class="application">libpq</span>
+   (see <a class="xref" href="libpq-envars.html" title="34.15. Environment Variables">Section 34.15</a>).
+  </p><p>
+   For additional variables that affect the server,
+   see <a class="xref" href="app-postgres.html" title="postgres"><span class="refentrytitle"><span class="application">postgres</span></span></a>.
+  </p></div><div class="refsect1" id="id-1.9.5.7.8"><h2>Files</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="filename">postmaster.pid</code></span></dt><dd><p>
+      <span class="application">pg_ctl</span> examines this file in the data
+      directory to determine whether the server is currently running.
+     </p></dd><dt><span class="term"><code class="filename">postmaster.opts</code></span></dt><dd><p>If this file exists in the data directory,
+      <span class="application">pg_ctl</span> (in <code class="option">restart</code> mode)
+      will pass the contents of the file as options to
+      <span class="application">postgres</span>, unless overridden
+      by the <code class="option">-o</code> option. The contents of this file
+      are also displayed in <code class="option">status</code> mode.
+     </p></dd></dl></div></div><div class="refsect1" id="R1-APP-PGCTL-2"><h2>Examples</h2><div class="refsect2" id="R2-APP-PGCTL-3"><h3>Starting the Server</h3><p>
+    To start the server, waiting until the server is
+    accepting connections:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_ctl start</code></strong>
+</pre><p>
+   </p><p>
+    To start the server using port 5433, and
+    running without <code class="function">fsync</code>, use:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_ctl -o "-F -p 5433" start</code></strong>
+</pre></div><div class="refsect2" id="R2-APP-PGCTL-4"><h3>Stopping the Server</h3><p>
+    To stop the server, use:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_ctl stop</code></strong>
+</pre><p>
+    The <code class="option">-m</code> option allows control over
+    <span class="emphasis"><em>how</em></span> the server shuts down:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_ctl stop -m smart</code></strong>
+</pre></div><div class="refsect2" id="R2-APP-PGCTL-5"><h3>Restarting the Server</h3><p>
+    Restarting the server is almost equivalent to stopping the
+    server and starting it again, except that by default,
+    <code class="command">pg_ctl</code> saves and reuses the command line options that
+    were passed to the previously-running instance.  To restart
+    the server using the same options as before, use:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_ctl restart</code></strong>
+</pre><p>
+   </p><p>
+    But if <code class="option">-o</code> is specified, that replaces any previous options.
+    To restart using port 5433, disabling <code class="function">fsync</code> upon restart:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_ctl -o "-F -p 5433" restart</code></strong>
+</pre></div><div class="refsect2" id="R2-APP-PGCTL-6"><h3>Showing the Server Status</h3><p>
+    Here is sample status output from
+    <span class="application">pg_ctl</span>:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_ctl status</code></strong>
+<code class="computeroutput">
+pg_ctl: server is running (PID: 13718)
+/usr/local/pgsql/bin/postgres "-D" "/usr/local/pgsql/data" "-p" "5433" "-B" "128"
+</code></pre><p>
+    The second line is the command that would be invoked in restart mode.
+   </p></div></div><div class="refsect1" id="id-1.9.5.7.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="app-initdb.html" title="initdb"><span class="refentrytitle"><span class="application">initdb</span></span></a>, <a class="xref" href="app-postgres.html" title="postgres"><span class="refentrytitle"><span class="application">postgres</span></span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-pgcontroldata.html" title="pg_controldata">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="app-pgresetwal.html" title="pg_resetwal">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_controldata</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_resetwal</span></td></tr></table></div></body></html>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>31.6. Monitoring</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="logical-replication-architecture.html" title="31.5. Architecture" /><link rel="next" href="logical-replication-security.html" title="31.7. Security" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">31.6. Monitoring</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="logical-replication-architecture.html" title="31.5. Architecture">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="logical-replication.html" title="Chapter 31. Logical Replication">Up</a></td><th width="60%" align="center">Chapter 31. Logical Replication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="logical-replication-security.html" title="31.7. Security">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LOGICAL-REPLICATION-MONITORING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">31.6. Monitoring</h2></div></div></div><p>
+   Because logical replication is based on a similar architecture as
+   <a class="link" href="warm-standby.html#STREAMING-REPLICATION" title="27.2.5. Streaming Replication">physical streaming replication</a>,
+   the monitoring on a publication node is similar to monitoring of a
+   physical replication primary
+   (see <a class="xref" href="warm-standby.html#STREAMING-REPLICATION-MONITORING" title="27.2.5.2. Monitoring">Section 27.2.5.2</a>).
+  </p><p>
+   The monitoring information about subscription is visible in
+   <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-SUBSCRIPTION" title="28.2.7. pg_stat_subscription">
+   <code class="structname">pg_stat_subscription</code></a>.
+   This view contains one row for every subscription worker.  A subscription
+   can have zero or more active subscription workers depending on its state.
+  </p><p>
+   Normally, there is a single apply process running for an enabled
+   subscription.  A disabled subscription or a crashed subscription will have
+   zero rows in this view.  If the initial data synchronization of any
+   table is in progress, there will be additional workers for the tables
+   being synchronized.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="logical-replication-architecture.html" title="31.5. Architecture">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="logical-replication.html" title="Chapter 31. Logical Replication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="logical-replication-security.html" title="31.7. Security">Next</a></td></tr><tr><td width="40%" align="left" valign="top">31.5. Architecture </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 31.7. Security</td></tr></table></div></body></html>

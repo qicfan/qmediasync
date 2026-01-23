@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.13. earthdistance</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="dict-xsyn.html" title="F.12. dict_xsyn" /><link rel="next" href="file-fdw.html" title="F.14. file_fdw" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.13. earthdistance</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="dict-xsyn.html" title="F.12. dict_xsyn">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="file-fdw.html" title="F.14. file_fdw">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="EARTHDISTANCE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.13. earthdistance</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="earthdistance.html#id-1.11.7.22.7">F.13.1. Cube-Based Earth Distances</a></span></dt><dt><span class="sect2"><a href="earthdistance.html#id-1.11.7.22.8">F.13.2. Point-Based Earth Distances</a></span></dt></dl></div><a id="id-1.11.7.22.2" class="indexterm"></a><p>
+  The <code class="filename">earthdistance</code> module provides two different approaches to
+  calculating great circle distances on the surface of the Earth. The one
+  described first depends on the <code class="filename">cube</code> module.
+  The second one is based on the built-in <code class="type">point</code> data type,
+  using longitude and latitude for the coordinates.
+ </p><p>
+  In this module, the Earth is assumed to be perfectly spherical.
+  (If that's too inaccurate for you, you might want to look at the
+  <span class="application"><a class="ulink" href="https://postgis.net/" target="_top">PostGIS</a></span>
+  project.)
+ </p><p>
+  The <code class="filename">cube</code> module must be installed
+  before <code class="filename">earthdistance</code> can be installed
+  (although you can use the <code class="literal">CASCADE</code> option
+  of <code class="command">CREATE EXTENSION</code> to install both in one command).
+ </p><div class="caution"><h3 class="title">Caution</h3><p>
+   It is strongly recommended that <code class="filename">earthdistance</code>
+   and <code class="filename">cube</code> be installed in the same schema, and that
+   that schema be one for which CREATE privilege has not been and will not
+   be granted to any untrusted users.
+   Otherwise there are installation-time security hazards
+   if <code class="filename">earthdistance</code>'s schema contains objects defined
+   by a hostile user.
+   Furthermore, when using <code class="filename">earthdistance</code>'s functions
+   after installation, the entire search path should contain only trusted
+   schemas.
+  </p></div><div class="sect2" id="id-1.11.7.22.7"><div class="titlepage"><div><div><h3 class="title">F.13.1. Cube-Based Earth Distances</h3></div></div></div><p>
+   Data is stored in cubes that are points (both corners are the same) using 3
+   coordinates representing the x, y, and z distance from the center of the
+   Earth.  A domain <code class="type">earth</code> over <code class="type">cube</code> is provided, which
+   includes constraint checks that the value meets these restrictions and
+   is reasonably close to the actual surface of the Earth.
+  </p><p>
+   The radius of the Earth is obtained from the <code class="function">earth()</code>
+   function. It is given in meters. But by changing this one function you can
+   change the module to use some other units, or to use a different value of
+   the radius that you feel is more appropriate.
+  </p><p>
+   This package has applications to astronomical databases as well.
+   Astronomers will probably want to change <code class="function">earth()</code> to return a
+   radius of <code class="literal">180/pi()</code> so that distances are in degrees.
+  </p><p>
+   Functions are provided to support input in latitude and longitude (in
+   degrees), to support output of latitude and longitude, to calculate
+   the great circle distance between two points and to easily specify a
+   bounding box usable for index searches.
+  </p><p>
+   The provided functions are shown
+   in <a class="xref" href="earthdistance.html#EARTHDISTANCE-CUBE-FUNCTIONS" title="Table F.5. Cube-Based Earthdistance Functions">Table F.5</a>.
+  </p><div class="table" id="EARTHDISTANCE-CUBE-FUNCTIONS"><p class="title"><strong>Table F.5. Cube-Based Earthdistance Functions</strong></p><div class="table-contents"><table class="table" summary="Cube-Based Earthdistance Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">earth</code> ()
+        → <code class="returnvalue">float8</code>
+       </p>
+       <p>
+        Returns the assumed radius of the Earth.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">sec_to_gc</code> ( <code class="type">float8</code> )
+        → <code class="returnvalue">float8</code>
+       </p>
+       <p>
+        Converts the normal straight line
+        (secant) distance between two points on the surface of the Earth
+        to the great circle distance between them.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">gc_to_sec</code> ( <code class="type">float8</code> )
+        → <code class="returnvalue">float8</code>
+       </p>
+       <p>
+        Converts the great circle distance between two points on the
+        surface of the Earth to the normal straight line (secant) distance
+        between them.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">ll_to_earth</code> ( <code class="type">float8</code>, <code class="type">float8</code> )
+        → <code class="returnvalue">earth</code>
+       </p>
+       <p>
+        Returns the location of a point on the surface of the Earth given
+        its latitude (argument 1) and longitude (argument 2) in degrees.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.5.1.1.1" class="indexterm"></a>
+        <code class="function">latitude</code> ( <code class="type">earth</code> )
+        → <code class="returnvalue">float8</code>
+       </p>
+       <p>
+        Returns the latitude in degrees of a point on the surface of the
+        Earth.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.6.1.1.1" class="indexterm"></a>
+        <code class="function">longitude</code> ( <code class="type">earth</code> )
+        → <code class="returnvalue">float8</code>
+       </p>
+       <p>
+        Returns the longitude in degrees of a point on the surface of the
+        Earth.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.7.1.1.1" class="indexterm"></a>
+        <code class="function">earth_distance</code> ( <code class="type">earth</code>, <code class="type">earth</code> )
+        → <code class="returnvalue">float8</code>
+       </p>
+       <p>
+        Returns the great circle distance between two points on the
+        surface of the Earth.
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.11.7.22.7.7.2.2.8.1.1.1" class="indexterm"></a>
+        <code class="function">earth_box</code> ( <code class="type">earth</code>, <code class="type">float8</code> )
+        → <code class="returnvalue">cube</code>
+       </p>
+       <p>
+        Returns a box suitable for an indexed search using the <code class="type">cube</code>
+        <code class="literal">@&gt;</code>
+        operator for points within a given great circle distance of a location.
+        Some points in this box are further than the specified great circle
+        distance from the location, so a second check using
+        <code class="function">earth_distance</code> should be included in the query.
+       </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div class="sect2" id="id-1.11.7.22.8"><div class="titlepage"><div><div><h3 class="title">F.13.2. Point-Based Earth Distances</h3></div></div></div><p>
+   The second part of the module relies on representing Earth locations as
+   values of type <code class="type">point</code>, in which the first component is taken to
+   represent longitude in degrees, and the second component is taken to
+   represent latitude in degrees.  Points are taken as (longitude, latitude)
+   and not vice versa because longitude is closer to the intuitive idea of
+   x-axis and latitude to y-axis.
+  </p><p>
+   A single operator is provided, shown
+   in <a class="xref" href="earthdistance.html#EARTHDISTANCE-POINT-OPERATORS" title="Table F.6. Point-Based Earthdistance Operators">Table F.6</a>.
+  </p><div class="table" id="EARTHDISTANCE-POINT-OPERATORS"><p class="title"><strong>Table F.6. Point-Based Earthdistance Operators</strong></p><div class="table-contents"><table class="table" summary="Point-Based Earthdistance Operators" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Operator
+       </p>
+       <p>
+        Description
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">point</code> <code class="literal">&lt;@&gt;</code> <code class="type">point</code>
+        → <code class="returnvalue">float8</code>
+       </p>
+       <p>
+        Computes the distance in statute miles between
+        two points on the Earth's surface.
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   Note that unlike the <code class="type">cube</code>-based part of the module, units
+   are hardwired here: changing the <code class="function">earth()</code> function will
+   not affect the results of this operator.
+  </p><p>
+   One disadvantage of the longitude/latitude representation is that
+   you need to be careful about the edge conditions near the poles
+   and near +/- 180 degrees of longitude.  The <code class="type">cube</code>-based
+   representation avoids these discontinuities.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="dict-xsyn.html" title="F.12. dict_xsyn">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="file-fdw.html" title="F.14. file_fdw">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.12. dict_xsyn </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.14. file_fdw</td></tr></table></div></body></html>

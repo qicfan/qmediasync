@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>36.12. Large Objects</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-library.html" title="36.11. Library Functions" /><link rel="next" href="ecpg-cpp.html" title="36.13. C++ Applications" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">36.12. Large Objects</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-library.html" title="36.11. Library Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><th width="60%" align="center">Chapter 36. <span xmlns="http://www.w3.org/1999/xhtml" class="application">ECPG</span> — Embedded <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> in C</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-cpp.html" title="36.13. C++ Applications">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ECPG-LO"><div class="titlepage"><div><div><h2 class="title" style="clear: both">36.12. Large Objects</h2></div></div></div><p>
+   Large objects are not directly supported by ECPG, but ECPG
+   application can manipulate large objects through the libpq large
+   object functions, obtaining the necessary <code class="type">PGconn</code>
+   object by calling the <code class="function">ECPGget_PGconn()</code>
+   function.  (However, use of
+   the <code class="function">ECPGget_PGconn()</code> function and touching
+   <code class="type">PGconn</code> objects directly should be done very carefully
+   and ideally not mixed with other ECPG database access calls.)
+  </p><p>
+   For more details about the <code class="function">ECPGget_PGconn()</code>, see
+   <a class="xref" href="ecpg-library.html" title="36.11. Library Functions">Section 36.11</a>.  For information about the large
+   object function interface, see <a class="xref" href="largeobjects.html" title="Chapter 35. Large Objects">Chapter 35</a>.
+  </p><p>
+   Large object functions have to be called in a transaction block, so
+   when autocommit is off, <code class="command">BEGIN</code> commands have to
+   be issued explicitly.
+  </p><p>
+   <a class="xref" href="ecpg-lo.html#ECPG-LO-EXAMPLE" title="Example 36.2. ECPG Program Accessing Large Objects">Example 36.2</a> shows an example program that
+   illustrates how to create, write, and read a large object in an
+   ECPG application.
+  </p><div class="example" id="ECPG-LO-EXAMPLE"><p class="title"><strong>Example 36.2. ECPG Program Accessing Large Objects</strong></p><div class="example-contents"><pre class="programlisting">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;libpq-fe.h&gt;
+#include &lt;libpq/libpq-fs.h&gt;
+
+EXEC SQL WHENEVER SQLERROR STOP;
+
+int
+main(void)
+{
+    PGconn     *conn;
+    Oid         loid;
+    int         fd;
+    char        buf[256];
+    int         buflen = 256;
+    char        buf2[256];
+    int         rc;
+
+    memset(buf, 1, buflen);
+
+    EXEC SQL CONNECT TO testdb AS con1;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+
+    conn = ECPGget_PGconn("con1");
+    printf("conn = %p\n", conn);
+
+    /* create */
+    loid = lo_create(conn, 0);
+    if (loid &amp;lt; 0)
+        printf("lo_create() failed: %s", PQerrorMessage(conn));
+
+    printf("loid = %d\n", loid);
+
+    /* write test */
+    fd = lo_open(conn, loid, INV_READ|INV_WRITE);
+    if (fd &amp;lt; 0)
+        printf("lo_open() failed: %s", PQerrorMessage(conn));
+
+    printf("fd = %d\n", fd);
+
+    rc = lo_write(conn, fd, buf, buflen);
+    if (rc &amp;lt; 0)
+        printf("lo_write() failed\n");
+
+    rc = lo_close(conn, fd);
+    if (rc &amp;lt; 0)
+        printf("lo_close() failed: %s", PQerrorMessage(conn));
+
+    /* read test */
+    fd = lo_open(conn, loid, INV_READ);
+    if (fd &amp;lt; 0)
+        printf("lo_open() failed: %s", PQerrorMessage(conn));
+
+    printf("fd = %d\n", fd);
+
+    rc = lo_read(conn, fd, buf2, buflen);
+    if (rc &amp;lt; 0)
+        printf("lo_read() failed\n");
+
+    rc = lo_close(conn, fd);
+    if (rc &amp;lt; 0)
+        printf("lo_close() failed: %s", PQerrorMessage(conn));
+
+    /* check */
+    rc = memcmp(buf, buf2, buflen);
+    printf("memcmp() = %d\n", rc);
+
+    /* cleanup */
+    rc = lo_unlink(conn, loid);
+    if (rc &amp;lt; 0)
+        printf("lo_unlink() failed: %s", PQerrorMessage(conn));
+
+    EXEC SQL COMMIT;
+    EXEC SQL DISCONNECT ALL;
+    return 0;
+}
+</pre></div></div><br class="example-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-library.html" title="36.11. Library Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-cpp.html" title="36.13. C++ Applications">Next</a></td></tr><tr><td width="40%" align="left" valign="top">36.11. Library Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 36.13. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">C++</acronym> Applications</td></tr></table></div></body></html>

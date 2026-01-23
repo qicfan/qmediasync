@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>25.1. Routine Vacuuming</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks" /><link rel="next" href="routine-reindex.html" title="25.2. Routine Reindexing" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">25.1. Routine Vacuuming</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Up</a></td><th width="60%" align="center">Chapter 25. Routine Database Maintenance Tasks</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="routine-reindex.html" title="25.2. Routine Reindexing">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ROUTINE-VACUUMING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">25.1. Routine Vacuuming</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="routine-vacuuming.html#VACUUM-BASICS">25.1.1. Vacuuming Basics</a></span></dt><dt><span class="sect2"><a href="routine-vacuuming.html#VACUUM-FOR-SPACE-RECOVERY">25.1.2. Recovering Disk Space</a></span></dt><dt><span class="sect2"><a href="routine-vacuuming.html#VACUUM-FOR-STATISTICS">25.1.3. Updating Planner Statistics</a></span></dt><dt><span class="sect2"><a href="routine-vacuuming.html#VACUUM-FOR-VISIBILITY-MAP">25.1.4. Updating the Visibility Map</a></span></dt><dt><span class="sect2"><a href="routine-vacuuming.html#VACUUM-FOR-WRAPAROUND">25.1.5. Preventing Transaction ID Wraparound Failures</a></span></dt><dt><span class="sect2"><a href="routine-vacuuming.html#AUTOVACUUM">25.1.6. The Autovacuum Daemon</a></span></dt></dl></div><a id="id-1.6.12.10.2" class="indexterm"></a><p>
+   <span class="productname">PostgreSQL</span> databases require periodic
+   maintenance known as <em class="firstterm">vacuuming</em>.  For many installations, it
+   is sufficient to let vacuuming be performed by the <em class="firstterm">autovacuum
+   daemon</em>, which is described in <a class="xref" href="routine-vacuuming.html#AUTOVACUUM" title="25.1.6. The Autovacuum Daemon">Section 25.1.6</a>.  You might
+   need to adjust the autovacuuming parameters described there to obtain best
+   results for your situation.  Some database administrators will want to
+   supplement or replace the daemon's activities with manually-managed
+   <code class="command">VACUUM</code> commands, which typically are executed according to a
+   schedule by <span class="application">cron</span> or <span class="application">Task
+   Scheduler</span> scripts.  To set up manually-managed vacuuming properly,
+   it is essential to understand the issues discussed in the next few
+   subsections.  Administrators who rely on autovacuuming may still wish
+   to skim this material to help them understand and adjust autovacuuming.
+  </p><div class="sect2" id="VACUUM-BASICS"><div class="titlepage"><div><div><h3 class="title">25.1.1. Vacuuming Basics</h3></div></div></div><p>
+    <span class="productname">PostgreSQL</span>'s
+    <a class="link" href="sql-vacuum.html" title="VACUUM"><code class="command">VACUUM</code></a> command has to
+    process each table on a regular basis for several reasons:
+
+    </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">To recover or reuse disk space occupied by updated or deleted
+      rows.</li><li class="listitem">To update data statistics used by the
+      <span class="productname">PostgreSQL</span> query planner.</li><li class="listitem">To update the visibility map, which speeds
+      up <a class="link" href="indexes-index-only-scans.html" title="11.9. Index-Only Scans and Covering Indexes">index-only
+      scans</a>.</li><li class="listitem">To protect against loss of very old data due to
+      <em class="firstterm">transaction ID wraparound</em> or
+      <em class="firstterm">multixact ID wraparound</em>.</li></ol></div><p>
+
+    Each of these reasons dictates performing <code class="command">VACUUM</code> operations
+    of varying frequency and scope, as explained in the following subsections.
+   </p><p>
+    There are two variants of <code class="command">VACUUM</code>: standard <code class="command">VACUUM</code>
+    and <code class="command">VACUUM FULL</code>.  <code class="command">VACUUM FULL</code> can reclaim more
+    disk space but runs much more slowly.  Also,
+    the standard form of <code class="command">VACUUM</code> can run in parallel with production
+    database operations.  (Commands such as <code class="command">SELECT</code>,
+    <code class="command">INSERT</code>, <code class="command">UPDATE</code>, and
+    <code class="command">DELETE</code> will continue to function normally, though you
+    will not be able to modify the definition of a table with commands such as
+    <code class="command">ALTER TABLE</code> while it is being vacuumed.)
+    <code class="command">VACUUM FULL</code> requires an
+    <code class="literal">ACCESS EXCLUSIVE</code> lock on the table it is
+    working on, and therefore cannot be done in parallel with other use
+    of the table.  Generally, therefore,
+    administrators should strive to use standard <code class="command">VACUUM</code> and
+    avoid <code class="command">VACUUM FULL</code>.
+   </p><p>
+    <code class="command">VACUUM</code> creates a substantial amount of I/O
+    traffic, which can cause poor performance for other active sessions.
+    There are configuration parameters that can be adjusted to reduce the
+    performance impact of background vacuuming — see
+    <a class="xref" href="runtime-config-resource.html#RUNTIME-CONFIG-RESOURCE-VACUUM-COST" title="20.4.4. Cost-based Vacuum Delay">Section 20.4.4</a>.
+   </p></div><div class="sect2" id="VACUUM-FOR-SPACE-RECOVERY"><div class="titlepage"><div><div><h3 class="title">25.1.2. Recovering Disk Space</h3></div></div></div><a id="id-1.6.12.10.5.2" class="indexterm"></a><p>
+    In <span class="productname">PostgreSQL</span>, an
+    <code class="command">UPDATE</code> or <code class="command">DELETE</code> of a row does not
+    immediately remove the old version of the row.
+    This approach is necessary to gain the benefits of multiversion
+    concurrency control (<acronym class="acronym">MVCC</acronym>, see <a class="xref" href="mvcc.html" title="Chapter 13. Concurrency Control">Chapter 13</a>): the row version
+    must not be deleted while it is still potentially visible to other
+    transactions. But eventually, an outdated or deleted row version is no
+    longer of interest to any transaction. The space it occupies must then be
+    reclaimed for reuse by new rows, to avoid unbounded growth of disk
+    space requirements. This is done by running <code class="command">VACUUM</code>.
+   </p><p>
+    The standard form of <code class="command">VACUUM</code> removes dead row
+    versions in tables and indexes and marks the space available for
+    future reuse.  However, it will not return the space to the operating
+    system, except in the special case where one or more pages at the
+    end of a table become entirely free and an exclusive table lock can be
+    easily obtained.  In contrast, <code class="command">VACUUM FULL</code> actively compacts
+    tables by writing a complete new version of the table file with no dead
+    space.  This minimizes the size of the table, but can take a long time.
+    It also requires extra disk space for the new copy of the table, until
+    the operation completes.
+   </p><p>
+    The usual goal of routine vacuuming is to do standard <code class="command">VACUUM</code>s
+    often enough to avoid needing <code class="command">VACUUM FULL</code>.  The
+    autovacuum daemon attempts to work this way, and in fact will
+    never issue <code class="command">VACUUM FULL</code>.  In this approach, the idea
+    is not to keep tables at their minimum size, but to maintain steady-state
+    usage of disk space: each table occupies space equivalent to its
+    minimum size plus however much space gets used up between vacuum runs.
+    Although <code class="command">VACUUM FULL</code> can be used to shrink a table back
+    to its minimum size and return the disk space to the operating system,
+    there is not much point in this if the table will just grow again in the
+    future.  Thus, moderately-frequent standard <code class="command">VACUUM</code> runs are a
+    better approach than infrequent <code class="command">VACUUM FULL</code> runs for
+    maintaining heavily-updated tables.
+   </p><p>
+    Some administrators prefer to schedule vacuuming themselves, for example
+    doing all the work at night when load is low.
+    The difficulty with doing vacuuming according to a fixed schedule
+    is that if a table has an unexpected spike in update activity, it may
+    get bloated to the point that <code class="command">VACUUM FULL</code> is really necessary
+    to reclaim space.  Using the autovacuum daemon alleviates this problem,
+    since the daemon schedules vacuuming dynamically in response to update
+    activity.  It is unwise to disable the daemon completely unless you
+    have an extremely predictable workload.  One possible compromise is
+    to set the daemon's parameters so that it will only react to unusually
+    heavy update activity, thus keeping things from getting out of hand,
+    while scheduled <code class="command">VACUUM</code>s are expected to do the bulk of the
+    work when the load is typical.
+   </p><p>
+    For those not using autovacuum, a typical approach is to schedule a
+    database-wide <code class="command">VACUUM</code> once a day during a low-usage period,
+    supplemented by more frequent vacuuming of heavily-updated tables as
+    necessary. (Some installations with extremely high update rates vacuum
+    their busiest tables as often as once every few minutes.) If you have
+    multiple databases in a cluster, don't forget to
+    <code class="command">VACUUM</code> each one; the program <a class="xref" href="app-vacuumdb.html" title="vacuumdb"><span class="refentrytitle"><span class="application">vacuumdb</span></span></a> might be helpful.
+   </p><div class="tip"><h3 class="title">Tip</h3><p>
+    Plain <code class="command">VACUUM</code> may not be satisfactory when
+    a table contains large numbers of dead row versions as a result of
+    massive update or delete activity.  If you have such a table and
+    you need to reclaim the excess disk space it occupies, you will need
+    to use <code class="command">VACUUM FULL</code>, or alternatively
+    <a class="link" href="sql-cluster.html" title="CLUSTER"><code class="command">CLUSTER</code></a>
+    or one of the table-rewriting variants of
+    <a class="link" href="sql-altertable.html" title="ALTER TABLE"><code class="command">ALTER TABLE</code></a>.
+    These commands rewrite an entire new copy of the table and build
+    new indexes for it.  All these options require an
+    <code class="literal">ACCESS EXCLUSIVE</code> lock.  Note that
+    they also temporarily use extra disk space approximately equal to the size
+    of the table, since the old copies of the table and indexes can't be
+    released until the new ones are complete.
+   </p></div><div class="tip"><h3 class="title">Tip</h3><p>
+    If you have a table whose entire contents are deleted on a periodic
+    basis, consider doing it with
+    <a class="link" href="sql-truncate.html" title="TRUNCATE"><code class="command">TRUNCATE</code></a> rather
+    than using <code class="command">DELETE</code> followed by
+    <code class="command">VACUUM</code>. <code class="command">TRUNCATE</code> removes the
+    entire content of the table immediately, without requiring a
+    subsequent <code class="command">VACUUM</code> or <code class="command">VACUUM
+    FULL</code> to reclaim the now-unused disk space.
+    The disadvantage is that strict MVCC semantics are violated.
+   </p></div></div><div class="sect2" id="VACUUM-FOR-STATISTICS"><div class="titlepage"><div><div><h3 class="title">25.1.3. Updating Planner Statistics</h3></div></div></div><a id="id-1.6.12.10.6.2" class="indexterm"></a><a id="id-1.6.12.10.6.3" class="indexterm"></a><p>
+    The <span class="productname">PostgreSQL</span> query planner relies on
+    statistical information about the contents of tables in order to
+    generate good plans for queries.  These statistics are gathered by
+    the <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a> command,
+    which can be invoked by itself or
+    as an optional step in <code class="command">VACUUM</code>.  It is important to have
+    reasonably accurate statistics, otherwise poor choices of plans might
+    degrade database performance.
+   </p><p>
+    The autovacuum daemon, if enabled, will automatically issue
+    <code class="command">ANALYZE</code> commands whenever the content of a table has
+    changed sufficiently.  However, administrators might prefer to rely
+    on manually-scheduled <code class="command">ANALYZE</code> operations, particularly
+    if it is known that update activity on a table will not affect the
+    statistics of <span class="quote">“<span class="quote">interesting</span>”</span> columns.  The daemon schedules
+    <code class="command">ANALYZE</code> strictly as a function of the number of rows
+    inserted or updated; it has no knowledge of whether that will lead
+    to meaningful statistical changes.
+   </p><p>
+    Tuples changed in partitions and inheritance children do not trigger
+    analyze on the parent table.  If the parent table is empty or rarely
+    changed, it may never be processed by autovacuum, and the statistics for
+    the inheritance tree as a whole won't be collected. It is necessary to
+    run <code class="command">ANALYZE</code> on the parent table manually in order to
+    keep the statistics up to date.
+   </p><p>
+    As with vacuuming for space recovery, frequent updates of statistics
+    are more useful for heavily-updated tables than for seldom-updated
+    ones. But even for a heavily-updated table, there might be no need for
+    statistics updates if the statistical distribution of the data is
+    not changing much. A simple rule of thumb is to think about how much
+    the minimum and maximum values of the columns in the table change.
+    For example, a <code class="type">timestamp</code> column that contains the time
+    of row update will have a constantly-increasing maximum value as
+    rows are added and updated; such a column will probably need more
+    frequent statistics updates than, say, a column containing URLs for
+    pages accessed on a website. The URL column might receive changes just
+    as often, but the statistical distribution of its values probably
+    changes relatively slowly.
+   </p><p>
+    It is possible to run <code class="command">ANALYZE</code> on specific tables and even
+    just specific columns of a table, so the flexibility exists to update some
+    statistics more frequently than others if your application requires it.
+    In practice, however, it is usually best to just analyze the entire
+    database, because it is a fast operation.  <code class="command">ANALYZE</code> uses a
+    statistically random sampling of the rows of a table rather than reading
+    every single row.
+   </p><div class="tip"><h3 class="title">Tip</h3><p>
+     Although per-column tweaking of <code class="command">ANALYZE</code> frequency might not be
+     very productive, you might find it worthwhile to do per-column
+     adjustment of the level of detail of the statistics collected by
+     <code class="command">ANALYZE</code>.  Columns that are heavily used in <code class="literal">WHERE</code>
+     clauses and have highly irregular data distributions might require a
+     finer-grain data histogram than other columns.  See <code class="command">ALTER TABLE
+     SET STATISTICS</code>, or change the database-wide default using the <a class="xref" href="runtime-config-query.html#GUC-DEFAULT-STATISTICS-TARGET">default_statistics_target</a> configuration parameter.
+    </p><p>
+     Also, by default there is limited information available about
+     the selectivity of functions.  However, if you create a statistics
+     object or an expression
+     index that uses a function call, useful statistics will be
+     gathered about the function, which can greatly improve query
+     plans that use the expression index.
+    </p></div><div class="tip"><h3 class="title">Tip</h3><p>
+     The autovacuum daemon does not issue <code class="command">ANALYZE</code> commands for
+     foreign tables, since it has no means of determining how often that
+     might be useful.  If your queries require statistics on foreign tables
+     for proper planning, it's a good idea to run manually-managed
+     <code class="command">ANALYZE</code> commands on those tables on a suitable schedule.
+    </p></div><div class="tip"><h3 class="title">Tip</h3><p>
+     The autovacuum daemon does not issue <code class="command">ANALYZE</code> commands
+     for partitioned tables.  Inheritance parents will only be analyzed if the
+     parent itself is changed - changes to child tables do not trigger
+     autoanalyze on the parent table.  If your queries require statistics on
+     parent tables for proper planning, it is necessary to periodically run
+     a manual <code class="command">ANALYZE</code> on those tables to keep the statistics
+     up to date.
+    </p></div></div><div class="sect2" id="VACUUM-FOR-VISIBILITY-MAP"><div class="titlepage"><div><div><h3 class="title">25.1.4. Updating the Visibility Map</h3></div></div></div><p>
+    Vacuum maintains a <a class="link" href="storage-vm.html" title="70.4. Visibility Map">visibility map</a> for each
+    table to keep track of which pages contain only tuples that are known to be
+    visible to all active transactions (and all future transactions, until the
+    page is again modified).  This has two purposes.  First, vacuum
+    itself can skip such pages on the next run, since there is nothing to
+    clean up.
+   </p><p>
+    Second, it allows <span class="productname">PostgreSQL</span> to answer some
+    queries using only the index, without reference to the underlying table.
+    Since <span class="productname">PostgreSQL</span> indexes don't contain tuple
+    visibility information, a normal index scan fetches the heap tuple for each
+    matching index entry, to check whether it should be seen by the current
+    transaction.
+    An <a class="link" href="indexes-index-only-scans.html" title="11.9. Index-Only Scans and Covering Indexes"><em class="firstterm">index-only
+    scan</em></a>, on the other hand, checks the visibility map first.
+    If it's known that all tuples on the page are
+    visible, the heap fetch can be skipped.  This is most useful on
+    large data sets where the visibility map can prevent disk accesses.
+    The visibility map is vastly smaller than the heap, so it can easily be
+    cached even when the heap is very large.
+   </p></div><div class="sect2" id="VACUUM-FOR-WRAPAROUND"><div class="titlepage"><div><div><h3 class="title">25.1.5. Preventing Transaction ID Wraparound Failures</h3></div></div></div><a id="id-1.6.12.10.8.2" class="indexterm"></a><a id="id-1.6.12.10.8.3" class="indexterm"></a><p>
+    <span class="productname">PostgreSQL</span>'s
+    <a class="link" href="mvcc-intro.html" title="13.1. Introduction">MVCC</a> transaction semantics
+    depend on being able to compare transaction ID (<acronym class="acronym">XID</acronym>)
+    numbers: a row version with an insertion XID greater than the current
+    transaction's XID is <span class="quote">“<span class="quote">in the future</span>”</span> and should not be visible
+    to the current transaction.  But since transaction IDs have limited size
+    (32 bits) a cluster that runs for a long time (more
+    than 4 billion transactions) would suffer <em class="firstterm">transaction ID
+    wraparound</em>: the XID counter wraps around to zero, and all of a sudden
+    transactions that were in the past appear to be in the future — which
+    means their output become invisible.  In short, catastrophic data loss.
+    (Actually the data is still there, but that's cold comfort if you cannot
+    get at it.)  To avoid this, it is necessary to vacuum every table
+    in every database at least once every two billion transactions.
+   </p><p>
+    The reason that periodic vacuuming solves the problem is that
+    <code class="command">VACUUM</code> will mark rows as <span class="emphasis"><em>frozen</em></span>, indicating that
+    they were inserted by a transaction that committed sufficiently far in
+    the past that the effects of the inserting transaction are certain to be
+    visible to all current and future transactions.
+    Normal XIDs are
+    compared using modulo-2<sup>32</sup> arithmetic. This means
+    that for every normal XID, there are two billion XIDs that are
+    <span class="quote">“<span class="quote">older</span>”</span> and two billion that are <span class="quote">“<span class="quote">newer</span>”</span>; another
+    way to say it is that the normal XID space is circular with no
+    endpoint. Therefore, once a row version has been created with a particular
+    normal XID, the row version will appear to be <span class="quote">“<span class="quote">in the past</span>”</span> for
+    the next two billion transactions, no matter which normal XID we are
+    talking about. If the row version still exists after more than two billion
+    transactions, it will suddenly appear to be in the future. To
+    prevent this, <span class="productname">PostgreSQL</span> reserves a special XID,
+    <code class="literal">FrozenTransactionId</code>, which does not follow the normal XID
+    comparison rules and is always considered older
+    than every normal XID.
+    Frozen row versions are treated as if the inserting XID were
+    <code class="literal">FrozenTransactionId</code>, so that they will appear to be
+    <span class="quote">“<span class="quote">in the past</span>”</span> to all normal transactions regardless of wraparound
+    issues, and so such row versions will be valid until deleted, no matter
+    how long that is.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     In <span class="productname">PostgreSQL</span> versions before 9.4, freezing was
+     implemented by actually replacing a row's insertion XID
+     with <code class="literal">FrozenTransactionId</code>, which was visible in the
+     row's <code class="structname">xmin</code> system column.  Newer versions just set a flag
+     bit, preserving the row's original <code class="structname">xmin</code> for possible
+     forensic use.  However, rows with <code class="structname">xmin</code> equal
+     to <code class="literal">FrozenTransactionId</code> (2) may still be found
+     in databases <span class="application">pg_upgrade</span>'d from pre-9.4 versions.
+    </p><p>
+     Also, system catalogs may contain rows with <code class="structname">xmin</code> equal
+     to <code class="literal">BootstrapTransactionId</code> (1), indicating that they were
+     inserted during the first phase of <span class="application">initdb</span>.
+     Like <code class="literal">FrozenTransactionId</code>, this special XID is treated as
+     older than every normal XID.
+    </p></div><p>
+    <a class="xref" href="runtime-config-client.html#GUC-VACUUM-FREEZE-MIN-AGE">vacuum_freeze_min_age</a>
+    controls how old an XID value has to be before rows bearing that XID will be
+    frozen.  Increasing this setting may avoid unnecessary work if the
+    rows that would otherwise be frozen will soon be modified again,
+    but decreasing this setting increases
+    the number of transactions that can elapse before the table must be
+    vacuumed again.
+   </p><p>
+    <code class="command">VACUUM</code> uses the <a class="link" href="storage-vm.html" title="70.4. Visibility Map">visibility map</a>
+    to determine which pages of a table must be scanned.  Normally, it
+    will skip pages that don't have any dead row versions even if those pages
+    might still have row versions with old XID values.  Therefore, normal
+    <code class="command">VACUUM</code>s won't always freeze every old row version in the table.
+    Periodically, <code class="command">VACUUM</code> will perform an <em class="firstterm">aggressive
+    vacuum</em>, skipping only those pages which contain neither dead rows nor
+    any unfrozen XID or MXID values.
+    <a class="xref" href="runtime-config-client.html#GUC-VACUUM-FREEZE-TABLE-AGE">vacuum_freeze_table_age</a>
+    controls when <code class="command">VACUUM</code> does that: all-visible but not all-frozen
+    pages are scanned if the number of transactions that have passed since the
+    last such scan is greater than <code class="varname">vacuum_freeze_table_age</code> minus
+    <code class="varname">vacuum_freeze_min_age</code>. Setting
+    <code class="varname">vacuum_freeze_table_age</code> to 0 forces <code class="command">VACUUM</code> to
+    use this more aggressive strategy for all scans.
+   </p><p>
+    The maximum time that a table can go unvacuumed is two billion
+    transactions minus the <code class="varname">vacuum_freeze_min_age</code> value at
+    the time of the last aggressive vacuum. If it were to go
+    unvacuumed for longer than
+    that, data loss could result.  To ensure that this does not happen,
+    autovacuum is invoked on any table that might contain unfrozen rows with
+    XIDs older than the age specified by the configuration parameter <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-FREEZE-MAX-AGE">autovacuum_freeze_max_age</a>.  (This will happen even if
+    autovacuum is disabled.)
+   </p><p>
+    This implies that if a table is not otherwise vacuumed,
+    autovacuum will be invoked on it approximately once every
+    <code class="varname">autovacuum_freeze_max_age</code> minus
+    <code class="varname">vacuum_freeze_min_age</code> transactions.
+    For tables that are regularly vacuumed for space reclamation purposes,
+    this is of little importance.  However, for static tables
+    (including tables that receive inserts, but no updates or deletes),
+    there is no need to vacuum for space reclamation, so it can
+    be useful to try to maximize the interval between forced autovacuums
+    on very large static tables.  Obviously one can do this either by
+    increasing <code class="varname">autovacuum_freeze_max_age</code> or decreasing
+    <code class="varname">vacuum_freeze_min_age</code>.
+   </p><p>
+    The effective maximum for <code class="varname">vacuum_freeze_table_age</code> is 0.95 *
+    <code class="varname">autovacuum_freeze_max_age</code>; a setting higher than that will be
+    capped to the maximum. A value higher than
+    <code class="varname">autovacuum_freeze_max_age</code> wouldn't make sense because an
+    anti-wraparound autovacuum would be triggered at that point anyway, and
+    the 0.95 multiplier leaves some breathing room to run a manual
+    <code class="command">VACUUM</code> before that happens.  As a rule of thumb,
+    <code class="command">vacuum_freeze_table_age</code> should be set to a value somewhat
+    below <code class="varname">autovacuum_freeze_max_age</code>, leaving enough gap so that
+    a regularly scheduled <code class="command">VACUUM</code> or an autovacuum triggered by
+    normal delete and update activity is run in that window.  Setting it too
+    close could lead to anti-wraparound autovacuums, even though the table
+    was recently vacuumed to reclaim space, whereas lower values lead to more
+    frequent aggressive vacuuming.
+   </p><p>
+    The sole disadvantage of increasing <code class="varname">autovacuum_freeze_max_age</code>
+    (and <code class="varname">vacuum_freeze_table_age</code> along with it) is that
+    the <code class="filename">pg_xact</code> and <code class="filename">pg_commit_ts</code>
+    subdirectories of the database cluster will take more space, because it
+    must store the commit status and (if <code class="varname">track_commit_timestamp</code> is
+    enabled) timestamp of all transactions back to
+    the <code class="varname">autovacuum_freeze_max_age</code> horizon.  The commit status uses
+    two bits per transaction, so if
+    <code class="varname">autovacuum_freeze_max_age</code> is set to its maximum allowed value
+    of two billion, <code class="filename">pg_xact</code> can be expected to grow to about half
+    a gigabyte and <code class="filename">pg_commit_ts</code> to about 20GB.  If this
+    is trivial compared to your total database size,
+    setting <code class="varname">autovacuum_freeze_max_age</code> to its maximum allowed value
+    is recommended.  Otherwise, set it depending on what you are willing to
+    allow for <code class="filename">pg_xact</code> and <code class="filename">pg_commit_ts</code> storage.
+    (The default, 200 million transactions, translates to about 50MB
+    of <code class="filename">pg_xact</code> storage and about 2GB of <code class="filename">pg_commit_ts</code>
+    storage.)
+   </p><p>
+    One disadvantage of decreasing <code class="varname">vacuum_freeze_min_age</code> is that
+    it might cause <code class="command">VACUUM</code> to do useless work: freezing a row
+    version is a waste of time if the row is modified
+    soon thereafter (causing it to acquire a new XID).  So the setting should
+    be large enough that rows are not frozen until they are unlikely to change
+    any more.
+   </p><p>
+    To track the age of the oldest unfrozen XIDs in a database,
+    <code class="command">VACUUM</code> stores XID
+    statistics in the system tables <code class="structname">pg_class</code> and
+    <code class="structname">pg_database</code>.  In particular,
+    the <code class="structfield">relfrozenxid</code> column of a table's
+    <code class="structname">pg_class</code> row contains the freeze cutoff XID that was used
+    by the last aggressive <code class="command">VACUUM</code> for that table.  All rows
+    inserted by transactions with XIDs older than this cutoff XID are
+    guaranteed to have been frozen.  Similarly,
+    the <code class="structfield">datfrozenxid</code> column of a database's
+    <code class="structname">pg_database</code> row is a lower bound on the unfrozen XIDs
+    appearing in that database — it is just the minimum of the
+    per-table <code class="structfield">relfrozenxid</code> values within the database.
+    A convenient way to
+    examine this information is to execute queries such as:
+
+</p><pre class="programlisting">
+SELECT c.oid::regclass as table_name,
+       greatest(age(c.relfrozenxid),age(t.relfrozenxid)) as age
+FROM pg_class c
+LEFT JOIN pg_class t ON c.reltoastrelid = t.oid
+WHERE c.relkind IN ('r', 'm');
+
+SELECT datname, age(datfrozenxid) FROM pg_database;
+</pre><p>
+
+    The <code class="literal">age</code> column measures the number of transactions from the
+    cutoff XID to the current transaction's XID.
+   </p><p>
+    <code class="command">VACUUM</code> normally only scans pages that have been modified
+    since the last vacuum, but <code class="structfield">relfrozenxid</code> can only be
+    advanced when every page of the table
+    that might contain unfrozen XIDs is scanned.  This happens when
+    <code class="structfield">relfrozenxid</code> is more than
+    <code class="varname">vacuum_freeze_table_age</code> transactions old, when
+    <code class="command">VACUUM</code>'s <code class="literal">FREEZE</code> option is used, or when all
+    pages that are not already all-frozen happen to
+    require vacuuming to remove dead row versions. When <code class="command">VACUUM</code>
+    scans every page in the table that is not already all-frozen, it should
+    set <code class="literal">age(relfrozenxid)</code> to a value just a little more than the
+    <code class="varname">vacuum_freeze_min_age</code> setting
+    that was used (more by the number of transactions started since the
+    <code class="command">VACUUM</code> started).  If no <code class="structfield">relfrozenxid</code>-advancing
+    <code class="command">VACUUM</code> is issued on the table until
+    <code class="varname">autovacuum_freeze_max_age</code> is reached, an autovacuum will soon
+    be forced for the table.
+   </p><p>
+    If for some reason autovacuum fails to clear old XIDs from a table, the
+    system will begin to emit warning messages like this when the database's
+    oldest XIDs reach forty million transactions from the wraparound point:
+
+</p><pre class="programlisting">
+WARNING:  database "mydb" must be vacuumed within 39985967 transactions
+HINT:  To avoid a database shutdown, execute a database-wide VACUUM in that database.
+</pre><p>
+
+    (A manual <code class="command">VACUUM</code> should fix the problem, as suggested by the
+    hint; but note that the <code class="command">VACUUM</code> should be performed by a
+    superuser, else it will fail to process system catalogs, which prevent it from
+    being able to advance the database's <code class="structfield">datfrozenxid</code>.)
+    If these warnings are ignored, the system will refuse to assign new XIDs once
+    there are fewer than three million transactions left until wraparound:
+
+</p><pre class="programlisting">
+ERROR:  database is not accepting commands to avoid wraparound data loss in database "mydb"
+HINT:  Stop the postmaster and vacuum that database in single-user mode.
+</pre><p>
+
+    In this condition any transactions already in progress can continue,
+    but only read-only transactions can be started. Operations that
+    modify database records or truncate relations will fail.
+    The <code class="command">VACUUM</code> command can still be run normally.
+    Contrary to what the hint states, it is not necessary or desirable to stop the
+    postmaster or enter single user-mode in order to restore normal operation.
+    Instead, follow these steps:
+
+    </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">Resolve old prepared transactions. You can find these by checking
+       <a class="link" href="view-pg-prepared-xacts.html" title="52.78. pg_prepared_xacts">pg_prepared_xacts</a> for rows where
+       <code class="literal">age(transactionid)</code> is large. Such transactions should be
+       committed or rolled back.</li><li class="listitem">End long-running open transactions. You can find these by checking
+       <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW" title="28.2.3. pg_stat_activity">pg_stat_activity</a> for rows where
+       <code class="literal">age(backend_xid)</code> or <code class="literal">age(backend_xmin)</code> is
+       large. Such transactions should be committed or rolled back, or the session
+       can be terminated using <code class="literal">pg_terminate_backend</code>.</li><li class="listitem">Drop any old replication slots. Use
+       <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-REPLICATION-VIEW" title="28.2.4. pg_stat_replication">pg_stat_replication</a> to
+       find slots where <code class="literal">age(xmin)</code> or <code class="literal">age(catalog_xmin)</code>
+       is large. In many cases, such slots were created for replication to servers that no
+       longer exist, or that have been down for a long time. If you drop a slot for a server
+       that still exists and might still try to connect to that slot, that replica may
+       need to be rebuilt.</li><li class="listitem">Execute <code class="command">VACUUM</code> in the target database. A database-wide
+       <code class="literal">VACUUM</code> is simplest; to reduce the time required, it as also possible
+       to issue manual <code class="command">VACUUM</code> commands on the tables where
+       <code class="structfield">relminxid</code> is oldest. Do not use <code class="literal">VACUUM FULL</code>
+       in this scenario, because it requires an XID and will therefore fail, except in super-user
+       mode, where it will instead consume an XID and thus increase the risk of transaction ID
+       wraparound. Do not use <code class="literal">VACUUM FREEZE</code> either, because it will do
+       more than the minimum amount of work required to restore normal operation.</li><li class="listitem">Once normal operation is restored, ensure that autovacuum is properly configured
+       in the target database in order to avoid future problems.</li></ol></div><p>
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     In earlier versions, it was sometimes necessary to stop the postmaster and
+     <code class="command">VACUUM</code> the database in a single-user mode. In typical scenarios, this
+     is no longer necessary, and should be avoided whenever possible, since it involves taking
+     the system down. It is also riskier, since it disables transaction ID wraparound safeguards
+     that are designed to prevent data loss.  The only reason to use single-user mode in this
+     scenario is if you wish to <code class="command">TRUNCATE</code> or <code class="command">DROP</code> unneeded
+     tables to avoid needing to <code class="command">VACUUM</code> them.  The three-million-transaction
+     safety margin exists to let the administrator do this. See the
+     <a class="xref" href="app-postgres.html" title="postgres"><span class="refentrytitle"><span class="application">postgres</span></span></a> reference page for details about using single-user mode.
+    </p></div><div class="sect3" id="VACUUM-FOR-MULTIXACT-WRAPAROUND"><div class="titlepage"><div><div><h4 class="title">25.1.5.1. Multixacts and Wraparound</h4></div></div></div><a id="id-1.6.12.10.8.18.2" class="indexterm"></a><a id="id-1.6.12.10.8.18.3" class="indexterm"></a><p>
+     <em class="firstterm">Multixact IDs</em> are used to support row locking by
+     multiple transactions.  Since there is only limited space in a tuple
+     header to store lock information, that information is encoded as
+     a <span class="quote">“<span class="quote">multiple transaction ID</span>”</span>, or multixact ID for short,
+     whenever there is more than one transaction concurrently locking a
+     row.  Information about which transaction IDs are included in any
+     particular multixact ID is stored separately in
+     the <code class="filename">pg_multixact</code> subdirectory, and only the multixact ID
+     appears in the <code class="structfield">xmax</code> field in the tuple header.
+     Like transaction IDs, multixact IDs are implemented as a
+     32-bit counter and corresponding storage, all of which requires
+     careful aging management, storage cleanup, and wraparound handling.
+     There is a separate storage area which holds the list of members in
+     each multixact, which also uses a 32-bit counter and which must also
+     be managed.
+    </p><p>
+     Whenever <code class="command">VACUUM</code> scans any part of a table, it will replace
+     any multixact ID it encounters which is older than
+     <a class="xref" href="runtime-config-client.html#GUC-VACUUM-MULTIXACT-FREEZE-MIN-AGE">vacuum_multixact_freeze_min_age</a>
+     by a different value, which can be the zero value, a single
+     transaction ID, or a newer multixact ID.  For each table,
+     <code class="structname">pg_class</code>.<code class="structfield">relminmxid</code> stores the oldest
+     possible multixact ID still appearing in any tuple of that table.
+     If this value is older than
+     <a class="xref" href="runtime-config-client.html#GUC-VACUUM-MULTIXACT-FREEZE-TABLE-AGE">vacuum_multixact_freeze_table_age</a>, an aggressive
+     vacuum is forced.  As discussed in the previous section, an aggressive
+     vacuum means that only those pages which are known to be all-frozen will
+     be skipped.  <code class="function">mxid_age()</code> can be used on
+     <code class="structname">pg_class</code>.<code class="structfield">relminmxid</code> to find its age.
+    </p><p>
+     Aggressive <code class="command">VACUUM</code> scans, regardless of
+     what causes them, enable advancing the value for that table.
+     Eventually, as all tables in all databases are scanned and their
+     oldest multixact values are advanced, on-disk storage for older
+     multixacts can be removed.
+    </p><p>
+     As a safety device, an aggressive vacuum scan will
+     occur for any table whose multixact-age is greater than <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-MULTIXACT-FREEZE-MAX-AGE">autovacuum_multixact_freeze_max_age</a>.  Also, if the
+     storage occupied by multixacts members exceeds 2GB, aggressive vacuum
+     scans will occur more often for all tables, starting with those that
+     have the oldest multixact-age.  Both of these kinds of aggressive
+     scans will occur even if autovacuum is nominally disabled.
+    </p><p>
+     Similar to the XID case, if autovacuum fails to clear old MXIDs from a table, the
+     system will begin to emit warning messages when the database's oldest MXIDs reach forty
+     million transactions from the wraparound point.  And, just as an the XID case, if these
+     warnings are ignored, the system will refuse to generate new MXIDs once there are fewer
+     than three million left until wraparound.
+    </p><p>
+     Normal operation when MXIDs are exhausted can be restored in much the same way as
+     when XIDs are exhausted. Follow the same steps in the previous section, but with the
+     following differences:
+
+    </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">Running transactions and prepared transactions can be ignored if there
+       is no chance that they might appear in a multixact.</li><li class="listitem">MXID information is not directly visible in system views such as
+       <code class="literal">pg_stat_activity</code>; however, looking for old XIDs is still a good
+       way of determining which transactions are causing MXID wraparound problems.</li><li class="listitem">XID exhaustion will block all write transactions, but MXID exhaustion will
+       only block a subset of write transactions, specifically those that involve
+       row locks that require an MXID.</li></ol></div><p>
+   </p></div></div><div class="sect2" id="AUTOVACUUM"><div class="titlepage"><div><div><h3 class="title">25.1.6. The Autovacuum Daemon</h3></div></div></div><a id="id-1.6.12.10.9.2" class="indexterm"></a><p>
+    <span class="productname">PostgreSQL</span> has an optional but highly
+    recommended feature called <em class="firstterm">autovacuum</em>,
+    whose purpose is to automate the execution of
+    <code class="command">VACUUM</code> and <code class="command">ANALYZE</code> commands.
+    When enabled, autovacuum checks for
+    tables that have had a large number of inserted, updated or deleted
+    tuples.  These checks use the statistics collection facility;
+    therefore, autovacuum cannot be used unless <a class="xref" href="runtime-config-statistics.html#GUC-TRACK-COUNTS">track_counts</a> is set to <code class="literal">true</code>.
+    In the default configuration, autovacuuming is enabled and the related
+    configuration parameters are appropriately set.
+   </p><p>
+    The <span class="quote">“<span class="quote">autovacuum daemon</span>”</span> actually consists of multiple processes.
+    There is a persistent daemon process, called the
+    <em class="firstterm">autovacuum launcher</em>, which is in charge of starting
+    <em class="firstterm">autovacuum worker</em> processes for all databases. The
+    launcher will distribute the work across time, attempting to start one
+    worker within each database every <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-NAPTIME">autovacuum_naptime</a>
+    seconds.  (Therefore, if the installation has <em class="replaceable"><code>N</code></em> databases,
+    a new worker will be launched every
+    <code class="varname">autovacuum_naptime</code>/<em class="replaceable"><code>N</code></em> seconds.)
+    A maximum of <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-MAX-WORKERS">autovacuum_max_workers</a> worker processes
+    are allowed to run at the same time. If there are more than
+    <code class="varname">autovacuum_max_workers</code> databases to be processed,
+    the next database will be processed as soon as the first worker finishes.
+    Each worker process will check each table within its database and
+    execute <code class="command">VACUUM</code> and/or <code class="command">ANALYZE</code> as needed.
+    <a class="xref" href="runtime-config-logging.html#GUC-LOG-AUTOVACUUM-MIN-DURATION">log_autovacuum_min_duration</a> can be set to monitor
+    autovacuum workers' activity.
+   </p><p>
+    If several large tables all become eligible for vacuuming in a short
+    amount of time, all autovacuum workers might become occupied with
+    vacuuming those tables for a long period.  This would result
+    in other tables and databases not being vacuumed until a worker becomes
+    available. There is no limit on how many workers might be in a
+    single database, but workers do try to avoid repeating work that has
+    already been done by other workers. Note that the number of running
+    workers does not count towards <a class="xref" href="runtime-config-connection.html#GUC-MAX-CONNECTIONS">max_connections</a> or
+    <a class="xref" href="runtime-config-connection.html#GUC-SUPERUSER-RESERVED-CONNECTIONS">superuser_reserved_connections</a> limits.
+   </p><p>
+    Tables whose <code class="structfield">relfrozenxid</code> value is more than
+    <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-FREEZE-MAX-AGE">autovacuum_freeze_max_age</a> transactions old are always
+    vacuumed (this also applies to those tables whose freeze max age has
+    been modified via storage parameters; see below).  Otherwise, if the
+    number of tuples obsoleted since the last
+    <code class="command">VACUUM</code> exceeds the <span class="quote">“<span class="quote">vacuum threshold</span>”</span>, the
+    table is vacuumed.  The vacuum threshold is defined as:
+</p><pre class="programlisting">
+vacuum threshold = vacuum base threshold + vacuum scale factor * number of tuples
+</pre><p>
+    where the vacuum base threshold is
+    <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-THRESHOLD">autovacuum_vacuum_threshold</a>,
+    the vacuum scale factor is
+    <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-SCALE-FACTOR">autovacuum_vacuum_scale_factor</a>,
+    and the number of tuples is
+    <code class="structname">pg_class</code>.<code class="structfield">reltuples</code>.
+   </p><p>
+    The table is also vacuumed if the number of tuples inserted since the last
+    vacuum has exceeded the defined insert threshold, which is defined as:
+</p><pre class="programlisting">
+vacuum insert threshold = vacuum base insert threshold + vacuum insert scale factor * number of tuples
+</pre><p>
+    where the vacuum insert base threshold is
+    <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-INSERT-THRESHOLD">autovacuum_vacuum_insert_threshold</a>,
+    and vacuum insert scale factor is
+    <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-INSERT-SCALE-FACTOR">autovacuum_vacuum_insert_scale_factor</a>.
+    Such vacuums may allow portions of the table to be marked as
+    <em class="firstterm">all visible</em> and also allow tuples to be frozen, which
+    can reduce the work required in subsequent vacuums.
+    For tables which receive <code class="command">INSERT</code> operations but no or
+    almost no <code class="command">UPDATE</code>/<code class="command">DELETE</code> operations,
+    it may be beneficial to lower the table's
+    <a class="xref" href="sql-createtable.html#RELOPTION-AUTOVACUUM-FREEZE-MIN-AGE">autovacuum_freeze_min_age</a> as this may allow
+    tuples to be frozen by earlier vacuums.  The number of obsolete tuples and
+    the number of inserted tuples are obtained from the statistics collector;
+    it is a semi-accurate count updated by each <code class="command">UPDATE</code>,
+    <code class="command">DELETE</code> and <code class="command">INSERT</code> operation.  (It is
+    only semi-accurate because some information might be lost under heavy
+    load.)  If the <code class="structfield">relfrozenxid</code> value of the table
+    is more than <code class="varname">vacuum_freeze_table_age</code> transactions old,
+    an aggressive vacuum is performed to freeze old tuples and advance
+    <code class="structfield">relfrozenxid</code>; otherwise, only pages that have been modified
+    since the last vacuum are scanned.
+   </p><p>
+    For analyze, a similar condition is used: the threshold, defined as:
+</p><pre class="programlisting">
+analyze threshold = analyze base threshold + analyze scale factor * number of tuples
+</pre><p>
+    is compared to the total number of tuples inserted, updated, or deleted
+    since the last <code class="command">ANALYZE</code>.
+   </p><p>
+    Partitioned tables do not directly store tuples and consequently
+    are not processed by autovacuum.  (Autovacuum does process table
+    partitions just like other tables.)  Unfortunately, this means that
+    autovacuum does  not run <code class="command">ANALYZE</code> on partitioned
+    tables, and this can cause suboptimal plans for queries that reference
+    partitioned table statistics.  You can work around this problem by
+    manually running <code class="command">ANALYZE</code> on partitioned tables
+    when they are first populated, and again whenever the distribution
+    of data in their partitions changes significantly.
+   </p><p>
+    Temporary tables cannot be accessed by autovacuum.  Therefore,
+    appropriate vacuum and analyze operations should be performed via
+    session SQL commands.
+   </p><p>
+    The default thresholds and scale factors are taken from
+    <code class="filename">postgresql.conf</code>, but it is possible to override them
+    (and many other autovacuum control parameters) on a per-table basis; see
+    <a class="xref" href="sql-createtable.html#SQL-CREATETABLE-STORAGE-PARAMETERS" title="Storage Parameters">Storage Parameters</a> for more information.
+    If a setting has been changed via a table's storage parameters, that value
+    is used when processing that table; otherwise the global settings are
+    used. See <a class="xref" href="runtime-config-autovacuum.html" title="20.10. Automatic Vacuuming">Section 20.10</a> for more details on
+    the global settings.
+   </p><p>
+    When multiple workers are running, the autovacuum cost delay parameters
+    (see <a class="xref" href="runtime-config-resource.html#RUNTIME-CONFIG-RESOURCE-VACUUM-COST" title="20.4.4. Cost-based Vacuum Delay">Section 20.4.4</a>) are
+    <span class="quote">“<span class="quote">balanced</span>”</span> among all the running workers, so that the
+    total I/O impact on the system is the same regardless of the number
+    of workers actually running.  However, any workers processing tables whose
+    per-table <code class="literal">autovacuum_vacuum_cost_delay</code> or
+    <code class="literal">autovacuum_vacuum_cost_limit</code> storage parameters have been set
+    are not considered in the balancing algorithm.
+   </p><p>
+    Autovacuum workers generally don't block other commands.  If a process
+    attempts to acquire a lock that conflicts with the
+    <code class="literal">SHARE UPDATE EXCLUSIVE</code> lock held by autovacuum, lock
+    acquisition will interrupt the autovacuum.  For conflicting lock modes,
+    see <a class="xref" href="explicit-locking.html#TABLE-LOCK-COMPATIBILITY" title="Table 13.2. Conflicting Lock Modes">Table 13.2</a>.  However, if the autovacuum
+    is running to prevent transaction ID wraparound (i.e., the autovacuum query
+    name in the <code class="structname">pg_stat_activity</code> view ends with
+    <code class="literal">(to prevent wraparound)</code>), the autovacuum is not
+    automatically interrupted.
+   </p><div class="warning"><h3 class="title">Warning</h3><p>
+     Regularly running commands that acquire locks conflicting with a
+     <code class="literal">SHARE UPDATE EXCLUSIVE</code> lock (e.g., ANALYZE) can
+     effectively prevent autovacuums from ever completing.
+    </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="routine-reindex.html" title="25.2. Routine Reindexing">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 25. Routine Database Maintenance Tasks </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 25.2. Routine Reindexing</td></tr></table></div></body></html>

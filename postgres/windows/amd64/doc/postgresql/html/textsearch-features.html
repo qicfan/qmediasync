@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>12.4. Additional Features</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="textsearch-controls.html" title="12.3. Controlling Text Search" /><link rel="next" href="textsearch-parsers.html" title="12.5. Parsers" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">12.4. Additional Features</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="textsearch-controls.html" title="12.3. Controlling Text Search">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="textsearch.html" title="Chapter 12. Full Text Search">Up</a></td><th width="60%" align="center">Chapter 12. Full Text Search</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="textsearch-parsers.html" title="12.5. Parsers">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TEXTSEARCH-FEATURES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">12.4. Additional Features</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="textsearch-features.html#TEXTSEARCH-MANIPULATE-TSVECTOR">12.4.1. Manipulating Documents</a></span></dt><dt><span class="sect2"><a href="textsearch-features.html#TEXTSEARCH-MANIPULATE-TSQUERY">12.4.2. Manipulating Queries</a></span></dt><dt><span class="sect2"><a href="textsearch-features.html#TEXTSEARCH-UPDATE-TRIGGERS">12.4.3. Triggers for Automatic Updates</a></span></dt><dt><span class="sect2"><a href="textsearch-features.html#TEXTSEARCH-STATISTICS">12.4.4. Gathering Document Statistics</a></span></dt></dl></div><p>
+   This section describes additional functions and operators that are
+   useful in connection with text search.
+  </p><div class="sect2" id="TEXTSEARCH-MANIPULATE-TSVECTOR"><div class="titlepage"><div><div><h3 class="title">12.4.1. Manipulating Documents</h3></div></div></div><p>
+    <a class="xref" href="textsearch-controls.html#TEXTSEARCH-PARSING-DOCUMENTS" title="12.3.1. Parsing Documents">Section 12.3.1</a> showed how raw textual
+    documents can be converted into <code class="type">tsvector</code> values.
+    <span class="productname">PostgreSQL</span> also provides functions and
+    operators that can be used to manipulate documents that are already
+    in <code class="type">tsvector</code> form.
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+     <a id="id-1.5.11.7.3.3.1.1.1" class="indexterm"></a>
+
+      <code class="literal"><code class="type">tsvector</code> || <code class="type">tsvector</code></code>
+     </span></dt><dd><p>
+       The <code class="type">tsvector</code> concatenation operator
+       returns a vector which combines the lexemes and positional information
+       of the two vectors given as arguments.  Positions and weight labels
+       are retained during the concatenation.
+       Positions appearing in the right-hand vector are offset by the largest
+       position mentioned in the left-hand vector, so that the result is
+       nearly equivalent to the result of performing <code class="function">to_tsvector</code>
+       on the concatenation of the two original document strings.  (The
+       equivalence is not exact, because any stop-words removed from the
+       end of the left-hand argument will not affect the result, whereas
+       they would have affected the positions of the lexemes in the
+       right-hand argument if textual concatenation were used.)
+      </p><p>
+       One advantage of using concatenation in the vector form, rather than
+       concatenating text before applying <code class="function">to_tsvector</code>, is that
+       you can use different configurations to parse different sections
+       of the document.  Also, because the <code class="function">setweight</code> function
+       marks all lexemes of the given vector the same way, it is necessary
+       to parse the text and do <code class="function">setweight</code> before concatenating
+       if you want to label different parts of the document with different
+       weights.
+      </p></dd><dt><span class="term">
+     <a id="id-1.5.11.7.3.3.2.1.1" class="indexterm"></a>
+
+      <code class="literal">setweight(<em class="replaceable"><code>vector</code></em> <code class="type">tsvector</code>, <em class="replaceable"><code>weight</code></em> <code class="type">"char"</code>) returns <code class="type">tsvector</code></code>
+     </span></dt><dd><p>
+       <code class="function">setweight</code> returns a copy of the input vector in which every
+       position has been labeled with the given <em class="replaceable"><code>weight</code></em>, either
+       <code class="literal">A</code>, <code class="literal">B</code>, <code class="literal">C</code>, or
+       <code class="literal">D</code>.  (<code class="literal">D</code> is the default for new
+       vectors and as such is not displayed on output.)  These labels are
+       retained when vectors are concatenated, allowing words from different
+       parts of a document to be weighted differently by ranking functions.
+      </p><p>
+       Note that weight labels apply to <span class="emphasis"><em>positions</em></span>, not
+       <span class="emphasis"><em>lexemes</em></span>.  If the input vector has been stripped of
+       positions then <code class="function">setweight</code> does nothing.
+      </p></dd><dt><span class="term">
+     <a id="id-1.5.11.7.3.3.3.1.1" class="indexterm"></a>
+
+      <code class="literal">length(<em class="replaceable"><code>vector</code></em> <code class="type">tsvector</code>) returns <code class="type">integer</code></code>
+     </span></dt><dd><p>
+       Returns the number of lexemes stored in the vector.
+      </p></dd><dt><span class="term">
+     <a id="id-1.5.11.7.3.3.4.1.1" class="indexterm"></a>
+
+      <code class="literal">strip(<em class="replaceable"><code>vector</code></em> <code class="type">tsvector</code>) returns <code class="type">tsvector</code></code>
+     </span></dt><dd><p>
+       Returns a vector that lists the same lexemes as the given vector, but
+       lacks any position or weight information.  The result is usually much
+       smaller than an unstripped vector, but it is also less useful.
+       Relevance ranking does not work as well on stripped vectors as
+       unstripped ones.  Also,
+       the <code class="literal">&lt;-&gt;</code> (FOLLOWED BY) <code class="type">tsquery</code> operator
+       will never match stripped input, since it cannot determine the
+       distance between lexeme occurrences.
+      </p></dd></dl></div><p>
+    A full list of <code class="type">tsvector</code>-related functions is available
+    in <a class="xref" href="functions-textsearch.html#TEXTSEARCH-FUNCTIONS-TABLE" title="Table 9.42. Text Search Functions">Table 9.42</a>.
+   </p></div><div class="sect2" id="TEXTSEARCH-MANIPULATE-TSQUERY"><div class="titlepage"><div><div><h3 class="title">12.4.2. Manipulating Queries</h3></div></div></div><p>
+    <a class="xref" href="textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES" title="12.3.2. Parsing Queries">Section 12.3.2</a> showed how raw textual
+    queries can be converted into <code class="type">tsquery</code> values.
+    <span class="productname">PostgreSQL</span> also provides functions and
+    operators that can be used to manipulate queries that are already
+    in <code class="type">tsquery</code> form.
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+      <code class="literal"><code class="type">tsquery</code> &amp;&amp; <code class="type">tsquery</code></code>
+     </span></dt><dd><p>
+       Returns the AND-combination of the two given queries.
+      </p></dd><dt><span class="term">
+      <code class="literal"><code class="type">tsquery</code> || <code class="type">tsquery</code></code>
+     </span></dt><dd><p>
+       Returns the OR-combination of the two given queries.
+      </p></dd><dt><span class="term">
+      <code class="literal">!! <code class="type">tsquery</code></code>
+     </span></dt><dd><p>
+       Returns the negation (NOT) of the given query.
+      </p></dd><dt><span class="term">
+      <code class="literal"><code class="type">tsquery</code> &lt;-&gt; <code class="type">tsquery</code></code>
+     </span></dt><dd><p>
+       Returns a query that searches for a match to the first given query
+       immediately followed by a match to the second given query, using
+       the <code class="literal">&lt;-&gt;</code> (FOLLOWED BY)
+       <code class="type">tsquery</code> operator.  For example:
+
+</p><pre class="screen">
+SELECT to_tsquery('fat') &lt;-&gt; to_tsquery('cat | rat');
+          ?column?
+----------------------------
+ 'fat' &lt;-&gt; ( 'cat' | 'rat' )
+</pre><p>
+      </p></dd><dt><span class="term">
+     <a id="id-1.5.11.7.4.3.5.1.1" class="indexterm"></a>
+
+      <code class="literal">tsquery_phrase(<em class="replaceable"><code>query1</code></em> <code class="type">tsquery</code>, <em class="replaceable"><code>query2</code></em> <code class="type">tsquery</code> [, <em class="replaceable"><code>distance</code></em> <code class="type">integer</code> ]) returns <code class="type">tsquery</code></code>
+     </span></dt><dd><p>
+       Returns a query that searches for a match to the first given query
+       followed by a match to the second given query at a distance of exactly
+       <em class="replaceable"><code>distance</code></em> lexemes, using
+       the <code class="literal">&lt;<em class="replaceable"><code>N</code></em>&gt;</code>
+       <code class="type">tsquery</code> operator.  For example:
+
+</p><pre class="screen">
+SELECT tsquery_phrase(to_tsquery('fat'), to_tsquery('cat'), 10);
+  tsquery_phrase
+------------------
+ 'fat' &lt;10&gt; 'cat'
+</pre><p>
+      </p></dd><dt><span class="term">
+     <a id="id-1.5.11.7.4.3.6.1.1" class="indexterm"></a>
+
+      <code class="literal">numnode(<em class="replaceable"><code>query</code></em> <code class="type">tsquery</code>) returns <code class="type">integer</code></code>
+     </span></dt><dd><p>
+       Returns the number of nodes (lexemes plus operators) in a
+       <code class="type">tsquery</code>. This function is useful
+       to determine if the <em class="replaceable"><code>query</code></em> is meaningful
+       (returns &gt; 0), or contains only stop words (returns 0).
+       Examples:
+
+</p><pre class="screen">
+SELECT numnode(plainto_tsquery('the any'));
+NOTICE:  query contains only stopword(s) or doesn't contain lexeme(s), ignored
+ numnode
+---------
+       0
+
+SELECT numnode('foo &amp; bar'::tsquery);
+ numnode
+---------
+       3
+</pre><p>
+      </p></dd><dt><span class="term">
+     <a id="id-1.5.11.7.4.3.7.1.1" class="indexterm"></a>
+
+      <code class="literal">querytree(<em class="replaceable"><code>query</code></em> <code class="type">tsquery</code>) returns <code class="type">text</code></code>
+     </span></dt><dd><p>
+       Returns the portion of a <code class="type">tsquery</code> that can be used for
+       searching an index.  This function is useful for detecting
+       unindexable queries, for example those containing only stop words
+       or only negated terms.  For example:
+
+</p><pre class="screen">
+SELECT querytree(to_tsquery('defined'));
+ querytree
+-----------
+ 'defin'
+
+SELECT querytree(to_tsquery('!defined'));
+ querytree
+-----------
+ T
+</pre><p>
+      </p></dd></dl></div><div class="sect3" id="TEXTSEARCH-QUERY-REWRITING"><div class="titlepage"><div><div><h4 class="title">12.4.2.1. Query Rewriting</h4></div></div></div><a id="id-1.5.11.7.4.4.2" class="indexterm"></a><p>
+     The <code class="function">ts_rewrite</code> family of functions search a
+     given <code class="type">tsquery</code> for occurrences of a target
+     subquery, and replace each occurrence with a
+     substitute subquery.  In essence this operation is a
+     <code class="type">tsquery</code>-specific version of substring replacement.
+     A target and substitute combination can be
+     thought of as a <em class="firstterm">query rewrite rule</em>.  A collection
+     of such rewrite rules can be a powerful search aid.
+     For example, you can expand the search using synonyms
+     (e.g., <code class="literal">new york</code>, <code class="literal">big apple</code>, <code class="literal">nyc</code>,
+     <code class="literal">gotham</code>) or narrow the search to direct the user to some hot
+     topic.  There is some overlap in functionality between this feature
+     and thesaurus dictionaries (<a class="xref" href="textsearch-dictionaries.html#TEXTSEARCH-THESAURUS" title="12.6.4. Thesaurus Dictionary">Section 12.6.4</a>).
+     However, you can modify a set of rewrite rules on-the-fly without
+     reindexing, whereas updating a thesaurus requires reindexing to be
+     effective.
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+       <code class="literal">ts_rewrite (<em class="replaceable"><code>query</code></em> <code class="type">tsquery</code>, <em class="replaceable"><code>target</code></em> <code class="type">tsquery</code>, <em class="replaceable"><code>substitute</code></em> <code class="type">tsquery</code>) returns <code class="type">tsquery</code></code>
+      </span></dt><dd><p>
+        This form of <code class="function">ts_rewrite</code> simply applies a single
+        rewrite rule: <em class="replaceable"><code>target</code></em>
+        is replaced by <em class="replaceable"><code>substitute</code></em>
+        wherever it appears in <em class="replaceable"><code>query</code></em>.  For example:
+
+</p><pre class="screen">
+SELECT ts_rewrite('a &amp; b'::tsquery, 'a'::tsquery, 'c'::tsquery);
+ ts_rewrite
+------------
+ 'b' &amp; 'c'
+</pre><p>
+       </p></dd><dt><span class="term">
+       <code class="literal">ts_rewrite (<em class="replaceable"><code>query</code></em> <code class="type">tsquery</code>, <em class="replaceable"><code>select</code></em> <code class="type">text</code>) returns <code class="type">tsquery</code></code>
+      </span></dt><dd><p>
+        This form of <code class="function">ts_rewrite</code> accepts a starting
+        <em class="replaceable"><code>query</code></em> and an SQL <em class="replaceable"><code>select</code></em> command, which
+        is given as a text string.  The <em class="replaceable"><code>select</code></em> must yield two
+        columns of <code class="type">tsquery</code> type.  For each row of the
+        <em class="replaceable"><code>select</code></em> result, occurrences of the first column value
+        (the target) are replaced by the second column value (the substitute)
+        within the current <em class="replaceable"><code>query</code></em> value.  For example:
+
+</p><pre class="screen">
+CREATE TABLE aliases (t tsquery PRIMARY KEY, s tsquery);
+INSERT INTO aliases VALUES('a', 'c');
+
+SELECT ts_rewrite('a &amp; b'::tsquery, 'SELECT t,s FROM aliases');
+ ts_rewrite
+------------
+ 'b' &amp; 'c'
+</pre><p>
+       </p><p>
+        Note that when multiple rewrite rules are applied in this way,
+        the order of application can be important; so in practice you will
+        want the source query to <code class="literal">ORDER BY</code> some ordering key.
+       </p></dd></dl></div><p>
+     Let's consider a real-life astronomical example. We'll expand query
+     <code class="literal">supernovae</code> using table-driven rewriting rules:
+
+</p><pre class="screen">
+CREATE TABLE aliases (t tsquery primary key, s tsquery);
+INSERT INTO aliases VALUES(to_tsquery('supernovae'), to_tsquery('supernovae|sn'));
+
+SELECT ts_rewrite(to_tsquery('supernovae &amp; crab'), 'SELECT * FROM aliases');
+           ts_rewrite            
+---------------------------------
+ 'crab' &amp; ( 'supernova' | 'sn' )
+</pre><p>
+
+     We can change the rewriting rules just by updating the table:
+
+</p><pre class="screen">
+UPDATE aliases
+SET s = to_tsquery('supernovae|sn &amp; !nebulae')
+WHERE t = to_tsquery('supernovae');
+
+SELECT ts_rewrite(to_tsquery('supernovae &amp; crab'), 'SELECT * FROM aliases');
+                 ts_rewrite                  
+---------------------------------------------
+ 'crab' &amp; ( 'supernova' | 'sn' &amp; !'nebula' )
+</pre><p>
+    </p><p>
+     Rewriting can be slow when there are many rewriting rules, since it
+     checks every rule for a possible match. To filter out obvious non-candidate
+     rules we can use the containment operators for the <code class="type">tsquery</code>
+     type. In the example below, we select only those rules which might match
+     the original query:
+
+</p><pre class="screen">
+SELECT ts_rewrite('a &amp; b'::tsquery,
+                  'SELECT t,s FROM aliases WHERE ''a &amp; b''::tsquery @&gt; t');
+ ts_rewrite
+------------
+ 'b' &amp; 'c'
+</pre><p>
+    </p></div></div><div class="sect2" id="TEXTSEARCH-UPDATE-TRIGGERS"><div class="titlepage"><div><div><h3 class="title">12.4.3. Triggers for Automatic Updates</h3></div></div></div><a id="id-1.5.11.7.5.2" class="indexterm"></a><div class="note"><h3 class="title">Note</h3><p>
+     The method described in this section has been obsoleted by the use of
+     stored generated columns, as described in <a class="xref" href="textsearch-tables.html#TEXTSEARCH-TABLES-INDEX" title="12.2.2. Creating Indexes">Section 12.2.2</a>.
+    </p></div><p>
+    When using a separate column to store the <code class="type">tsvector</code> representation
+    of your documents, it is necessary to create a trigger to update the
+    <code class="type">tsvector</code> column when the document content columns change.
+    Two built-in trigger functions are available for this, or you can write
+    your own.
+   </p><pre class="synopsis">
+tsvector_update_trigger(<em class="replaceable"><code>tsvector_column_name</code></em>,​ <em class="replaceable"><code>config_name</code></em>, <em class="replaceable"><code>text_column_name</code></em> [<span class="optional">, ... </span>])
+tsvector_update_trigger_column(<em class="replaceable"><code>tsvector_column_name</code></em>,​ <em class="replaceable"><code>config_column_name</code></em>, <em class="replaceable"><code>text_column_name</code></em> [<span class="optional">, ... </span>])
+</pre><p>
+    These trigger functions automatically compute a <code class="type">tsvector</code>
+    column from one or more textual columns, under the control of
+    parameters specified in the <code class="command">CREATE TRIGGER</code> command.
+    An example of their use is:
+
+</p><pre class="screen">
+CREATE TABLE messages (
+    title       text,
+    body        text,
+    tsv         tsvector
+);
+
+CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE
+ON messages FOR EACH ROW EXECUTE FUNCTION
+tsvector_update_trigger(tsv, 'pg_catalog.english', title, body);
+
+INSERT INTO messages VALUES('title here', 'the body text is here');
+
+SELECT * FROM messages;
+   title    |         body          |            tsv             
+------------+-----------------------+----------------------------
+ title here | the body text is here | 'bodi':4 'text':5 'titl':1
+
+SELECT title, body FROM messages WHERE tsv @@ to_tsquery('title &amp; body');
+   title    |         body          
+------------+-----------------------
+ title here | the body text is here
+</pre><p>
+
+    Having created this trigger, any change in <code class="structfield">title</code> or
+    <code class="structfield">body</code> will automatically be reflected into
+    <code class="structfield">tsv</code>, without the application having to worry about it.
+   </p><p>
+    The first trigger argument must be the name of the <code class="type">tsvector</code>
+    column to be updated.  The second argument specifies the text search
+    configuration to be used to perform the conversion.  For
+    <code class="function">tsvector_update_trigger</code>, the configuration name is simply
+    given as the second trigger argument.  It must be schema-qualified as
+    shown above, so that the trigger behavior will not change with changes
+    in <code class="varname">search_path</code>.  For
+    <code class="function">tsvector_update_trigger_column</code>, the second trigger argument
+    is the name of another table column, which must be of type
+    <code class="type">regconfig</code>.  This allows a per-row selection of configuration
+    to be made.  The remaining argument(s) are the names of textual columns
+    (of type <code class="type">text</code>, <code class="type">varchar</code>, or <code class="type">char</code>).  These
+    will be included in the document in the order given.  NULL values will
+    be skipped (but the other columns will still be indexed).
+   </p><p>
+    A limitation of these built-in triggers is that they treat all the
+    input columns alike.  To process columns differently — for
+    example, to weight title differently from body — it is necessary
+    to write a custom trigger.  Here is an example using
+    <span class="application">PL/pgSQL</span> as the trigger language:
+
+</p><pre class="programlisting">
+CREATE FUNCTION messages_trigger() RETURNS trigger AS $$
+begin
+  new.tsv :=
+     setweight(to_tsvector('pg_catalog.english', coalesce(new.title,'')), 'A') ||
+     setweight(to_tsvector('pg_catalog.english', coalesce(new.body,'')), 'D');
+  return new;
+end
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE
+    ON messages FOR EACH ROW EXECUTE FUNCTION messages_trigger();
+</pre><p>
+   </p><p>
+    Keep in mind that it is important to specify the configuration name
+    explicitly when creating <code class="type">tsvector</code> values inside triggers,
+    so that the column's contents will not be affected by changes to
+    <code class="varname">default_text_search_config</code>.  Failure to do this is likely to
+    lead to problems such as search results changing after a dump and restore.
+   </p></div><div class="sect2" id="TEXTSEARCH-STATISTICS"><div class="titlepage"><div><div><h3 class="title">12.4.4. Gathering Document Statistics</h3></div></div></div><a id="id-1.5.11.7.6.2" class="indexterm"></a><p>
+    The function <code class="function">ts_stat</code> is useful for checking your
+    configuration and for finding stop-word candidates.
+   </p><pre class="synopsis">
+ts_stat(<em class="replaceable"><code>sqlquery</code></em> <code class="type">text</code>, [<span class="optional"> <em class="replaceable"><code>weights</code></em> <code class="type">text</code>, </span>]
+        OUT <em class="replaceable"><code>word</code></em> <code class="type">text</code>, OUT <em class="replaceable"><code>ndoc</code></em> <code class="type">integer</code>,
+        OUT <em class="replaceable"><code>nentry</code></em> <code class="type">integer</code>) returns <code class="type">setof record</code>
+</pre><p>
+    <em class="replaceable"><code>sqlquery</code></em> is a text value containing an SQL
+    query which must return a single <code class="type">tsvector</code> column.
+    <code class="function">ts_stat</code> executes the query and returns statistics about
+    each distinct lexeme (word) contained in the <code class="type">tsvector</code>
+    data.  The columns returned are
+
+    </p><div class="itemizedlist"><ul class="itemizedlist compact" style="list-style-type: bullet; "><li class="listitem" style="list-style-type: disc"><p>
+       <em class="replaceable"><code>word</code></em> <code class="type">text</code> — the value of a lexeme
+      </p></li><li class="listitem" style="list-style-type: disc"><p>
+       <em class="replaceable"><code>ndoc</code></em> <code class="type">integer</code> — number of documents
+       (<code class="type">tsvector</code>s) the word occurred in
+      </p></li><li class="listitem" style="list-style-type: disc"><p>
+       <em class="replaceable"><code>nentry</code></em> <code class="type">integer</code> — total number of
+       occurrences of the word
+      </p></li></ul></div><p>
+
+    If <em class="replaceable"><code>weights</code></em> is supplied, only occurrences
+    having one of those weights are counted.
+   </p><p>
+    For example, to find the ten most frequent words in a document collection:
+
+</p><pre class="programlisting">
+SELECT * FROM ts_stat('SELECT vector FROM apod')
+ORDER BY nentry DESC, ndoc DESC, word
+LIMIT 10;
+</pre><p>
+
+    The same, but counting only word occurrences with weight <code class="literal">A</code>
+    or <code class="literal">B</code>:
+
+</p><pre class="programlisting">
+SELECT * FROM ts_stat('SELECT vector FROM apod', 'ab')
+ORDER BY nentry DESC, ndoc DESC, word
+LIMIT 10;
+</pre><p>
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="textsearch-controls.html" title="12.3. Controlling Text Search">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="textsearch.html" title="Chapter 12. Full Text Search">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="textsearch-parsers.html" title="12.5. Parsers">Next</a></td></tr><tr><td width="40%" align="left" valign="top">12.3. Controlling Text Search </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 12.5. Parsers</td></tr></table></div></body></html>

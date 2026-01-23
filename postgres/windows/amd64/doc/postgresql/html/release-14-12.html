@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>E.1. Release 14.12</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="release.html" title="Appendix E. Release Notes" /><link rel="next" href="release-14-11.html" title="E.2. Release 14.11" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">E.1. Release 14.12</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="release.html" title="Appendix E. Release Notes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><th width="60%" align="center">Appendix E. Release Notes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="release-14-11.html" title="E.2. Release 14.11">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RELEASE-14-12"><div class="titlepage"><div><div><h2 class="title" style="clear: both">E.1. Release 14.12</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="release-14-12.html#id-1.11.6.5.4">E.1.1. Migration to Version 14.12</a></span></dt><dt><span class="sect2"><a href="release-14-12.html#id-1.11.6.5.5">E.1.2. Changes</a></span></dt></dl></div><p><strong>Release date: </strong>2024-05-09</p><p>
+   This release contains a variety of fixes from 14.11.
+   For information about new features in major release 14, see
+   <a class="xref" href="release-14.html" title="E.13. Release 14">Section E.13</a>.
+  </p><div class="sect2" id="id-1.11.6.5.4"><div class="titlepage"><div><div><h3 class="title">E.1.1. Migration to Version 14.12</h3></div></div></div><p>
+    A dump/restore is not required for those running 14.X.
+   </p><p>
+    However, a security vulnerability was found in the system
+    views <code class="structname">pg_stats_ext</code>
+    and <code class="structname">pg_stats_ext_exprs</code>, potentially allowing
+    authenticated database users to see data they shouldn't.  If this is
+    of concern in your installation, follow the steps in the first
+    changelog entry below to rectify it.
+   </p><p>
+    Also, if you are upgrading from a version earlier than 14.11,
+    see <a class="xref" href="release-14-11.html" title="E.2. Release 14.11">Section E.2</a>.
+   </p></div><div class="sect2" id="id-1.11.6.5.5"><div class="titlepage"><div><div><h3 class="title">E.1.2. Changes</h3></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Restrict visibility of <code class="structname">pg_stats_ext</code> and
+      <code class="structname">pg_stats_ext_exprs</code> entries to the table
+      owner (Nathan Bossart)
+     </p><p>
+      These views failed to hide statistics for expressions that involve
+      columns the accessing user does not have permission to read.  View
+      columns such as <code class="structfield">most_common_vals</code> might
+      expose security-relevant data.  The potential interactions here are
+      not fully clear, so in the interest of erring on the side of safety,
+      make rows in these views visible only to the owner of the associated
+      table.
+     </p><p>
+      The <span class="productname">PostgreSQL</span> Project thanks
+      Lukas Fittl for reporting this problem.
+      (CVE-2024-4317)
+     </p><p>
+      By itself, this fix will only fix the behavior in newly initdb'd
+      database clusters.  If you wish to apply this change in an existing
+      cluster, you will need to do the following:
+     </p><div class="procedure"><ol class="procedure" type="1"><li class="step"><p>
+        Find the SQL script <code class="filename">fix-CVE-2024-4317.sql</code> in
+        the <em class="replaceable"><code>share</code></em> directory of
+        the <span class="productname">PostgreSQL</span> installation (typically
+        located someplace like <code class="filename">/usr/share/postgresql/</code>).
+        Be sure to use the script appropriate to
+        your <span class="productname">PostgreSQL</span> major version.
+        If you do not see this file, either your version is not vulnerable
+        (only v14–v16 are affected) or your minor version is too
+        old to have the fix.
+       </p></li><li class="step"><p>
+        In <span class="emphasis"><em>each</em></span> database of the cluster, run
+        the <code class="filename">fix-CVE-2024-4317.sql</code> script as superuser.
+        In <span class="application">psql</span> this would look like
+</p><pre class="programlisting">
+\i /usr/share/postgresql/fix-CVE-2024-4317.sql
+</pre><p>
+        (adjust the file path as appropriate).  Any error probably indicates
+        that you've used the wrong script version.  It will not hurt to run
+        the script more than once.
+       </p></li><li class="step"><p>
+        Do not forget to include the <code class="literal">template0</code>
+        and <code class="literal">template1</code> databases, or the vulnerability
+        will still exist in databases you create later.  To
+        fix <code class="literal">template0</code>, you'll need to temporarily make
+        it accept connections.  Do that with
+</p><pre class="programlisting">
+ALTER DATABASE template0 WITH ALLOW_CONNECTIONS true;
+</pre><p>
+        and then after fixing <code class="literal">template0</code>, undo it with
+</p><pre class="programlisting">
+ALTER DATABASE template0 WITH ALLOW_CONNECTIONS false;
+</pre><p>
+       </p></li></ol></div></li><li class="listitem"><p>
+      Fix <code class="command">INSERT</code> from
+      multiple <code class="command">VALUES</code> rows into a target column that is
+      a domain over an array or composite type (Tom Lane)
+     </p><p>
+      Such cases would either fail with surprising complaints about
+      mismatched datatypes, or insert unexpected coercions that could lead
+      to odd results.
+     </p></li><li class="listitem"><p>
+      Fix incorrect pruning of NULL partition when a table is partitioned
+      on a boolean column and the query has a boolean <code class="literal">IS
+      NOT</code> clause (David Rowley)
+     </p><p>
+      A NULL value satisfies a clause such
+      as <code class="literal"><em class="replaceable"><code>boolcol</code></em> IS NOT
+      FALSE</code>, so pruning away a partition containing NULLs
+      yielded incorrect answers.
+     </p></li><li class="listitem"><p>
+      Make <code class="command">ALTER FOREIGN TABLE SET SCHEMA</code> move any
+      owned sequences into the new schema (Tom Lane)
+     </p><p>
+      Moving a regular table to a new schema causes any sequences owned by
+      the table to be moved to that schema too (along with indexes and
+      constraints).  This was overlooked for foreign tables, however.
+     </p></li><li class="listitem"><p>
+      Improve <code class="command">ALTER TABLE ... ALTER COLUMN TYPE</code>'s error
+      message when there is a dependent function or publication (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix <code class="command">EXPLAIN</code>'s counting of heap pages accessed by
+      a bitmap heap scan (Melanie Plageman)
+     </p><p>
+      Previously, heap pages that contain no visible tuples were not
+      counted; but it seems more consistent to count all pages returned by
+      the bitmap index scan.
+     </p></li><li class="listitem"><p>
+      Avoid deadlock during removal of orphaned temporary tables
+      (Mikhail Zhilin)
+     </p><p>
+      If the session that creates a temporary table crashes without
+      removing the table, autovacuum will eventually try to remove the
+      orphaned table.  However, an incoming session that's been assigned
+      the same temporary namespace will do that too.  If a temporary table
+      has a dependency (such as an owned sequence) then a deadlock could
+      result between these two cleanup attempts.
+     </p></li><li class="listitem"><p>
+      Avoid race condition while examining per-relation frozen-XID values
+      (Noah Misch)
+     </p><p>
+      <code class="command">VACUUM</code>'s computation of per-database frozen-XID
+      values from per-relation values could get confused by a concurrent
+      update of those values by another <code class="command">VACUUM</code>.
+     </p></li><li class="listitem"><p>
+      Disallow converting a table to a view within an outer SQL command
+      that is using that table (Tom Lane)
+     </p><p>
+      This avoids possible crashes.
+     </p></li><li class="listitem"><p>
+      Ensure that join conditions generated from equivalence classes are
+      applied at the correct plan level (Tom Lane)
+     </p><p>
+      In versions before <span class="productname">PostgreSQL</span> 16, it was
+      possible for generated conditions to be evaluated below outer joins
+      when they should be evaluated above (after) the outer join, leading
+      to incorrect query results.  All versions have a similar hazard when
+      considering joins to <code class="command">UNION ALL</code> trees that have
+      constant outputs for the join column in
+      some <code class="command">SELECT </code> arms.
+     </p></li><li class="listitem"><p>
+      Avoid unnecessary use of moving-aggregate mode with a non-moving
+      window frame (Vallimaharajan G)
+     </p><p>
+      When a plain aggregate is used as a window function, and the window
+      frame start is specified as <code class="literal">UNBOUNDED PRECEDING</code>,
+      the frame's head cannot move so we do not need to use the special
+      (and more expensive) moving-aggregate mode.  This optimization was
+      intended all along, but due to a coding error it never triggered.
+     </p></li><li class="listitem"><p>
+      Avoid use of already-freed data while planning partition-wise joins
+      under GEQO (Tom Lane)
+     </p><p>
+      This would typically end in a crash or unexpected error message.
+     </p></li><li class="listitem"><p>
+      Avoid freeing still-in-use data in Memoize (Tender Wang, Andrei
+      Lepikhov)
+     </p><p>
+      In production builds this error frequently didn't cause any
+      problems, as the freed data would most likely not get overwritten
+      before it was used.
+     </p></li><li class="listitem"><p>
+      Fix incorrectly-reported statistics kind codes in <span class="quote">“<span class="quote">requested
+      statistics kind <em class="replaceable"><code>X</code></em> is not yet
+      built</span>”</span> error messages (David Rowley)
+     </p></li><li class="listitem"><p>
+      Be more careful with <code class="type">RECORD</code>-returning functions
+      in <code class="literal">FROM</code> (Tom Lane)
+     </p><p>
+      The output columns of such a function call must be defined by
+      an <code class="literal">AS</code> clause that specifies the column names and
+      data types.  If the actual function output value doesn't match that,
+      an error is supposed to be thrown at runtime.  However, some code
+      paths would examine the actual value prematurely, and potentially
+      issue strange errors or suffer assertion failures if it doesn't
+      match expectations.
+     </p></li><li class="listitem"><p>
+      Fix confusion about the return rowtype of SQL-language procedures
+      (Tom Lane)
+     </p><p>
+      A procedure implemented in SQL language that returns a single
+      composite-type column would cause an assertion failure or core dump.
+     </p></li><li class="listitem"><p>
+      Add protective stack depth checks to some recursive functions
+      (Egor Chindyaskin)
+     </p></li><li class="listitem"><p>
+      Fix mis-rounding and overflow hazards
+      in <code class="function">date_bin()</code> (Moaaz Assali)
+     </p><p>
+      In the case where the source timestamp is before the origin
+      timestamp and their difference is already an exact multiple of the
+      stride, the code incorrectly subtracted the stride anyway.  Also,
+      detect some integer-overflow cases that would have produced
+      incorrect results.
+     </p></li><li class="listitem"><p>
+      Detect integer overflow when adding or subtracting
+      an <code class="type">interval</code> to/from a <code class="type">timestamp</code>
+      (Joseph Koshakow)
+     </p><p>
+      Some cases that should cause an out-of-range error produced an
+      incorrect result instead.
+     </p></li><li class="listitem"><p>
+      Avoid race condition in <code class="function">pg_get_expr()</code>
+      (Tom Lane)
+     </p><p>
+      If the relation referenced by the argument is dropped concurrently,
+      the function's intention is to return NULL, but sometimes it failed
+      instead.
+     </p></li><li class="listitem"><p>
+      Fix detection of old transaction IDs in XID status functions
+      (Karina Litskevich)
+     </p><p>
+      Transaction IDs more than 2<sup>31</sup>
+      transactions in the past could be misidentified as recent,
+      leading to misbehavior of <code class="function">pg_xact_status()</code>
+      or <code class="function">txid_status()</code>.
+     </p></li><li class="listitem"><p>
+      Ensure that a table's freespace map won't return a page that's past
+      the end of the table (Ronan Dunklau)
+     </p><p>
+      Because the freespace map isn't WAL-logged, this was possible in
+      edge cases involving an OS crash, a replica promote, or a PITR
+      restore.  The result would be a <span class="quote">“<span class="quote">could not read block</span>”</span>
+      error.
+     </p></li><li class="listitem"><p>
+      Fix file descriptor leakage when an error is thrown while waiting
+      in <code class="function">WaitEventSetWait</code> (Etsuro Fujita)
+     </p></li><li class="listitem"><p>
+      Avoid corrupting exception stack if an FDW implements async append
+      but doesn't configure any wait conditions for the Append plan node
+      to wait for (Alexander Pyhalov)
+     </p></li><li class="listitem"><p>
+      Throw an error if an index is accessed while it is being reindexed
+      (Tom Lane)
+     </p><p>
+      Previously this was just an assertion check, but promote it into a
+      regular runtime error.  This will provide a more on-point error
+      message when reindexing a user-defined index expression that
+      attempts to access its own table.
+     </p></li><li class="listitem"><p>
+      Ensure that index-only scans on <code class="type">name</code> columns return a
+      fully-padded value (David Rowley)
+     </p><p>
+      The value physically stored in the index is truncated, and
+      previously a pointer to that value was returned to callers.  This
+      provoked complaints when testing under valgrind.  In theory it could
+      result in crashes, though none have been reported.
+     </p></li><li class="listitem"><p>
+      Fix crash with DSM allocations larger than 4GB (Heikki Linnakangas)
+     </p></li><li class="listitem"><p>
+      Disconnect if a new server session's client socket cannot be put
+      into non-blocking mode (Heikki Linnakangas)
+     </p><p>
+      It was once theoretically possible for us to operate with a socket
+      that's in blocking mode; but that hasn't worked fully in a long
+      time, so fail at connection start rather than misbehave later.
+     </p></li><li class="listitem"><p>
+      Fix inadequate error reporting
+      with <span class="application">OpenSSL</span> 3.0.0 and later (Heikki
+      Linnakangas, Tom Lane)
+     </p><p>
+      System-reported errors passed through by OpenSSL were reported with
+      a numeric error code rather than anything readable.
+     </p></li><li class="listitem"><p>
+      Avoid concurrent calls to <code class="function">bindtextdomain()</code>
+      in <span class="application">libpq</span>
+      and <span class="application">ecpglib</span> (Tom Lane)
+     </p><p>
+      Although GNU <span class="application">gettext</span>'s implementation
+      seems to be fine with concurrent calls, the version available on
+      Windows is not.
+     </p></li><li class="listitem"><p>
+      Fix crash in <span class="application">ecpg</span>'s preprocessor if
+      the program tries to redefine a macro that was defined on the
+      preprocessor command line (Tom Lane)
+     </p></li><li class="listitem"><p>
+      In <span class="application">ecpg</span>, avoid issuing
+      false <span class="quote">“<span class="quote">unsupported feature will be passed to server</span>”</span>
+      warnings (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Ensure that the string result
+      of <span class="application">ecpg</span>'s <code class="function">intoasc()</code>
+      function is correctly zero-terminated (Oleg Tselebrovskiy)
+     </p></li><li class="listitem"><p>
+      Fix <span class="application">pg_dumpall</span> so that role comments, if
+      present, will be dumped regardless of the setting
+      of <code class="option">--no-role-passwords</code> (Daniel Gustafsson,
+      Álvaro Herrera)
+     </p></li><li class="listitem"><p>
+      Fix <span class="application">PL/pgSQL</span>'s parsing of single-line
+      comments (<code class="literal">--</code>-style comments) following
+      expressions (Erik Wienhold, Tom Lane)
+     </p><p>
+      This mistake caused parse errors if such a comment followed
+      a <code class="literal">WHEN</code> expression in
+      a <span class="application">PL/pgSQL</span> <code class="command">CASE</code>
+      statement.
+     </p></li><li class="listitem"><p>
+      In <code class="filename">contrib/amcheck</code>, don't report false match
+      failures due to short- versus long-header values (Andrey Borodin,
+      Michael Zhilin)
+     </p><p>
+      A variable-length datum in a heap tuple or index tuple could have
+      either a short or a long header, depending on compression parameters
+      that applied when it was made.  Treat these cases as equivalent
+      rather than complaining if there's a difference.
+     </p></li><li class="listitem"><p>
+      Fix bugs in BRIN output functions (Tomas Vondra)
+     </p><p>
+      These output functions are only used for displaying index entries
+      in <code class="filename">contrib/pageinspect</code>, so the errors are of
+      limited practical concern.
+     </p></li><li class="listitem"><p>
+      In <code class="filename">contrib/postgres_fdw</code>, avoid emitting
+      requests to sort by a constant (David Rowley)
+     </p><p>
+      This could occur in cases involving <code class="literal">UNION ALL</code>
+      with constant-emitting subqueries.  Sorting by a constant is useless
+      of course, but it also risks being misinterpreted by the remote
+      server, leading to <span class="quote">“<span class="quote">ORDER BY
+      position <em class="replaceable"><code>N</code></em> is not in select list</span>”</span>
+      errors.
+     </p></li><li class="listitem"><p>
+      Make <code class="filename">contrib/postgres_fdw</code> set the remote
+      session's time zone to <code class="literal">GMT</code>
+      not <code class="literal">UTC</code> (Tom Lane)
+     </p><p>
+      This should have the same results for practical purposes.
+      However, <code class="literal">GMT</code> is recognized by hard-wired code in
+      the server, while <code class="literal">UTC</code> is looked up in the
+      timezone database.  So the old code could fail in the unlikely event
+      that the remote server's timezone database is missing entries.
+     </p></li><li class="listitem"><p>
+      In <code class="filename">contrib/xml2</code>, avoid use of library functions
+      that have been deprecated in recent versions
+      of <span class="application">libxml2</span> (Dmitry Koval)
+     </p></li><li class="listitem"><p>
+      Fix incompatibility with LLVM 18 (Thomas Munro, Dmitry Dolgov)
+     </p></li><li class="listitem"><p>
+      Allow <code class="literal">make check</code> to work with
+      the <span class="application">musl</span> C library (Thomas Munro, Bruce
+      Momjian, Tom Lane)
+     </p></li></ul></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="release.html" title="Appendix E. Release Notes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="release-14-11.html" title="E.2. Release 14.11">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Appendix E. Release Notes </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> E.2. Release 14.11</td></tr></table></div></body></html>

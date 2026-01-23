@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>72.2. Multivariate Statistics Examples</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="row-estimation-examples.html" title="72.1. Row Estimation Examples" /><link rel="next" href="planner-stats-security.html" title="72.3. Planner Statistics and Security" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">72.2. Multivariate Statistics Examples</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="row-estimation-examples.html" title="72.1. Row Estimation Examples">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="planner-stats-details.html" title="Chapter 72. How the Planner Uses Statistics">Up</a></td><th width="60%" align="center">Chapter 72. How the Planner Uses Statistics</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="planner-stats-security.html" title="72.3. Planner Statistics and Security">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="MULTIVARIATE-STATISTICS-EXAMPLES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">72.2. Multivariate Statistics Examples</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="multivariate-statistics-examples.html#FUNCTIONAL-DEPENDENCIES">72.2.1. Functional Dependencies</a></span></dt><dt><span class="sect2"><a href="multivariate-statistics-examples.html#MULTIVARIATE-NDISTINCT-COUNTS">72.2.2. Multivariate N-Distinct Counts</a></span></dt><dt><span class="sect2"><a href="multivariate-statistics-examples.html#MCV-LISTS">72.2.3. MCV Lists</a></span></dt></dl></div><a id="id-1.10.24.5.2" class="indexterm"></a><div class="sect2" id="FUNCTIONAL-DEPENDENCIES"><div class="titlepage"><div><div><h3 class="title">72.2.1. Functional Dependencies</h3></div></div></div><p>
+    Multivariate correlation can be demonstrated with a very simple data set
+    — a table with two columns, both containing the same values:
+
+</p><pre class="programlisting">
+CREATE TABLE t (a INT, b INT);
+INSERT INTO t SELECT i % 100, i % 100 FROM generate_series(1, 10000) s(i);
+ANALYZE t;
+</pre><p>
+
+    As explained in <a class="xref" href="planner-stats.html" title="14.2. Statistics Used by the Planner">Section 14.2</a>, the planner can determine
+    cardinality of <code class="structname">t</code> using the number of pages and
+    rows obtained from <code class="structname">pg_class</code>:
+
+</p><pre class="programlisting">
+SELECT relpages, reltuples FROM pg_class WHERE relname = 't';
+
+ relpages | reltuples
+----------+-----------
+       45 |     10000
+</pre><p>
+
+    The data distribution is very simple; there are only 100 distinct values
+    in each column, uniformly distributed.
+   </p><p>
+    The following example shows the result of estimating a <code class="literal">WHERE</code>
+    condition on the <code class="structfield">a</code> column:
+
+</p><pre class="programlisting">
+EXPLAIN (ANALYZE, TIMING OFF) SELECT * FROM t WHERE a = 1;
+                                 QUERY PLAN                                  
+-------------------------------------------------------------------​------------
+ Seq Scan on t  (cost=0.00..170.00 rows=100 width=8) (actual rows=100 loops=1)
+   Filter: (a = 1)
+   Rows Removed by Filter: 9900
+</pre><p>
+
+    The planner examines the condition and determines the selectivity
+    of this clause to be 1%.  By comparing this estimate and the actual
+    number of rows, we see that the estimate is very accurate
+    (in fact exact, as the table is very small).  Changing the
+    <code class="literal">WHERE</code> condition to use the <code class="structfield">b</code> column, an
+    identical plan is generated.  But observe what happens if we apply the same
+    condition on both columns, combining them with <code class="literal">AND</code>:
+
+</p><pre class="programlisting">
+EXPLAIN (ANALYZE, TIMING OFF) SELECT * FROM t WHERE a = 1 AND b = 1;
+                                 QUERY PLAN                                  
+-------------------------------------------------------------------​----------
+ Seq Scan on t  (cost=0.00..195.00 rows=1 width=8) (actual rows=100 loops=1)
+   Filter: ((a = 1) AND (b = 1))
+   Rows Removed by Filter: 9900
+</pre><p>
+
+    The planner estimates the selectivity for each condition individually,
+    arriving at the same 1% estimates as above.  Then it assumes that the
+    conditions are independent, and so it multiplies their selectivities,
+    producing a final selectivity estimate of just 0.01%.
+    This is a significant underestimate, as the actual number of rows
+    matching the conditions (100) is two orders of magnitude higher.
+   </p><p>
+    This problem can be fixed by creating a statistics object that
+    directs <code class="command">ANALYZE</code> to calculate functional-dependency
+    multivariate statistics on the two columns:
+
+</p><pre class="programlisting">
+CREATE STATISTICS stts (dependencies) ON a, b FROM t;
+ANALYZE t;
+EXPLAIN (ANALYZE, TIMING OFF) SELECT * FROM t WHERE a = 1 AND b = 1;
+                                  QUERY PLAN                                   
+-------------------------------------------------------------------​------------
+ Seq Scan on t  (cost=0.00..195.00 rows=100 width=8) (actual rows=100 loops=1)
+   Filter: ((a = 1) AND (b = 1))
+   Rows Removed by Filter: 9900
+</pre><p>
+   </p></div><div class="sect2" id="MULTIVARIATE-NDISTINCT-COUNTS"><div class="titlepage"><div><div><h3 class="title">72.2.2. Multivariate N-Distinct Counts</h3></div></div></div><p>
+    A similar problem occurs with estimation of the cardinality of sets of
+    multiple columns, such as the number of groups that would be generated by
+    a <code class="command">GROUP BY</code> clause.  When <code class="command">GROUP BY</code>
+    lists a single column, the n-distinct estimate (which is visible as the
+    estimated number of rows returned by the HashAggregate node) is very
+    accurate:
+</p><pre class="programlisting">
+EXPLAIN (ANALYZE, TIMING OFF) SELECT COUNT(*) FROM t GROUP BY a;
+                                       QUERY PLAN                                        
+-------------------------------------------------------------------​----------------------
+ HashAggregate  (cost=195.00..196.00 rows=100 width=12) (actual rows=100 loops=1)
+   Group Key: a
+   -&gt;  Seq Scan on t  (cost=0.00..145.00 rows=10000 width=4) (actual rows=10000 loops=1)
+</pre><p>
+    But without multivariate statistics, the estimate for the number of
+    groups in a query with two columns in <code class="command">GROUP BY</code>, as
+    in the following example, is off by an order of magnitude:
+</p><pre class="programlisting">
+EXPLAIN (ANALYZE, TIMING OFF) SELECT COUNT(*) FROM t GROUP BY a, b;
+                                       QUERY PLAN                                        
+-------------------------------------------------------------------​-------------------------
+ HashAggregate  (cost=220.00..230.00 rows=1000 width=16) (actual rows=100 loops=1)
+   Group Key: a, b
+   -&gt;  Seq Scan on t  (cost=0.00..145.00 rows=10000 width=8) (actual rows=10000 loops=1)
+</pre><p>
+    By redefining the statistics object to include n-distinct counts for the
+    two columns, the estimate is much improved:
+</p><pre class="programlisting">
+DROP STATISTICS stts;
+CREATE STATISTICS stts (dependencies, ndistinct) ON a, b FROM t;
+ANALYZE t;
+EXPLAIN (ANALYZE, TIMING OFF) SELECT COUNT(*) FROM t GROUP BY a, b;
+                                       QUERY PLAN                                        
+-------------------------------------------------------------------​-------------------------
+ HashAggregate  (cost=220.00..221.00 rows=100 width=16) (actual rows=100 loops=1)
+   Group Key: a, b
+   -&gt;  Seq Scan on t  (cost=0.00..145.00 rows=10000 width=8) (actual rows=10000 loops=1)
+</pre><p>
+   </p></div><div class="sect2" id="MCV-LISTS"><div class="titlepage"><div><div><h3 class="title">72.2.3. MCV Lists</h3></div></div></div><p>
+    As explained in <a class="xref" href="multivariate-statistics-examples.html#FUNCTIONAL-DEPENDENCIES" title="72.2.1. Functional Dependencies">Section 72.2.1</a>, functional
+    dependencies are very cheap and efficient type of statistics, but their
+    main limitation is their global nature (only tracking dependencies at
+    the column level, not between individual column values).
+   </p><p>
+    This section introduces multivariate variant of <acronym class="acronym">MCV</acronym>
+    (most-common values) lists, a straightforward extension of the per-column
+    statistics described in <a class="xref" href="row-estimation-examples.html" title="72.1. Row Estimation Examples">Section 72.1</a>.  These
+    statistics address the limitation by storing individual values, but it is
+    naturally more expensive, both in terms of building the statistics in
+    <code class="command">ANALYZE</code>, storage and planning time.
+   </p><p>
+    Let's look at the query from <a class="xref" href="multivariate-statistics-examples.html#FUNCTIONAL-DEPENDENCIES" title="72.2.1. Functional Dependencies">Section 72.2.1</a>
+    again, but this time with a <acronym class="acronym">MCV</acronym> list created on the
+    same set of columns (be sure to drop the functional dependencies, to
+    make sure the planner uses the newly created statistics).
+
+</p><pre class="programlisting">
+DROP STATISTICS stts;
+CREATE STATISTICS stts2 (mcv) ON a, b FROM t;
+ANALYZE t;
+EXPLAIN (ANALYZE, TIMING OFF) SELECT * FROM t WHERE a = 1 AND b = 1;
+                                   QUERY PLAN
+-------------------------------------------------------------------​------------
+ Seq Scan on t  (cost=0.00..195.00 rows=100 width=8) (actual rows=100 loops=1)
+   Filter: ((a = 1) AND (b = 1))
+   Rows Removed by Filter: 9900
+</pre><p>
+
+    The estimate is as accurate as with the functional dependencies, mostly
+    thanks to the table being fairly small and having a simple distribution
+    with a low number of distinct values. Before looking at the second query,
+    which was not handled by functional dependencies particularly well,
+    let's inspect the <acronym class="acronym">MCV</acronym> list a bit.
+   </p><p>
+    Inspecting the <acronym class="acronym">MCV</acronym> list is possible using
+    <code class="function">pg_mcv_list_items</code> set-returning function.
+
+</p><pre class="programlisting">
+SELECT m.* FROM pg_statistic_ext join pg_statistic_ext_data on (oid = stxoid),
+                pg_mcv_list_items(stxdmcv) m WHERE stxname = 'stts2';
+ index |  values  | nulls | frequency | base_frequency 
+-------+----------+-------+-----------+----------------
+     0 | {0, 0}   | {f,f} |      0.01 |         0.0001
+     1 | {1, 1}   | {f,f} |      0.01 |         0.0001
+   ...
+    49 | {49, 49} | {f,f} |      0.01 |         0.0001
+    50 | {50, 50} | {f,f} |      0.01 |         0.0001
+   ...
+    97 | {97, 97} | {f,f} |      0.01 |         0.0001
+    98 | {98, 98} | {f,f} |      0.01 |         0.0001
+    99 | {99, 99} | {f,f} |      0.01 |         0.0001
+(100 rows)
+</pre><p>
+
+    This confirms there are 100 distinct combinations in the two columns, and
+    all of them are about equally likely (1% frequency for each one).  The
+    base frequency is the frequency computed from per-column statistics, as if
+    there were no multi-column statistics. Had there been any null values in
+    either of the columns, this would be identified in the
+    <code class="structfield">nulls</code> column.
+   </p><p>
+    When estimating the selectivity, the planner applies all the conditions
+    on items in the <acronym class="acronym">MCV</acronym> list, and then sums the frequencies
+    of the matching ones. See <code class="function">mcv_clauselist_selectivity</code>
+    in <code class="filename">src/backend/statistics/mcv.c</code> for details.
+   </p><p>
+    Compared to functional dependencies, <acronym class="acronym">MCV</acronym> lists have two
+    major advantages. Firstly, the list stores actual values, making it possible
+    to decide which combinations are compatible.
+
+</p><pre class="programlisting">
+EXPLAIN (ANALYZE, TIMING OFF) SELECT * FROM t WHERE a = 1 AND b = 10;
+                                 QUERY PLAN
+-------------------------------------------------------------------​--------
+ Seq Scan on t  (cost=0.00..195.00 rows=1 width=8) (actual rows=0 loops=1)
+   Filter: ((a = 1) AND (b = 10))
+   Rows Removed by Filter: 10000
+</pre><p>
+
+    Secondly, <acronym class="acronym">MCV</acronym> lists handle a wider range of clause types,
+    not just equality clauses like functional dependencies. For example,
+    consider the following range query for the same table:
+
+</p><pre class="programlisting">
+EXPLAIN (ANALYZE, TIMING OFF) SELECT * FROM t WHERE a &lt;= 49 AND b &gt; 49;
+                                QUERY PLAN
+-------------------------------------------------------------------​--------
+ Seq Scan on t  (cost=0.00..195.00 rows=1 width=8) (actual rows=0 loops=1)
+   Filter: ((a &lt;= 49) AND (b &gt; 49))
+   Rows Removed by Filter: 10000
+</pre><p>
+
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="row-estimation-examples.html" title="72.1. Row Estimation Examples">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="planner-stats-details.html" title="Chapter 72. How the Planner Uses Statistics">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="planner-stats-security.html" title="72.3. Planner Statistics and Security">Next</a></td></tr><tr><td width="40%" align="left" valign="top">72.1. Row Estimation Examples </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 72.3. Planner Statistics and Security</td></tr></table></div></body></html>

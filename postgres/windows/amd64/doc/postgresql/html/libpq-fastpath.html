@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>34.8. The Fast-Path Interface</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="libpq-cancel.html" title="34.7. Canceling Queries in Progress" /><link rel="next" href="libpq-notify.html" title="34.9. Asynchronous Notification" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">34.8. The Fast-Path Interface</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-cancel.html" title="34.7. Canceling Queries in Progress">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 34. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-notify.html" title="34.9. Asynchronous Notification">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-FASTPATH"><div class="titlepage"><div><div><h2 class="title" style="clear: both">34.8. The Fast-Path Interface</h2></div></div></div><a id="id-1.7.3.15.2" class="indexterm"></a><p>
+   <span class="productname">PostgreSQL</span> provides a fast-path interface
+   to send simple function calls to the server.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    This interface is somewhat obsolete, as one can achieve similar
+    performance and greater functionality by setting up a prepared
+    statement to define the function call.  Then, executing the statement
+    with binary transmission of parameters and results substitutes for a
+    fast-path function call.
+   </p></div><p>
+   The function <code class="function" id="LIBPQ-PQFN">PQfn</code><a id="id-1.7.3.15.5.2" class="indexterm"></a>
+   requests execution of a server function via the fast-path interface:
+</p><pre class="synopsis">
+PGresult *PQfn(PGconn *conn,
+               int fnid,
+               int *result_buf,
+               int *result_len,
+               int result_is_int,
+               const PQArgBlock *args,
+               int nargs);
+
+typedef struct
+{
+    int len;
+    int isint;
+    union
+    {
+        int *ptr;
+        int integer;
+    } u;
+} PQArgBlock;
+</pre><p>
+  </p><p>
+   The <em class="parameter"><code>fnid</code></em> argument is the OID of the function to be
+   executed.  <em class="parameter"><code>args</code></em> and <em class="parameter"><code>nargs</code></em> define the
+   parameters to be passed to the function; they must match the declared
+   function argument list.  When the <em class="parameter"><code>isint</code></em> field of a
+   parameter structure is true, the <em class="parameter"><code>u.integer</code></em> value is sent
+   to the server as an integer of the indicated length (this must be
+   2 or 4 bytes); proper byte-swapping occurs.  When <em class="parameter"><code>isint</code></em>
+   is false, the indicated number of bytes at <em class="parameter"><code>*u.ptr</code></em> are
+   sent with no processing; the data must be in the format expected by
+   the server for binary transmission of the function's argument data
+   type.  (The declaration of <em class="parameter"><code>u.ptr</code></em> as being of
+   type <code class="type">int *</code> is historical; it would be better to consider
+   it <code class="type">void *</code>.)
+   <em class="parameter"><code>result_buf</code></em> points to the buffer in which to place
+   the function's return value.  The caller must have allocated sufficient
+   space to store the return value.  (There is no check!) The actual result
+   length in bytes will be returned in the integer pointed to by
+   <em class="parameter"><code>result_len</code></em>.  If a 2- or 4-byte integer result
+   is expected, set <em class="parameter"><code>result_is_int</code></em> to 1, otherwise
+   set it to 0.  Setting <em class="parameter"><code>result_is_int</code></em> to 1 causes
+   <span class="application">libpq</span> to byte-swap the value if necessary, so that it
+   is delivered as a proper <code class="type">int</code> value for the client machine;
+   note that a 4-byte integer is delivered into <em class="parameter"><code>*result_buf</code></em>
+   for either allowed result size.
+   When <em class="parameter"><code>result_is_int</code></em> is 0, the binary-format byte string
+   sent by the server is returned unmodified. (In this case it's better
+   to consider <em class="parameter"><code>result_buf</code></em> as being of
+   type <code class="type">void *</code>.)
+  </p><p>
+   <code class="function">PQfn</code> always returns a valid
+   <code class="structname">PGresult</code> pointer, with
+   status <code class="literal">PGRES_COMMAND_OK</code> for success
+   or <code class="literal">PGRES_FATAL_ERROR</code> if some problem was encountered.
+   The result status should be
+   checked before the result is used.   The caller is responsible for
+   freeing  the  <code class="structname">PGresult</code>  with
+   <a class="xref" href="libpq-exec.html#LIBPQ-PQCLEAR"><code class="function">PQclear</code></a> when it is no longer needed.
+  </p><p>
+   To pass a NULL argument to the function, set
+   the <em class="parameter"><code>len</code></em> field of that parameter structure
+   to <code class="literal">-1</code>; the <em class="parameter"><code>isint</code></em>
+   and <em class="parameter"><code>u</code></em> fields are then irrelevant.
+  </p><p>
+   If the function returns NULL, <em class="parameter"><code>*result_len</code></em> is set
+   to <code class="literal">-1</code>, and <em class="parameter"><code>*result_buf</code></em> is not
+   modified.
+  </p><p>
+   Note that it is not possible to handle set-valued results when using
+   this interface.  Also, the function must be a plain function, not an
+   aggregate, window function, or procedure.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-cancel.html" title="34.7. Canceling Queries in Progress">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-notify.html" title="34.9. Asynchronous Notification">Next</a></td></tr><tr><td width="40%" align="left" valign="top">34.7. Canceling Queries in Progress </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 34.9. Asynchronous Notification</td></tr></table></div></body></html>

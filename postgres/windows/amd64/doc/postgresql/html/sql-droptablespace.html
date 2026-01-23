@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>DROP TABLESPACE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-droptable.html" title="DROP TABLE" /><link rel="next" href="sql-droptsconfig.html" title="DROP TEXT SEARCH CONFIGURATION" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">DROP TABLESPACE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-droptable.html" title="DROP TABLE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-droptsconfig.html" title="DROP TEXT SEARCH CONFIGURATION">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-DROPTABLESPACE"><div class="titlepage"></div><a id="id-1.9.3.135.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">DROP TABLESPACE</span></h2><p>DROP TABLESPACE — remove a tablespace</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+DROP TABLESPACE [ IF EXISTS ] <em class="replaceable"><code>name</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.135.5"><h2>Description</h2><p>
+   <code class="command">DROP TABLESPACE</code> removes a tablespace from the system.
+  </p><p>
+   A tablespace can only be dropped by its owner or a superuser.
+   The tablespace must be empty of all database objects before it can be
+   dropped. It is possible that objects in other databases might still reside
+   in the tablespace even if no objects in the current database are using
+   the tablespace.  Also, if the tablespace is listed in the <a class="xref" href="runtime-config-client.html#GUC-TEMP-TABLESPACES">temp_tablespaces</a> setting of any active session, the
+   <code class="command">DROP</code> might fail due to temporary files residing in the
+   tablespace.
+  </p></div><div class="refsect1" id="id-1.9.3.135.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">IF EXISTS</code></span></dt><dd><p>
+      Do not throw an error if the tablespace does not exist. A notice is issued
+      in this case.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of a tablespace.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.135.7"><h2>Notes</h2><p>
+    <code class="command">DROP TABLESPACE</code> cannot be executed inside a transaction block.
+   </p></div><div class="refsect1" id="id-1.9.3.135.8"><h2>Examples</h2><p>
+   To remove tablespace <code class="literal">mystuff</code> from the system:
+</p><pre class="programlisting">
+DROP TABLESPACE mystuff;
+</pre></div><div class="refsect1" id="id-1.9.3.135.9"><h2>Compatibility</h2><p>
+   <code class="command">DROP TABLESPACE</code> is a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.135.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createtablespace.html" title="CREATE TABLESPACE"><span class="refentrytitle">CREATE TABLESPACE</span></a>, <a class="xref" href="sql-altertablespace.html" title="ALTER TABLESPACE"><span class="refentrytitle">ALTER TABLESPACE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-droptable.html" title="DROP TABLE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-droptsconfig.html" title="DROP TEXT SEARCH CONFIGURATION">Next</a></td></tr><tr><td width="40%" align="left" valign="top">DROP TABLE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> DROP TEXT SEARCH CONFIGURATION</td></tr></table></div></body></html>

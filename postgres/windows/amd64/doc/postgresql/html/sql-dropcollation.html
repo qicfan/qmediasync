@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>DROP COLLATION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-dropcast.html" title="DROP CAST" /><link rel="next" href="sql-dropconversion.html" title="DROP CONVERSION" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">DROP COLLATION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-dropcast.html" title="DROP CAST">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-dropconversion.html" title="DROP CONVERSION">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-DROPCOLLATION"><div class="titlepage"></div><a id="id-1.9.3.106.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">DROP COLLATION</span></h2><p>DROP COLLATION — remove a collation</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+DROP COLLATION [ IF EXISTS ] <em class="replaceable"><code>name</code></em> [ CASCADE | RESTRICT ]
+</pre></div><div class="refsect1" id="SQL-DROPCOLLATION-DESCRIPTION"><h2>Description</h2><p>
+   <code class="command">DROP COLLATION</code> removes a previously defined collation.
+   To be able to drop a collation, you must own the collation.
+  </p></div><div class="refsect1" id="id-1.9.3.106.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">IF EXISTS</code></span></dt><dd><p>
+       Do not throw an error if the collation does not exist.
+       A notice is issued in this case.
+      </p></dd><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+       The name of the collation. The collation name can be
+       schema-qualified.
+      </p></dd><dt><span class="term"><code class="literal">CASCADE</code></span></dt><dd><p>
+       Automatically drop objects that depend on the collation,
+       and in turn all objects that depend on those objects
+       (see <a class="xref" href="ddl-depend.html" title="5.14. Dependency Tracking">Section 5.14</a>).
+      </p></dd><dt><span class="term"><code class="literal">RESTRICT</code></span></dt><dd><p>
+       Refuse to drop the collation if any objects depend on it.  This
+       is the default.
+      </p></dd></dl></div></div><div class="refsect1" id="SQL-DROPCOLLATION-EXAMPLES"><h2>Examples</h2><p>
+   To drop the collation named <code class="literal">german</code>:
+</p><pre class="programlisting">
+DROP COLLATION german;
+</pre></div><div class="refsect1" id="SQL-DROPCOLLATION-COMPAT"><h2>Compatibility</h2><p>
+   The <code class="command">DROP COLLATION</code> command conforms to the
+   <acronym class="acronym">SQL</acronym> standard, apart from the <code class="literal">IF
+   EXISTS</code> option, which is a <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.106.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-altercollation.html" title="ALTER COLLATION"><span class="refentrytitle">ALTER COLLATION</span></a>, <a class="xref" href="sql-createcollation.html" title="CREATE COLLATION"><span class="refentrytitle">CREATE COLLATION</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-dropcast.html" title="DROP CAST">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-dropconversion.html" title="DROP CONVERSION">Next</a></td></tr><tr><td width="40%" align="left" valign="top">DROP CAST </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> DROP CONVERSION</td></tr></table></div></body></html>

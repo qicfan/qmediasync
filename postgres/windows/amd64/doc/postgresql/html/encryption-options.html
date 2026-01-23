@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>19.8. Encryption Options</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="preventing-server-spoofing.html" title="19.7. Preventing Server Spoofing" /><link rel="next" href="ssl-tcp.html" title="19.9. Secure TCP/IP Connections with SSL" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">19.8. Encryption Options</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="preventing-server-spoofing.html" title="19.7. Preventing Server Spoofing">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><th width="60%" align="center">Chapter 19. Server Setup and Operation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ssl-tcp.html" title="19.9. Secure TCP/IP Connections with SSL">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ENCRYPTION-OPTIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">19.8. Encryption Options</h2></div></div></div><a id="id-1.6.6.11.2" class="indexterm"></a><p>
+   <span class="productname">PostgreSQL</span> offers encryption at several
+   levels, and provides flexibility in protecting data from disclosure
+   due to database server theft, unscrupulous administrators, and
+   insecure networks. Encryption might also be required to secure
+   sensitive data such as medical records or financial transactions.
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">Password Encryption</span></dt><dd><p>
+     Database user passwords are stored as hashes (determined by the setting
+     <a class="xref" href="runtime-config-connection.html#GUC-PASSWORD-ENCRYPTION">password_encryption</a>), so the administrator cannot
+     determine the actual password assigned to the user. If SCRAM or MD5
+     encryption is used for client authentication, the unencrypted password is
+     never even temporarily present on the server because the client encrypts
+     it before being sent across the network. SCRAM is preferred, because it
+     is an Internet standard and is more secure than the PostgreSQL-specific
+     MD5 authentication protocol.
+    </p></dd><dt><span class="term">Encryption For Specific Columns</span></dt><dd><p>
+     The <a class="xref" href="pgcrypto.html" title="F.26. pgcrypto">pgcrypto</a> module allows certain fields to be
+     stored encrypted.
+     This is useful if only some of the data is sensitive.
+     The client supplies the decryption key and the data is decrypted
+     on the server and then sent to the client.
+    </p><p>
+     The decrypted data and the decryption key are present on the
+     server for a brief time while it is being decrypted and
+     communicated between the client and server. This presents a brief
+     moment where the data and keys can be intercepted by someone with
+     complete access to the database server, such as the system
+     administrator.
+    </p></dd><dt><span class="term">Data Partition Encryption</span></dt><dd><p>
+     Storage encryption can be performed at the file system level or the
+     block level.  Linux file system encryption options include eCryptfs
+     and EncFS, while FreeBSD uses PEFS.  Block level or full disk
+     encryption options include dm-crypt + LUKS on Linux and GEOM
+     modules geli and gbde on FreeBSD.  Many other operating systems
+     support this functionality, including Windows.
+    </p><p>
+     This mechanism prevents unencrypted data from being read from the
+     drives if the drives or the entire computer is stolen. This does
+     not protect against attacks while the file system is mounted,
+     because when mounted, the operating system provides an unencrypted
+     view of the data. However, to mount the file system, you need some
+     way for the encryption key to be passed to the operating system,
+     and sometimes the key is stored somewhere on the host that mounts
+     the disk.
+    </p></dd><dt><span class="term">Encrypting Data Across A Network</span></dt><dd><p>
+      SSL connections encrypt all data sent across the network: the
+      password, the queries, and the data returned. The
+      <code class="filename">pg_hba.conf</code> file allows administrators to specify
+      which hosts can use non-encrypted connections (<code class="literal">host</code>)
+      and which require SSL-encrypted connections
+      (<code class="literal">hostssl</code>). Also, clients can specify that they
+      connect to servers only via SSL.
+     </p><p>
+      GSSAPI-encrypted connections encrypt all data sent across the network,
+      including queries and data returned.  (No password is sent across the
+      network.)  The <code class="filename">pg_hba.conf</code> file allows
+      administrators to specify which hosts can use non-encrypted connections
+      (<code class="literal">host</code>) and which require GSSAPI-encrypted connections
+      (<code class="literal">hostgssenc</code>).  Also, clients can specify that they
+      connect to servers only on GSSAPI-encrypted connections
+      (<code class="literal">gssencmode=require</code>).
+     </p><p>
+      <span class="application">Stunnel</span> or
+      <span class="application">SSH</span> can also be used to encrypt
+      transmissions.
+     </p></dd><dt><span class="term">SSL Host Authentication</span></dt><dd><p>
+     It is possible for both the client and server to provide SSL
+     certificates to each other. It takes some extra configuration
+     on each side, but this provides stronger verification of identity
+     than the mere use of passwords. It prevents a computer from
+     pretending to be the server just long enough to read the password
+     sent by the client. It also helps prevent <span class="quote">“<span class="quote">man in the middle</span>”</span>
+     attacks where a computer between the client and server pretends to
+     be the server and reads and passes all data between the client and
+     server.
+    </p></dd><dt><span class="term">Client-Side Encryption</span></dt><dd><p>
+     If the system administrator for the server's machine cannot be trusted,
+     it is necessary
+     for the client to encrypt the data; this way, unencrypted data
+     never appears on the database server. Data is encrypted on the
+     client before being sent to the server, and database results have
+     to be decrypted on the client before being used.
+    </p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="preventing-server-spoofing.html" title="19.7. Preventing Server Spoofing">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ssl-tcp.html" title="19.9. Secure TCP/IP Connections with SSL">Next</a></td></tr><tr><td width="40%" align="left" valign="top">19.7. Preventing Server Spoofing </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 19.9. Secure TCP/IP Connections with SSL</td></tr></table></div></body></html>

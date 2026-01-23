@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CALL</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-begin.html" title="BEGIN" /><link rel="next" href="sql-checkpoint.html" title="CHECKPOINT" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CALL</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-begin.html" title="BEGIN">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-checkpoint.html" title="CHECKPOINT">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CALL"><div class="titlepage"></div><a id="id-1.9.3.48.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CALL</span></h2><p>CALL — invoke a procedure</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CALL <em class="replaceable"><code>name</code></em> ( [ <em class="replaceable"><code>argument</code></em> ] [, ...] )
+</pre></div><div class="refsect1" id="id-1.9.3.48.5"><h2>Description</h2><p>
+   <code class="command">CALL</code> executes a procedure.
+  </p><p>
+   If the procedure has any output parameters, then a result row will be
+   returned, containing the values of those parameters.
+  </p></div><div class="refsect1" id="id-1.9.3.48.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of the procedure.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>argument</code></em></span></dt><dd><p>
+      An argument expression for the procedure call.
+     </p><p>
+      Arguments can include parameter names, using the syntax
+      <code class="literal"><em class="replaceable"><code>name</code></em> =&gt; <em class="replaceable"><code>value</code></em></code>.
+      This works the same as in ordinary function calls; see
+      <a class="xref" href="sql-syntax-calling-funcs.html" title="4.3. Calling Functions">Section 4.3</a> for details.
+     </p><p>
+      Arguments must be supplied for all procedure parameters that lack
+      defaults, including <code class="literal">OUT</code> parameters.  However,
+      arguments matching <code class="literal">OUT</code> parameters are not evaluated,
+      so it's customary to just write <code class="literal">NULL</code> for them.
+      (Writing something else for an <code class="literal">OUT</code> parameter
+      might cause compatibility problems with
+      future <span class="productname">PostgreSQL</span> versions.)
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.48.7"><h2>Notes</h2><p>
+   The user must have <code class="literal">EXECUTE</code> privilege on the procedure in
+   order to be allowed to invoke it.
+  </p><p>
+   To call a function (not a procedure), use <code class="command">SELECT</code> instead.
+  </p><p>
+   If <code class="command">CALL</code> is executed in a transaction block, then the
+   called procedure cannot execute transaction control statements.
+   Transaction control statements are only allowed if <code class="command">CALL</code>
+   is executed in its own transaction.
+  </p><p>
+   <span class="application">PL/pgSQL</span> handles output parameters
+   in <code class="command">CALL</code> commands differently;
+   see <a class="xref" href="plpgsql-control-structures.html#PLPGSQL-STATEMENTS-CALLING-PROCEDURE" title="43.6.3. Calling a Procedure">Section 43.6.3</a>.
+  </p></div><div class="refsect1" id="id-1.9.3.48.8"><h2>Examples</h2><pre class="programlisting">
+CALL do_db_maintenance();
+</pre></div><div class="refsect1" id="id-1.9.3.48.9"><h2>Compatibility</h2><p>
+   <code class="command">CALL</code> conforms to the SQL standard,
+   except for the handling of output parameters.  The standard
+   says that users should write variables to receive the values
+   of output parameters.
+  </p></div><div class="refsect1" id="id-1.9.3.48.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createprocedure.html" title="CREATE PROCEDURE"><span class="refentrytitle">CREATE PROCEDURE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-begin.html" title="BEGIN">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-checkpoint.html" title="CHECKPOINT">Next</a></td></tr><tr><td width="40%" align="left" valign="top">BEGIN </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CHECKPOINT</td></tr></table></div></body></html>

@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>34.19. SSL Support</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="libpq-ldap.html" title="34.18. LDAP Lookup of Connection Parameters" /><link rel="next" href="libpq-threading.html" title="34.20. Behavior in Threaded Programs" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">34.19. SSL Support</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-ldap.html" title="34.18. LDAP Lookup of Connection Parameters">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 34. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-threading.html" title="34.20. Behavior in Threaded Programs">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-SSL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">34.19. SSL Support</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="libpq-ssl.html#LIBQ-SSL-CERTIFICATES">34.19.1. Client Verification of Server Certificates</a></span></dt><dt><span class="sect2"><a href="libpq-ssl.html#LIBPQ-SSL-CLIENTCERT">34.19.2. Client Certificates</a></span></dt><dt><span class="sect2"><a href="libpq-ssl.html#LIBPQ-SSL-PROTECTION">34.19.3. Protection Provided in Different Modes</a></span></dt><dt><span class="sect2"><a href="libpq-ssl.html#LIBPQ-SSL-FILEUSAGE">34.19.4. SSL Client File Usage</a></span></dt><dt><span class="sect2"><a href="libpq-ssl.html#LIBPQ-SSL-INITIALIZE">34.19.5. SSL Library Initialization</a></span></dt></dl></div><a id="id-1.7.3.26.2" class="indexterm"></a><p>
+   <span class="productname">PostgreSQL</span> has native support for using <acronym class="acronym">SSL</acronym>
+   connections to encrypt client/server communications for increased
+   security. See <a class="xref" href="ssl-tcp.html" title="19.9. Secure TCP/IP Connections with SSL">Section 19.9</a> for details about the server-side
+   <acronym class="acronym">SSL</acronym> functionality.
+  </p><p>
+   <span class="application">libpq</span> reads the system-wide
+   <span class="productname">OpenSSL</span> configuration file. By default, this
+   file is named <code class="filename">openssl.cnf</code> and is located in the
+   directory reported by <code class="literal">openssl version -d</code>.  This default
+   can be overridden by setting environment variable
+   <code class="envar">OPENSSL_CONF</code> to the name of the desired configuration
+   file.
+  </p><div class="sect2" id="LIBQ-SSL-CERTIFICATES"><div class="titlepage"><div><div><h3 class="title">34.19.1. Client Verification of Server Certificates</h3></div></div></div><p>
+   By default, <span class="productname">PostgreSQL</span> will not perform any verification of
+   the server certificate. This means that it is possible to spoof the server
+   identity (for example by modifying a DNS record or by taking over the server
+   IP address) without the client knowing. In order to prevent spoofing,
+   the client must be able to verify the server's identity via a chain of
+   trust.  A chain of trust is established by placing a root (self-signed)
+   certificate authority (<acronym class="acronym">CA</acronym>) certificate on one
+   computer and a leaf certificate <span class="emphasis"><em>signed</em></span> by the
+   root certificate on another computer.  It is also possible to use an
+   <span class="quote">“<span class="quote">intermediate</span>”</span> certificate which is signed by the root
+   certificate and signs leaf certificates.
+  </p><p>
+   To allow the client to verify the identity of the server, place a root
+   certificate on the client and a leaf certificate signed by the root
+   certificate on the server.  To allow the server to verify the identity
+   of the client, place a root certificate on the server and a leaf
+   certificate signed by the root certificate on the client.  One or more
+   intermediate certificates (usually stored with the leaf certificate)
+   can also be used to link the leaf certificate to the root certificate.
+  </p><p>
+   Once a chain of trust has been established, there are two ways for
+   the client to validate the leaf certificate sent by the server.
+   If the parameter <code class="literal">sslmode</code> is set to <code class="literal">verify-ca</code>,
+   libpq will verify that the server is trustworthy by checking the
+   certificate chain up to the root certificate stored on the client.
+   If <code class="literal">sslmode</code> is set to <code class="literal">verify-full</code>,
+   libpq will <span class="emphasis"><em>also</em></span> verify that the server host
+   name matches the name stored in the server certificate. The
+   SSL connection will fail if the server certificate cannot be
+   verified. <code class="literal">verify-full</code> is recommended in most
+   security-sensitive environments.
+  </p><p>
+   In <code class="literal">verify-full</code> mode, the host name is matched against the
+   certificate's Subject Alternative Name attribute(s), or against the
+   Common Name attribute if no Subject Alternative Name of type <code class="literal">dNSName</code> is
+   present.  If the certificate's name attribute starts with an asterisk
+   (<code class="literal">*</code>), the asterisk will be treated as
+   a wildcard, which will match all characters <span class="emphasis"><em>except</em></span> a dot
+   (<code class="literal">.</code>). This means the certificate will not match subdomains.
+   If the connection is made using an IP address instead of a host name, the
+   IP address will be matched (without doing any DNS lookups).
+  </p><p>
+   To allow server certificate verification, one or more root certificates
+   must be placed in the file <code class="filename">~/.postgresql/root.crt</code>
+   in the user's home directory.  (On Microsoft Windows the file is named
+   <code class="filename">%APPDATA%\postgresql\root.crt</code>.)  Intermediate
+   certificates should also be added to the file if they are needed to link
+   the certificate chain sent by the server to the root certificates
+   stored on the client.
+  </p><p>
+   Certificate Revocation List (CRL) entries are also checked
+   if the file <code class="filename">~/.postgresql/root.crl</code> exists
+   (<code class="filename">%APPDATA%\postgresql\root.crl</code> on Microsoft
+   Windows).
+  </p><p>
+   The location of the root certificate file and the CRL can be changed by
+   setting
+   the connection parameters <code class="literal">sslrootcert</code> and <code class="literal">sslcrl</code>
+   or the environment variables <code class="envar">PGSSLROOTCERT</code> and <code class="envar">PGSSLCRL</code>.
+   <code class="literal">sslcrldir</code> or the environment variable <code class="envar">PGSSLCRLDIR</code>
+   can also be used to specify a directory containing CRL files.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    For backwards compatibility with earlier versions of PostgreSQL, if a
+    root CA file exists, the behavior of
+    <code class="literal">sslmode</code>=<code class="literal">require</code> will be the same
+    as that of <code class="literal">verify-ca</code>, meaning the server certificate
+    is validated against the CA. Relying on this behavior is discouraged,
+    and applications that need certificate validation should always use
+    <code class="literal">verify-ca</code> or <code class="literal">verify-full</code>.
+   </p></div></div><div class="sect2" id="LIBPQ-SSL-CLIENTCERT"><div class="titlepage"><div><div><h3 class="title">34.19.2. Client Certificates</h3></div></div></div><p>
+   If the server attempts to verify the identity of the
+   client by requesting the client's leaf certificate,
+   <span class="application">libpq</span> will send the certificate(s) stored in
+   file <code class="filename">~/.postgresql/postgresql.crt</code> in the user's home
+   directory.  The certificates must chain to the root certificate trusted
+   by the server.  A matching
+   private key file <code class="filename">~/.postgresql/postgresql.key</code> must also
+   be present.
+   On Microsoft Windows these files are named
+   <code class="filename">%APPDATA%\postgresql\postgresql.crt</code> and
+   <code class="filename">%APPDATA%\postgresql\postgresql.key</code>.
+   The location of the certificate and key files can be overridden by the
+   connection parameters <code class="literal">sslcert</code>
+   and <code class="literal">sslkey</code>, or by the
+   environment variables <code class="envar">PGSSLCERT</code> and <code class="envar">PGSSLKEY</code>.
+  </p><p>
+   On Unix systems, the permissions on the private key file must disallow
+   any access to world or group; achieve this by a command such as
+   <code class="command">chmod 0600 ~/.postgresql/postgresql.key</code>.
+   Alternatively, the file can be owned by root and have group read access
+   (that is, <code class="literal">0640</code> permissions).  That setup is intended
+   for installations where certificate and key files are managed by the
+   operating system.  The user of <span class="application">libpq</span> should
+   then be made a member of the group that has access to those certificate
+   and key files.  (On Microsoft Windows, there is no file permissions
+   check, since the <code class="filename">%APPDATA%\postgresql</code> directory is
+   presumed secure.)
+  </p><p>
+   The first certificate in <code class="filename">postgresql.crt</code> must be the
+   client's certificate because it must match the client's private key.
+   <span class="quote">“<span class="quote">Intermediate</span>”</span> certificates can be optionally appended
+   to the file — doing so avoids requiring storage of intermediate
+   certificates on the server (<a class="xref" href="runtime-config-connection.html#GUC-SSL-CA-FILE">ssl_ca_file</a>).
+  </p><p>
+   The certificate and key may be in PEM or ASN.1 DER format.
+  </p><p>
+   The key may be
+   stored in cleartext or encrypted with a passphrase using any algorithm
+   supported by <span class="productname">OpenSSL</span>, like AES-128. If the key
+   is stored encrypted, then the passphrase may be provided in the
+   <a class="xref" href="libpq-connect.html#LIBPQ-CONNECT-SSLPASSWORD">sslpassword</a> connection option. If an
+   encrypted key is supplied and the <code class="literal">sslpassword</code> option
+   is absent or blank, a password will be prompted for interactively by
+   <span class="productname">OpenSSL</span> with a
+   <code class="literal">Enter PEM pass phrase:</code> prompt if a TTY is available.
+   Applications can override the client certificate prompt and the handling
+   of the <code class="literal">sslpassword</code> parameter by supplying their own
+   key password callback; see
+   <a class="xref" href="libpq-connect.html#LIBPQ-PQSETSSLKEYPASSHOOK-OPENSSL"><code class="function">PQsetSSLKeyPassHook_OpenSSL</code></a>.
+  </p><p>
+   For instructions on creating certificates, see <a class="xref" href="ssl-tcp.html#SSL-CERTIFICATE-CREATION" title="19.9.5. Creating Certificates">Section 19.9.5</a>.
+  </p></div><div class="sect2" id="LIBPQ-SSL-PROTECTION"><div class="titlepage"><div><div><h3 class="title">34.19.3. Protection Provided in Different Modes</h3></div></div></div><p>
+   The different values for the <code class="literal">sslmode</code> parameter provide different
+   levels of protection. SSL can provide
+   protection against three types of attacks:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">Eavesdropping</span></dt><dd><p>If a third party can examine the network traffic between the
+       client and the server, it can read both connection information (including
+       the user name and password) and the data that is passed. <acronym class="acronym">SSL</acronym>
+       uses encryption to prevent this.
+      </p></dd><dt><span class="term">Man-in-the-middle (<acronym class="acronym">MITM</acronym>)</span></dt><dd><p>If a third party can modify the data while passing between the
+       client and server, it can pretend to be the server and therefore see and
+       modify data <span class="emphasis"><em>even if it is encrypted</em></span>. The third party can then
+       forward the connection information and data to the original server,
+       making it impossible to detect this attack. Common vectors to do this
+       include DNS poisoning and address hijacking, whereby the client is directed
+       to a different server than intended. There are also several other
+       attack methods that can accomplish this. <acronym class="acronym">SSL</acronym> uses certificate
+       verification to prevent this, by authenticating the server to the client.
+      </p></dd><dt><span class="term">Impersonation</span></dt><dd><p>If a third party can pretend to be an authorized client, it can
+       simply access data it should not have access to. Typically this can
+       happen through insecure password management. <acronym class="acronym">SSL</acronym> uses
+       client certificates to prevent this, by making sure that only holders
+       of valid certificates can access the server.
+      </p></dd></dl></div><p>
+  </p><p>
+   For a connection to be known SSL-secured, SSL usage must be configured
+   on <span class="emphasis"><em>both the client and the server</em></span> before the connection
+   is made. If it is only configured on the server, the client may end up
+   sending sensitive information (e.g., passwords) before
+   it knows that the server requires high security. In libpq, secure
+   connections can be ensured
+   by setting the <code class="literal">sslmode</code> parameter to <code class="literal">verify-full</code> or
+   <code class="literal">verify-ca</code>, and providing the system with a root certificate to
+   verify against. This is analogous to using an <code class="literal">https</code>
+   <acronym class="acronym">URL</acronym> for encrypted web browsing.
+  </p><p>
+   Once the server has been authenticated, the client can pass sensitive data.
+   This means that up until this point, the client does not need to know if
+   certificates will be used for authentication, making it safe to specify that
+   only in the server configuration.
+  </p><p>
+   All <acronym class="acronym">SSL</acronym> options carry overhead in the form of encryption and
+   key-exchange, so there is a trade-off that has to be made between performance
+   and security. <a class="xref" href="libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS" title="Table 34.1. SSL Mode Descriptions">Table 34.1</a>
+   illustrates the risks the different <code class="literal">sslmode</code> values
+   protect against, and what statement they make about security and overhead.
+  </p><div class="table" id="LIBPQ-SSL-SSLMODE-STATEMENTS"><p class="title"><strong>Table 34.1. SSL Mode Descriptions</strong></p><div class="table-contents"><table class="table" summary="SSL Mode Descriptions" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /><col class="col4" /></colgroup><thead><tr><th><code class="literal">sslmode</code></th><th>Eavesdropping protection</th><th><acronym class="acronym">MITM</acronym> protection</th><th>Statement</th></tr></thead><tbody><tr><td><code class="literal">disable</code></td><td>No</td><td>No</td><td>I don't care about security, and I don't want to pay the overhead
+       of encryption.
+      </td></tr><tr><td><code class="literal">allow</code></td><td>Maybe</td><td>No</td><td>I don't care about security, but I will pay the overhead of
+       encryption if the server insists on it.
+      </td></tr><tr><td><code class="literal">prefer</code></td><td>Maybe</td><td>No</td><td>I don't care about encryption, but I wish to pay the overhead of
+       encryption if the server supports it.
+      </td></tr><tr><td><code class="literal">require</code></td><td>Yes</td><td>No</td><td>I want my data to be encrypted, and I accept the overhead. I trust
+       that the network will make sure I always connect to the server I want.
+      </td></tr><tr><td><code class="literal">verify-ca</code></td><td>Yes</td><td>Depends on CA policy</td><td>I want my data encrypted, and I accept the overhead. I want to be
+       sure that I connect to a server that I trust.
+      </td></tr><tr><td><code class="literal">verify-full</code></td><td>Yes</td><td>Yes</td><td>I want my data encrypted, and I accept the overhead. I want to be
+        sure that I connect to a server I trust, and that it's the one I
+        specify.
+       </td></tr></tbody></table></div></div><br class="table-break" /><p>
+   The difference between <code class="literal">verify-ca</code> and <code class="literal">verify-full</code>
+   depends on the policy of the root <acronym class="acronym">CA</acronym>. If a public
+   <acronym class="acronym">CA</acronym> is used, <code class="literal">verify-ca</code> allows connections to a server
+   that <span class="emphasis"><em>somebody else</em></span> may have registered with the <acronym class="acronym">CA</acronym>.
+   In this case, <code class="literal">verify-full</code> should always be used. If
+   a local <acronym class="acronym">CA</acronym> is used, or even a self-signed certificate, using
+   <code class="literal">verify-ca</code> often provides enough protection.
+  </p><p>
+   The default value for <code class="literal">sslmode</code> is <code class="literal">prefer</code>. As is shown
+   in the table, this makes no sense from a security point of view, and it only
+   promises performance overhead if possible. It is only provided as the default
+   for backward compatibility, and is not recommended in secure deployments.
+  </p></div><div class="sect2" id="LIBPQ-SSL-FILEUSAGE"><div class="titlepage"><div><div><h3 class="title">34.19.4. SSL Client File Usage</h3></div></div></div><p>
+   <a class="xref" href="libpq-ssl.html#LIBPQ-SSL-FILE-USAGE" title="Table 34.2. Libpq/Client SSL File Usage">Table 34.2</a> summarizes the files that are
+   relevant to the SSL setup on the client.
+  </p><div class="table" id="LIBPQ-SSL-FILE-USAGE"><p class="title"><strong>Table 34.2. Libpq/Client SSL File Usage</strong></p><div class="table-contents"><table class="table" summary="Libpq/Client SSL File Usage" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>File</th><th>Contents</th><th>Effect</th></tr></thead><tbody><tr><td><code class="filename">~/.postgresql/postgresql.crt</code></td><td>client certificate</td><td>sent to server</td></tr><tr><td><code class="filename">~/.postgresql/postgresql.key</code></td><td>client private key</td><td>proves client certificate sent by owner; does not indicate
+      certificate owner is trustworthy</td></tr><tr><td><code class="filename">~/.postgresql/root.crt</code></td><td>trusted certificate authorities</td><td>checks that server certificate is signed by a trusted certificate
+      authority</td></tr><tr><td><code class="filename">~/.postgresql/root.crl</code></td><td>certificates revoked by certificate authorities</td><td>server certificate must not be on this list</td></tr></tbody></table></div></div><br class="table-break" /></div><div class="sect2" id="LIBPQ-SSL-INITIALIZE"><div class="titlepage"><div><div><h3 class="title">34.19.5. SSL Library Initialization</h3></div></div></div><p>
+   If your application initializes <code class="literal">libssl</code> and/or
+   <code class="literal">libcrypto</code> libraries and <span class="application">libpq</span>
+   is built with <acronym class="acronym">SSL</acronym> support, you should call
+   <a class="xref" href="libpq-ssl.html#LIBPQ-PQINITOPENSSL"><code class="function">PQinitOpenSSL</code></a> to tell <span class="application">libpq</span>
+   that the <code class="literal">libssl</code> and/or <code class="literal">libcrypto</code> libraries
+   have been initialized by your application, so that
+   <span class="application">libpq</span> will not also initialize those libraries.
+   However, this is unnecessary when using <span class="productname">OpenSSL</span>
+   version 1.1.0 or later, as duplicate initializations are no longer problematic.
+  </p><p>
+   </p><div class="variablelist"><dl class="variablelist"><dt id="LIBPQ-PQINITOPENSSL"><span class="term"><code class="function">PQinitOpenSSL</code><a id="id-1.7.3.26.9.3.1.1.1.2" class="indexterm"></a></span></dt><dd><p>
+       Allows applications to select which security libraries to initialize.
+</p><pre class="synopsis">
+void PQinitOpenSSL(int do_ssl, int do_crypto);
+</pre><p>
+      </p><p>
+       When <em class="parameter"><code>do_ssl</code></em> is non-zero, <span class="application">libpq</span>
+       will initialize the <span class="productname">OpenSSL</span> library before first
+       opening a database connection.  When <em class="parameter"><code>do_crypto</code></em> is
+       non-zero, the <code class="literal">libcrypto</code> library will be initialized.  By
+       default (if <a class="xref" href="libpq-ssl.html#LIBPQ-PQINITOPENSSL"><code class="function">PQinitOpenSSL</code></a> is not called), both libraries
+       are initialized.  When SSL support is not compiled in, this function is
+       present but does nothing.
+      </p><p>
+       If your application uses and initializes either <span class="productname">OpenSSL</span>
+       or its underlying <code class="literal">libcrypto</code> library, you <span class="emphasis"><em>must</em></span>
+       call this function with zeroes for the appropriate parameter(s)
+       before first opening a database connection.  Also be sure that you
+       have done that initialization before opening a database connection.
+      </p></dd><dt id="LIBPQ-PQINITSSL"><span class="term"><code class="function">PQinitSSL</code><a id="id-1.7.3.26.9.3.1.2.1.2" class="indexterm"></a></span></dt><dd><p>
+       Allows applications to select which security libraries to initialize.
+</p><pre class="synopsis">
+void PQinitSSL(int do_ssl);
+</pre><p>
+      </p><p>
+       This function is equivalent to
+       <code class="literal">PQinitOpenSSL(do_ssl, do_ssl)</code>.
+       It is sufficient for applications that initialize both or neither
+       of <span class="productname">OpenSSL</span> and <code class="literal">libcrypto</code>.
+      </p><p>
+       <a class="xref" href="libpq-ssl.html#LIBPQ-PQINITSSL"><code class="function">PQinitSSL</code></a> has been present since
+       <span class="productname">PostgreSQL</span> 8.0, while <a class="xref" href="libpq-ssl.html#LIBPQ-PQINITOPENSSL"><code class="function">PQinitOpenSSL</code></a>
+       was added in <span class="productname">PostgreSQL</span> 8.4, so <a class="xref" href="libpq-ssl.html#LIBPQ-PQINITSSL"><code class="function">PQinitSSL</code></a>
+       might be preferable for applications that need to work with older
+       versions of <span class="application">libpq</span>.
+      </p></dd></dl></div><p>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-ldap.html" title="34.18. LDAP Lookup of Connection Parameters">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-threading.html" title="34.20. Behavior in Threaded Programs">Next</a></td></tr><tr><td width="40%" align="left" valign="top">34.18. LDAP Lookup of Connection Parameters </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 34.20. Behavior in Threaded Programs</td></tr></table></div></body></html>

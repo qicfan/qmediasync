@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>19.9. Secure TCP/IP Connections with SSL</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="encryption-options.html" title="19.8. Encryption Options" /><link rel="next" href="gssapi-enc.html" title="19.10. Secure TCP/IP Connections with GSSAPI Encryption" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">19.9. Secure TCP/IP Connections with SSL</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="encryption-options.html" title="19.8. Encryption Options">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><th width="60%" align="center">Chapter 19. Server Setup and Operation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="gssapi-enc.html" title="19.10. Secure TCP/IP Connections with GSSAPI Encryption">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SSL-TCP"><div class="titlepage"><div><div><h2 class="title" style="clear: both">19.9. Secure TCP/IP Connections with SSL</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ssl-tcp.html#SSL-SETUP">19.9.1. Basic Setup</a></span></dt><dt><span class="sect2"><a href="ssl-tcp.html#SSL-OPENSSL-CONFIG">19.9.2. OpenSSL Configuration</a></span></dt><dt><span class="sect2"><a href="ssl-tcp.html#SSL-CLIENT-CERTIFICATES">19.9.3. Using Client Certificates</a></span></dt><dt><span class="sect2"><a href="ssl-tcp.html#SSL-SERVER-FILES">19.9.4. SSL Server File Usage</a></span></dt><dt><span class="sect2"><a href="ssl-tcp.html#SSL-CERTIFICATE-CREATION">19.9.5. Creating Certificates</a></span></dt></dl></div><a id="id-1.6.6.12.2" class="indexterm"></a><p>
+   <span class="productname">PostgreSQL</span> has native support for using
+   <acronym class="acronym">SSL</acronym> connections to encrypt client/server communications
+   for increased security. This requires that
+   <span class="productname">OpenSSL</span> is installed on both client and
+   server systems and that support in <span class="productname">PostgreSQL</span> is
+   enabled at build time (see <a class="xref" href="installation.html" title="Chapter 17. Installation from Source Code">Chapter 17</a>).
+  </p><div class="sect2" id="SSL-SETUP"><div class="titlepage"><div><div><h3 class="title">19.9.1. Basic Setup</h3></div></div></div><p>
+   With <acronym class="acronym">SSL</acronym> support compiled in, the
+   <span class="productname">PostgreSQL</span> server can be started with
+   <acronym class="acronym">SSL</acronym> enabled by setting the parameter
+   <a class="xref" href="runtime-config-connection.html#GUC-SSL">ssl</a> to <code class="literal">on</code> in
+   <code class="filename">postgresql.conf</code>.  The server will listen for both normal
+   and <acronym class="acronym">SSL</acronym> connections on the same TCP port, and will negotiate
+   with any connecting client on whether to use <acronym class="acronym">SSL</acronym>.  By
+   default, this is at the client's option; see <a class="xref" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File">Section 21.1</a> about how to set up the server to require
+   use of <acronym class="acronym">SSL</acronym> for some or all connections.
+  </p><p>
+   To start in <acronym class="acronym">SSL</acronym> mode, files containing the server certificate
+   and private key must exist.  By default, these files are expected to be
+   named <code class="filename">server.crt</code> and <code class="filename">server.key</code>, respectively, in
+   the server's data directory, but other names and locations can be specified
+   using the configuration parameters <a class="xref" href="runtime-config-connection.html#GUC-SSL-CERT-FILE">ssl_cert_file</a>
+   and <a class="xref" href="runtime-config-connection.html#GUC-SSL-KEY-FILE">ssl_key_file</a>.
+  </p><p>
+   On Unix systems, the permissions on <code class="filename">server.key</code> must
+   disallow any access to world or group; achieve this by the command
+   <code class="command">chmod 0600 server.key</code>.  Alternatively, the file can be
+   owned by root and have group read access (that is, <code class="literal">0640</code>
+   permissions).  That setup is intended for installations where certificate
+   and key files are managed by the operating system.  The user under which
+   the <span class="productname">PostgreSQL</span> server runs should then be made a
+   member of the group that has access to those certificate and key files.
+  </p><p>
+    If the data directory allows group read access then certificate files may
+    need to be located outside of the data directory in order to conform to the
+    security requirements outlined above.  Generally, group access is enabled
+    to allow an unprivileged user to backup the database, and in that case the
+    backup software will not be able to read the certificate files and will
+    likely error.
+  </p><p>
+   If the private key is protected with a passphrase, the
+   server will prompt for the passphrase and will not start until it has
+   been entered.
+   Using a passphrase by default disables the ability to change the server's
+   SSL configuration without a server restart, but see <a class="xref" href="runtime-config-connection.html#GUC-SSL-PASSPHRASE-COMMAND-SUPPORTS-RELOAD">ssl_passphrase_command_supports_reload</a>.
+   Furthermore, passphrase-protected private keys cannot be used at all
+   on Windows.
+  </p><p>
+   The first certificate in <code class="filename">server.crt</code> must be the
+   server's certificate because it must match the server's private key.
+   The certificates of <span class="quote">“<span class="quote">intermediate</span>”</span> certificate authorities
+   can also be appended to the file.  Doing this avoids the necessity of
+   storing intermediate certificates on clients, assuming the root and
+   intermediate certificates were created with <code class="literal">v3_ca</code>
+   extensions.  (This sets the certificate's basic constraint of
+   <code class="literal">CA</code> to <code class="literal">true</code>.)
+   This allows easier expiration of intermediate certificates.
+  </p><p>
+   It is not necessary to add the root certificate to
+   <code class="filename">server.crt</code>.  Instead, clients must have the root
+   certificate of the server's certificate chain.
+  </p></div><div class="sect2" id="SSL-OPENSSL-CONFIG"><div class="titlepage"><div><div><h3 class="title">19.9.2. OpenSSL Configuration</h3></div></div></div><p>
+   <span class="productname">PostgreSQL</span> reads the system-wide
+   <span class="productname">OpenSSL</span> configuration file. By default, this
+   file is named <code class="filename">openssl.cnf</code> and is located in the
+   directory reported by <code class="literal">openssl version -d</code>.
+   This default can be overridden by setting environment variable
+   <code class="envar">OPENSSL_CONF</code> to the name of the desired configuration file.
+  </p><p>
+   <span class="productname">OpenSSL</span> supports a wide range of ciphers
+   and authentication algorithms, of varying strength.  While a list of
+   ciphers can be specified in the <span class="productname">OpenSSL</span>
+   configuration file, you can specify ciphers specifically for use by
+   the database server by modifying <a class="xref" href="runtime-config-connection.html#GUC-SSL-CIPHERS">ssl_ciphers</a> in
+   <code class="filename">postgresql.conf</code>.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    It is possible to have authentication without encryption overhead by
+    using <code class="literal">NULL-SHA</code> or <code class="literal">NULL-MD5</code> ciphers.  However,
+    a man-in-the-middle could read and pass communications between client
+    and server.  Also, encryption overhead is minimal compared to the
+    overhead of authentication.  For these reasons NULL ciphers are not
+    recommended.
+   </p></div></div><div class="sect2" id="SSL-CLIENT-CERTIFICATES"><div class="titlepage"><div><div><h3 class="title">19.9.3. Using Client Certificates</h3></div></div></div><p>
+   To require the client to supply a trusted certificate,
+   place certificates of the root certificate authorities
+   (<acronym class="acronym">CA</acronym>s) you trust in a file in the data
+   directory, set the parameter <a class="xref" href="runtime-config-connection.html#GUC-SSL-CA-FILE">ssl_ca_file</a> in
+   <code class="filename">postgresql.conf</code> to the new file name, and add the
+   authentication option <code class="literal">clientcert=verify-ca</code> or
+   <code class="literal">clientcert=verify-full</code> to the appropriate
+   <code class="literal">hostssl</code> line(s) in <code class="filename">pg_hba.conf</code>.
+   A certificate will then be requested from the client during SSL
+   connection startup.  (See <a class="xref" href="libpq-ssl.html" title="34.19. SSL Support">Section 34.19</a> for a description
+   of how to set up certificates on the client.)
+  </p><p>
+   For a <code class="literal">hostssl</code> entry with
+   <code class="literal">clientcert=verify-ca</code>, the server will verify
+   that the client's certificate is signed by one of the trusted
+   certificate authorities. If <code class="literal">clientcert=verify-full</code>
+   is specified, the server will not only verify the certificate
+   chain, but it will also check whether the username or its mapping
+   matches the <code class="literal">cn</code> (Common Name) of the provided certificate.
+   Note that certificate chain validation is always ensured when the
+   <code class="literal">cert</code> authentication method is used
+   (see <a class="xref" href="auth-cert.html" title="21.12. Certificate Authentication">Section 21.12</a>).
+  </p><p>
+   Intermediate certificates that chain up to existing root certificates
+   can also appear in the <a class="xref" href="runtime-config-connection.html#GUC-SSL-CA-FILE">ssl_ca_file</a> file if
+   you wish to avoid storing them on clients (assuming the root and
+   intermediate certificates were created with <code class="literal">v3_ca</code>
+   extensions).  Certificate Revocation List (CRL) entries are also
+   checked if the parameter <a class="xref" href="runtime-config-connection.html#GUC-SSL-CRL-FILE">ssl_crl_file</a> or
+   <a class="xref" href="runtime-config-connection.html#GUC-SSL-CRL-DIR">ssl_crl_dir</a> is set.
+  </p><p>
+   The <code class="literal">clientcert</code> authentication option is available for
+   all authentication methods, but only in <code class="filename">pg_hba.conf</code> lines
+   specified as <code class="literal">hostssl</code>.  When <code class="literal">clientcert</code> is
+   not specified, the server verifies the client certificate against its CA
+   file only if a client certificate is presented and the CA is configured.
+  </p><p>
+   There are two approaches to enforce that users provide a certificate during login.
+  </p><p>
+   The first approach makes use of the <code class="literal">cert</code> authentication
+   method for <code class="literal">hostssl</code> entries in <code class="filename">pg_hba.conf</code>,
+   such that the certificate itself is used for authentication while also
+   providing ssl connection security. See <a class="xref" href="auth-cert.html" title="21.12. Certificate Authentication">Section 21.12</a> for details.
+   (It is not necessary to specify any <code class="literal">clientcert</code> options
+   explicitly when using the <code class="literal">cert</code> authentication method.)
+   In this case, the <code class="literal">cn</code> (Common Name) provided in
+   the certificate is checked against the user name or an applicable mapping.
+  </p><p>
+   The second approach combines any authentication method for <code class="literal">hostssl</code>
+   entries with the verification of client certificates by setting the
+   <code class="literal">clientcert</code> authentication option to <code class="literal">verify-ca</code>
+   or <code class="literal">verify-full</code>. The former option only enforces that
+   the certificate is valid, while the latter also ensures that the
+   <code class="literal">cn</code> (Common Name) in the certificate matches
+   the user name or an applicable mapping.
+  </p></div><div class="sect2" id="SSL-SERVER-FILES"><div class="titlepage"><div><div><h3 class="title">19.9.4. SSL Server File Usage</h3></div></div></div><p>
+    <a class="xref" href="ssl-tcp.html#SSL-FILE-USAGE" title="Table 19.2. SSL Server File Usage">Table 19.2</a> summarizes the files that are
+    relevant to the SSL setup on the server.  (The shown file names are default
+    names.  The locally configured names could be different.)
+   </p><div class="table" id="SSL-FILE-USAGE"><p class="title"><strong>Table 19.2. SSL Server File Usage</strong></p><div class="table-contents"><table class="table" summary="SSL Server File Usage" border="1"><colgroup><col /><col /><col /></colgroup><thead><tr><th>File</th><th>Contents</th><th>Effect</th></tr></thead><tbody><tr><td><a class="xref" href="runtime-config-connection.html#GUC-SSL-CERT-FILE">ssl_cert_file</a> (<code class="filename">$PGDATA/server.crt</code>)</td><td>server certificate</td><td>sent to client to indicate server's identity</td></tr><tr><td><a class="xref" href="runtime-config-connection.html#GUC-SSL-KEY-FILE">ssl_key_file</a> (<code class="filename">$PGDATA/server.key</code>)</td><td>server private key</td><td>proves server certificate was sent by the owner; does not indicate
+      certificate owner is trustworthy</td></tr><tr><td><a class="xref" href="runtime-config-connection.html#GUC-SSL-CA-FILE">ssl_ca_file</a></td><td>trusted certificate authorities</td><td>checks that client certificate is
+      signed by a trusted certificate authority</td></tr><tr><td><a class="xref" href="runtime-config-connection.html#GUC-SSL-CRL-FILE">ssl_crl_file</a></td><td>certificates revoked by certificate authorities</td><td>client certificate must not be on this list</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    The server reads these files at server start and whenever the server
+    configuration is reloaded.  On <span class="systemitem">Windows</span>
+    systems, they are also re-read whenever a new backend process is spawned
+    for a new client connection.
+   </p><p>
+    If an error in these files is detected at server start, the server will
+    refuse to start.  But if an error is detected during a configuration
+    reload, the files are ignored and the old SSL configuration continues to
+    be used.  On <span class="systemitem">Windows</span> systems, if an error in
+    these files is detected at backend start, that backend will be unable to
+    establish an SSL connection.  In all these cases, the error condition is
+    reported in the server log.
+   </p></div><div class="sect2" id="SSL-CERTIFICATE-CREATION"><div class="titlepage"><div><div><h3 class="title">19.9.5. Creating Certificates</h3></div></div></div><p>
+     To create a simple self-signed certificate for the server, valid for 365
+     days, use the following <span class="productname">OpenSSL</span> command,
+     replacing <em class="replaceable"><code>dbhost.yourdomain.com</code></em> with the
+     server's host name:
+</p><pre class="programlisting">
+openssl req -new -x509 -days 365 -nodes -text -out server.crt \
+  -keyout server.key -subj "/CN=<em class="replaceable"><code>dbhost.yourdomain.com</code></em>"
+</pre><p>
+    Then do:
+</p><pre class="programlisting">
+chmod og-rwx server.key
+</pre><p>
+    because the server will reject the file if its permissions are more
+    liberal than this.
+    For more details on how to create your server private key and
+    certificate, refer to the <span class="productname">OpenSSL</span> documentation.
+   </p><p>
+    While a self-signed certificate can be used for testing, a certificate
+    signed by a certificate authority (<acronym class="acronym">CA</acronym>) (usually an
+    enterprise-wide root <acronym class="acronym">CA</acronym>) should be used in production.
+   </p><p>
+    To create a server certificate whose identity can be validated
+    by clients, first create a certificate signing request
+    (<acronym class="acronym">CSR</acronym>) and a public/private key file:
+</p><pre class="programlisting">
+openssl req -new -nodes -text -out root.csr \
+  -keyout root.key -subj "/CN=<em class="replaceable"><code>root.yourdomain.com</code></em>"
+chmod og-rwx root.key
+</pre><p>
+    Then, sign the request with the key to create a root certificate
+    authority (using the default <span class="productname">OpenSSL</span>
+    configuration file location on <span class="productname">Linux</span>):
+</p><pre class="programlisting">
+openssl x509 -req -in root.csr -text -days 3650 \
+  -extfile /etc/ssl/openssl.cnf -extensions v3_ca \
+  -signkey root.key -out root.crt
+</pre><p>
+    Finally, create a server certificate signed by the new root certificate
+    authority:
+</p><pre class="programlisting">
+openssl req -new -nodes -text -out server.csr \
+  -keyout server.key -subj "/CN=<em class="replaceable"><code>dbhost.yourdomain.com</code></em>"
+chmod og-rwx server.key
+
+openssl x509 -req -in server.csr -text -days 365 \
+  -CA root.crt -CAkey root.key -CAcreateserial \
+  -out server.crt
+</pre><p>
+    <code class="filename">server.crt</code> and <code class="filename">server.key</code>
+    should be stored on the server, and <code class="filename">root.crt</code> should
+    be stored on the client so the client can verify that the server's leaf
+    certificate was signed by its trusted root certificate.
+    <code class="filename">root.key</code> should be stored offline for use in
+    creating future certificates.
+   </p><p>
+    It is also possible to create a chain of trust that includes
+    intermediate certificates:
+</p><pre class="programlisting">
+# root
+openssl req -new -nodes -text -out root.csr \
+  -keyout root.key -subj "/CN=<em class="replaceable"><code>root.yourdomain.com</code></em>"
+chmod og-rwx root.key
+openssl x509 -req -in root.csr -text -days 3650 \
+  -extfile /etc/ssl/openssl.cnf -extensions v3_ca \
+  -signkey root.key -out root.crt
+
+# intermediate
+openssl req -new -nodes -text -out intermediate.csr \
+  -keyout intermediate.key -subj "/CN=<em class="replaceable"><code>intermediate.yourdomain.com</code></em>"
+chmod og-rwx intermediate.key
+openssl x509 -req -in intermediate.csr -text -days 1825 \
+  -extfile /etc/ssl/openssl.cnf -extensions v3_ca \
+  -CA root.crt -CAkey root.key -CAcreateserial \
+  -out intermediate.crt
+
+# leaf
+openssl req -new -nodes -text -out server.csr \
+  -keyout server.key -subj "/CN=<em class="replaceable"><code>dbhost.yourdomain.com</code></em>"
+chmod og-rwx server.key
+openssl x509 -req -in server.csr -text -days 365 \
+  -CA intermediate.crt -CAkey intermediate.key -CAcreateserial \
+  -out server.crt
+</pre><p>
+    <code class="filename">server.crt</code> and
+    <code class="filename">intermediate.crt</code> should be concatenated
+    into a certificate file bundle and stored on the server.
+    <code class="filename">server.key</code> should also be stored on the server.
+    <code class="filename">root.crt</code> should be stored on the client so
+    the client can verify that the server's leaf certificate was signed
+    by a chain of certificates linked to its trusted root certificate.
+    <code class="filename">root.key</code> and <code class="filename">intermediate.key</code>
+    should be stored offline for use in creating future certificates.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="encryption-options.html" title="19.8. Encryption Options">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="gssapi-enc.html" title="19.10. Secure TCP/IP Connections with GSSAPI Encryption">Next</a></td></tr><tr><td width="40%" align="left" valign="top">19.8. Encryption Options </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 19.10. Secure TCP/IP Connections with GSSAPI Encryption</td></tr></table></div></body></html>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>13.5. Caveats</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="applevel-consistency.html" title="13.4. Data Consistency Checks at the Application Level" /><link rel="next" href="locking-indexes.html" title="13.6. Locking and Indexes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">13.5. Caveats</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="applevel-consistency.html" title="13.4. Data Consistency Checks at the Application Level">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="mvcc.html" title="Chapter 13. Concurrency Control">Up</a></td><th width="60%" align="center">Chapter 13. Concurrency Control</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="locking-indexes.html" title="13.6. Locking and Indexes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="MVCC-CAVEATS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">13.5. Caveats</h2></div></div></div><p>
+    Some DDL commands, currently only <a class="link" href="sql-truncate.html" title="TRUNCATE"><code class="command">TRUNCATE</code></a> and the
+    table-rewriting forms of <a class="link" href="sql-altertable.html" title="ALTER TABLE"><code class="command">ALTER TABLE</code></a>, are not
+    MVCC-safe.  This means that after the truncation or rewrite commits, the
+    table will appear empty to concurrent transactions, if they are using a
+    snapshot taken before the DDL command committed.  This will only be an
+    issue for a transaction that did not access the table in question
+    before the DDL command started — any transaction that has done so
+    would hold at least an <code class="literal">ACCESS SHARE</code> table lock,
+    which would block the DDL command until that transaction completes.
+    So these commands will not cause any apparent inconsistency in the
+    table contents for successive queries on the target table, but they
+    could cause visible inconsistency between the contents of the target
+    table and other tables in the database.
+   </p><p>
+    Support for the Serializable transaction isolation level has not yet
+    been added to Hot Standby replication targets (described in
+    <a class="xref" href="hot-standby.html" title="27.4. Hot Standby">Section 27.4</a>).  The strictest isolation level currently
+    supported in hot standby mode is Repeatable Read.  While performing all
+    permanent database writes within Serializable transactions on the
+    primary will ensure that all standbys will eventually reach a consistent
+    state, a Repeatable Read transaction run on the standby can sometimes
+    see a transient state that is inconsistent with any serial execution
+    of the transactions on the primary.
+   </p><p>
+    Internal access to the system catalogs is not done using the isolation
+    level of the current transaction.  This means that newly created database
+    objects such as tables are visible to concurrent Repeatable Read and
+    Serializable transactions, even though the rows they contain are not.  In
+    contrast, queries that explicitly examine the system catalogs don't see
+    rows representing concurrently created database objects, in the higher
+    isolation levels.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="applevel-consistency.html" title="13.4. Data Consistency Checks at the Application Level">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="mvcc.html" title="Chapter 13. Concurrency Control">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="locking-indexes.html" title="13.6. Locking and Indexes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">13.4. Data Consistency Checks at the Application Level </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 13.6. Locking and Indexes</td></tr></table></div></body></html>

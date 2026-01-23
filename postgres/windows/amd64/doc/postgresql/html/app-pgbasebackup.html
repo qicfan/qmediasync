@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_basebackup</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-pgamcheck.html" title="pg_amcheck" /><link rel="next" href="pgbench.html" title="pgbench" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_basebackup</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-pgamcheck.html" title="pg_amcheck">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><th width="60%" align="center">PostgreSQL Client Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="pgbench.html" title="pgbench">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-PGBASEBACKUP"><div class="titlepage"></div><a id="id-1.9.4.10.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_basebackup</span></span></h2><p>pg_basebackup — take a base backup of a <span class="productname">PostgreSQL</span> cluster</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.4.10.4.1"><code class="command">pg_basebackup</code> [<em class="replaceable"><code>option</code></em>...]</p></div></div><div class="refsect1" id="id-1.9.4.10.5"><h2>Description</h2><p>
+   <span class="application">pg_basebackup</span> is used to take a base backup of
+   a running <span class="productname">PostgreSQL</span> database cluster. The backup
+   is taken without affecting other clients of the database, and can be used
+   both for point-in-time recovery (see <a class="xref" href="continuous-archiving.html" title="26.3. Continuous Archiving and Point-in-Time Recovery (PITR)">Section 26.3</a>)
+   and as the starting point for a log-shipping or streaming-replication standby
+   server (see <a class="xref" href="warm-standby.html" title="27.2. Log-Shipping Standby Servers">Section 27.2</a>).
+  </p><p>
+   <span class="application">pg_basebackup</span> makes an exact copy of the database
+   cluster's files, while making sure the server is put into and
+   out of backup mode automatically. Backups are always taken of the entire
+   database cluster; it is not possible to back up individual databases or
+   database objects. For selective backups, another tool such as
+   <a class="xref" href="app-pgdump.html" title="pg_dump"><span class="refentrytitle"><span class="application">pg_dump</span></span></a> must be used.
+  </p><p>
+   The backup is made over a regular <span class="productname">PostgreSQL</span>
+   connection that uses the replication protocol. The connection must be made
+   with a user ID that has <code class="literal">REPLICATION</code> permissions
+   (see <a class="xref" href="role-attributes.html" title="22.2. Role Attributes">Section 22.2</a>) or is a superuser,
+   and <a class="link" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File"><code class="filename">pg_hba.conf</code></a>
+   must permit the replication connection. The server must also be configured
+   with <a class="xref" href="runtime-config-replication.html#GUC-MAX-WAL-SENDERS">max_wal_senders</a> set high enough to provide at
+   least one walsender for the backup plus one for WAL streaming (if used).
+  </p><p>
+   There can be multiple <code class="command">pg_basebackup</code>s running at the same time, but it is usually
+   better from a performance point of view to take only one backup, and copy
+   the result.
+  </p><p>
+   <span class="application">pg_basebackup</span> can make a base backup from
+   not only a primary server but also a standby. To take a backup from a standby,
+   set up the standby so that it can accept replication connections (that is, set
+   <code class="varname">max_wal_senders</code> and <a class="xref" href="runtime-config-replication.html#GUC-HOT-STANDBY">hot_standby</a>,
+   and configure its <code class="filename">pg_hba.conf</code> appropriately).
+   You will also need to enable <a class="xref" href="runtime-config-wal.html#GUC-FULL-PAGE-WRITES">full_page_writes</a> on the primary.
+  </p><p>
+   Note that there are some limitations in taking a backup from a standby:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      The backup history file is not created in the database cluster backed up.
+     </p></li><li class="listitem"><p>
+      <span class="application">pg_basebackup</span> cannot force the standby
+      to switch to a new WAL file at the end of backup.
+      When you are using <code class="literal">-X none</code>, if write activity on
+      the primary is low, <span class="application">pg_basebackup</span> may
+      need to wait a long time for the last WAL file required for the backup
+      to be switched and archived.  In this case, it may be useful to run
+      <code class="function">pg_switch_wal</code> on the primary in order to
+      trigger an immediate WAL file switch.
+     </p></li><li class="listitem"><p>
+      If the standby is promoted to be primary during backup, the backup fails.
+     </p></li><li class="listitem"><p>
+      All WAL records required for the backup must contain sufficient full-page writes,
+      which requires you to enable <code class="varname">full_page_writes</code> on the primary and
+      not to use a tool like <span class="application">pg_compresslog</span> as
+      <code class="varname">archive_command</code> to remove full-page writes from WAL files.
+     </p></li></ul></div><p>
+  </p><p>
+   Whenever <span class="application">pg_basebackup</span> is taking a base
+   backup, the server's <code class="structname">pg_stat_progress_basebackup</code>
+   view will report the progress of the backup.
+   See <a class="xref" href="progress-reporting.html#BASEBACKUP-PROGRESS-REPORTING" title="28.4.5. Base Backup Progress Reporting">Section 28.4.5</a> for details.
+  </p></div><div class="refsect1" id="id-1.9.4.10.6"><h2>Options</h2><p>
+    The following command-line options control the location and format of the
+    output:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-D <em class="replaceable"><code>directory</code></em></code><br /></span><span class="term"><code class="option">--pgdata=<em class="replaceable"><code>directory</code></em></code></span></dt><dd><p>
+        Sets the target directory to write the output to.
+        <span class="application">pg_basebackup</span> will create this directory
+        (and any missing parent directories) if it does not exist.  If it
+        already exists, it must be empty.
+       </p><p>
+        When the backup is in tar format, the target directory may be
+        specified as <code class="literal">-</code> (dash), causing the tar file to be
+        written to <code class="literal">stdout</code>.
+       </p><p>
+        This option is required.
+       </p></dd><dt><span class="term"><code class="option">-F <em class="replaceable"><code>format</code></em></code><br /></span><span class="term"><code class="option">--format=<em class="replaceable"><code>format</code></em></code></span></dt><dd><p>
+        Selects the format for the output. <em class="replaceable"><code>format</code></em>
+        can be one of the following:
+
+        </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">p</code><br /></span><span class="term"><code class="literal">plain</code></span></dt><dd><p>
+            Write the output as plain files, with the same layout as the
+            source server's data directory and tablespaces. When the cluster has
+            no additional tablespaces, the whole database will be placed in
+            the target directory. If the cluster contains additional
+            tablespaces, the main data directory will be placed in the
+            target directory, but all other tablespaces will be placed
+            in the same absolute path as they have on the source server.
+            (See <code class="option">--tablespace-mapping</code> to change that.)
+           </p><p>
+            This is the default format.
+           </p></dd><dt><span class="term"><code class="literal">t</code><br /></span><span class="term"><code class="literal">tar</code></span></dt><dd><p>
+            Write the output as tar files in the target directory. The main
+            data directory's contents will be written to a file named
+            <code class="filename">base.tar</code>, and each other tablespace will be
+            written to a separate tar file named after that tablespace's OID.
+           </p><p>
+            If the target directory is specified as <code class="literal">-</code>
+            (dash), the tar contents will be written to
+            standard output, suitable for piping to (for example)
+            <span class="productname">gzip</span>. This is only allowed if
+            the cluster has no additional tablespaces and WAL
+            streaming is not used.
+           </p></dd></dl></div></dd><dt><span class="term"><code class="option">-R</code><br /></span><span class="term"><code class="option">--write-recovery-conf</code></span></dt><dd><p>
+        Creates a
+        <a class="link" href="warm-standby.html#FILE-STANDBY-SIGNAL"><code class="filename">standby.signal</code></a>
+        <a id="id-1.9.4.10.6.2.1.3.3.1.2" class="indexterm"></a>
+        file and appends
+        connection settings to the <code class="filename">postgresql.auto.conf</code>
+        file in the target directory (or within the base archive file when
+        using tar format).  This eases setting up a standby server using the
+        results of the backup.
+       </p><p>
+        The <code class="filename">postgresql.auto.conf</code> file will record the connection
+        settings and, if specified, the replication slot
+        that <span class="application">pg_basebackup</span> is using, so that
+        streaming replication will use the same settings later on.
+       </p></dd><dt><span class="term"><code class="option">-T <em class="replaceable"><code>olddir</code></em>=<em class="replaceable"><code>newdir</code></em></code><br /></span><span class="term"><code class="option">--tablespace-mapping=<em class="replaceable"><code>olddir</code></em>=<em class="replaceable"><code>newdir</code></em></code></span></dt><dd><p>
+        Relocates the tablespace in directory <em class="replaceable"><code>olddir</code></em>
+        to <em class="replaceable"><code>newdir</code></em> during the backup.  To be
+        effective, <em class="replaceable"><code>olddir</code></em> must exactly match the
+        path specification of the tablespace as it is defined on the source
+        server.  (But it is not an error if there is no tablespace
+        in <em class="replaceable"><code>olddir</code></em> on the source server.)
+        Meanwhile <em class="replaceable"><code>newdir</code></em> is a directory in the
+        receiving host's filesystem.  As with the main target directory,
+        <em class="replaceable"><code>newdir</code></em> need not exist already, but if
+        it does exist it must be empty.
+        Both <em class="replaceable"><code>olddir</code></em>
+        and <em class="replaceable"><code>newdir</code></em> must be absolute paths.  If
+        either path needs to contain an equal sign (<code class="literal">=</code>),
+        precede that with a backslash.  This option can be specified multiple
+        times for multiple tablespaces.
+       </p><p>
+        If a tablespace is relocated in this way, the symbolic links inside
+        the main data directory are updated to point to the new location.  So
+        the new data directory is ready to be used for a new server instance
+        with all tablespaces in the updated locations.
+       </p><p>
+        Currently, this option only works with plain output format; it is
+        ignored if tar format is selected.
+       </p></dd><dt><span class="term"><code class="option">--waldir=<em class="replaceable"><code>waldir</code></em></code></span></dt><dd><p>
+        Sets the directory to write WAL (write-ahead log) files to.
+        By default WAL files will be placed in
+        the <code class="filename">pg_wal</code> subdirectory of the target
+        directory, but this option can be used to place them elsewhere.
+        <em class="replaceable"><code>waldir</code></em> must be an absolute path.
+        As with the main target directory,
+        <em class="replaceable"><code>waldir</code></em> need not exist already, but if
+        it does exist it must be empty.
+        This option can only be specified when
+        the backup is in plain format.
+       </p></dd><dt><span class="term"><code class="option">-X <em class="replaceable"><code>method</code></em></code><br /></span><span class="term"><code class="option">--wal-method=<em class="replaceable"><code>method</code></em></code></span></dt><dd><p>
+        Includes the required WAL (write-ahead log) files in the
+        backup. This will include all write-ahead logs generated during
+        the backup. Unless the method <code class="literal">none</code> is specified,
+        it is possible to start a postmaster in the target
+        directory without the need to consult the log archive, thus
+        making the output a completely standalone backup.
+       </p><p>
+        The following <em class="replaceable"><code>method</code></em>s for collecting the
+        write-ahead logs are supported:
+
+        </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">n</code><br /></span><span class="term"><code class="literal">none</code></span></dt><dd><p>
+            Don't include write-ahead logs in the backup.
+           </p></dd><dt><span class="term"><code class="literal">f</code><br /></span><span class="term"><code class="literal">fetch</code></span></dt><dd><p>
+            The write-ahead log files are collected at the end of the backup.
+            Therefore, it is necessary for the source server's
+            <a class="xref" href="runtime-config-replication.html#GUC-WAL-KEEP-SIZE">wal_keep_size</a> parameter to be set high
+            enough that the required log data is not removed before the end
+            of the backup.  If the required log data has been recycled
+            before it's time to transfer it, the backup will fail and be
+            unusable.
+           </p><p>
+            When tar format is used, the write-ahead log files will be
+            included in the <code class="filename">base.tar</code> file.
+           </p></dd><dt><span class="term"><code class="literal">s</code><br /></span><span class="term"><code class="literal">stream</code></span></dt><dd><p>
+            Stream write-ahead log data while the backup is being taken.
+            This method will open a second connection to the server and
+            start streaming the write-ahead log in parallel while running
+            the backup.  Therefore, it will require two replication
+            connections not just one.  As long as the client can keep up
+            with the write-ahead log data, using this method requires no
+            extra write-ahead logs to be saved on the source server.
+           </p><p>
+            When tar format is used, the write-ahead log files will be
+            written to a separate file named <code class="filename">pg_wal.tar</code>
+            (if the server is a version earlier than 10, the file will be named
+            <code class="filename">pg_xlog.tar</code>).
+           </p><p>
+            This value is the default.
+           </p></dd></dl></div></dd><dt><span class="term"><code class="option">-z</code><br /></span><span class="term"><code class="option">--gzip</code></span></dt><dd><p>
+        Enables gzip compression of tar file output, with the default
+        compression level. Compression is only available when using
+        the tar format, and the suffix <code class="filename">.gz</code> will
+        automatically be added to all tar filenames.
+       </p></dd><dt><span class="term"><code class="option">-Z <em class="replaceable"><code>level</code></em></code><br /></span><span class="term"><code class="option">--compress=<em class="replaceable"><code>level</code></em></code></span></dt><dd><p>
+        Enables gzip compression of tar file output, and specifies the
+        compression level (0 through 9, 0 being no compression and 9 being best
+        compression). Compression is only available when using the tar
+        format, and the suffix <code class="filename">.gz</code> will
+        automatically be added to all tar filenames.
+       </p></dd></dl></div><p>
+   </p><p>
+    The following command-line options control the generation of the
+    backup and the invocation of the program:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-c <em class="replaceable"><code>fast|spread</code></em></code><br /></span><span class="term"><code class="option">--checkpoint=<em class="replaceable"><code>fast|spread</code></em></code></span></dt><dd><p>
+        Sets checkpoint mode to fast (immediate) or spread (the default)
+        (see <a class="xref" href="continuous-archiving.html#BACKUP-LOWLEVEL-BASE-BACKUP" title="26.3.3. Making a Base Backup Using the Low Level API">Section 26.3.3</a>).
+       </p></dd><dt><span class="term"><code class="option">-C</code><br /></span><span class="term"><code class="option">--create-slot</code></span></dt><dd><p>
+        Specifies that the replication slot named by the
+        <code class="literal">--slot</code> option should be created before starting
+        the backup.  An error is raised if the slot already exists.
+       </p></dd><dt><span class="term"><code class="option">-l <em class="replaceable"><code>label</code></em></code><br /></span><span class="term"><code class="option">--label=<em class="replaceable"><code>label</code></em></code></span></dt><dd><p>
+        Sets the label for the backup. If none is specified, a default value of
+        <span class="quote">“<span class="quote"><code class="literal">pg_basebackup base backup</code></span>”</span> will be used.
+       </p></dd><dt><span class="term"><code class="option">-n</code><br /></span><span class="term"><code class="option">--no-clean</code></span></dt><dd><p>
+        By default, when <code class="command">pg_basebackup</code> aborts with an
+        error, it removes any directories it might have created before
+        discovering that it cannot finish the job (for example, the target
+        directory and write-ahead log directory). This option inhibits
+        tidying-up and is thus useful for debugging.
+       </p><p>
+        Note that tablespace directories are not cleaned up either way.
+       </p></dd><dt><span class="term"><code class="option">-N</code><br /></span><span class="term"><code class="option">--no-sync</code></span></dt><dd><p>
+        By default, <code class="command">pg_basebackup</code> will wait for all files
+        to be written safely to disk.  This option causes
+        <code class="command">pg_basebackup</code> to return without waiting, which is
+        faster, but means that a subsequent operating system crash can leave
+        the base backup corrupt.  Generally, this option is useful for testing
+        but should not be used when creating a production installation.
+       </p></dd><dt><span class="term"><code class="option">-P</code><br /></span><span class="term"><code class="option">--progress</code></span></dt><dd><p>
+        Enables progress reporting. Turning this on will deliver an approximate
+        progress report during the backup. Since the database may change during
+        the backup, this is only an approximation and may not end at exactly
+        <code class="literal">100%</code>. In particular, when WAL log is included in the
+        backup, the total amount of data cannot be estimated in advance, and
+        in this case the estimated target size will increase once it passes the
+        total estimate without WAL.
+       </p></dd><dt><span class="term"><code class="option">-r <em class="replaceable"><code>rate</code></em></code><br /></span><span class="term"><code class="option">--max-rate=<em class="replaceable"><code>rate</code></em></code></span></dt><dd><p>
+        Sets the maximum transfer rate at which data is collected from the
+        source server.  This can be useful to limit the impact
+        of <span class="application">pg_basebackup</span> on the server.  Values
+        are in kilobytes per second.  Use a suffix of <code class="literal">M</code>
+        to indicate megabytes per second.  A suffix of <code class="literal">k</code>
+        is also accepted, and has no effect.  Valid values are between 32
+        kilobytes per second and 1024 megabytes per second.
+       </p><p>
+        This option always affects transfer of the data directory. Transfer of
+        WAL files is only affected if the collection method
+        is <code class="literal">fetch</code>.
+       </p></dd><dt><span class="term"><code class="option">-S <em class="replaceable"><code>slotname</code></em></code><br /></span><span class="term"><code class="option">--slot=<em class="replaceable"><code>slotname</code></em></code></span></dt><dd><p>
+        This option can only be used together with <code class="literal">-X
+        stream</code>.  It causes WAL streaming to use the specified
+        replication slot.  If the base backup is intended to be used as a
+        streaming-replication standby using a replication slot, the standby
+        should then use the same replication slot name as
+        <a class="xref" href="runtime-config-replication.html#GUC-PRIMARY-SLOT-NAME">primary_slot_name</a>.  This ensures that the
+        primary server does not remove any necessary WAL data in the time
+        between the end of the base backup and the start of streaming
+        replication on the new standby.
+       </p><p>
+        The specified replication slot has to exist unless the
+        option <code class="option">-C</code> is also used.
+       </p><p>
+        If this option is not specified and the server supports temporary
+        replication slots (version 10 and later), then a temporary replication
+        slot is automatically used for WAL streaming.
+       </p></dd><dt><span class="term"><code class="option">-v</code><br /></span><span class="term"><code class="option">--verbose</code></span></dt><dd><p>
+        Enables verbose mode. Will output some extra steps during startup and
+        shutdown, as well as show the exact file name that is currently being
+        processed if progress reporting is also enabled.
+       </p></dd><dt><span class="term"><code class="option">--manifest-checksums=<em class="replaceable"><code>algorithm</code></em></code></span></dt><dd><p>
+        Specifies the checksum algorithm that should be applied to each file
+        included in the backup manifest. Currently, the available
+        algorithms are <code class="literal">NONE</code>, <code class="literal">CRC32C</code>,
+        <code class="literal">SHA224</code>, <code class="literal">SHA256</code>,
+        <code class="literal">SHA384</code>, and <code class="literal">SHA512</code>.
+        The default is <code class="literal">CRC32C</code>.
+       </p><p>
+        If <code class="literal">NONE</code> is selected, the backup manifest will
+        not contain any checksums. Otherwise, it will contain a checksum
+        of each file in the backup using the specified algorithm. In addition,
+        the manifest will always contain a <code class="literal">SHA256</code>
+        checksum of its own contents. The <code class="literal">SHA</code> algorithms
+        are significantly more CPU-intensive than <code class="literal">CRC32C</code>,
+        so selecting one of them may increase the time required to complete
+        the backup.
+       </p><p>
+        Using a SHA hash function provides a cryptographically secure digest
+        of each file for users who wish to verify that the backup has not been
+        tampered with, while the CRC32C algorithm provides a checksum that is
+        much faster to calculate; it is good at catching errors due to accidental
+        changes but is not resistant to malicious modifications.  Note that, to
+        be useful against an adversary who has access to the backup, the backup
+        manifest would need to be stored securely elsewhere or otherwise
+        verified not to have been modified since the backup was taken.
+       </p><p>
+        <a class="xref" href="app-pgverifybackup.html" title="pg_verifybackup"><span class="refentrytitle"><span class="application">pg_verifybackup</span></span></a> can be used to check the
+        integrity of a backup against the backup manifest.
+       </p></dd><dt><span class="term"><code class="option">--manifest-force-encode</code></span></dt><dd><p>
+        Forces all filenames in the backup manifest to be hex-encoded.
+        If this option is not specified, only non-UTF8 filenames are
+        hex-encoded. This option is mostly intended to test that tools which
+        read a backup manifest file properly handle this case.
+       </p></dd><dt><span class="term"><code class="option">--no-estimate-size</code></span></dt><dd><p>
+        Prevents the server from estimating the total
+        amount of backup data that will be streamed, resulting in the
+        <code class="structfield">backup_total</code> column in the
+        <code class="structname">pg_stat_progress_basebackup</code> view
+        always being <code class="literal">NULL</code>.
+       </p><p>
+        Without this option, the backup will start by enumerating
+        the size of the entire database, and then go back and send
+        the actual contents. This may make the backup take slightly
+        longer, and in particular it will take longer before the first
+        data is sent. This option is useful to avoid such estimation
+        time if it's too long.
+       </p><p>
+        This option is not allowed when using <code class="option">--progress</code>.
+       </p></dd><dt><span class="term"><code class="option">--no-manifest</code></span></dt><dd><p>
+        Disables generation of a backup manifest. If this option is not
+        specified, the server will generate and send a backup manifest
+        which can be verified using <a class="xref" href="app-pgverifybackup.html" title="pg_verifybackup"><span class="refentrytitle"><span class="application">pg_verifybackup</span></span></a>.
+        The manifest is a list of every file present in the backup with the
+        exception of any WAL files that may be included. It also stores the
+        size, last modification time, and an optional checksum for each file.
+       </p></dd><dt><span class="term"><code class="option">--no-slot</code></span></dt><dd><p>
+        Prevents the creation of a temporary replication slot
+        for the backup.
+       </p><p>
+        By default, if log streaming is selected but no slot name is given
+        with the <code class="option">-S</code> option, then a temporary replication
+        slot is created (if supported by the source server).
+       </p><p>
+        The main purpose of this option is to allow taking a base backup when
+        the server has no free replication slots.  Using a replication slot
+        is almost always preferred, because it prevents needed WAL from being
+        removed by the server during the backup.
+       </p></dd><dt><span class="term"><code class="option">--no-verify-checksums</code></span></dt><dd><p>
+        Disables verification of checksums, if they are enabled on the server
+        the base backup is taken from.
+       </p><p>
+        By default, checksums are verified and checksum failures will result
+        in a non-zero exit status. However, the base backup will not be
+        removed in such a case, as if the <code class="option">--no-clean</code> option
+        had been used.  Checksum verification failures will also be reported
+        in the <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-DATABASE-VIEW" title="28.2.13. pg_stat_database">
+        <code class="structname">pg_stat_database</code></a> view.
+       </p></dd></dl></div><p>
+   </p><p>
+    The following command-line options control the connection to the source
+    server:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-d <em class="replaceable"><code>connstr</code></em></code><br /></span><span class="term"><code class="option">--dbname=<em class="replaceable"><code>connstr</code></em></code></span></dt><dd><p>
+        Specifies parameters used to connect to the server, as a <a class="link" href="libpq-connect.html#LIBPQ-CONNSTRING" title="34.1.1. Connection Strings">connection string</a>;  these
+        will override any conflicting command line options.
+       </p><p>
+        The option is called <code class="literal">--dbname</code> for consistency with other
+        client applications, but because <span class="application">pg_basebackup</span>
+        doesn't connect to any particular database in the cluster, any database
+        name in the connection string will be ignored.
+       </p></dd><dt><span class="term"><code class="option">-h <em class="replaceable"><code>host</code></em></code><br /></span><span class="term"><code class="option">--host=<em class="replaceable"><code>host</code></em></code></span></dt><dd><p>
+        Specifies the host name of the machine on which the server is
+        running.  If the value begins with a slash, it is used as the
+        directory for a Unix domain socket. The default is taken
+        from the <code class="envar">PGHOST</code> environment variable, if set,
+        else a Unix domain socket connection is attempted.
+       </p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>port</code></em></code><br /></span><span class="term"><code class="option">--port=<em class="replaceable"><code>port</code></em></code></span></dt><dd><p>
+        Specifies the TCP port or local Unix domain socket file
+        extension on which the server is listening for connections.
+        Defaults to the <code class="envar">PGPORT</code> environment variable, if
+        set, or a compiled-in default.
+       </p></dd><dt><span class="term"><code class="option">-s <em class="replaceable"><code>interval</code></em></code><br /></span><span class="term"><code class="option">--status-interval=<em class="replaceable"><code>interval</code></em></code></span></dt><dd><p>
+        Specifies the number of seconds between status packets sent back to
+        the source server. Smaller values allow more accurate monitoring of
+        backup progress from the server.
+        A value of zero disables periodic status updates completely,
+        although an update will still be sent when requested by the server, to
+        avoid timeout-based disconnects. The default value is 10 seconds.
+       </p></dd><dt><span class="term"><code class="option">-U <em class="replaceable"><code>username</code></em></code><br /></span><span class="term"><code class="option">--username=<em class="replaceable"><code>username</code></em></code></span></dt><dd><p>
+        Specifies the user name to connect as.
+       </p></dd><dt><span class="term"><code class="option">-w</code><br /></span><span class="term"><code class="option">--no-password</code></span></dt><dd><p>
+        Prevents issuing a password prompt.  If the server requires
+        password authentication and a password is not available by
+        other means such as a <code class="filename">.pgpass</code> file, the
+        connection attempt will fail.  This option can be useful in
+        batch jobs and scripts where no user is present to enter a
+        password.
+       </p></dd><dt><span class="term"><code class="option">-W</code><br /></span><span class="term"><code class="option">--password</code></span></dt><dd><p>
+        Forces <span class="application">pg_basebackup</span> to prompt for a
+        password before connecting to the source server.
+       </p><p>
+        This option is never essential, since
+        <span class="application">pg_basebackup</span> will automatically prompt
+        for a password if the server demands password authentication.
+        However, <span class="application">pg_basebackup</span> will waste a
+        connection attempt finding out that the server wants a password.
+        In some cases it is worth typing <code class="option">-W</code> to avoid the extra
+        connection attempt.
+       </p></dd></dl></div><p>
+   </p><p>
+    Other options are also available:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+       Prints the <span class="application">pg_basebackup</span> version and exits.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+       Shows help about <span class="application">pg_basebackup</span> command line
+       arguments, and exits.
+       </p></dd></dl></div><p>
+   </p></div><div class="refsect1" id="id-1.9.4.10.7"><h2>Environment</h2><p>
+   This utility, like most other <span class="productname">PostgreSQL</span> utilities,
+   uses the environment variables supported by <span class="application">libpq</span>
+   (see <a class="xref" href="libpq-envars.html" title="34.15. Environment Variables">Section 34.15</a>).
+  </p><p>
+   The environment variable <code class="envar">PG_COLOR</code> specifies whether to use
+   color in diagnostic messages. Possible values are
+   <code class="literal">always</code>, <code class="literal">auto</code> and
+   <code class="literal">never</code>.
+  </p></div><div class="refsect1" id="id-1.9.4.10.8"><h2>Notes</h2><p>
+   At the beginning of the backup, a checkpoint needs to be performed on the
+   source server.  This can take some time (especially if the option
+   <code class="literal">--checkpoint=fast</code> is not used), during
+   which <span class="application">pg_basebackup</span> will appear to be idle.
+  </p><p>
+   The backup will include all files in the data directory and tablespaces,
+   including the configuration files and any additional files placed in the
+   directory by third parties, except certain temporary files managed by
+   PostgreSQL.  But only regular files and directories are copied, except that
+   symbolic links used for tablespaces are preserved.  Symbolic links pointing
+   to certain directories known to PostgreSQL are copied as empty directories.
+   Other symbolic links and special device files are skipped.
+   See <a class="xref" href="protocol-replication.html" title="53.4. Streaming Replication Protocol">Section 53.4</a> for the precise details.
+  </p><p>
+   In plain format, tablespaces will be backed up to the same path
+   they have on the source server, unless the
+   option <code class="literal">--tablespace-mapping</code> is used.  Without
+   this option, running a plain format base backup on the same host as the
+   server will not work if tablespaces are in use, because the backup would
+   have to be written to the same directory locations as the original
+   tablespaces.
+  </p><p>
+   When tar format is used, it is the user's responsibility to unpack each
+   tar file before starting a PostgreSQL server that uses the data. If there
+   are additional tablespaces, the
+   tar files for them need to be unpacked in the correct locations. In this
+   case the symbolic links for those tablespaces will be created by the server
+   according to the contents of the <code class="filename">tablespace_map</code> file that is
+   included in the <code class="filename">base.tar</code> file.
+  </p><p>
+   <span class="application">pg_basebackup</span> works with servers of the same
+   or an older major version, down to 9.1. However, WAL streaming mode (<code class="literal">-X
+   stream</code>) only works with server version 9.3 and later, and tar format
+   (<code class="literal">--format=tar</code>) only works with server version 9.5
+   and later.
+  </p><p>
+   <span class="application">pg_basebackup</span> will preserve group permissions
+   for data files if group permissions are enabled on the source cluster.
+  </p></div><div class="refsect1" id="id-1.9.4.10.9"><h2>Examples</h2><p>
+   To create a base backup of the server at <code class="literal">mydbserver</code>
+   and store it in the local directory
+   <code class="filename">/usr/local/pgsql/data</code>:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_basebackup -h mydbserver -D /usr/local/pgsql/data</code></strong>
+</pre><p>
+  </p><p>
+   To create a backup of the local server with one compressed
+   tar file for each tablespace, and store it in the directory
+   <code class="filename">backup</code>, showing a progress report while running:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_basebackup -D backup -Ft -z -P</code></strong>
+</pre><p>
+  </p><p>
+   To create a backup of a single-tablespace local database and compress
+   this with <span class="productname">bzip2</span>:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_basebackup -D - -Ft -X fetch | bzip2 &gt; backup.tar.bz2</code></strong>
+</pre><p>
+   (This command will fail if there are multiple tablespaces in the
+   database.)
+  </p><p>
+   To create a backup of a local database where the tablespace in
+   <code class="filename">/opt/ts</code> is relocated
+   to <code class="filename">./backup/ts</code>:
+</p><pre class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>pg_basebackup -D backup/data -T /opt/ts=$(pwd)/backup/ts</code></strong>
+</pre></div><div class="refsect1" id="id-1.9.4.10.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="app-pgdump.html" title="pg_dump"><span class="refentrytitle"><span class="application">pg_dump</span></span></a>, <a class="xref" href="progress-reporting.html#BASEBACKUP-PROGRESS-REPORTING" title="28.4.5. Base Backup Progress Reporting">Section 28.4.5</a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-pgamcheck.html" title="pg_amcheck">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="pgbench.html" title="pgbench">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_amcheck</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">pgbench</span></td></tr></table></div></body></html>

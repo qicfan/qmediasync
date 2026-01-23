@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>36.2. Managing Database Connections</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-concept.html" title="36.1. The Concept" /><link rel="next" href="ecpg-commands.html" title="36.3. Running SQL Commands" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">36.2. Managing Database Connections</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-concept.html" title="36.1. The Concept">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><th width="60%" align="center">Chapter 36. <span xmlns="http://www.w3.org/1999/xhtml" class="application">ECPG</span> — Embedded <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> in C</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-commands.html" title="36.3. Running SQL Commands">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ECPG-CONNECT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">36.2. Managing Database Connections</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ecpg-connect.html#ECPG-CONNECTING">36.2.1. Connecting to the Database Server</a></span></dt><dt><span class="sect2"><a href="ecpg-connect.html#ECPG-SET-CONNECTION">36.2.2. Choosing a Connection</a></span></dt><dt><span class="sect2"><a href="ecpg-connect.html#ECPG-DISCONNECT">36.2.3. Closing a Connection</a></span></dt></dl></div><p>
+   This section describes how to open, close, and switch database
+   connections.
+  </p><div class="sect2" id="ECPG-CONNECTING"><div class="titlepage"><div><div><h3 class="title">36.2.1. Connecting to the Database Server</h3></div></div></div><p>
+   One connects to a database using the following statement:
+</p><pre class="programlisting">
+EXEC SQL CONNECT TO <em class="replaceable"><code>target</code></em> [<span class="optional">AS <em class="replaceable"><code>connection-name</code></em></span>] [<span class="optional">USER <em class="replaceable"><code>user-name</code></em></span>];
+</pre><p>
+   The <em class="replaceable"><code>target</code></em> can be specified in the
+   following ways:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+      <code class="literal"><em class="replaceable"><code>dbname</code></em>[<span class="optional">@<em class="replaceable"><code>hostname</code></em></span>][<span class="optional">:<em class="replaceable"><code>port</code></em></span>]</code>
+     </li><li class="listitem">
+      <code class="literal">tcp:postgresql://<em class="replaceable"><code>hostname</code></em>[<span class="optional">:<em class="replaceable"><code>port</code></em></span>][<span class="optional">/<em class="replaceable"><code>dbname</code></em></span>][<span class="optional">?<em class="replaceable"><code>options</code></em></span>]</code>
+     </li><li class="listitem">
+      <code class="literal">unix:postgresql://localhost[<span class="optional">:<em class="replaceable"><code>port</code></em></span>][<span class="optional">/<em class="replaceable"><code>dbname</code></em></span>][<span class="optional">?<em class="replaceable"><code>options</code></em></span>]</code>
+     </li><li class="listitem">
+      an SQL string literal containing one of the above forms
+     </li><li class="listitem">
+      a reference to a character variable containing one of the above forms (see examples)
+     </li><li class="listitem">
+      <code class="literal">DEFAULT</code>
+     </li></ul></div><p>
+
+   The connection target <code class="literal">DEFAULT</code> initiates a connection
+   to the default database under the default user name.  No separate
+   user name or connection name can be specified in that case.
+  </p><p>
+   If you specify the connection target directly (that is, not as a string
+   literal or variable reference), then the components of the target are
+   passed through normal SQL parsing; this means that, for example,
+   the <em class="replaceable"><code>hostname</code></em> must look like one or more SQL
+   identifiers separated by dots, and those identifiers will be
+   case-folded unless double-quoted.  Values of
+   any <em class="replaceable"><code>options</code></em> must be SQL identifiers,
+   integers, or variable references.  Of course, you can put nearly
+   anything into an SQL identifier by double-quoting it.
+   In practice, it is probably less error-prone to use a (single-quoted)
+   string literal or a variable reference than to write the connection
+   target directly.
+  </p><p>
+   There are also different ways to specify the user name:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+      <code class="literal"><em class="replaceable"><code>username</code></em></code>
+     </li><li class="listitem">
+      <code class="literal"><em class="replaceable"><code>username</code></em>/<em class="replaceable"><code>password</code></em></code>
+     </li><li class="listitem">
+      <code class="literal"><em class="replaceable"><code>username</code></em> IDENTIFIED BY <em class="replaceable"><code>password</code></em></code>
+     </li><li class="listitem">
+      <code class="literal"><em class="replaceable"><code>username</code></em> USING <em class="replaceable"><code>password</code></em></code>
+     </li></ul></div><p>
+
+   As above, the parameters <em class="replaceable"><code>username</code></em> and
+   <em class="replaceable"><code>password</code></em> can be an SQL identifier, an
+   SQL string literal, or a reference to a character variable.
+  </p><p>
+   If the connection target includes any <em class="replaceable"><code>options</code></em>,
+   those consist of
+   <code class="literal"><em class="replaceable"><code>keyword</code></em>=<em class="replaceable"><code>value</code></em></code>
+   specifications separated by ampersands (<code class="literal">&amp;</code>).
+   The allowed key words are the same ones recognized
+   by <span class="application">libpq</span> (see
+   <a class="xref" href="libpq-connect.html#LIBPQ-PARAMKEYWORDS" title="34.1.2. Parameter Key Words">Section 34.1.2</a>).  Spaces are ignored before
+   any <em class="replaceable"><code>keyword</code></em> or <em class="replaceable"><code>value</code></em>,
+   though not within or after one.  Note that there is no way to
+   write <code class="literal">&amp;</code> within a <em class="replaceable"><code>value</code></em>.
+  </p><p>
+   Notice that when specifying a socket connection
+   (with the <code class="literal">unix:</code> prefix), the host name must be
+   exactly <code class="literal">localhost</code>.  To select a non-default
+   socket directory, write the directory's pathname as the value of
+   a <code class="varname">host</code> option in
+   the <em class="replaceable"><code>options</code></em> part of the target.
+  </p><p>
+   The <em class="replaceable"><code>connection-name</code></em> is used to handle
+   multiple connections in one program.  It can be omitted if a
+   program uses only one connection.  The most recently opened
+   connection becomes the current connection, which is used by default
+   when an SQL statement is to be executed (see later in this
+   chapter).
+  </p><p>
+   Here are some examples of <code class="command">CONNECT</code> statements:
+</p><pre class="programlisting">
+EXEC SQL CONNECT TO mydb@sql.mydomain.com;
+
+EXEC SQL CONNECT TO tcp:postgresql://sql.mydomain.com/mydb AS myconnection USER john;
+
+EXEC SQL BEGIN DECLARE SECTION;
+const char *target = "mydb@sql.mydomain.com";
+const char *user = "john";
+const char *passwd = "secret";
+EXEC SQL END DECLARE SECTION;
+ ...
+EXEC SQL CONNECT TO :target USER :user USING :passwd;
+/* or EXEC SQL CONNECT TO :target USER :user/:passwd; */
+</pre><p>
+   The last example makes use of the feature referred to above as
+   character variable references.  You will see in later sections how C
+   variables can be used in SQL statements when you prefix them with a
+   colon.
+  </p><p>
+   Be advised that the format of the connection target is not
+   specified in the SQL standard.  So if you want to develop portable
+   applications, you might want to use something based on the last
+   example above to encapsulate the connection target string
+   somewhere.
+  </p><p>
+   If untrusted users have access to a database that has not adopted a
+   <a class="link" href="ddl-schemas.html#DDL-SCHEMAS-PATTERNS" title="5.9.6. Usage Patterns">secure schema usage pattern</a>,
+   begin each session by removing publicly-writable schemas
+   from <code class="varname">search_path</code>.  For example,
+   add <code class="literal">options=-c search_path=</code>
+   to <code class="literal"><em class="replaceable"><code>options</code></em></code>, or
+   issue <code class="literal">EXEC SQL SELECT pg_catalog.set_config('search_path', '',
+   false);</code> after connecting.  This consideration is not specific to
+   ECPG; it applies to every interface for executing arbitrary SQL commands.
+  </p></div><div class="sect2" id="ECPG-SET-CONNECTION"><div class="titlepage"><div><div><h3 class="title">36.2.2. Choosing a Connection</h3></div></div></div><p>
+   SQL statements in embedded SQL programs are by default executed on
+   the current connection, that is, the most recently opened one.  If
+   an application needs to manage multiple connections, then there are
+   three ways to handle this.
+  </p><p>
+   The first option is to explicitly choose a connection for each SQL
+   statement, for example:
+</p><pre class="programlisting">
+EXEC SQL AT <em class="replaceable"><code>connection-name</code></em> SELECT ...;
+</pre><p>
+   This option is particularly suitable if the application needs to
+   use several connections in mixed order.
+  </p><p>
+   If your application uses multiple threads of execution, they cannot share a
+   connection concurrently. You must either explicitly control access to the connection
+   (using mutexes) or use a connection for each thread.
+  </p><p>
+   The second option is to execute a statement to switch the current
+   connection.  That statement is:
+</p><pre class="programlisting">
+EXEC SQL SET CONNECTION <em class="replaceable"><code>connection-name</code></em>;
+</pre><p>
+   This option is particularly convenient if many statements are to be
+   executed on the same connection.
+  </p><p>
+   Here is an example program managing multiple database connections:
+</p><pre class="programlisting">
+#include &lt;stdio.h&gt;
+
+EXEC SQL BEGIN DECLARE SECTION;
+    char dbname[1024];
+EXEC SQL END DECLARE SECTION;
+
+int
+main()
+{
+    EXEC SQL CONNECT TO testdb1 AS con1 USER testuser;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+    EXEC SQL CONNECT TO testdb2 AS con2 USER testuser;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+    EXEC SQL CONNECT TO testdb3 AS con3 USER testuser;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+
+    /* This query would be executed in the last opened database "testdb3". */
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current=%s (should be testdb3)\n", dbname);
+
+    /* Using "AT" to run a query in "testdb2" */
+    EXEC SQL AT con2 SELECT current_database() INTO :dbname;
+    printf("current=%s (should be testdb2)\n", dbname);
+
+    /* Switch the current connection to "testdb1". */
+    EXEC SQL SET CONNECTION con1;
+
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current=%s (should be testdb1)\n", dbname);
+
+    EXEC SQL DISCONNECT ALL;
+    return 0;
+}
+</pre><p>
+
+   This example would produce this output:
+</p><pre class="screen">
+current=testdb3 (should be testdb3)
+current=testdb2 (should be testdb2)
+current=testdb1 (should be testdb1)
+</pre><p>
+  </p><p>
+  The third option is to declare an SQL identifier linked to
+  the connection, for example:
+</p><pre class="programlisting">
+EXEC SQL AT <em class="replaceable"><code>connection-name</code></em> DECLARE <em class="replaceable"><code>statement-name</code></em> STATEMENT;
+EXEC SQL PREPARE <em class="replaceable"><code>statement-name</code></em> FROM :<em class="replaceable"><code>dyn-string</code></em>;
+</pre><p>
+   Once you link an SQL identifier to a connection, you execute dynamic SQL
+   without an AT clause. Note that this option behaves like preprocessor
+   directives, therefore the link is enabled only in the file.
+  </p><p>
+   Here is an example program using this option:
+</p><pre class="programlisting">
+#include &lt;stdio.h&gt;
+
+EXEC SQL BEGIN DECLARE SECTION;
+char dbname[128];
+char *dyn_sql = "SELECT current_database()";
+EXEC SQL END DECLARE SECTION;
+
+int main(){
+  EXEC SQL CONNECT TO postgres AS con1;
+  EXEC SQL CONNECT TO testdb AS con2;
+  EXEC SQL AT con1 DECLARE stmt STATEMENT;
+  EXEC SQL PREPARE stmt FROM :dyn_sql;
+  EXEC SQL EXECUTE stmt INTO :dbname;
+  printf("%s\n", dbname);
+
+  EXEC SQL DISCONNECT ALL;
+  return 0;
+}
+</pre><p>
+
+   This example would produce this output, even if the default connection is testdb:
+</p><pre class="screen">
+postgres
+</pre><p>
+  </p></div><div class="sect2" id="ECPG-DISCONNECT"><div class="titlepage"><div><div><h3 class="title">36.2.3. Closing a Connection</h3></div></div></div><p>
+   To close a connection, use the following statement:
+</p><pre class="programlisting">
+EXEC SQL DISCONNECT [<span class="optional"><em class="replaceable"><code>connection</code></em></span>];
+</pre><p>
+   The <em class="replaceable"><code>connection</code></em> can be specified
+   in the following ways:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+      <code class="literal"><em class="replaceable"><code>connection-name</code></em></code>
+     </li><li class="listitem">
+      <code class="literal">CURRENT</code>
+     </li><li class="listitem">
+      <code class="literal">ALL</code>
+     </li></ul></div><p>
+
+   If no connection name is specified, the current connection is
+   closed.
+  </p><p>
+   It is good style that an application always explicitly disconnect
+   from every connection it opened.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-concept.html" title="36.1. The Concept">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-commands.html" title="36.3. Running SQL Commands">Next</a></td></tr><tr><td width="40%" align="left" valign="top">36.1. The Concept </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 36.3. Running SQL Commands</td></tr></table></div></body></html>

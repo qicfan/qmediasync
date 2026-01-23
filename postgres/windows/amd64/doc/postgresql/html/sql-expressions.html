@@ -1,0 +1,995 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4.2. Value Expressions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-syntax-lexical.html" title="4.1. Lexical Structure" /><link rel="next" href="sql-syntax-calling-funcs.html" title="4.3. Calling Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">4.2. Value Expressions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-syntax-lexical.html" title="4.1. Lexical Structure">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Up</a></td><th width="60%" align="center">Chapter 4. SQL Syntax</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-syntax-calling-funcs.html" title="4.3. Calling Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SQL-EXPRESSIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">4.2. Value Expressions</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="sql-expressions.html#SQL-EXPRESSIONS-COLUMN-REFS">4.2.1. Column References</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-EXPRESSIONS-PARAMETERS-POSITIONAL">4.2.2. Positional Parameters</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-EXPRESSIONS-SUBSCRIPTS">4.2.3. Subscripts</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#FIELD-SELECTION">4.2.4. Field Selection</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-EXPRESSIONS-OPERATOR-CALLS">4.2.5. Operator Invocations</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-EXPRESSIONS-FUNCTION-CALLS">4.2.6. Function Calls</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SYNTAX-AGGREGATES">4.2.7. Aggregate Expressions</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS">4.2.8. Window Function Calls</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-SYNTAX-TYPE-CASTS">4.2.9. Type Casts</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-SYNTAX-COLLATE-EXPRS">4.2.10. Collation Expressions</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES">4.2.11. Scalar Subqueries</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-SYNTAX-ARRAY-CONSTRUCTORS">4.2.12. Array Constructors</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS">4.2.13. Row Constructors</a></span></dt><dt><span class="sect2"><a href="sql-expressions.html#SYNTAX-EXPRESS-EVAL">4.2.14. Expression Evaluation Rules</a></span></dt></dl></div><a id="id-1.5.3.6.2" class="indexterm"></a><a id="id-1.5.3.6.3" class="indexterm"></a><a id="id-1.5.3.6.4" class="indexterm"></a><p>
+   Value expressions are used in a variety of contexts, such
+   as in the target list of the <code class="command">SELECT</code> command, as
+   new column values in <code class="command">INSERT</code> or
+   <code class="command">UPDATE</code>, or in search conditions in a number of
+   commands.  The result of a value expression is sometimes called a
+   <em class="firstterm">scalar</em>, to distinguish it from the result of
+   a table expression (which is a table).  Value expressions are
+   therefore also called <em class="firstterm">scalar expressions</em> (or
+   even simply <em class="firstterm">expressions</em>).  The expression
+   syntax allows the calculation of values from primitive parts using
+   arithmetic, logical, set, and other operations.
+  </p><p>
+   A value expression is one of the following:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      A constant or literal value
+     </p></li><li class="listitem"><p>
+      A column reference
+     </p></li><li class="listitem"><p>
+      A positional parameter reference, in the body of a function definition
+      or prepared statement
+     </p></li><li class="listitem"><p>
+      A subscripted expression
+     </p></li><li class="listitem"><p>
+      A field selection expression
+     </p></li><li class="listitem"><p>
+      An operator invocation
+     </p></li><li class="listitem"><p>
+      A function call
+     </p></li><li class="listitem"><p>
+      An aggregate expression
+     </p></li><li class="listitem"><p>
+      A window function call
+     </p></li><li class="listitem"><p>
+      A type cast
+     </p></li><li class="listitem"><p>
+      A collation expression
+     </p></li><li class="listitem"><p>
+      A scalar subquery
+     </p></li><li class="listitem"><p>
+      An array constructor
+     </p></li><li class="listitem"><p>
+      A row constructor
+     </p></li><li class="listitem"><p>
+      Another value expression in parentheses (used to group
+      subexpressions and override
+      precedence<a id="id-1.5.3.6.6.1.15.1.1" class="indexterm"></a>)
+     </p></li></ul></div><p>
+  </p><p>
+   In addition to this list, there are a number of constructs that can
+   be classified as an expression but do not follow any general syntax
+   rules.  These generally have the semantics of a function or
+   operator and are explained in the appropriate location in <a class="xref" href="functions.html" title="Chapter 9. Functions and Operators">Chapter 9</a>.  An example is the <code class="literal">IS NULL</code>
+   clause.
+  </p><p>
+   We have already discussed constants in <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-CONSTANTS" title="4.1.2. Constants">Section 4.1.2</a>.  The following sections discuss
+   the remaining options.
+  </p><div class="sect2" id="SQL-EXPRESSIONS-COLUMN-REFS"><div class="titlepage"><div><div><h3 class="title">4.2.1. Column References</h3></div></div></div><a id="id-1.5.3.6.9.2" class="indexterm"></a><p>
+    A column can be referenced in the form:
+</p><pre class="synopsis">
+<em class="replaceable"><code>correlation</code></em>.<em class="replaceable"><code>columnname</code></em>
+</pre><p>
+   </p><p>
+    <em class="replaceable"><code>correlation</code></em> is the name of a
+    table (possibly qualified with a schema name), or an alias for a table
+    defined by means of a <code class="literal">FROM</code> clause.
+    The correlation name and separating dot can be omitted if the column name
+    is unique across all the tables being used in the current query.  (See also <a class="xref" href="queries.html" title="Chapter 7. Queries">Chapter 7</a>.)
+   </p></div><div class="sect2" id="SQL-EXPRESSIONS-PARAMETERS-POSITIONAL"><div class="titlepage"><div><div><h3 class="title">4.2.2. Positional Parameters</h3></div></div></div><a id="id-1.5.3.6.10.2" class="indexterm"></a><a id="id-1.5.3.6.10.3" class="indexterm"></a><p>
+    A positional parameter reference is used to indicate a value
+    that is supplied externally to an SQL statement.  Parameters are
+    used in SQL function definitions and in prepared queries.  Some
+    client libraries also support specifying data values separately
+    from the SQL command string, in which case parameters are used to
+    refer to the out-of-line data values.
+    The form of a parameter reference is:
+</p><pre class="synopsis">
+$<em class="replaceable"><code>number</code></em>
+</pre><p>
+   </p><p>
+    For example, consider the definition of a function,
+    <code class="function">dept</code>, as:
+
+</p><pre class="programlisting">
+CREATE FUNCTION dept(text) RETURNS dept
+    AS $$ SELECT * FROM dept WHERE name = $1 $$
+    LANGUAGE SQL;
+</pre><p>
+
+    Here the <code class="literal">$1</code> references the value of the first
+    function argument whenever the function is invoked.
+   </p></div><div class="sect2" id="SQL-EXPRESSIONS-SUBSCRIPTS"><div class="titlepage"><div><div><h3 class="title">4.2.3. Subscripts</h3></div></div></div><a id="id-1.5.3.6.11.2" class="indexterm"></a><p>
+    If an expression yields a value of an array type, then a specific
+    element of the array value can be extracted by writing
+</p><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em>[<em class="replaceable"><code>subscript</code></em>]
+</pre><p>
+    or multiple adjacent elements (an <span class="quote">“<span class="quote">array slice</span>”</span>) can be extracted
+    by writing
+</p><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em>[<em class="replaceable"><code>lower_subscript</code></em>:<em class="replaceable"><code>upper_subscript</code></em>]
+</pre><p>
+    (Here, the brackets <code class="literal">[ ]</code> are meant to appear literally.)
+    Each <em class="replaceable"><code>subscript</code></em> is itself an expression,
+    which will be rounded to the nearest integer value.
+   </p><p>
+    In general the array <em class="replaceable"><code>expression</code></em> must be
+    parenthesized, but the parentheses can be omitted when the expression
+    to be subscripted is just a column reference or positional parameter.
+    Also, multiple subscripts can be concatenated when the original array
+    is multidimensional.
+    For example:
+
+</p><pre class="programlisting">
+mytable.arraycolumn[4]
+mytable.two_d_column[17][34]
+$1[10:42]
+(arrayfunction(a,b))[42]
+</pre><p>
+
+    The parentheses in the last example are required.
+    See <a class="xref" href="arrays.html" title="8.15. Arrays">Section 8.15</a> for more about arrays.
+   </p></div><div class="sect2" id="FIELD-SELECTION"><div class="titlepage"><div><div><h3 class="title">4.2.4. Field Selection</h3></div></div></div><a id="id-1.5.3.6.12.2" class="indexterm"></a><p>
+    If an expression yields a value of a composite type (row type), then a
+    specific field of the row can be extracted by writing
+</p><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em>.<em class="replaceable"><code>fieldname</code></em>
+</pre><p>
+   </p><p>
+    In general the row <em class="replaceable"><code>expression</code></em> must be
+    parenthesized, but the parentheses can be omitted when the expression
+    to be selected from is just a table reference or positional parameter.
+    For example:
+
+</p><pre class="programlisting">
+mytable.mycolumn
+$1.somecolumn
+(rowfunction(a,b)).col3
+</pre><p>
+
+    (Thus, a qualified column reference is actually just a special case
+    of the field selection syntax.)  An important special case is
+    extracting a field from a table column that is of a composite type:
+
+</p><pre class="programlisting">
+(compositecol).somefield
+(mytable.compositecol).somefield
+</pre><p>
+
+    The parentheses are required here to show that
+    <code class="structfield">compositecol</code> is a column name not a table name,
+    or that <code class="structname">mytable</code> is a table name not a schema name
+    in the second case.
+   </p><p>
+    You can ask for all fields of a composite value by
+    writing <code class="literal">.*</code>:
+</p><pre class="programlisting">
+(compositecol).*
+</pre><p>
+    This notation behaves differently depending on context;
+    see <a class="xref" href="rowtypes.html#ROWTYPES-USAGE" title="8.16.5. Using Composite Types in Queries">Section 8.16.5</a> for details.
+   </p></div><div class="sect2" id="SQL-EXPRESSIONS-OPERATOR-CALLS"><div class="titlepage"><div><div><h3 class="title">4.2.5. Operator Invocations</h3></div></div></div><a id="id-1.5.3.6.13.2" class="indexterm"></a><p>
+    There are two possible syntaxes for an operator invocation:
+    </p><table border="0" summary="Simple list" class="simplelist"><tr><td><em class="replaceable"><code>expression</code></em> <em class="replaceable"><code>operator</code></em> <em class="replaceable"><code>expression</code></em> (binary infix operator)</td></tr><tr><td><em class="replaceable"><code>operator</code></em> <em class="replaceable"><code>expression</code></em> (unary prefix operator)</td></tr></table><p>
+    where the <em class="replaceable"><code>operator</code></em> token follows the syntax
+    rules of <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-OPERATORS" title="4.1.3. Operators">Section 4.1.3</a>, or is one of the
+    key words <code class="token">AND</code>, <code class="token">OR</code>, and
+    <code class="token">NOT</code>, or is a qualified operator name in the form:
+</p><pre class="synopsis">
+<code class="literal">OPERATOR(</code><em class="replaceable"><code>schema</code></em><code class="literal">.</code><em class="replaceable"><code>operatorname</code></em><code class="literal">)</code>
+</pre><p>
+    Which particular operators exist and whether
+    they are unary or binary depends on what operators have been
+    defined by the system or the user.  <a class="xref" href="functions.html" title="Chapter 9. Functions and Operators">Chapter 9</a>
+    describes the built-in operators.
+   </p></div><div class="sect2" id="SQL-EXPRESSIONS-FUNCTION-CALLS"><div class="titlepage"><div><div><h3 class="title">4.2.6. Function Calls</h3></div></div></div><a id="id-1.5.3.6.14.2" class="indexterm"></a><p>
+    The syntax for a function call is the name of a function
+    (possibly qualified with a schema name), followed by its argument list
+    enclosed in parentheses:
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>function_name</code></em> ([<span class="optional"><em class="replaceable"><code>expression</code></em> [<span class="optional">, <em class="replaceable"><code>expression</code></em> ... </span>]</span>] )
+</pre><p>
+   </p><p>
+    For example, the following computes the square root of 2:
+</p><pre class="programlisting">
+sqrt(2)
+</pre><p>
+   </p><p>
+    The list of built-in functions is in <a class="xref" href="functions.html" title="Chapter 9. Functions and Operators">Chapter 9</a>.
+    Other functions can be added by the user.
+   </p><p>
+    When issuing queries in a database where some users mistrust other users,
+    observe security precautions from <a class="xref" href="typeconv-func.html" title="10.3. Functions">Section 10.3</a> when
+    writing function calls.
+   </p><p>
+    The arguments can optionally have names attached.
+    See <a class="xref" href="sql-syntax-calling-funcs.html" title="4.3. Calling Functions">Section 4.3</a> for details.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     A function that takes a single argument of composite type can
+     optionally be called using field-selection syntax, and conversely
+     field selection can be written in functional style.  That is, the
+     notations <code class="literal">col(table)</code> and <code class="literal">table.col</code> are
+     interchangeable.  This behavior is not SQL-standard but is provided
+     in <span class="productname">PostgreSQL</span> because it allows use of functions to
+     emulate <span class="quote">“<span class="quote">computed fields</span>”</span>.  For more information see
+     <a class="xref" href="rowtypes.html#ROWTYPES-USAGE" title="8.16.5. Using Composite Types in Queries">Section 8.16.5</a>.
+    </p></div></div><div class="sect2" id="SYNTAX-AGGREGATES"><div class="titlepage"><div><div><h3 class="title">4.2.7. Aggregate Expressions</h3></div></div></div><a id="id-1.5.3.6.15.2" class="indexterm"></a><a id="id-1.5.3.6.15.3" class="indexterm"></a><a id="id-1.5.3.6.15.4" class="indexterm"></a><a id="id-1.5.3.6.15.5" class="indexterm"></a><p>
+    An <em class="firstterm">aggregate expression</em> represents the
+    application of an aggregate function across the rows selected by a
+    query.  An aggregate function reduces multiple inputs to a single
+    output value, such as the sum or average of the inputs.  The
+    syntax of an aggregate expression is one of the following:
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>aggregate_name</code></em> (<em class="replaceable"><code>expression</code></em> [ , ... ] [ <em class="replaceable"><code>order_by_clause</code></em> ] ) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ]
+<em class="replaceable"><code>aggregate_name</code></em> (ALL <em class="replaceable"><code>expression</code></em> [ , ... ] [ <em class="replaceable"><code>order_by_clause</code></em> ] ) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ]
+<em class="replaceable"><code>aggregate_name</code></em> (DISTINCT <em class="replaceable"><code>expression</code></em> [ , ... ] [ <em class="replaceable"><code>order_by_clause</code></em> ] ) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ]
+<em class="replaceable"><code>aggregate_name</code></em> ( * ) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ]
+<em class="replaceable"><code>aggregate_name</code></em> ( [ <em class="replaceable"><code>expression</code></em> [ , ... ] ] ) WITHIN GROUP ( <em class="replaceable"><code>order_by_clause</code></em> ) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ]
+</pre><p>
+
+    where <em class="replaceable"><code>aggregate_name</code></em> is a previously
+    defined aggregate (possibly qualified with a schema name) and
+    <em class="replaceable"><code>expression</code></em> is
+    any value expression that does not itself contain an aggregate
+    expression or a window function call.  The optional
+    <em class="replaceable"><code>order_by_clause</code></em> and
+    <em class="replaceable"><code>filter_clause</code></em> are described below.
+   </p><p>
+    The first form of aggregate expression invokes the aggregate
+    once for each input row.
+    The second form is the same as the first, since
+    <code class="literal">ALL</code> is the default.
+    The third form invokes the aggregate once for each distinct value
+    of the expression (or distinct set of values, for multiple expressions)
+    found in the input rows.
+    The fourth form invokes the aggregate once for each input row; since no
+    particular input value is specified, it is generally only useful
+    for the <code class="function">count(*)</code> aggregate function.
+    The last form is used with <em class="firstterm">ordered-set</em> aggregate
+    functions, which are described below.
+   </p><p>
+    Most aggregate functions ignore null inputs, so that rows in which
+    one or more of the expression(s) yield null are discarded.  This
+    can be assumed to be true, unless otherwise specified, for all
+    built-in aggregates.
+   </p><p>
+    For example, <code class="literal">count(*)</code> yields the total number
+    of input rows; <code class="literal">count(f1)</code> yields the number of
+    input rows in which <code class="literal">f1</code> is non-null, since
+    <code class="function">count</code> ignores nulls; and
+    <code class="literal">count(distinct f1)</code> yields the number of
+    distinct non-null values of <code class="literal">f1</code>.
+   </p><p>
+    Ordinarily, the input rows are fed to the aggregate function in an
+    unspecified order.  In many cases this does not matter; for example,
+    <code class="function">min</code> produces the same result no matter what order it
+    receives the inputs in.  However, some aggregate functions
+    (such as <code class="function">array_agg</code> and <code class="function">string_agg</code>) produce
+    results that depend on the ordering of the input rows.  When using
+    such an aggregate, the optional <em class="replaceable"><code>order_by_clause</code></em> can be
+    used to specify the desired ordering.  The <em class="replaceable"><code>order_by_clause</code></em>
+    has the same syntax as for a query-level <code class="literal">ORDER BY</code> clause, as
+    described in <a class="xref" href="queries-order.html" title="7.5. Sorting Rows (ORDER BY)">Section 7.5</a>, except that its expressions
+    are always just expressions and cannot be output-column names or numbers.
+    For example:
+</p><pre class="programlisting">
+SELECT array_agg(a ORDER BY b DESC) FROM table;
+</pre><p>
+   </p><p>
+    When dealing with multiple-argument aggregate functions, note that the
+    <code class="literal">ORDER BY</code> clause goes after all the aggregate arguments.
+    For example, write this:
+</p><pre class="programlisting">
+SELECT string_agg(a, ',' ORDER BY a) FROM table;
+</pre><p>
+    not this:
+</p><pre class="programlisting">
+SELECT string_agg(a ORDER BY a, ',') FROM table;  -- incorrect
+</pre><p>
+    The latter is syntactically valid, but it represents a call of a
+    single-argument aggregate function with two <code class="literal">ORDER BY</code> keys
+    (the second one being rather useless since it's a constant).
+   </p><p>
+    If <code class="literal">DISTINCT</code> is specified in addition to an
+    <em class="replaceable"><code>order_by_clause</code></em>, then all the <code class="literal">ORDER BY</code>
+    expressions must match regular arguments of the aggregate; that is,
+    you cannot sort on an expression that is not included in the
+    <code class="literal">DISTINCT</code> list.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     The ability to specify both <code class="literal">DISTINCT</code> and <code class="literal">ORDER BY</code>
+     in an aggregate function is a <span class="productname">PostgreSQL</span> extension.
+    </p></div><p>
+    Placing <code class="literal">ORDER BY</code> within the aggregate's regular argument
+    list, as described so far, is used when ordering the input rows for
+    general-purpose and statistical aggregates, for which ordering is
+    optional.  There is a
+    subclass of aggregate functions called <em class="firstterm">ordered-set
+    aggregates</em> for which an <em class="replaceable"><code>order_by_clause</code></em>
+    is <span class="emphasis"><em>required</em></span>, usually because the aggregate's computation is
+    only sensible in terms of a specific ordering of its input rows.
+    Typical examples of ordered-set aggregates include rank and percentile
+    calculations.  For an ordered-set aggregate,
+    the <em class="replaceable"><code>order_by_clause</code></em> is written
+    inside <code class="literal">WITHIN GROUP (...)</code>, as shown in the final syntax
+    alternative above.  The expressions in
+    the <em class="replaceable"><code>order_by_clause</code></em> are evaluated once per
+    input row just like regular aggregate arguments, sorted as per
+    the <em class="replaceable"><code>order_by_clause</code></em>'s requirements, and fed
+    to the aggregate function as input arguments.  (This is unlike the case
+    for a non-<code class="literal">WITHIN GROUP</code> <em class="replaceable"><code>order_by_clause</code></em>,
+    which is not treated as argument(s) to the aggregate function.)  The
+    argument expressions preceding <code class="literal">WITHIN GROUP</code>, if any, are
+    called <em class="firstterm">direct arguments</em> to distinguish them from
+    the <em class="firstterm">aggregated arguments</em> listed in
+    the <em class="replaceable"><code>order_by_clause</code></em>.  Unlike regular aggregate
+    arguments, direct arguments are evaluated only once per aggregate call,
+    not once per input row.  This means that they can contain variables only
+    if those variables are grouped by <code class="literal">GROUP BY</code>; this restriction
+    is the same as if the direct arguments were not inside an aggregate
+    expression at all.  Direct arguments are typically used for things like
+    percentile fractions, which only make sense as a single value per
+    aggregation calculation.  The direct argument list can be empty; in this
+    case, write just <code class="literal">()</code> not <code class="literal">(*)</code>.
+    (<span class="productname">PostgreSQL</span> will actually accept either spelling, but
+    only the first way conforms to the SQL standard.)
+   </p><p>
+    <a id="id-1.5.3.6.15.15.1" class="indexterm"></a>
+    An example of an ordered-set aggregate call is:
+
+</p><pre class="programlisting">
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY income) FROM households;
+ percentile_cont
+-----------------
+           50489
+</pre><p>
+
+   which obtains the 50th percentile, or median, value of
+   the <code class="structfield">income</code> column from table <code class="structname">households</code>.
+   Here, <code class="literal">0.5</code> is a direct argument; it would make no sense
+   for the percentile fraction to be a value varying across rows.
+   </p><p>
+    If <code class="literal">FILTER</code> is specified, then only the input
+    rows for which the <em class="replaceable"><code>filter_clause</code></em>
+    evaluates to true are fed to the aggregate function; other rows
+    are discarded.  For example:
+</p><pre class="programlisting">
+SELECT
+    count(*) AS unfiltered,
+    count(*) FILTER (WHERE i &lt; 5) AS filtered
+FROM generate_series(1,10) AS s(i);
+ unfiltered | filtered
+------------+----------
+         10 |        4
+(1 row)
+</pre><p>
+   </p><p>
+    The predefined aggregate functions are described in <a class="xref" href="functions-aggregate.html" title="9.21. Aggregate Functions">Section 9.21</a>.  Other aggregate functions can be added
+    by the user.
+   </p><p>
+    An aggregate expression can only appear in the result list or
+    <code class="literal">HAVING</code> clause of a <code class="command">SELECT</code> command.
+    It is forbidden in other clauses, such as <code class="literal">WHERE</code>,
+    because those clauses are logically evaluated before the results
+    of aggregates are formed.
+   </p><p>
+    When an aggregate expression appears in a subquery (see
+    <a class="xref" href="sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES" title="4.2.11. Scalar Subqueries">Section 4.2.11</a> and
+    <a class="xref" href="functions-subquery.html" title="9.23. Subquery Expressions">Section 9.23</a>), the aggregate is normally
+    evaluated over the rows of the subquery.  But an exception occurs
+    if the aggregate's arguments (and <em class="replaceable"><code>filter_clause</code></em>
+    if any) contain only outer-level variables:
+    the aggregate then belongs to the nearest such outer level, and is
+    evaluated over the rows of that query.  The aggregate expression
+    as a whole is then an outer reference for the subquery it appears in,
+    and acts as a constant over any one evaluation of that subquery.
+    The restriction about
+    appearing only in the result list or <code class="literal">HAVING</code> clause
+    applies with respect to the query level that the aggregate belongs to.
+   </p></div><div class="sect2" id="SYNTAX-WINDOW-FUNCTIONS"><div class="titlepage"><div><div><h3 class="title">4.2.8. Window Function Calls</h3></div></div></div><a id="id-1.5.3.6.16.2" class="indexterm"></a><a id="id-1.5.3.6.16.3" class="indexterm"></a><p>
+    A <em class="firstterm">window function call</em> represents the application
+    of an aggregate-like function over some portion of the rows selected
+    by a query.  Unlike non-window aggregate calls, this is not tied
+    to grouping of the selected rows into a single output row — each
+    row remains separate in the query output.  However the window function
+    has access to all the rows that would be part of the current row's
+    group according to the grouping specification (<code class="literal">PARTITION BY</code>
+    list) of the window function call.
+    The syntax of a window function call is one of the following:
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>function_name</code></em> ([<span class="optional"><em class="replaceable"><code>expression</code></em> [<span class="optional">, <em class="replaceable"><code>expression</code></em> ... </span>]</span>]) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ] OVER <em class="replaceable"><code>window_name</code></em>
+<em class="replaceable"><code>function_name</code></em> ([<span class="optional"><em class="replaceable"><code>expression</code></em> [<span class="optional">, <em class="replaceable"><code>expression</code></em> ... </span>]</span>]) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ] OVER ( <em class="replaceable"><code>window_definition</code></em> )
+<em class="replaceable"><code>function_name</code></em> ( * ) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ] OVER <em class="replaceable"><code>window_name</code></em>
+<em class="replaceable"><code>function_name</code></em> ( * ) [ FILTER ( WHERE <em class="replaceable"><code>filter_clause</code></em> ) ] OVER ( <em class="replaceable"><code>window_definition</code></em> )
+</pre><p>
+    where <em class="replaceable"><code>window_definition</code></em>
+    has the syntax
+</p><pre class="synopsis">
+[ <em class="replaceable"><code>existing_window_name</code></em> ]
+[ PARTITION BY <em class="replaceable"><code>expression</code></em> [, ...] ]
+[ ORDER BY <em class="replaceable"><code>expression</code></em> [ ASC | DESC | USING <em class="replaceable"><code>operator</code></em> ] [ NULLS { FIRST | LAST } ] [, ...] ]
+[ <em class="replaceable"><code>frame_clause</code></em> ]
+</pre><p>
+    The optional <em class="replaceable"><code>frame_clause</code></em>
+    can be one of
+</p><pre class="synopsis">
+{ RANGE | ROWS | GROUPS } <em class="replaceable"><code>frame_start</code></em> [ <em class="replaceable"><code>frame_exclusion</code></em> ]
+{ RANGE | ROWS | GROUPS } BETWEEN <em class="replaceable"><code>frame_start</code></em> AND <em class="replaceable"><code>frame_end</code></em> [ <em class="replaceable"><code>frame_exclusion</code></em> ]
+</pre><p>
+    where <em class="replaceable"><code>frame_start</code></em>
+    and <em class="replaceable"><code>frame_end</code></em> can be one of
+</p><pre class="synopsis">
+UNBOUNDED PRECEDING
+<em class="replaceable"><code>offset</code></em> PRECEDING
+CURRENT ROW
+<em class="replaceable"><code>offset</code></em> FOLLOWING
+UNBOUNDED FOLLOWING
+</pre><p>
+    and <em class="replaceable"><code>frame_exclusion</code></em> can be one of
+</p><pre class="synopsis">
+EXCLUDE CURRENT ROW
+EXCLUDE GROUP
+EXCLUDE TIES
+EXCLUDE NO OTHERS
+</pre><p>
+   </p><p>
+    Here, <em class="replaceable"><code>expression</code></em> represents any value
+    expression that does not itself contain window function calls.
+   </p><p>
+    <em class="replaceable"><code>window_name</code></em> is a reference to a named window
+    specification defined in the query's <code class="literal">WINDOW</code> clause.
+    Alternatively, a full <em class="replaceable"><code>window_definition</code></em> can
+    be given within parentheses, using the same syntax as for defining a
+    named window in the <code class="literal">WINDOW</code> clause; see the
+    <a class="xref" href="sql-select.html" title="SELECT"><span class="refentrytitle">SELECT</span></a> reference page for details.  It's worth
+    pointing out that <code class="literal">OVER wname</code> is not exactly equivalent to
+    <code class="literal">OVER (wname ...)</code>; the latter implies copying and modifying the
+    window definition, and will be rejected if the referenced window
+    specification includes a frame clause.
+   </p><p>
+    The <code class="literal">PARTITION BY</code> clause groups the rows of the query into
+    <em class="firstterm">partitions</em>, which are processed separately by the window
+    function.  <code class="literal">PARTITION BY</code> works similarly to a query-level
+    <code class="literal">GROUP BY</code> clause, except that its expressions are always just
+    expressions and cannot be output-column names or numbers.
+    Without <code class="literal">PARTITION BY</code>, all rows produced by the query are
+    treated as a single partition.
+    The <code class="literal">ORDER BY</code> clause determines the order in which the rows
+    of a partition are processed by the window function.  It works similarly
+    to a query-level <code class="literal">ORDER BY</code> clause, but likewise cannot use
+    output-column names or numbers.  Without <code class="literal">ORDER BY</code>, rows are
+    processed in an unspecified order.
+   </p><p>
+    The <em class="replaceable"><code>frame_clause</code></em> specifies
+    the set of rows constituting the <em class="firstterm">window frame</em>, which is a
+    subset of the current partition, for those window functions that act on
+    the frame instead of the whole partition.  The set of rows in the frame
+    can vary depending on which row is the current row.  The frame can be
+    specified in <code class="literal">RANGE</code>, <code class="literal">ROWS</code>
+    or <code class="literal">GROUPS</code> mode; in each case, it runs from
+    the <em class="replaceable"><code>frame_start</code></em> to
+    the <em class="replaceable"><code>frame_end</code></em>.
+    If <em class="replaceable"><code>frame_end</code></em> is omitted, the end defaults
+    to <code class="literal">CURRENT ROW</code>.
+   </p><p>
+    A <em class="replaceable"><code>frame_start</code></em> of <code class="literal">UNBOUNDED PRECEDING</code> means
+    that the frame starts with the first row of the partition, and similarly
+    a <em class="replaceable"><code>frame_end</code></em> of <code class="literal">UNBOUNDED FOLLOWING</code> means
+    that the frame ends with the last row of the partition.
+   </p><p>
+    In <code class="literal">RANGE</code> or <code class="literal">GROUPS</code> mode,
+    a <em class="replaceable"><code>frame_start</code></em> of
+    <code class="literal">CURRENT ROW</code> means the frame starts with the current
+    row's first <em class="firstterm">peer</em> row (a row that the
+    window's <code class="literal">ORDER BY</code> clause sorts as equivalent to the
+    current row), while a <em class="replaceable"><code>frame_end</code></em> of
+    <code class="literal">CURRENT ROW</code> means the frame ends with the current
+    row's last peer row.
+    In <code class="literal">ROWS</code> mode, <code class="literal">CURRENT ROW</code> simply
+    means the current row.
+   </p><p>
+    In the <em class="replaceable"><code>offset</code></em> <code class="literal">PRECEDING</code>
+    and <em class="replaceable"><code>offset</code></em> <code class="literal">FOLLOWING</code> frame
+    options, the <em class="replaceable"><code>offset</code></em> must be an expression not
+    containing any variables, aggregate functions, or window functions.
+    The meaning of the <em class="replaceable"><code>offset</code></em> depends on the
+    frame mode:
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       In <code class="literal">ROWS</code> mode,
+       the <em class="replaceable"><code>offset</code></em> must yield a non-null,
+       non-negative integer, and the option means that the frame starts or
+       ends the specified number of rows before or after the current row.
+      </p></li><li class="listitem"><p>
+       In <code class="literal">GROUPS</code> mode,
+       the <em class="replaceable"><code>offset</code></em> again must yield a non-null,
+       non-negative integer, and the option means that the frame starts or
+       ends the specified number of <em class="firstterm">peer groups</em>
+       before or after the current row's peer group, where a peer group is a
+       set of rows that are equivalent in the <code class="literal">ORDER BY</code>
+       ordering.  (There must be an <code class="literal">ORDER BY</code> clause
+       in the window definition to use <code class="literal">GROUPS</code> mode.)
+      </p></li><li class="listitem"><p>
+       In <code class="literal">RANGE</code> mode, these options require that
+       the <code class="literal">ORDER BY</code> clause specify exactly one column.
+       The <em class="replaceable"><code>offset</code></em> specifies the maximum
+       difference between the value of that column in the current row and
+       its value in preceding or following rows of the frame.  The data type
+       of the <em class="replaceable"><code>offset</code></em> expression varies depending
+       on the data type of the ordering column.  For numeric ordering
+       columns it is typically of the same type as the ordering column,
+       but for datetime ordering columns it is an <code class="type">interval</code>.
+       For example, if the ordering column is of type <code class="type">date</code>
+       or <code class="type">timestamp</code>, one could write <code class="literal">RANGE BETWEEN
+       '1 day' PRECEDING AND '10 days' FOLLOWING</code>.
+       The <em class="replaceable"><code>offset</code></em> is still required to be
+       non-null and non-negative, though the meaning
+       of <span class="quote">“<span class="quote">non-negative</span>”</span> depends on its data type.
+      </p></li></ul></div><p>
+    In any case, the distance to the end of the frame is limited by the
+    distance to the end of the partition, so that for rows near the partition
+    ends the frame might contain fewer rows than elsewhere.
+   </p><p>
+    Notice that in both <code class="literal">ROWS</code> and <code class="literal">GROUPS</code>
+    mode, <code class="literal">0 PRECEDING</code> and <code class="literal">0 FOLLOWING</code>
+    are equivalent to <code class="literal">CURRENT ROW</code>.  This normally holds
+    in <code class="literal">RANGE</code> mode as well, for an appropriate
+    data-type-specific meaning of <span class="quote">“<span class="quote">zero</span>”</span>.
+   </p><p>
+    The <em class="replaceable"><code>frame_exclusion</code></em> option allows rows around
+    the current row to be excluded from the frame, even if they would be
+    included according to the frame start and frame end options.
+    <code class="literal">EXCLUDE CURRENT ROW</code> excludes the current row from the
+    frame.
+    <code class="literal">EXCLUDE GROUP</code> excludes the current row and its
+    ordering peers from the frame.
+    <code class="literal">EXCLUDE TIES</code> excludes any peers of the current
+    row from the frame, but not the current row itself.
+    <code class="literal">EXCLUDE NO OTHERS</code> simply specifies explicitly the
+    default behavior of not excluding the current row or its peers.
+   </p><p>
+    The default framing option is <code class="literal">RANGE UNBOUNDED PRECEDING</code>,
+    which is the same as <code class="literal">RANGE BETWEEN UNBOUNDED PRECEDING AND
+    CURRENT ROW</code>.  With <code class="literal">ORDER BY</code>, this sets the frame to be
+    all rows from the partition start up through the current row's last
+    <code class="literal">ORDER BY</code> peer.  Without <code class="literal">ORDER BY</code>,
+    this means all rows of the partition are included in the window frame,
+    since all rows become peers of the current row.
+   </p><p>
+    Restrictions are that
+    <em class="replaceable"><code>frame_start</code></em> cannot be <code class="literal">UNBOUNDED FOLLOWING</code>,
+    <em class="replaceable"><code>frame_end</code></em> cannot be <code class="literal">UNBOUNDED PRECEDING</code>,
+    and the <em class="replaceable"><code>frame_end</code></em> choice cannot appear earlier in the
+    above list of <em class="replaceable"><code>frame_start</code></em>
+    and <em class="replaceable"><code>frame_end</code></em> options than
+    the <em class="replaceable"><code>frame_start</code></em> choice does — for example
+    <code class="literal">RANGE BETWEEN CURRENT ROW AND <em class="replaceable"><code>offset</code></em>
+    PRECEDING</code> is not allowed.
+    But, for example, <code class="literal">ROWS BETWEEN 7 PRECEDING AND 8
+    PRECEDING</code> is allowed, even though it would never select any
+    rows.
+   </p><p>
+    If <code class="literal">FILTER</code> is specified, then only the input
+    rows for which the <em class="replaceable"><code>filter_clause</code></em>
+    evaluates to true are fed to the window function; other rows
+    are discarded.  Only window functions that are aggregates accept
+    a <code class="literal">FILTER</code> clause.
+   </p><p>
+    The built-in window functions are described in <a class="xref" href="functions-window.html#FUNCTIONS-WINDOW-TABLE" title="Table 9.62. General-Purpose Window Functions">Table 9.62</a>.  Other window functions can be added by
+    the user.  Also, any built-in or user-defined general-purpose or
+    statistical aggregate can be used as a window function.  (Ordered-set
+    and hypothetical-set aggregates cannot presently be used as window functions.)
+   </p><p>
+    The syntaxes using <code class="literal">*</code> are used for calling parameter-less
+    aggregate functions as window functions, for example
+    <code class="literal">count(*) OVER (PARTITION BY x ORDER BY y)</code>.
+    The asterisk (<code class="literal">*</code>) is customarily not used for
+    window-specific functions.  Window-specific functions do not
+    allow <code class="literal">DISTINCT</code> or <code class="literal">ORDER BY</code> to be used within the
+    function argument list.
+   </p><p>
+    Window function calls are permitted only in the <code class="literal">SELECT</code>
+    list and the <code class="literal">ORDER BY</code> clause of the query.
+   </p><p>
+    More information about window functions can be found in
+    <a class="xref" href="tutorial-window.html" title="3.5. Window Functions">Section 3.5</a>,
+    <a class="xref" href="functions-window.html" title="9.22. Window Functions">Section 9.22</a>, and
+    <a class="xref" href="queries-table-expressions.html#QUERIES-WINDOW" title="7.2.5. Window Function Processing">Section 7.2.5</a>.
+   </p></div><div class="sect2" id="SQL-SYNTAX-TYPE-CASTS"><div class="titlepage"><div><div><h3 class="title">4.2.9. Type Casts</h3></div></div></div><a id="id-1.5.3.6.17.2" class="indexterm"></a><a id="id-1.5.3.6.17.3" class="indexterm"></a><a id="id-1.5.3.6.17.4" class="indexterm"></a><p>
+    A type cast specifies a conversion from one data type to another.
+    <span class="productname">PostgreSQL</span> accepts two equivalent syntaxes
+    for type casts:
+</p><pre class="synopsis">
+CAST ( <em class="replaceable"><code>expression</code></em> AS <em class="replaceable"><code>type</code></em> )
+<em class="replaceable"><code>expression</code></em>::<em class="replaceable"><code>type</code></em>
+</pre><p>
+    The <code class="literal">CAST</code> syntax conforms to SQL; the syntax with
+    <code class="literal">::</code> is historical <span class="productname">PostgreSQL</span>
+    usage.
+   </p><p>
+    When a cast is applied to a value expression of a known type, it
+    represents a run-time type conversion.  The cast will succeed only
+    if a suitable type conversion operation has been defined.  Notice that this
+    is subtly different from the use of casts with constants, as shown in
+    <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-CONSTANTS-GENERIC" title="4.1.2.7. Constants of Other Types">Section 4.1.2.7</a>.  A cast applied to an
+    unadorned string literal represents the initial assignment of a type
+    to a literal constant value, and so it will succeed for any type
+    (if the contents of the string literal are acceptable input syntax for the
+    data type).
+   </p><p>
+    An explicit type cast can usually be omitted if there is no ambiguity as
+    to the type that a value expression must produce (for example, when it is
+    assigned to a table column); the system will automatically apply a
+    type cast in such cases.  However, automatic casting is only done for
+    casts that are marked <span class="quote">“<span class="quote">OK to apply implicitly</span>”</span>
+    in the system catalogs.  Other casts must be invoked with
+    explicit casting syntax.  This restriction is intended to prevent
+    surprising conversions from being applied silently.
+   </p><p>
+    It is also possible to specify a type cast using a function-like
+    syntax:
+</p><pre class="synopsis">
+<em class="replaceable"><code>typename</code></em> ( <em class="replaceable"><code>expression</code></em> )
+</pre><p>
+    However, this only works for types whose names are also valid as
+    function names.  For example, <code class="literal">double precision</code>
+    cannot be used this way, but the equivalent <code class="literal">float8</code>
+    can.  Also, the names <code class="literal">interval</code>, <code class="literal">time</code>, and
+    <code class="literal">timestamp</code> can only be used in this fashion if they are
+    double-quoted, because of syntactic conflicts.  Therefore, the use of
+    the function-like cast syntax leads to inconsistencies and should
+    probably be avoided.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     The function-like syntax is in fact just a function call.  When
+     one of the two standard cast syntaxes is used to do a run-time
+     conversion, it will internally invoke a registered function to
+     perform the conversion.  By convention, these conversion functions
+     have the same name as their output type, and thus the <span class="quote">“<span class="quote">function-like
+     syntax</span>”</span> is nothing more than a direct invocation of the underlying
+     conversion function.  Obviously, this is not something that a portable
+     application should rely on.  For further details see
+     <a class="xref" href="sql-createcast.html" title="CREATE CAST"><span class="refentrytitle">CREATE CAST</span></a>.
+    </p></div></div><div class="sect2" id="SQL-SYNTAX-COLLATE-EXPRS"><div class="titlepage"><div><div><h3 class="title">4.2.10. Collation Expressions</h3></div></div></div><a id="id-1.5.3.6.18.2" class="indexterm"></a><p>
+    The <code class="literal">COLLATE</code> clause overrides the collation of
+    an expression.  It is appended to the expression it applies to:
+</p><pre class="synopsis">
+<em class="replaceable"><code>expr</code></em> COLLATE <em class="replaceable"><code>collation</code></em>
+</pre><p>
+    where <em class="replaceable"><code>collation</code></em> is a possibly
+    schema-qualified identifier.  The <code class="literal">COLLATE</code>
+    clause binds tighter than operators; parentheses can be used when
+    necessary.
+   </p><p>
+    If no collation is explicitly specified, the database system
+    either derives a collation from the columns involved in the
+    expression, or it defaults to the default collation of the
+    database if no column is involved in the expression.
+   </p><p>
+    The two common uses of the <code class="literal">COLLATE</code> clause are
+    overriding the sort order in an <code class="literal">ORDER BY</code> clause, for
+    example:
+</p><pre class="programlisting">
+SELECT a, b, c FROM tbl WHERE ... ORDER BY a COLLATE "C";
+</pre><p>
+    and overriding the collation of a function or operator call that
+    has locale-sensitive results, for example:
+</p><pre class="programlisting">
+SELECT * FROM tbl WHERE a &gt; 'foo' COLLATE "C";
+</pre><p>
+    Note that in the latter case the <code class="literal">COLLATE</code> clause is
+    attached to an input argument of the operator we wish to affect.
+    It doesn't matter which argument of the operator or function call the
+    <code class="literal">COLLATE</code> clause is attached to, because the collation that is
+    applied by the operator or function is derived by considering all
+    arguments, and an explicit <code class="literal">COLLATE</code> clause will override the
+    collations of all other arguments.  (Attaching non-matching
+    <code class="literal">COLLATE</code> clauses to more than one argument, however, is an
+    error.  For more details see <a class="xref" href="collation.html" title="24.2. Collation Support">Section 24.2</a>.)
+    Thus, this gives the same result as the previous example:
+</p><pre class="programlisting">
+SELECT * FROM tbl WHERE a COLLATE "C" &gt; 'foo';
+</pre><p>
+    But this is an error:
+</p><pre class="programlisting">
+SELECT * FROM tbl WHERE (a &gt; 'foo') COLLATE "C";
+</pre><p>
+    because it attempts to apply a collation to the result of the
+    <code class="literal">&gt;</code> operator, which is of the non-collatable data type
+    <code class="type">boolean</code>.
+   </p></div><div class="sect2" id="SQL-SYNTAX-SCALAR-SUBQUERIES"><div class="titlepage"><div><div><h3 class="title">4.2.11. Scalar Subqueries</h3></div></div></div><a id="id-1.5.3.6.19.2" class="indexterm"></a><p>
+    A scalar subquery is an ordinary
+    <code class="command">SELECT</code> query in parentheses that returns exactly one
+    row with one column.  (See <a class="xref" href="queries.html" title="Chapter 7. Queries">Chapter 7</a> for information about writing queries.)
+    The <code class="command">SELECT</code> query is executed
+    and the single returned value is used in the surrounding value expression.
+    It is an error to use a query that
+    returns more than one row or more than one column as a scalar subquery.
+    (But if, during a particular execution, the subquery returns no rows,
+    there is no error; the scalar result is taken to be null.)
+    The subquery can refer to variables from the surrounding query,
+    which will act as constants during any one evaluation of the subquery.
+    See also <a class="xref" href="functions-subquery.html" title="9.23. Subquery Expressions">Section 9.23</a> for other expressions involving subqueries.
+   </p><p>
+    For example, the following finds the largest city population in each
+    state:
+</p><pre class="programlisting">
+SELECT name, (SELECT max(pop) FROM cities WHERE cities.state = states.name)
+    FROM states;
+</pre><p>
+   </p></div><div class="sect2" id="SQL-SYNTAX-ARRAY-CONSTRUCTORS"><div class="titlepage"><div><div><h3 class="title">4.2.12. Array Constructors</h3></div></div></div><a id="id-1.5.3.6.20.2" class="indexterm"></a><a id="id-1.5.3.6.20.3" class="indexterm"></a><p>
+    An array constructor is an expression that builds an
+    array value using values for its member elements.  A simple array
+    constructor
+    consists of the key word <code class="literal">ARRAY</code>, a left square bracket
+    <code class="literal">[</code>, a list of expressions (separated by commas) for the
+    array element values, and finally a right square bracket <code class="literal">]</code>.
+    For example:
+</p><pre class="programlisting">
+SELECT ARRAY[1,2,3+4];
+  array
+---------
+ {1,2,7}
+(1 row)
+</pre><p>
+    By default,
+    the array element type is the common type of the member expressions,
+    determined using the same rules as for <code class="literal">UNION</code> or
+    <code class="literal">CASE</code> constructs (see <a class="xref" href="typeconv-union-case.html" title="10.5. UNION, CASE, and Related Constructs">Section 10.5</a>).
+    You can override this by explicitly casting the array constructor to the
+    desired type, for example:
+</p><pre class="programlisting">
+SELECT ARRAY[1,2,22.7]::integer[];
+  array
+----------
+ {1,2,23}
+(1 row)
+</pre><p>
+    This has the same effect as casting each expression to the array
+    element type individually.
+    For more on casting, see <a class="xref" href="sql-expressions.html#SQL-SYNTAX-TYPE-CASTS" title="4.2.9. Type Casts">Section 4.2.9</a>.
+   </p><p>
+    Multidimensional array values can be built by nesting array
+    constructors.
+    In the inner constructors, the key word <code class="literal">ARRAY</code> can
+    be omitted.  For example, these produce the same result:
+
+</p><pre class="programlisting">
+SELECT ARRAY[ARRAY[1,2], ARRAY[3,4]];
+     array
+---------------
+ {{1,2},{3,4}}
+(1 row)
+
+SELECT ARRAY[[1,2],[3,4]];
+     array
+---------------
+ {{1,2},{3,4}}
+(1 row)
+</pre><p>
+
+    Since multidimensional arrays must be rectangular, inner constructors
+    at the same level must produce sub-arrays of identical dimensions.
+    Any cast applied to the outer <code class="literal">ARRAY</code> constructor propagates
+    automatically to all the inner constructors.
+  </p><p>
+    Multidimensional array constructor elements can be anything yielding
+    an array of the proper kind, not only a sub-<code class="literal">ARRAY</code> construct.
+    For example:
+</p><pre class="programlisting">
+CREATE TABLE arr(f1 int[], f2 int[]);
+
+INSERT INTO arr VALUES (ARRAY[[1,2],[3,4]], ARRAY[[5,6],[7,8]]);
+
+SELECT ARRAY[f1, f2, '{{9,10},{11,12}}'::int[]] FROM arr;
+                     array
+------------------------------------------------
+ {{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}}
+(1 row)
+</pre><p>
+  </p><p>
+   You can construct an empty array, but since it's impossible to have an
+   array with no type, you must explicitly cast your empty array to the
+   desired type.  For example:
+</p><pre class="programlisting">
+SELECT ARRAY[]::integer[];
+ array
+-------
+ {}
+(1 row)
+</pre><p>
+  </p><p>
+   It is also possible to construct an array from the results of a
+   subquery.  In this form, the array constructor is written with the
+   key word <code class="literal">ARRAY</code> followed by a parenthesized (not
+   bracketed) subquery. For example:
+</p><pre class="programlisting">
+SELECT ARRAY(SELECT oid FROM pg_proc WHERE proname LIKE 'bytea%');
+                              array
+------------------------------------------------------------------
+ {2011,1954,1948,1952,1951,1244,1950,2005,1949,1953,2006,31,2412}
+(1 row)
+
+SELECT ARRAY(SELECT ARRAY[i, i*2] FROM generate_series(1,5) AS a(i));
+              array
+----------------------------------
+ {{1,2},{2,4},{3,6},{4,8},{5,10}}
+(1 row)
+</pre><p>
+   The subquery must return a single column.
+   If the subquery's output column is of a non-array type, the resulting
+   one-dimensional array will have an element for each row in the
+   subquery result, with an element type matching that of the
+   subquery's output column.
+   If the subquery's output column is of an array type, the result will be
+   an array of the same type but one higher dimension; in this case all
+   the subquery rows must yield arrays of identical dimensionality, else
+   the result would not be rectangular.
+  </p><p>
+   The subscripts of an array value built with <code class="literal">ARRAY</code>
+   always begin with one.  For more information about arrays, see
+   <a class="xref" href="arrays.html" title="8.15. Arrays">Section 8.15</a>.
+  </p></div><div class="sect2" id="SQL-SYNTAX-ROW-CONSTRUCTORS"><div class="titlepage"><div><div><h3 class="title">4.2.13. Row Constructors</h3></div></div></div><a id="id-1.5.3.6.21.2" class="indexterm"></a><a id="id-1.5.3.6.21.3" class="indexterm"></a><a id="id-1.5.3.6.21.4" class="indexterm"></a><p>
+    A row constructor is an expression that builds a row value (also
+    called a composite value) using values
+    for its member fields.  A row constructor consists of the key word
+    <code class="literal">ROW</code>, a left parenthesis, zero or more
+    expressions (separated by commas) for the row field values, and finally
+    a right parenthesis.  For example:
+</p><pre class="programlisting">
+SELECT ROW(1,2.5,'this is a test');
+</pre><p>
+    The key word <code class="literal">ROW</code> is optional when there is more than one
+    expression in the list.
+   </p><p>
+    A row constructor can include the syntax
+    <em class="replaceable"><code>rowvalue</code></em><code class="literal">.*</code>,
+    which will be expanded to a list of the elements of the row value,
+    just as occurs when the <code class="literal">.*</code> syntax is used at the top level
+    of a <code class="command">SELECT</code> list (see <a class="xref" href="rowtypes.html#ROWTYPES-USAGE" title="8.16.5. Using Composite Types in Queries">Section 8.16.5</a>).
+    For example, if table <code class="literal">t</code> has
+    columns <code class="literal">f1</code> and <code class="literal">f2</code>, these are the same:
+</p><pre class="programlisting">
+SELECT ROW(t.*, 42) FROM t;
+SELECT ROW(t.f1, t.f2, 42) FROM t;
+</pre><p>
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     Before <span class="productname">PostgreSQL</span> 8.2, the
+     <code class="literal">.*</code> syntax was not expanded in row constructors, so
+     that writing <code class="literal">ROW(t.*, 42)</code> created a two-field row whose first
+     field was another row value.  The new behavior is usually more useful.
+     If you need the old behavior of nested row values, write the inner
+     row value without <code class="literal">.*</code>, for instance
+     <code class="literal">ROW(t, 42)</code>.
+    </p></div><p>
+    By default, the value created by a <code class="literal">ROW</code> expression is of
+    an anonymous record type.  If necessary, it can be cast to a named
+    composite type — either the row type of a table, or a composite type
+    created with <code class="command">CREATE TYPE AS</code>.  An explicit cast might be needed
+    to avoid ambiguity.  For example:
+</p><pre class="programlisting">
+CREATE TABLE mytable(f1 int, f2 float, f3 text);
+
+CREATE FUNCTION getf1(mytable) RETURNS int AS 'SELECT $1.f1' LANGUAGE SQL;
+
+-- No cast needed since only one getf1() exists
+SELECT getf1(ROW(1,2.5,'this is a test'));
+ getf1
+-------
+     1
+(1 row)
+
+CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric);
+
+CREATE FUNCTION getf1(myrowtype) RETURNS int AS 'SELECT $1.f1' LANGUAGE SQL;
+
+-- Now we need a cast to indicate which function to call:
+SELECT getf1(ROW(1,2.5,'this is a test'));
+ERROR:  function getf1(record) is not unique
+
+SELECT getf1(ROW(1,2.5,'this is a test')::mytable);
+ getf1
+-------
+     1
+(1 row)
+
+SELECT getf1(CAST(ROW(11,'this is a test',2.5) AS myrowtype));
+ getf1
+-------
+    11
+(1 row)
+</pre><p>
+  </p><p>
+   Row constructors can be used to build composite values to be stored
+   in a composite-type table column, or to be passed to a function that
+   accepts a composite parameter.  Also,
+   it is possible to compare two row values or test a row with
+   <code class="literal">IS NULL</code> or <code class="literal">IS NOT NULL</code>, for example:
+</p><pre class="programlisting">
+SELECT ROW(1,2.5,'this is a test') = ROW(1, 3, 'not the same');
+
+SELECT ROW(table.*) IS NULL FROM table;  -- detect all-null rows
+</pre><p>
+   For more detail see <a class="xref" href="functions-comparisons.html" title="9.24. Row and Array Comparisons">Section 9.24</a>.
+   Row constructors can also be used in connection with subqueries,
+   as discussed in <a class="xref" href="functions-subquery.html" title="9.23. Subquery Expressions">Section 9.23</a>.
+  </p></div><div class="sect2" id="SYNTAX-EXPRESS-EVAL"><div class="titlepage"><div><div><h3 class="title">4.2.14. Expression Evaluation Rules</h3></div></div></div><a id="id-1.5.3.6.22.2" class="indexterm"></a><p>
+    The order of evaluation of subexpressions is not defined.  In
+    particular, the inputs of an operator or function are not necessarily
+    evaluated left-to-right or in any other fixed order.
+   </p><p>
+    Furthermore, if the result of an expression can be determined by
+    evaluating only some parts of it, then other subexpressions
+    might not be evaluated at all.  For instance, if one wrote:
+</p><pre class="programlisting">
+SELECT true OR somefunc();
+</pre><p>
+    then <code class="literal">somefunc()</code> would (probably) not be called
+    at all. The same would be the case if one wrote:
+</p><pre class="programlisting">
+SELECT somefunc() OR true;
+</pre><p>
+    Note that this is not the same as the left-to-right
+    <span class="quote">“<span class="quote">short-circuiting</span>”</span> of Boolean operators that is found
+    in some programming languages.
+   </p><p>
+    As a consequence, it is unwise to use functions with side effects
+    as part of complex expressions.  It is particularly dangerous to
+    rely on side effects or evaluation order in <code class="literal">WHERE</code> and <code class="literal">HAVING</code> clauses,
+    since those clauses are extensively reprocessed as part of
+    developing an execution plan.  Boolean
+    expressions (<code class="literal">AND</code>/<code class="literal">OR</code>/<code class="literal">NOT</code> combinations) in those clauses can be reorganized
+    in any manner allowed by the laws of Boolean algebra.
+   </p><p>
+    When it is essential to force evaluation order, a <code class="literal">CASE</code>
+    construct (see <a class="xref" href="functions-conditional.html" title="9.18. Conditional Expressions">Section 9.18</a>) can be
+    used.  For example, this is an untrustworthy way of trying to
+    avoid division by zero in a <code class="literal">WHERE</code> clause:
+</p><pre class="programlisting">
+SELECT ... WHERE x &gt; 0 AND y/x &gt; 1.5;
+</pre><p>
+    But this is safe:
+</p><pre class="programlisting">
+SELECT ... WHERE CASE WHEN x &gt; 0 THEN y/x &gt; 1.5 ELSE false END;
+</pre><p>
+    A <code class="literal">CASE</code> construct used in this fashion will defeat optimization
+    attempts, so it should only be done when necessary.  (In this particular
+    example, it would be better to sidestep the problem by writing
+    <code class="literal">y &gt; 1.5*x</code> instead.)
+   </p><p>
+    <code class="literal">CASE</code> is not a cure-all for such issues, however.
+    One limitation of the technique illustrated above is that it does not
+    prevent early evaluation of constant subexpressions.
+    As described in <a class="xref" href="xfunc-volatility.html" title="38.7. Function Volatility Categories">Section 38.7</a>, functions and
+    operators marked <code class="literal">IMMUTABLE</code> can be evaluated when
+    the query is planned rather than when it is executed.  Thus for example
+</p><pre class="programlisting">
+SELECT CASE WHEN x &gt; 0 THEN x ELSE 1/0 END FROM tab;
+</pre><p>
+    is likely to result in a division-by-zero failure due to the planner
+    trying to simplify the constant subexpression,
+    even if every row in the table has <code class="literal">x &gt; 0</code> so that the
+    <code class="literal">ELSE</code> arm would never be entered at run time.
+   </p><p>
+    While that particular example might seem silly, related cases that don't
+    obviously involve constants can occur in queries executed within
+    functions, since the values of function arguments and local variables
+    can be inserted into queries as constants for planning purposes.
+    Within <span class="application">PL/pgSQL</span> functions, for example, using an
+    <code class="literal">IF</code>-<code class="literal">THEN</code>-<code class="literal">ELSE</code> statement to protect
+    a risky computation is much safer than just nesting it in a
+    <code class="literal">CASE</code> expression.
+   </p><p>
+    Another limitation of the same kind is that a <code class="literal">CASE</code> cannot
+    prevent evaluation of an aggregate expression contained within it,
+    because aggregate expressions are computed before other
+    expressions in a <code class="literal">SELECT</code> list or <code class="literal">HAVING</code> clause
+    are considered.  For example, the following query can cause a
+    division-by-zero error despite seemingly having protected against it:
+</p><pre class="programlisting">
+SELECT CASE WHEN min(employees) &gt; 0
+            THEN avg(expenses / employees)
+       END
+    FROM departments;
+</pre><p>
+    The <code class="function">min()</code> and <code class="function">avg()</code> aggregates are computed
+    concurrently over all the input rows, so if any row
+    has <code class="structfield">employees</code> equal to zero, the division-by-zero error
+    will occur before there is any opportunity to test the result of
+    <code class="function">min()</code>.  Instead, use a <code class="literal">WHERE</code>
+    or <code class="literal">FILTER</code> clause to prevent problematic input rows from
+    reaching an aggregate function in the first place.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-syntax-lexical.html" title="4.1. Lexical Structure">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-syntax-calling-funcs.html" title="4.3. Calling Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">4.1. Lexical Structure </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 4.3. Calling Functions</td></tr></table></div></body></html>

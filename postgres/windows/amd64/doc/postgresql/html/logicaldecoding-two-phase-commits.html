@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>49.10. Two-phase Commit Support for Logical Decoding</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="logicaldecoding-streaming.html" title="49.9. Streaming of Large Transactions for Logical Decoding" /><link rel="next" href="replication-origins.html" title="Chapter 50. Replication Progress Tracking" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">49.10. Two-phase Commit Support for Logical Decoding</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="logicaldecoding-streaming.html" title="49.9. Streaming of Large Transactions for Logical Decoding">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="logicaldecoding.html" title="Chapter 49. Logical Decoding">Up</a></td><th width="60%" align="center">Chapter 49. Logical Decoding</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="replication-origins.html" title="Chapter 50. Replication Progress Tracking">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LOGICALDECODING-TWO-PHASE-COMMITS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">49.10. Two-phase Commit Support for Logical Decoding</h2></div></div></div><p>
+    With the basic output plugin callbacks (eg., <code class="function">begin_cb</code>,
+    <code class="function">change_cb</code>, <code class="function">commit_cb</code> and
+    <code class="function">message_cb</code>) two-phase commit commands like
+    <code class="command">PREPARE TRANSACTION</code>, <code class="command">COMMIT PREPARED</code>
+    and <code class="command">ROLLBACK PREPARED</code> are not decoded. While the
+    <code class="command">PREPARE TRANSACTION</code> is ignored,
+    <code class="command">COMMIT PREPARED</code> is decoded as a <code class="command">COMMIT</code>
+    and <code class="command">ROLLBACK PREPARED</code> is decoded as a
+    <code class="command">ROLLBACK</code>.
+   </p><p>
+    To support the streaming of two-phase commands, an output plugin needs to
+    provide additional callbacks. There are multiple two-phase commit callbacks
+    that are required, (<code class="function">begin_prepare_cb</code>,
+    <code class="function">prepare_cb</code>, <code class="function">commit_prepared_cb</code>,
+    <code class="function">rollback_prepared_cb</code> and
+    <code class="function">stream_prepare_cb</code>) and an optional callback
+    (<code class="function">filter_prepare_cb</code>).
+   </p><p>
+    If the output plugin callbacks for decoding two-phase commit commands are
+    provided, then on <code class="command">PREPARE TRANSACTION</code>, the changes of
+    that transaction are decoded, passed to the output plugin, and the
+    <code class="function">prepare_cb</code> callback is invoked. This differs from the
+    basic decoding setup where changes are only passed to the output plugin
+    when a transaction is committed. The start of a prepared transaction is
+    indicated by the <code class="function">begin_prepare_cb</code> callback.
+   </p><p>
+    When a prepared transaction is rolled back using the
+    <code class="command">ROLLBACK PREPARED</code>, then the
+    <code class="function">rollback_prepared_cb</code> callback is invoked and when the
+    prepared transaction is committed using <code class="command">COMMIT PREPARED</code>,
+    then the <code class="function">commit_prepared_cb</code> callback is invoked.
+   </p><p>
+    Optionally the output plugin can define filtering rules via
+    <code class="function">filter_prepare_cb</code> to decode only specific transaction
+    in two phases.  This can be achieved by pattern matching on the
+    <em class="parameter"><code>gid</code></em> or via lookups using the
+    <em class="parameter"><code>xid</code></em>.
+   </p><p>
+    The users that want to decode prepared transactions need to be careful about
+    below mentioned points:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       If the prepared transaction has locked [user] catalog tables exclusively
+       then decoding prepare can block till the main transaction is committed.
+      </p></li><li class="listitem"><p>
+       The logical replication solution that builds distributed two phase commit
+       using this feature can deadlock if the prepared transaction has locked
+       [user] catalog tables exclusively. To avoid this users must refrain from
+       having locks on catalog tables (e.g. explicit <code class="command">LOCK</code> command)
+       in such transactions.
+       See <a class="xref" href="logicaldecoding-synchronous.html#LOGICALDECODING-SYNCHRONOUS-CAVEATS" title="49.8.2. Caveats">Section 49.8.2</a> for the details.
+      </p></li></ul></div><p>
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="logicaldecoding-streaming.html" title="49.9. Streaming of Large Transactions for Logical Decoding">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="logicaldecoding.html" title="Chapter 49. Logical Decoding">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="replication-origins.html" title="Chapter 50. Replication Progress Tracking">Next</a></td></tr><tr><td width="40%" align="left" valign="top">49.9. Streaming of Large Transactions for Logical Decoding </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 50. Replication Progress Tracking</td></tr></table></div></body></html>

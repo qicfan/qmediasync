@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>dblink_build_sql_insert</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="contrib-dblink-get-pkey.html" title="dblink_get_pkey" /><link rel="next" href="contrib-dblink-build-sql-delete.html" title="dblink_build_sql_delete" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">dblink_build_sql_insert</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="contrib-dblink-get-pkey.html" title="dblink_get_pkey">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="dblink.html" title="F.10. dblink">Up</a></td><th width="60%" align="center">F.10. dblink</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="contrib-dblink-build-sql-delete.html" title="dblink_build_sql_delete">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="CONTRIB-DBLINK-BUILD-SQL-INSERT"><div class="titlepage"></div><a id="id-1.11.7.19.21.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">dblink_build_sql_insert</span></h2><p>dblink_build_sql_insert — 
+    builds an INSERT statement using a local tuple, replacing the
+    primary key field values with alternative supplied values
+   </p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+dblink_build_sql_insert(text relname,
+                        int2vector primary_key_attnums,
+                        integer num_primary_key_atts,
+                        text[] src_pk_att_vals_array,
+                        text[] tgt_pk_att_vals_array) returns text
+</pre></div><div class="refsect1" id="id-1.11.7.19.21.5"><h2>Description</h2><p>
+    <code class="function">dblink_build_sql_insert</code> can be useful in doing selective
+    replication of a local table to a remote database.  It selects a row
+    from the local table based on primary key, and then builds an SQL
+    <code class="command">INSERT</code> command that will duplicate that row, but with
+    the primary key values replaced by the values in the last argument.
+    (To make an exact copy of the row, just specify the same values for
+    the last two arguments.)
+   </p></div><div class="refsect1" id="id-1.11.7.19.21.6"><h2>Arguments</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="parameter"><code>relname</code></em></span></dt><dd><p>
+       Name of a local relation, for example <code class="literal">foo</code> or
+       <code class="literal">myschema.mytab</code>.  Include double quotes if the
+       name is mixed-case or contains special characters, for
+       example <code class="literal">"FooBar"</code>; without quotes, the string
+       will be folded to lower case.
+      </p></dd><dt><span class="term"><em class="parameter"><code>primary_key_attnums</code></em></span></dt><dd><p>
+       Attribute numbers (1-based) of the primary key fields,
+       for example <code class="literal">1 2</code>.
+      </p></dd><dt><span class="term"><em class="parameter"><code>num_primary_key_atts</code></em></span></dt><dd><p>
+       The number of primary key fields.
+      </p></dd><dt><span class="term"><em class="parameter"><code>src_pk_att_vals_array</code></em></span></dt><dd><p>
+       Values of the primary key fields to be used to look up the
+       local tuple.  Each field is represented in text form.
+       An error is thrown if there is no local row with these
+       primary key values.
+      </p></dd><dt><span class="term"><em class="parameter"><code>tgt_pk_att_vals_array</code></em></span></dt><dd><p>
+       Values of the primary key fields to be placed in the resulting
+       <code class="command">INSERT</code> command.  Each field is represented in text form.
+      </p></dd></dl></div></div><div class="refsect1" id="id-1.11.7.19.21.7"><h2>Return Value</h2><p>Returns the requested SQL statement as text.</p></div><div class="refsect1" id="id-1.11.7.19.21.8"><h2>Notes</h2><p>
+    As of <span class="productname">PostgreSQL</span> 9.0, the attribute numbers in
+    <em class="parameter"><code>primary_key_attnums</code></em> are interpreted as logical
+    column numbers, corresponding to the column's position in
+    <code class="literal">SELECT * FROM relname</code>.  Previous versions interpreted the
+    numbers as physical column positions.  There is a difference if any
+    column(s) to the left of the indicated column have been dropped during
+    the lifetime of the table.
+   </p></div><div class="refsect1" id="id-1.11.7.19.21.9"><h2>Examples</h2><pre class="screen">
+SELECT dblink_build_sql_insert('foo', '1 2', 2, '{"1", "a"}', '{"1", "b''a"}');
+             dblink_build_sql_insert
+--------------------------------------------------
+ INSERT INTO foo(f1,f2,f3) VALUES('1','b''a','1')
+(1 row)
+</pre></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="contrib-dblink-get-pkey.html" title="dblink_get_pkey">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="dblink.html" title="F.10. dblink">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="contrib-dblink-build-sql-delete.html" title="dblink_build_sql_delete">Next</a></td></tr><tr><td width="40%" align="left" valign="top">dblink_get_pkey </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> dblink_build_sql_delete</td></tr></table></div></body></html>

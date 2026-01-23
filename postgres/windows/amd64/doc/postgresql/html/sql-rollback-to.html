@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ROLLBACK TO SAVEPOINT</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-rollback-prepared.html" title="ROLLBACK PREPARED" /><link rel="next" href="sql-savepoint.html" title="SAVEPOINT" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ROLLBACK TO SAVEPOINT</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-rollback-prepared.html" title="ROLLBACK PREPARED">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-savepoint.html" title="SAVEPOINT">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ROLLBACK-TO"><div class="titlepage"></div><a id="id-1.9.3.168.1" class="indexterm"></a><a id="id-1.9.3.168.2" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ROLLBACK TO SAVEPOINT</span></h2><p>ROLLBACK TO SAVEPOINT — roll back to a savepoint</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ROLLBACK [ WORK | TRANSACTION ] TO [ SAVEPOINT ] <em class="replaceable"><code>savepoint_name</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.168.6"><h2>Description</h2><p>
+   Roll back all commands that were executed after the savepoint was
+   established.  The savepoint remains valid and can be rolled back to
+   again later, if needed.
+  </p><p>
+   <code class="command">ROLLBACK TO SAVEPOINT</code> implicitly destroys all savepoints that
+   were established after the named savepoint.
+  </p></div><div class="refsect1" id="id-1.9.3.168.7"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>savepoint_name</code></em></span></dt><dd><p>
+      The savepoint to roll back to.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.168.8"><h2>Notes</h2><p>
+   Use <a class="link" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT"><code class="command">RELEASE SAVEPOINT</code></a> to destroy a savepoint
+   without discarding the effects of commands executed after it was
+   established.
+  </p><p>
+   Specifying a savepoint name that has not been established is an error.
+  </p><p>
+   Cursors have somewhat non-transactional behavior with respect to
+   savepoints.  Any cursor that is opened inside a savepoint will be closed
+   when the savepoint is rolled back.  If a previously opened cursor is
+   affected by a <code class="command">FETCH</code> or <code class="command">MOVE</code> command inside a
+   savepoint that is later rolled back, the cursor remains at the
+   position that <code class="command">FETCH</code> left it pointing to (that is, the cursor
+   motion caused by <code class="command">FETCH</code> is not rolled back).
+   Closing a cursor is not undone by rolling back, either.
+   However, other side-effects caused by the cursor's query (such as
+   side-effects of volatile functions called by the query) <span class="emphasis"><em>are</em></span>
+   rolled back if they occur during a savepoint that is later rolled back.
+   A cursor whose execution causes a transaction to abort is put in a
+   cannot-execute state, so while the transaction can be restored using
+   <code class="command">ROLLBACK TO SAVEPOINT</code>, the cursor can no longer be used.
+  </p></div><div class="refsect1" id="id-1.9.3.168.9"><h2>Examples</h2><p>
+   To undo the effects of the commands executed after <code class="literal">my_savepoint</code>
+   was established:
+</p><pre class="programlisting">
+ROLLBACK TO SAVEPOINT my_savepoint;
+</pre><p>
+  </p><p>
+   Cursor positions are not affected by savepoint rollback:
+</p><pre class="programlisting">
+BEGIN;
+
+DECLARE foo CURSOR FOR SELECT 1 UNION SELECT 2;
+
+SAVEPOINT foo;
+
+FETCH 1 FROM foo;
+ ?column? 
+----------
+        1
+
+ROLLBACK TO SAVEPOINT foo;
+
+FETCH 1 FROM foo;
+ ?column? 
+----------
+        2
+
+COMMIT;
+</pre></div><div class="refsect1" id="id-1.9.3.168.10"><h2>Compatibility</h2><p>
+   The <acronym class="acronym">SQL</acronym> standard specifies that the key word
+   <code class="literal">SAVEPOINT</code> is mandatory, but <span class="productname">PostgreSQL</span>
+   and <span class="productname">Oracle</span> allow it to be omitted.  SQL allows
+   only <code class="literal">WORK</code>, not <code class="literal">TRANSACTION</code>, as a noise word
+   after <code class="literal">ROLLBACK</code>.  Also, SQL has an optional clause
+   <code class="literal">AND [ NO ] CHAIN</code> which is not currently supported by
+   <span class="productname">PostgreSQL</span>.  Otherwise, this command conforms to
+   the SQL standard.
+  </p></div><div class="refsect1" id="id-1.9.3.168.11"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-begin.html" title="BEGIN"><span class="refentrytitle">BEGIN</span></a>, <a class="xref" href="sql-commit.html" title="COMMIT"><span class="refentrytitle">COMMIT</span></a>, <a class="xref" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT"><span class="refentrytitle">RELEASE SAVEPOINT</span></a>, <a class="xref" href="sql-rollback.html" title="ROLLBACK"><span class="refentrytitle">ROLLBACK</span></a>, <a class="xref" href="sql-savepoint.html" title="SAVEPOINT"><span class="refentrytitle">SAVEPOINT</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-rollback-prepared.html" title="ROLLBACK PREPARED">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-savepoint.html" title="SAVEPOINT">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ROLLBACK PREPARED </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SAVEPOINT</td></tr></table></div></body></html>

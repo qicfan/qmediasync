@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>43.2. Structure of PL/pgSQL</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="plpgsql-overview.html" title="43.1. Overview" /><link rel="next" href="plpgsql-declarations.html" title="43.3. Declarations" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">43.2. Structure of <span xmlns="http://www.w3.org/1999/xhtml" class="application">PL/pgSQL</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="plpgsql-overview.html" title="43.1. Overview">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="plpgsql.html" title="Chapter 43. PL/pgSQL — SQL Procedural Language">Up</a></td><th width="60%" align="center">Chapter 43. <span xmlns="http://www.w3.org/1999/xhtml" class="application">PL/pgSQL</span> — <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="plpgsql-declarations.html" title="43.3. Declarations">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLPGSQL-STRUCTURE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">43.2. Structure of <span class="application">PL/pgSQL</span></h2></div></div></div><p>
+   Functions written in <span class="application">PL/pgSQL</span> are defined
+   to the server by executing <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> commands.
+   Such a command would normally look like, say,
+</p><pre class="programlisting">
+CREATE FUNCTION somefunc(integer, text) RETURNS integer
+AS '<em class="replaceable"><code>function body text</code></em>'
+LANGUAGE plpgsql;
+</pre><p>
+   The function body is simply a string literal so far as <code class="command">CREATE
+   FUNCTION</code> is concerned.  It is often helpful to use dollar quoting
+   (see <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING" title="4.1.2.4. Dollar-Quoted String Constants">Section 4.1.2.4</a>) to write the function
+   body, rather than the normal single quote syntax.  Without dollar quoting,
+   any single quotes or backslashes in the function body must be escaped by
+   doubling them.  Almost all the examples in this chapter use dollar-quoted
+   literals for their function bodies.
+  </p><p>
+   <span class="application">PL/pgSQL</span> is a block-structured language.
+   The complete text of a function body must be a
+   <em class="firstterm">block</em>. A block is defined as:
+
+</p><pre class="synopsis">
+[<span class="optional"> &lt;&lt;<em class="replaceable"><code>label</code></em>&gt;&gt; </span>]
+[<span class="optional"> DECLARE
+    <em class="replaceable"><code>declarations</code></em> </span>]
+BEGIN
+    <em class="replaceable"><code>statements</code></em>
+END [<span class="optional"> <em class="replaceable"><code>label</code></em> </span>];
+</pre><p>
+    </p><p>
+     Each declaration and each statement within a block is terminated
+     by a semicolon.  A block that appears within another block must
+     have a semicolon after <code class="literal">END</code>, as shown above;
+     however the final <code class="literal">END</code> that
+     concludes a function body does not require a semicolon.
+    </p><div class="tip"><h3 class="title">Tip</h3><p>
+      A common mistake is to write a semicolon immediately after
+      <code class="literal">BEGIN</code>.  This is incorrect and will result in a syntax error.
+     </p></div><p>
+     A <em class="replaceable"><code>label</code></em> is only needed if you want to
+     identify the block for use
+     in an <code class="literal">EXIT</code> statement, or to qualify the names of the
+     variables declared in the block.  If a label is given after
+     <code class="literal">END</code>, it must match the label at the block's beginning.
+    </p><p>
+     All key words are case-insensitive.
+     Identifiers are implicitly converted to lower case
+     unless double-quoted, just as they are in ordinary SQL commands.
+    </p><p>
+     Comments work the same way in <span class="application">PL/pgSQL</span> code as in
+     ordinary SQL.  A double dash (<code class="literal">--</code>) starts a comment
+     that extends to the end of the line. A <code class="literal">/*</code> starts a
+     block comment that extends to the matching occurrence of
+     <code class="literal">*/</code>.  Block comments nest.
+    </p><p>
+     Any statement in the statement section of a block
+     can be a <em class="firstterm">subblock</em>.  Subblocks can be used for
+     logical grouping or to localize variables to a small group
+     of statements.  Variables declared in a subblock mask any
+     similarly-named variables of outer blocks for the duration
+     of the subblock; but you can access the outer variables anyway
+     if you qualify their names with their block's label. For example:
+</p><pre class="programlisting">
+CREATE FUNCTION somefunc() RETURNS integer AS $$
+&lt;&lt; outerblock &gt;&gt;
+DECLARE
+    quantity integer := 30;
+BEGIN
+    RAISE NOTICE 'Quantity here is %', quantity;  -- Prints 30
+    quantity := 50;
+    --
+    -- Create a subblock
+    --
+    DECLARE
+        quantity integer := 80;
+    BEGIN
+        RAISE NOTICE 'Quantity here is %', quantity;  -- Prints 80
+        RAISE NOTICE 'Outer quantity here is %', outerblock.quantity;  -- Prints 50
+    END;
+
+    RAISE NOTICE 'Quantity here is %', quantity;  -- Prints 50
+
+    RETURN quantity;
+END;
+$$ LANGUAGE plpgsql;
+</pre><p>
+    </p><div class="note"><h3 class="title">Note</h3><p>
+      There is actually a hidden <span class="quote">“<span class="quote">outer block</span>”</span> surrounding the body
+      of any <span class="application">PL/pgSQL</span> function.  This block provides the
+      declarations of the function's parameters (if any), as well as some
+      special variables such as <code class="literal">FOUND</code> (see
+      <a class="xref" href="plpgsql-statements.html#PLPGSQL-STATEMENTS-DIAGNOSTICS" title="43.5.5. Obtaining the Result Status">Section 43.5.5</a>).  The outer block is
+      labeled with the function's name, meaning that parameters and special
+      variables can be qualified with the function's name.
+     </p></div><p>
+     It is important not to confuse the use of
+     <code class="command">BEGIN</code>/<code class="command">END</code> for grouping statements in
+     <span class="application">PL/pgSQL</span> with the similarly-named SQL commands
+     for transaction
+     control.  <span class="application">PL/pgSQL</span>'s <code class="command">BEGIN</code>/<code class="command">END</code>
+     are only for grouping; they do not start or end a transaction.
+     See <a class="xref" href="plpgsql-transactions.html" title="43.8. Transaction Management">Section 43.8</a> for information on managing
+     transactions in <span class="application">PL/pgSQL</span>.
+     Also, a block containing an <code class="literal">EXCEPTION</code> clause effectively
+     forms a subtransaction that can be rolled back without affecting the
+     outer transaction.  For more about that see <a class="xref" href="plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING" title="43.6.8. Trapping Errors">Section 43.6.8</a>.
+    </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="plpgsql-overview.html" title="43.1. Overview">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="plpgsql.html" title="Chapter 43. PL/pgSQL — SQL Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="plpgsql-declarations.html" title="43.3. Declarations">Next</a></td></tr><tr><td width="40%" align="left" valign="top">43.1. Overview </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 43.3. Declarations</td></tr></table></div></body></html>

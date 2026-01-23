@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.30. pg_largeobject</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-language.html" title="52.29. pg_language" /><link rel="next" href="catalog-pg-largeobject-metadata.html" title="52.31. pg_largeobject_metadata" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.30. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_largeobject</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-language.html" title="52.29. pg_language">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-largeobject-metadata.html" title="52.31. pg_largeobject_metadata">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-LARGEOBJECT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.30. <code class="structname">pg_largeobject</code></h2></div></div></div><a id="id-1.10.4.32.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_largeobject</code> holds the data making up
+   <span class="quote">“<span class="quote">large objects</span>”</span>.  A large object is identified by an OID
+   assigned when it is created.  Each large object is broken into
+   segments or <span class="quote">“<span class="quote">pages</span>”</span> small enough to be conveniently stored as rows
+   in <code class="structname">pg_largeobject</code>.
+   The amount of data per page is defined to be <code class="symbol">LOBLKSIZE</code> (which is currently
+   <code class="literal">BLCKSZ/4</code>, or typically 2 kB).
+  </p><p>
+   Prior to <span class="productname">PostgreSQL</span> 9.0, there was no permission structure
+   associated with large objects.  As a result,
+   <code class="structname">pg_largeobject</code> was publicly readable and could be
+   used to obtain the OIDs (and contents) of all large objects in the system.
+   This is no longer the case; use
+   <a class="link" href="catalog-pg-largeobject-metadata.html" title="52.31. pg_largeobject_metadata"><code class="structname">pg_largeobject_metadata</code></a>
+   to obtain a list of large object OIDs.
+  </p><div class="table" id="id-1.10.4.32.5"><p class="title"><strong>Table 52.30. <code class="structname">pg_largeobject</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_largeobject Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">loid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-largeobject-metadata.html" title="52.31. pg_largeobject_metadata"><code class="structname">pg_largeobject_metadata</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Identifier of the large object that includes this page
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">pageno</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Page number of this page within its large object
+       (counting from zero)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">data</code> <code class="type">bytea</code>
+      </p>
+      <p>
+       Actual data stored in the large object.
+       This will never be more than <code class="symbol">LOBLKSIZE</code> bytes and might be less.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   Each row of <code class="structname">pg_largeobject</code> holds data
+   for one page of a large object, beginning at
+   byte offset (<code class="literal">pageno * LOBLKSIZE</code>) within the object.  The implementation
+   allows sparse storage: pages might be missing, and might be shorter than
+   <code class="literal">LOBLKSIZE</code> bytes even if they are not the last page of the object.
+   Missing regions within a large object read as zeroes.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-language.html" title="52.29. pg_language">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-largeobject-metadata.html" title="52.31. pg_largeobject_metadata">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.29. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_language</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.31. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_largeobject_metadata</code></td></tr></table></div></body></html>

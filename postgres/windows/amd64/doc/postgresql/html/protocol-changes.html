@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>53.10. Summary of Changes since Protocol 2.0</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="protocol-logicalrep-message-formats.html" title="53.9. Logical Replication Message Formats" /><link rel="next" href="source.html" title="Chapter 54. PostgreSQL Coding Conventions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">53.10. Summary of Changes since Protocol 2.0</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="protocol-logicalrep-message-formats.html" title="53.9. Logical Replication Message Formats">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="protocol.html" title="Chapter 53. Frontend/Backend Protocol">Up</a></td><th width="60%" align="center">Chapter 53. Frontend/Backend Protocol</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="source.html" title="Chapter 54. PostgreSQL Coding Conventions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PROTOCOL-CHANGES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">53.10. Summary of Changes since Protocol 2.0</h2></div></div></div><p>
+This section provides a quick checklist of changes, for the benefit of
+developers trying to update existing client libraries to protocol 3.0.
+</p><p>
+The initial startup packet uses a flexible list-of-strings format
+instead of a fixed format.  Notice that session default values for run-time
+parameters can now be specified directly in the startup packet.  (Actually,
+you could do that before using the <code class="literal">options</code> field, but given the
+limited width of <code class="literal">options</code> and the lack of any way to quote
+whitespace in the values, it wasn't a very safe technique.)
+</p><p>
+All messages now have a length count immediately following the message type
+byte (except for startup packets, which have no type byte).  Also note that
+PasswordMessage now has a type byte.
+</p><p>
+ErrorResponse and NoticeResponse ('<code class="literal">E</code>' and '<code class="literal">N</code>')
+messages now contain multiple fields, from which the client code can
+assemble an error message of the desired level of verbosity.  Note that
+individual fields will typically not end with a newline, whereas the single
+string sent in the older protocol always did.
+</p><p>
+The ReadyForQuery ('<code class="literal">Z</code>') message includes a transaction status
+indicator.
+</p><p>
+The distinction between BinaryRow and DataRow message types is gone; the
+single DataRow message type serves for returning data in all formats.
+Note that the layout of DataRow has changed to make it easier to parse.
+Also, the representation of binary values has changed: it is no longer
+directly tied to the server's internal representation.
+</p><p>
+There is a new <span class="quote">“<span class="quote">extended query</span>”</span> sub-protocol, which adds the frontend
+message types Parse, Bind, Execute, Describe, Close, Flush, and Sync, and the
+backend message types ParseComplete, BindComplete, PortalSuspended,
+ParameterDescription, NoData, and CloseComplete.  Existing clients do not
+have to concern themselves with this sub-protocol, but making use of it
+might allow improvements in performance or functionality.
+</p><p>
+<code class="command">COPY</code> data is now encapsulated into CopyData and CopyDone messages.  There
+is a well-defined way to recover from errors during <code class="command">COPY</code>.  The special
+<span class="quote">“<span class="quote"><code class="literal">\.</code></span>”</span> last line is not needed anymore, and is not sent
+during <code class="command">COPY OUT</code>.
+(It is still recognized as a terminator during <code class="command">COPY IN</code>, but its use is
+deprecated and will eventually be removed.)  Binary <code class="command">COPY</code> is supported.
+The CopyInResponse and CopyOutResponse messages include fields indicating
+the number of columns and the format of each column.
+</p><p>
+The layout of FunctionCall and FunctionCallResponse messages has changed.
+FunctionCall can now support passing NULL arguments to functions.  It also
+can handle passing parameters and retrieving results in either text or
+binary format.  There is no longer any reason to consider FunctionCall a
+potential security hole, since it does not offer direct access to internal
+server data representations.
+</p><p>
+The backend sends ParameterStatus ('<code class="literal">S</code>') messages during connection
+startup for all parameters it considers interesting to the client library.
+Subsequently, a ParameterStatus message is sent whenever the active value
+changes for any of these parameters.
+</p><p>
+The RowDescription ('<code class="literal">T</code>') message carries new table OID and column
+number fields for each column of the described row.  It also shows the format
+code for each column.
+</p><p>
+The CursorResponse ('<code class="literal">P</code>') message is no longer generated by
+the backend.
+</p><p>
+The NotificationResponse ('<code class="literal">A</code>') message has an additional string
+field, which can carry a <span class="quote">“<span class="quote">payload</span>”</span> string passed
+from the <code class="command">NOTIFY</code> event sender.
+</p><p>
+The EmptyQueryResponse ('<code class="literal">I</code>') message used to include an empty
+string parameter; this has been removed.
+</p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="protocol-logicalrep-message-formats.html" title="53.9. Logical Replication Message Formats">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="protocol.html" title="Chapter 53. Frontend/Backend Protocol">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="source.html" title="Chapter 54. PostgreSQL Coding Conventions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">53.9. Logical Replication Message Formats </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 54. PostgreSQL Coding Conventions</td></tr></table></div></body></html>

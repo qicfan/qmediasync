@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER TABLESPACE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altertable.html" title="ALTER TABLE" /><link rel="next" href="sql-altertsconfig.html" title="ALTER TEXT SEARCH CONFIGURATION" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER TABLESPACE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altertable.html" title="ALTER TABLE">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-altertsconfig.html" title="ALTER TEXT SEARCH CONFIGURATION">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERTABLESPACE"><div class="titlepage"></div><a id="id-1.9.3.36.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER TABLESPACE</span></h2><p>ALTER TABLESPACE — change the definition of a tablespace</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER TABLESPACE <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER TABLESPACE <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TABLESPACE <em class="replaceable"><code>name</code></em> SET ( <em class="replaceable"><code>tablespace_option</code></em> = <em class="replaceable"><code>value</code></em> [, ... ] )
+ALTER TABLESPACE <em class="replaceable"><code>name</code></em> RESET ( <em class="replaceable"><code>tablespace_option</code></em> [, ... ] )
+</pre></div><div class="refsect1" id="id-1.9.3.36.5"><h2>Description</h2><p>
+   <code class="command">ALTER TABLESPACE</code> can be used to change the definition of
+   a tablespace.
+  </p><p>
+   You must own the tablespace to change the definition of a tablespace.
+   To alter the owner, you must also be a direct or indirect member of the new
+   owning role.
+   (Note that superusers have these privileges automatically.)
+  </p></div><div class="refsect1" id="id-1.9.3.36.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of an existing tablespace.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name of the tablespace.  The new name cannot
+      begin with <code class="literal">pg_</code>, as such names
+      are reserved for system tablespaces.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The new owner of the tablespace.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>tablespace_option</code></em></span></dt><dd><p>
+      A tablespace parameter to be set or reset.  Currently, the only
+      available parameters are <code class="varname">seq_page_cost</code>,
+      <code class="varname">random_page_cost</code>, <code class="varname">effective_io_concurrency</code>
+      and <code class="varname">maintenance_io_concurrency</code>.
+      Setting these values for a particular tablespace will override the
+      planner's usual estimate of the cost of reading pages from tables in
+      that tablespace, and the executor's prefetching behavior, as established
+      by the configuration parameters of the
+      same name (see <a class="xref" href="runtime-config-query.html#GUC-SEQ-PAGE-COST">seq_page_cost</a>,
+      <a class="xref" href="runtime-config-query.html#GUC-RANDOM-PAGE-COST">random_page_cost</a>,
+      <a class="xref" href="runtime-config-resource.html#GUC-EFFECTIVE-IO-CONCURRENCY">effective_io_concurrency</a>,
+      <a class="xref" href="runtime-config-resource.html#GUC-MAINTENANCE-IO-CONCURRENCY">maintenance_io_concurrency</a>).  This may be useful if
+      one tablespace is located on a disk which is faster or slower than the
+      remainder of the I/O subsystem.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.36.7"><h2>Examples</h2><p>
+   Rename tablespace <code class="literal">index_space</code> to <code class="literal">fast_raid</code>:
+</p><pre class="programlisting">
+ALTER TABLESPACE index_space RENAME TO fast_raid;
+</pre><p>
+  </p><p>
+   Change the owner of tablespace <code class="literal">index_space</code>:
+</p><pre class="programlisting">
+ALTER TABLESPACE index_space OWNER TO mary;
+</pre></div><div class="refsect1" id="id-1.9.3.36.8"><h2>Compatibility</h2><p>
+   There is no <code class="command">ALTER TABLESPACE</code> statement in
+   the SQL standard.
+  </p></div><div class="refsect1" id="id-1.9.3.36.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createtablespace.html" title="CREATE TABLESPACE"><span class="refentrytitle">CREATE TABLESPACE</span></a>, <a class="xref" href="sql-droptablespace.html" title="DROP TABLESPACE"><span class="refentrytitle">DROP TABLESPACE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altertable.html" title="ALTER TABLE">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-altertsconfig.html" title="ALTER TEXT SEARCH CONFIGURATION">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER TABLE </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER TEXT SEARCH CONFIGURATION</td></tr></table></div></body></html>

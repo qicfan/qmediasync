@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.12. pg_collation</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-class.html" title="52.11. pg_class" /><link rel="next" href="catalog-pg-constraint.html" title="52.13. pg_constraint" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.12. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_collation</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-class.html" title="52.11. pg_class">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-constraint.html" title="52.13. pg_constraint">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-COLLATION"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.12. <code class="structname">pg_collation</code></h2></div></div></div><a id="id-1.10.4.14.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_collation</code> describes the
+   available collations, which are essentially mappings from an SQL
+   name to operating system locale categories.
+   See <a class="xref" href="collation.html" title="24.2. Collation Support">Section 24.2</a> for more information.
+  </p><div class="table" id="id-1.10.4.14.4"><p class="title"><strong>Table 52.12. <code class="structname">pg_collation</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_collation Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Collation name (unique per namespace and encoding)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collnamespace</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-namespace.html" title="52.32. pg_namespace"><code class="structname">pg_namespace</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The OID of the namespace that contains this collation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collowner</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the collation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collprovider</code> <code class="type">char</code>
+      </p>
+      <p>
+       Provider of the collation: <code class="literal">d</code> = database
+       default, <code class="literal">c</code> = libc, <code class="literal">i</code> = icu
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collisdeterministic</code> <code class="type">bool</code>
+      </p>
+      <p>
+       Is the collation deterministic?
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collencoding</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Encoding in which the collation is applicable, or -1 if it
+       works for any encoding
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collcollate</code> <code class="type">name</code>
+      </p>
+      <p>
+       <code class="symbol">LC_COLLATE</code> for this collation object
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collctype</code> <code class="type">name</code>
+      </p>
+      <p>
+       <code class="symbol">LC_CTYPE</code> for this collation object
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">collversion</code> <code class="type">text</code>
+      </p>
+      <p>
+       Provider-specific version of the collation.  This is recorded when the
+       collation is created and then checked when it is used, to detect
+       changes in the collation definition that could lead to data corruption.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   Note that the unique key on this catalog is (<code class="structfield">collname</code>,
+   <code class="structfield">collencoding</code>, <code class="structfield">collnamespace</code>) not just
+   (<code class="structfield">collname</code>, <code class="structfield">collnamespace</code>).
+   <span class="productname">PostgreSQL</span> generally ignores all
+   collations that do not have <code class="structfield">collencoding</code> equal to
+   either the current database's encoding or -1, and creation of new entries
+   with the same name as an entry with <code class="structfield">collencoding</code> = -1
+   is forbidden.  Therefore it is sufficient to use a qualified SQL name
+   (<em class="replaceable"><code>schema</code></em>.<em class="replaceable"><code>name</code></em>) to identify a collation,
+   even though this is not unique according to the catalog definition.
+   The reason for defining the catalog this way is that
+   <span class="application">initdb</span> fills it in at cluster initialization time with
+   entries for all locales available on the system, so it must be able to
+   hold entries for all encodings that might ever be used in the cluster.
+  </p><p>
+   In the <code class="literal">template0</code> database, it could be useful to create
+   collations whose encoding does not match the database encoding,
+   since they could match the encodings of databases later cloned from
+   <code class="literal">template0</code>.  This would currently have to be done manually.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-class.html" title="52.11. pg_class">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-constraint.html" title="52.13. pg_constraint">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.11. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_class</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.13. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_constraint</code></td></tr></table></div></body></html>

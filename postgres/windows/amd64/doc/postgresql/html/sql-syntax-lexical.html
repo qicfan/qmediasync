@@ -1,0 +1,647 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4.1. Lexical Structure</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-syntax.html" title="Chapter 4. SQL Syntax" /><link rel="next" href="sql-expressions.html" title="4.2. Value Expressions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">4.1. Lexical Structure</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Up</a></td><th width="60%" align="center">Chapter 4. SQL Syntax</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-expressions.html" title="4.2. Value Expressions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SQL-SYNTAX-LEXICAL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">4.1. Lexical Structure</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS">4.1.1. Identifiers and Key Words</a></span></dt><dt><span class="sect2"><a href="sql-syntax-lexical.html#SQL-SYNTAX-CONSTANTS">4.1.2. Constants</a></span></dt><dt><span class="sect2"><a href="sql-syntax-lexical.html#SQL-SYNTAX-OPERATORS">4.1.3. Operators</a></span></dt><dt><span class="sect2"><a href="sql-syntax-lexical.html#SQL-SYNTAX-SPECIAL-CHARS">4.1.4. Special Characters</a></span></dt><dt><span class="sect2"><a href="sql-syntax-lexical.html#SQL-SYNTAX-COMMENTS">4.1.5. Comments</a></span></dt><dt><span class="sect2"><a href="sql-syntax-lexical.html#SQL-PRECEDENCE">4.1.6. Operator Precedence</a></span></dt></dl></div><a id="id-1.5.3.5.2" class="indexterm"></a><p>
+   SQL input consists of a sequence of
+   <em class="firstterm">commands</em>.  A command is composed of a
+   sequence of <em class="firstterm">tokens</em>, terminated by a
+   semicolon (<span class="quote">“<span class="quote">;</span>”</span>).  The end of the input stream also
+   terminates a command.  Which tokens are valid depends on the syntax
+   of the particular command.
+  </p><p>
+   A token can be a <em class="firstterm">key word</em>, an
+   <em class="firstterm">identifier</em>, a <em class="firstterm">quoted
+   identifier</em>, a <em class="firstterm">literal</em> (or
+   constant), or a special character symbol.  Tokens are normally
+   separated by whitespace (space, tab, newline), but need not be if
+   there is no ambiguity (which is generally only the case if a
+   special character is adjacent to some other token type).
+  </p><p>
+    For example, the following is (syntactically) valid SQL input:
+</p><pre class="programlisting">
+SELECT * FROM MY_TABLE;
+UPDATE MY_TABLE SET A = 5;
+INSERT INTO MY_TABLE VALUES (3, 'hi there');
+</pre><p>
+    This is a sequence of three commands, one per line (although this
+    is not required; more than one command can be on a line, and
+    commands can usefully be split across lines).
+   </p><p>
+   Additionally, <em class="firstterm">comments</em> can occur in SQL
+   input.  They are not tokens, they are effectively equivalent to
+   whitespace.
+  </p><p>
+   The SQL syntax is not very consistent regarding what tokens
+   identify commands and which are operands or parameters.  The first
+   few tokens are generally the command name, so in the above example
+   we would usually speak of a <span class="quote">“<span class="quote">SELECT</span>”</span>, an
+   <span class="quote">“<span class="quote">UPDATE</span>”</span>, and an <span class="quote">“<span class="quote">INSERT</span>”</span> command.  But
+   for instance the <code class="command">UPDATE</code> command always requires
+   a <code class="token">SET</code> token to appear in a certain position, and
+   this particular variation of <code class="command">INSERT</code> also
+   requires a <code class="token">VALUES</code> in order to be complete.  The
+   precise syntax rules for each command are described in <a class="xref" href="reference.html" title="Part VI. Reference">Part VI</a>.
+  </p><div class="sect2" id="SQL-SYNTAX-IDENTIFIERS"><div class="titlepage"><div><div><h3 class="title">4.1.1. Identifiers and Key Words</h3></div></div></div><a id="id-1.5.3.5.8.2" class="indexterm"></a><a id="id-1.5.3.5.8.3" class="indexterm"></a><a id="id-1.5.3.5.8.4" class="indexterm"></a><p>
+    Tokens such as <code class="token">SELECT</code>, <code class="token">UPDATE</code>, or
+    <code class="token">VALUES</code> in the example above are examples of
+    <em class="firstterm">key words</em>, that is, words that have a fixed
+    meaning in the SQL language.  The tokens <code class="token">MY_TABLE</code>
+    and <code class="token">A</code> are examples of
+    <em class="firstterm">identifiers</em>.  They identify names of
+    tables, columns, or other database objects, depending on the
+    command they are used in.  Therefore they are sometimes simply
+    called <span class="quote">“<span class="quote">names</span>”</span>.  Key words and identifiers have the
+    same lexical structure, meaning that one cannot know whether a
+    token is an identifier or a key word without knowing the language.
+    A complete list of key words can be found in <a class="xref" href="sql-keywords-appendix.html" title="Appendix C. SQL Key Words">Appendix C</a>.
+   </p><p>
+    SQL identifiers and key words must begin with a letter
+    (<code class="literal">a</code>-<code class="literal">z</code>, but also letters with
+    diacritical marks and non-Latin letters) or an underscore
+    (<code class="literal">_</code>).  Subsequent characters in an identifier or
+    key word can be letters, underscores, digits
+    (<code class="literal">0</code>-<code class="literal">9</code>), or dollar signs
+    (<code class="literal">$</code>).  Note that dollar signs are not allowed in identifiers
+    according to the letter of the SQL standard, so their use might render
+    applications less portable.
+    The SQL standard will not define a key word that contains
+    digits or starts or ends with an underscore, so identifiers of this
+    form are safe against possible conflict with future extensions of the
+    standard.
+   </p><p>
+    <a id="id-1.5.3.5.8.7.1" class="indexterm"></a>
+    The system uses no more than <code class="symbol">NAMEDATALEN</code>-1
+    bytes of an identifier; longer names can be written in
+    commands, but they will be truncated.  By default,
+    <code class="symbol">NAMEDATALEN</code> is 64 so the maximum identifier
+    length is 63 bytes. If this limit is problematic, it can be raised by
+    changing the <code class="symbol">NAMEDATALEN</code> constant in
+    <code class="filename">src/include/pg_config_manual.h</code>.
+   </p><p>
+    <a id="id-1.5.3.5.8.8.1" class="indexterm"></a>
+    Key words and unquoted identifiers are case insensitive.  Therefore:
+</p><pre class="programlisting">
+UPDATE MY_TABLE SET A = 5;
+</pre><p>
+    can equivalently be written as:
+</p><pre class="programlisting">
+uPDaTE my_TabLE SeT a = 5;
+</pre><p>
+    A convention often used is to write key words in upper
+    case and names in lower case, e.g.:
+</p><pre class="programlisting">
+UPDATE my_table SET a = 5;
+</pre><p>
+   </p><p>
+    <a id="id-1.5.3.5.8.9.1" class="indexterm"></a>
+    There is a second kind of identifier:  the <em class="firstterm">delimited
+    identifier</em> or <em class="firstterm">quoted
+    identifier</em>.  It is formed by enclosing an arbitrary
+    sequence of characters in double-quotes
+    (<code class="literal">"</code>).  A delimited
+    identifier is always an identifier, never a key word.  So
+    <code class="literal">"select"</code> could be used to refer to a column or
+    table named <span class="quote">“<span class="quote">select</span>”</span>, whereas an unquoted
+    <code class="literal">select</code> would be taken as a key word and
+    would therefore provoke a parse error when used where a table or
+    column name is expected.  The example can be written with quoted
+    identifiers like this:
+</p><pre class="programlisting">
+UPDATE "my_table" SET "a" = 5;
+</pre><p>
+   </p><p>
+    Quoted identifiers can contain any character, except the character
+    with code zero.  (To include a double quote, write two double quotes.)
+    This allows constructing table or column names that would
+    otherwise not be possible, such as ones containing spaces or
+    ampersands.  The length limitation still applies.
+   </p><p>
+    Quoting an identifier also makes it case-sensitive, whereas
+    unquoted names are always folded to lower case.  For example, the
+    identifiers <code class="literal">FOO</code>, <code class="literal">foo</code>, and
+    <code class="literal">"foo"</code> are considered the same by
+    <span class="productname">PostgreSQL</span>, but
+    <code class="literal">"Foo"</code> and <code class="literal">"FOO"</code> are
+    different from these three and each other.  (The folding of
+    unquoted names to lower case in <span class="productname">PostgreSQL</span> is
+    incompatible with the SQL standard, which says that unquoted names
+    should be folded to upper case.  Thus, <code class="literal">foo</code>
+    should be equivalent to <code class="literal">"FOO"</code> not
+    <code class="literal">"foo"</code> according to the standard.  If you want
+    to write portable applications you are advised to always quote a
+    particular name or never quote it.)
+   </p><a id="id-1.5.3.5.8.12" class="indexterm"></a><p>
+    A variant of quoted
+    identifiers allows including escaped Unicode characters identified
+    by their code points.  This variant starts
+    with <code class="literal">U&amp;</code> (upper or lower case U followed by
+    ampersand) immediately before the opening double quote, without
+    any spaces in between, for example <code class="literal">U&amp;"foo"</code>.
+    (Note that this creates an ambiguity with the
+    operator <code class="literal">&amp;</code>.  Use spaces around the operator to
+    avoid this problem.)  Inside the quotes, Unicode characters can be
+    specified in escaped form by writing a backslash followed by the
+    four-digit hexadecimal code point number or alternatively a
+    backslash followed by a plus sign followed by a six-digit
+    hexadecimal code point number.  For example, the
+    identifier <code class="literal">"data"</code> could be written as
+</p><pre class="programlisting">
+U&amp;"d\0061t\+000061"
+</pre><p>
+    The following less trivial example writes the Russian
+    word <span class="quote">“<span class="quote">slon</span>”</span> (elephant) in Cyrillic letters:
+</p><pre class="programlisting">
+U&amp;"\0441\043B\043E\043D"
+</pre><p>
+   </p><p>
+    If a different escape character than backslash is desired, it can
+    be specified using
+    the <code class="literal">UESCAPE</code><a id="id-1.5.3.5.8.14.2" class="indexterm"></a>
+    clause after the string, for example:
+</p><pre class="programlisting">
+U&amp;"d!0061t!+000061" UESCAPE '!'
+</pre><p>
+    The escape character can be any single character other than a
+    hexadecimal digit, the plus sign, a single quote, a double quote,
+    or a whitespace character.  Note that the escape character is
+    written in single quotes, not double quotes,
+    after <code class="literal">UESCAPE</code>.
+   </p><p>
+    To include the escape character in the identifier literally, write
+    it twice.
+   </p><p>
+    Either the 4-digit or the 6-digit escape form can be used to
+    specify UTF-16 surrogate pairs to compose characters with code
+    points larger than U+FFFF, although the availability of the
+    6-digit form technically makes this unnecessary.  (Surrogate
+    pairs are not stored directly, but are combined into a single
+    code point.)
+   </p><p>
+    If the server encoding is not UTF-8, the Unicode code point identified
+    by one of these escape sequences is converted to the actual server
+    encoding; an error is reported if that's not possible.
+   </p></div><div class="sect2" id="SQL-SYNTAX-CONSTANTS"><div class="titlepage"><div><div><h3 class="title">4.1.2. Constants</h3></div></div></div><a id="id-1.5.3.5.9.2" class="indexterm"></a><p>
+    There are three kinds of <em class="firstterm">implicitly-typed
+    constants</em> in <span class="productname">PostgreSQL</span>:
+    strings, bit strings, and numbers.
+    Constants can also be specified with explicit types, which can
+    enable more accurate representation and more efficient handling by
+    the system. These alternatives are discussed in the following
+    subsections.
+   </p><div class="sect3" id="SQL-SYNTAX-STRINGS"><div class="titlepage"><div><div><h4 class="title">4.1.2.1. String Constants</h4></div></div></div><a id="id-1.5.3.5.9.4.2" class="indexterm"></a><p>
+     <a id="id-1.5.3.5.9.4.3.1" class="indexterm"></a>
+     A string constant in SQL is an arbitrary sequence of characters
+     bounded by single quotes (<code class="literal">'</code>), for example
+     <code class="literal">'This is a string'</code>.  To include
+     a single-quote character within a string constant,
+     write two adjacent single quotes, e.g.,
+     <code class="literal">'Dianne''s horse'</code>.
+     Note that this is <span class="emphasis"><em>not</em></span> the same as a double-quote
+     character (<code class="literal">"</code>). 
+    </p><p>
+     Two string constants that are only separated by whitespace
+     <span class="emphasis"><em>with at least one newline</em></span> are concatenated
+     and effectively treated as if the string had been written as one
+     constant.  For example:
+</p><pre class="programlisting">
+SELECT 'foo'
+'bar';
+</pre><p>
+     is equivalent to:
+</p><pre class="programlisting">
+SELECT 'foobar';
+</pre><p>
+     but:
+</p><pre class="programlisting">
+SELECT 'foo'      'bar';
+</pre><p>
+     is not valid syntax.  (This slightly bizarre behavior is specified
+     by <acronym class="acronym">SQL</acronym>; <span class="productname">PostgreSQL</span> is
+     following the standard.)
+    </p></div><div class="sect3" id="SQL-SYNTAX-STRINGS-ESCAPE"><div class="titlepage"><div><div><h4 class="title">4.1.2.2. String Constants with C-Style Escapes</h4></div></div></div><a id="id-1.5.3.5.9.5.2" class="indexterm"></a><a id="id-1.5.3.5.9.5.3" class="indexterm"></a><p>
+     <span class="productname">PostgreSQL</span> also accepts <span class="quote">“<span class="quote">escape</span>”</span>
+     string constants, which are an extension to the SQL standard.
+     An escape string constant is specified by writing the letter
+     <code class="literal">E</code> (upper or lower case) just before the opening single
+     quote, e.g., <code class="literal">E'foo'</code>.  (When continuing an escape string
+     constant across lines, write <code class="literal">E</code> only before the first opening
+     quote.)
+     Within an escape string, a backslash character (<code class="literal">\</code>) begins a
+     C-like <em class="firstterm">backslash escape</em> sequence, in which the combination
+     of backslash and following character(s) represent a special byte
+     value, as shown in <a class="xref" href="sql-syntax-lexical.html#SQL-BACKSLASH-TABLE" title="Table 4.1. Backslash Escape Sequences">Table 4.1</a>.
+    </p><div class="table" id="SQL-BACKSLASH-TABLE"><p class="title"><strong>Table 4.1. Backslash Escape Sequences</strong></p><div class="table-contents"><table class="table" summary="Backslash Escape Sequences" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Backslash Escape Sequence</th><th>Interpretation</th></tr></thead><tbody><tr><td><code class="literal">\b</code></td><td>backspace</td></tr><tr><td><code class="literal">\f</code></td><td>form feed</td></tr><tr><td><code class="literal">\n</code></td><td>newline</td></tr><tr><td><code class="literal">\r</code></td><td>carriage return</td></tr><tr><td><code class="literal">\t</code></td><td>tab</td></tr><tr><td>
+         <code class="literal">\<em class="replaceable"><code>o</code></em></code>,
+         <code class="literal">\<em class="replaceable"><code>oo</code></em></code>,
+         <code class="literal">\<em class="replaceable"><code>ooo</code></em></code>
+         (<em class="replaceable"><code>o</code></em> = 0–7)
+        </td><td>octal byte value</td></tr><tr><td>
+         <code class="literal">\x<em class="replaceable"><code>h</code></em></code>,
+         <code class="literal">\x<em class="replaceable"><code>hh</code></em></code>
+         (<em class="replaceable"><code>h</code></em> = 0–9, A–F)
+        </td><td>hexadecimal byte value</td></tr><tr><td>
+         <code class="literal">\u<em class="replaceable"><code>xxxx</code></em></code>,
+         <code class="literal">\U<em class="replaceable"><code>xxxxxxxx</code></em></code>
+         (<em class="replaceable"><code>x</code></em> = 0–9, A–F)
+        </td><td>16 or 32-bit hexadecimal Unicode character value</td></tr></tbody></table></div></div><br class="table-break" /><p>
+     Any other
+     character following a backslash is taken literally. Thus, to
+     include a backslash character, write two backslashes (<code class="literal">\\</code>).
+     Also, a single quote can be included in an escape string by writing
+     <code class="literal">\'</code>, in addition to the normal way of <code class="literal">''</code>.
+    </p><p>
+     It is your responsibility that the byte sequences you create,
+     especially when using the octal or hexadecimal escapes, compose
+     valid characters in the server character set encoding.
+     A useful alternative is to use Unicode escapes or the
+     alternative Unicode escape syntax, explained
+     in <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-UESCAPE" title="4.1.2.3. String Constants with Unicode Escapes">Section 4.1.2.3</a>; then the server
+     will check that the character conversion is possible.
+    </p><div class="caution"><h3 class="title">Caution</h3><p>
+     If the configuration parameter
+     <a class="xref" href="runtime-config-compatible.html#GUC-STANDARD-CONFORMING-STRINGS">standard_conforming_strings</a> is <code class="literal">off</code>,
+     then <span class="productname">PostgreSQL</span> recognizes backslash escapes
+     in both regular and escape string constants.  However, as of
+     <span class="productname">PostgreSQL</span> 9.1, the default is <code class="literal">on</code>, meaning
+     that backslash escapes are recognized only in escape string constants.
+     This behavior is more standards-compliant, but might break applications
+     which rely on the historical behavior, where backslash escapes
+     were always recognized.  As a workaround, you can set this parameter
+     to <code class="literal">off</code>, but it is better to migrate away from using backslash
+     escapes.  If you need to use a backslash escape to represent a special
+     character, write the string constant with an <code class="literal">E</code>.
+    </p><p>
+     In addition to <code class="varname">standard_conforming_strings</code>, the configuration
+     parameters <a class="xref" href="runtime-config-compatible.html#GUC-ESCAPE-STRING-WARNING">escape_string_warning</a> and
+     <a class="xref" href="runtime-config-compatible.html#GUC-BACKSLASH-QUOTE">backslash_quote</a> govern treatment of backslashes
+     in string constants.
+    </p></div><p>
+     The character with the code zero cannot be in a string constant.
+    </p></div><div class="sect3" id="SQL-SYNTAX-STRINGS-UESCAPE"><div class="titlepage"><div><div><h4 class="title">4.1.2.3. String Constants with Unicode Escapes</h4></div></div></div><a id="id-1.5.3.5.9.6.2" class="indexterm"></a><p>
+     <span class="productname">PostgreSQL</span> also supports another type
+     of escape syntax for strings that allows specifying arbitrary
+     Unicode characters by code point.  A Unicode escape string
+     constant starts with <code class="literal">U&amp;</code> (upper or lower case
+     letter U followed by ampersand) immediately before the opening
+     quote, without any spaces in between, for
+     example <code class="literal">U&amp;'foo'</code>.  (Note that this creates an
+     ambiguity with the operator <code class="literal">&amp;</code>.  Use spaces
+     around the operator to avoid this problem.)  Inside the quotes,
+     Unicode characters can be specified in escaped form by writing a
+     backslash followed by the four-digit hexadecimal code point
+     number or alternatively a backslash followed by a plus sign
+     followed by a six-digit hexadecimal code point number.  For
+     example, the string <code class="literal">'data'</code> could be written as
+</p><pre class="programlisting">
+U&amp;'d\0061t\+000061'
+</pre><p>
+     The following less trivial example writes the Russian
+     word <span class="quote">“<span class="quote">slon</span>”</span> (elephant) in Cyrillic letters:
+</p><pre class="programlisting">
+U&amp;'\0441\043B\043E\043D'
+</pre><p>
+    </p><p>
+     If a different escape character than backslash is desired, it can
+     be specified using
+     the <code class="literal">UESCAPE</code><a id="id-1.5.3.5.9.6.4.2" class="indexterm"></a>
+     clause after the string, for example:
+</p><pre class="programlisting">
+U&amp;'d!0061t!+000061' UESCAPE '!'
+</pre><p>
+     The escape character can be any single character other than a
+     hexadecimal digit, the plus sign, a single quote, a double quote,
+     or a whitespace character.
+    </p><p>
+     To include the escape character in the string literally, write
+     it twice.
+    </p><p>
+     Either the 4-digit or the 6-digit escape form can be used to
+     specify UTF-16 surrogate pairs to compose characters with code
+     points larger than U+FFFF, although the availability of the
+     6-digit form technically makes this unnecessary.  (Surrogate
+     pairs are not stored directly, but are combined into a single
+     code point.)
+    </p><p>
+     If the server encoding is not UTF-8, the Unicode code point identified
+     by one of these escape sequences is converted to the actual server
+     encoding; an error is reported if that's not possible.
+    </p><p>
+     Also, the Unicode escape syntax for string constants only works
+     when the configuration
+     parameter <a class="xref" href="runtime-config-compatible.html#GUC-STANDARD-CONFORMING-STRINGS">standard_conforming_strings</a> is
+     turned on.  This is because otherwise this syntax could confuse
+     clients that parse the SQL statements to the point that it could
+     lead to SQL injections and similar security issues.  If the
+     parameter is set to off, this syntax will be rejected with an
+     error message.
+    </p></div><div class="sect3" id="SQL-SYNTAX-DOLLAR-QUOTING"><div class="titlepage"><div><div><h4 class="title">4.1.2.4. Dollar-Quoted String Constants</h4></div></div></div><a id="id-1.5.3.5.9.7.2" class="indexterm"></a><p>
+     While the standard syntax for specifying string constants is usually
+     convenient, it can be difficult to understand when the desired string
+     contains many single quotes, since each of those must
+     be doubled. To allow more readable queries in such situations,
+     <span class="productname">PostgreSQL</span> provides another way, called
+     <span class="quote">“<span class="quote">dollar quoting</span>”</span>, to write string constants.
+     A dollar-quoted string constant
+     consists of a dollar sign (<code class="literal">$</code>), an optional
+     <span class="quote">“<span class="quote">tag</span>”</span> of zero or more characters, another dollar
+     sign, an arbitrary sequence of characters that makes up the
+     string content, a dollar sign, the same tag that began this
+     dollar quote, and a dollar sign. For example, here are two
+     different ways to specify the string <span class="quote">“<span class="quote">Dianne's horse</span>”</span>
+     using dollar quoting:
+</p><pre class="programlisting">
+$$Dianne's horse$$
+$SomeTag$Dianne's horse$SomeTag$
+</pre><p>
+     Notice that inside the dollar-quoted string, single quotes can be
+     used without needing to be escaped.  Indeed, no characters inside
+     a dollar-quoted string are ever escaped: the string content is always
+     written literally.  Backslashes are not special, and neither are
+     dollar signs, unless they are part of a sequence matching the opening
+     tag.
+    </p><p>
+     It is possible to nest dollar-quoted string constants by choosing
+     different tags at each nesting level.  This is most commonly used in
+     writing function definitions.  For example:
+</p><pre class="programlisting">
+$function$
+BEGIN
+    RETURN ($1 ~ $q$[\t\r\n\v\\]$q$);
+END;
+$function$
+</pre><p>
+     Here, the sequence <code class="literal">$q$[\t\r\n\v\\]$q$</code> represents a
+     dollar-quoted literal string <code class="literal">[\t\r\n\v\\]</code>, which will
+     be recognized when the function body is executed by
+     <span class="productname">PostgreSQL</span>.  But since the sequence does not match
+     the outer dollar quoting delimiter <code class="literal">$function$</code>, it is
+     just some more characters within the constant so far as the outer
+     string is concerned.
+    </p><p>
+     The tag, if any, of a dollar-quoted string follows the same rules
+     as an unquoted identifier, except that it cannot contain a dollar sign.
+     Tags are case sensitive, so <code class="literal">$tag$String content$tag$</code>
+     is correct, but <code class="literal">$TAG$String content$tag$</code> is not.
+    </p><p>
+     A dollar-quoted string that follows a keyword or identifier must
+     be separated from it by whitespace; otherwise the dollar quoting
+     delimiter would be taken as part of the preceding identifier.
+    </p><p>
+     Dollar quoting is not part of the SQL standard, but it is often a more
+     convenient way to write complicated string literals than the
+     standard-compliant single quote syntax.  It is particularly useful when
+     representing string constants inside other constants, as is often needed
+     in procedural function definitions.  With single-quote syntax, each
+     backslash in the above example would have to be written as four
+     backslashes, which would be reduced to two backslashes in parsing the
+     original string constant, and then to one when the inner string constant
+     is re-parsed during function execution.
+    </p></div><div class="sect3" id="SQL-SYNTAX-BIT-STRINGS"><div class="titlepage"><div><div><h4 class="title">4.1.2.5. Bit-String Constants</h4></div></div></div><a id="id-1.5.3.5.9.8.2" class="indexterm"></a><p>
+     Bit-string constants look like regular string constants with a
+     <code class="literal">B</code> (upper or lower case) immediately before the
+     opening quote (no intervening whitespace), e.g.,
+     <code class="literal">B'1001'</code>.  The only characters allowed within
+     bit-string constants are <code class="literal">0</code> and
+     <code class="literal">1</code>.
+    </p><p>
+     Alternatively, bit-string constants can be specified in hexadecimal
+     notation, using a leading <code class="literal">X</code> (upper or lower case),
+     e.g., <code class="literal">X'1FF'</code>.  This notation is equivalent to
+     a bit-string constant with four binary digits for each hexadecimal digit.
+    </p><p>
+     Both forms of bit-string constant can be continued
+     across lines in the same way as regular string constants.
+     Dollar quoting cannot be used in a bit-string constant.
+    </p></div><div class="sect3" id="SQL-SYNTAX-CONSTANTS-NUMERIC"><div class="titlepage"><div><div><h4 class="title">4.1.2.6. Numeric Constants</h4></div></div></div><a id="id-1.5.3.5.9.9.2" class="indexterm"></a><p>
+     Numeric constants are accepted in these general forms:
+</p><pre class="synopsis">
+<em class="replaceable"><code>digits</code></em>
+<em class="replaceable"><code>digits</code></em>.[<span class="optional"><em class="replaceable"><code>digits</code></em></span>][<span class="optional">e[<span class="optional">+-</span>]<em class="replaceable"><code>digits</code></em></span>]
+[<span class="optional"><em class="replaceable"><code>digits</code></em></span>].<em class="replaceable"><code>digits</code></em>[<span class="optional">e[<span class="optional">+-</span>]<em class="replaceable"><code>digits</code></em></span>]
+<em class="replaceable"><code>digits</code></em>e[<span class="optional">+-</span>]<em class="replaceable"><code>digits</code></em>
+</pre><p>
+     where <em class="replaceable"><code>digits</code></em> is one or more decimal
+     digits (0 through 9).  At least one digit must be before or after the
+     decimal point, if one is used.  At least one digit must follow the
+     exponent marker (<code class="literal">e</code>), if one is present.
+     There cannot be any spaces or other characters embedded in the
+     constant.  Note that any leading plus or minus sign is not actually
+     considered part of the constant; it is an operator applied to the
+     constant.
+    </p><p>
+     These are some examples of valid numeric constants:
+</p><div class="literallayout"><p><br />
+42<br />
+3.5<br />
+4.<br />
+.001<br />
+5e2<br />
+1.925e-3<br />
+</p></div><p>
+    </p><p>
+     <a id="id-1.5.3.5.9.9.5.1" class="indexterm"></a>
+     <a id="id-1.5.3.5.9.9.5.2" class="indexterm"></a>
+     <a id="id-1.5.3.5.9.9.5.3" class="indexterm"></a>
+     A numeric constant that contains neither a decimal point nor an
+     exponent is initially presumed to be type <code class="type">integer</code> if its
+     value fits in type <code class="type">integer</code> (32 bits); otherwise it is
+     presumed to be type <code class="type">bigint</code> if its
+     value fits in type <code class="type">bigint</code> (64 bits); otherwise it is
+     taken to be type <code class="type">numeric</code>.  Constants that contain decimal
+     points and/or exponents are always initially presumed to be type
+     <code class="type">numeric</code>.
+    </p><p>
+     The initially assigned data type of a numeric constant is just a
+     starting point for the type resolution algorithms.  In most cases
+     the constant will be automatically coerced to the most
+     appropriate type depending on context.  When necessary, you can
+     force a numeric value to be interpreted as a specific data type
+     by casting it.<a id="id-1.5.3.5.9.9.6.1" class="indexterm"></a>
+     For example, you can force a numeric value to be treated as type
+     <code class="type">real</code> (<code class="type">float4</code>) by writing:
+
+</p><pre class="programlisting">
+REAL '1.23'  -- string style
+1.23::REAL   -- PostgreSQL (historical) style
+</pre><p>
+
+     These are actually just special cases of the general casting
+     notations discussed next.
+    </p></div><div class="sect3" id="SQL-SYNTAX-CONSTANTS-GENERIC"><div class="titlepage"><div><div><h4 class="title">4.1.2.7. Constants of Other Types</h4></div></div></div><a id="id-1.5.3.5.9.10.2" class="indexterm"></a><p>
+     A constant of an <span class="emphasis"><em>arbitrary</em></span> type can be
+     entered using any one of the following notations:
+</p><pre class="synopsis">
+<em class="replaceable"><code>type</code></em> '<em class="replaceable"><code>string</code></em>'
+'<em class="replaceable"><code>string</code></em>'::<em class="replaceable"><code>type</code></em>
+CAST ( '<em class="replaceable"><code>string</code></em>' AS <em class="replaceable"><code>type</code></em> )
+</pre><p>
+     The string constant's text is passed to the input conversion
+     routine for the type called <em class="replaceable"><code>type</code></em>. The
+     result is a constant of the indicated type.  The explicit type
+     cast can be omitted if there is no ambiguity as to the type the
+     constant must be (for example, when it is assigned directly to a
+     table column), in which case it is automatically coerced.
+    </p><p>
+     The string constant can be written using either regular SQL
+     notation or dollar-quoting.
+    </p><p>
+     It is also possible to specify a type coercion using a function-like
+     syntax:
+</p><pre class="synopsis">
+<em class="replaceable"><code>typename</code></em> ( '<em class="replaceable"><code>string</code></em>' )
+</pre><p>
+     but not all type names can be used in this way; see <a class="xref" href="sql-expressions.html#SQL-SYNTAX-TYPE-CASTS" title="4.2.9. Type Casts">Section 4.2.9</a> for details.
+    </p><p>
+     The <code class="literal">::</code>, <code class="literal">CAST()</code>, and
+     function-call syntaxes can also be used to specify run-time type
+     conversions of arbitrary expressions, as discussed in <a class="xref" href="sql-expressions.html#SQL-SYNTAX-TYPE-CASTS" title="4.2.9. Type Casts">Section 4.2.9</a>.  To avoid syntactic ambiguity, the
+     <code class="literal"><em class="replaceable"><code>type</code></em> '<em class="replaceable"><code>string</code></em>'</code>
+     syntax can only be used to specify the type of a simple literal constant.
+     Another restriction on the
+     <code class="literal"><em class="replaceable"><code>type</code></em> '<em class="replaceable"><code>string</code></em>'</code>
+     syntax is that it does not work for array types; use <code class="literal">::</code>
+     or <code class="literal">CAST()</code> to specify the type of an array constant.
+    </p><p>
+     The <code class="literal">CAST()</code> syntax conforms to SQL.  The
+     <code class="literal"><em class="replaceable"><code>type</code></em> '<em class="replaceable"><code>string</code></em>'</code>
+     syntax is a generalization of the standard: SQL specifies this syntax only
+     for a few data types, but <span class="productname">PostgreSQL</span> allows it
+     for all types.  The syntax with
+     <code class="literal">::</code> is historical <span class="productname">PostgreSQL</span>
+     usage, as is the function-call syntax.
+    </p></div></div><div class="sect2" id="SQL-SYNTAX-OPERATORS"><div class="titlepage"><div><div><h3 class="title">4.1.3. Operators</h3></div></div></div><a id="id-1.5.3.5.10.2" class="indexterm"></a><p>
+    An operator name is a sequence of up to <code class="symbol">NAMEDATALEN</code>-1
+    (63 by default) characters from the following list:
+</p><div class="literallayout"><p><br />
++ - * / &lt; &gt; = ~ ! @ # % ^ &amp; | ` ?<br />
+</p></div><p>
+
+    There are a few restrictions on operator names, however:
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       <code class="literal">--</code> and <code class="literal">/*</code> cannot appear
+       anywhere in an operator name, since they will be taken as the
+       start of a comment.
+      </p></li><li class="listitem"><p>
+       A multiple-character operator name cannot end in <code class="literal">+</code> or <code class="literal">-</code>,
+       unless the name also contains at least one of these characters:
+</p><div class="literallayout"><p><br />
+~ ! @ # % ^ &amp; | ` ?<br />
+</p></div><p>
+       For example, <code class="literal">@-</code> is an allowed operator name,
+       but <code class="literal">*-</code> is not.  This restriction allows
+       <span class="productname">PostgreSQL</span> to parse SQL-compliant
+       queries without requiring spaces between tokens.
+      </p></li></ul></div><p>
+   </p><p>
+    When working with non-SQL-standard operator names, you will usually
+    need to separate adjacent operators with spaces to avoid ambiguity.
+    For example, if you have defined a prefix operator named <code class="literal">@</code>,
+    you cannot write <code class="literal">X*@Y</code>; you must write
+    <code class="literal">X* @Y</code> to ensure that
+    <span class="productname">PostgreSQL</span> reads it as two operator names
+    not one.
+   </p></div><div class="sect2" id="SQL-SYNTAX-SPECIAL-CHARS"><div class="titlepage"><div><div><h3 class="title">4.1.4. Special Characters</h3></div></div></div><p>
+   Some characters that are not alphanumeric have a special meaning
+   that is different from being an operator.  Details on the usage can
+   be found at the location where the respective syntax element is
+   described.  This section only exists to advise the existence and
+   summarize the purposes of these characters.
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      A dollar sign (<code class="literal">$</code>) followed by digits is used
+      to represent a positional parameter in the body of a function
+      definition or a prepared statement.  In other contexts the
+      dollar sign can be part of an identifier or a dollar-quoted string
+      constant.
+     </p></li><li class="listitem"><p>
+      Parentheses (<code class="literal">()</code>) have their usual meaning to
+      group expressions and enforce precedence.  In some cases
+      parentheses are required as part of the fixed syntax of a
+      particular SQL command.
+     </p></li><li class="listitem"><p>
+      Brackets (<code class="literal">[]</code>) are used to select the elements
+      of an array.  See <a class="xref" href="arrays.html" title="8.15. Arrays">Section 8.15</a> for more information
+      on arrays.
+     </p></li><li class="listitem"><p>
+      Commas (<code class="literal">,</code>) are used in some syntactical
+      constructs to separate the elements of a list.
+     </p></li><li class="listitem"><p>
+      The semicolon (<code class="literal">;</code>) terminates an SQL command.
+      It cannot appear anywhere within a command, except within a
+      string constant or quoted identifier.
+     </p></li><li class="listitem"><p>
+      The colon (<code class="literal">:</code>) is used to select
+      <span class="quote">“<span class="quote">slices</span>”</span> from arrays. (See <a class="xref" href="arrays.html" title="8.15. Arrays">Section 8.15</a>.)  In certain SQL dialects (such as Embedded
+      SQL), the colon is used to prefix variable names.
+     </p></li><li class="listitem"><p>
+      The asterisk (<code class="literal">*</code>) is used in some contexts to denote
+      all the fields of a table row or composite value.  It also
+      has a special meaning when used as the argument of an
+      aggregate function, namely that the aggregate does not require
+      any explicit parameter.
+     </p></li><li class="listitem"><p>
+      The period (<code class="literal">.</code>) is used in numeric
+      constants, and to separate schema, table, and column names.
+     </p></li></ul></div><p>
+
+   </p></div><div class="sect2" id="SQL-SYNTAX-COMMENTS"><div class="titlepage"><div><div><h3 class="title">4.1.5. Comments</h3></div></div></div><a id="id-1.5.3.5.12.2" class="indexterm"></a><p>
+    A comment is a sequence of characters beginning with
+    double dashes and extending to the end of the line, e.g.:
+</p><pre class="programlisting">
+-- This is a standard SQL comment
+</pre><p>
+   </p><p>
+    Alternatively, C-style block comments can be used:
+</p><pre class="programlisting">
+/* multiline comment
+ * with nesting: /* nested block comment */
+ */
+</pre><p>
+    where the comment begins with <code class="literal">/*</code> and extends to
+    the matching occurrence of <code class="literal">*/</code>. These block
+    comments nest, as specified in the SQL standard but unlike C, so that one can
+    comment out larger blocks of code that might contain existing block
+    comments.
+   </p><p>
+    A comment is removed from the input stream before further syntax
+    analysis and is effectively replaced by whitespace.
+   </p></div><div class="sect2" id="SQL-PRECEDENCE"><div class="titlepage"><div><div><h3 class="title">4.1.6. Operator Precedence</h3></div></div></div><a id="id-1.5.3.5.13.2" class="indexterm"></a><p>
+    <a class="xref" href="sql-syntax-lexical.html#SQL-PRECEDENCE-TABLE" title="Table 4.2. Operator Precedence (highest to lowest)">Table 4.2</a> shows the precedence and
+    associativity of the operators in <span class="productname">PostgreSQL</span>.
+    Most operators have the same precedence and are left-associative.
+    The precedence and associativity of the operators is hard-wired
+    into the parser.
+    Add parentheses if you want an expression with multiple operators
+    to be parsed in some other way than what the precedence rules imply.
+   </p><div class="table" id="SQL-PRECEDENCE-TABLE"><p class="title"><strong>Table 4.2. Operator Precedence (highest to lowest)</strong></p><div class="table-contents"><table class="table" summary="Operator Precedence (highest to lowest)" border="1"><colgroup><col class="col1" /><col class="col2" /><col class="col3" /></colgroup><thead><tr><th>Operator/Element</th><th>Associativity</th><th>Description</th></tr></thead><tbody><tr><td><code class="token">.</code></td><td>left</td><td>table/column name separator</td></tr><tr><td><code class="token">::</code></td><td>left</td><td><span class="productname">PostgreSQL</span>-style typecast</td></tr><tr><td><code class="token">[</code> <code class="token">]</code></td><td>left</td><td>array element selection</td></tr><tr><td><code class="token">+</code> <code class="token">-</code></td><td>right</td><td>unary plus, unary minus</td></tr><tr><td><code class="token">COLLATE</code></td><td>left</td><td>collation selection</td></tr><tr><td><code class="token">AT</code></td><td>left</td><td><code class="literal">AT TIME ZONE</code></td></tr><tr><td><code class="token">^</code></td><td>left</td><td>exponentiation</td></tr><tr><td><code class="token">*</code> <code class="token">/</code> <code class="token">%</code></td><td>left</td><td>multiplication, division, modulo</td></tr><tr><td><code class="token">+</code> <code class="token">-</code></td><td>left</td><td>addition, subtraction</td></tr><tr><td>(any other operator)</td><td>left</td><td>all other native and user-defined operators</td></tr><tr><td><code class="token">BETWEEN</code> <code class="token">IN</code> <code class="token">LIKE</code> <code class="token">ILIKE</code> <code class="token">SIMILAR</code></td><td> </td><td>range containment, set membership, string matching</td></tr><tr><td><code class="token">&lt;</code> <code class="token">&gt;</code> <code class="token">=</code> <code class="token">&lt;=</code> <code class="token">&gt;=</code> <code class="token">&lt;&gt;</code>
+</td><td> </td><td>comparison operators</td></tr><tr><td><code class="token">IS</code> <code class="token">ISNULL</code> <code class="token">NOTNULL</code></td><td> </td><td><code class="literal">IS TRUE</code>, <code class="literal">IS FALSE</code>, <code class="literal">IS
+       NULL</code>, <code class="literal">IS DISTINCT FROM</code>, etc</td></tr><tr><td><code class="token">NOT</code></td><td>right</td><td>logical negation</td></tr><tr><td><code class="token">AND</code></td><td>left</td><td>logical conjunction</td></tr><tr><td><code class="token">OR</code></td><td>left</td><td>logical disjunction</td></tr></tbody></table></div></div><br class="table-break" /><p>
+    Note that the operator precedence rules also apply to user-defined
+    operators that have the same names as the built-in operators
+    mentioned above.  For example, if you define a
+    <span class="quote">“<span class="quote">+</span>”</span> operator for some custom data type it will have
+    the same precedence as the built-in <span class="quote">“<span class="quote">+</span>”</span> operator, no
+    matter what yours does.
+   </p><p>
+    When a schema-qualified operator name is used in the
+    <code class="literal">OPERATOR</code> syntax, as for example in:
+</p><pre class="programlisting">
+SELECT 3 OPERATOR(pg_catalog.+) 4;
+</pre><p>
+    the <code class="literal">OPERATOR</code> construct is taken to have the default precedence
+    shown in <a class="xref" href="sql-syntax-lexical.html#SQL-PRECEDENCE-TABLE" title="Table 4.2. Operator Precedence (highest to lowest)">Table 4.2</a> for
+    <span class="quote">“<span class="quote">any other operator</span>”</span>.  This is true no matter
+    which specific operator appears inside <code class="literal">OPERATOR()</code>.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     <span class="productname">PostgreSQL</span> versions before 9.5 used slightly different
+     operator precedence rules.  In particular, <code class="token">&lt;=</code>
+     <code class="token">&gt;=</code> and <code class="token">&lt;&gt;</code> used to be treated as
+     generic operators; <code class="literal">IS</code> tests used to have higher priority;
+     and <code class="literal">NOT BETWEEN</code> and related constructs acted inconsistently,
+     being taken in some cases as having the precedence of <code class="literal">NOT</code>
+     rather than <code class="literal">BETWEEN</code>.  These rules were changed for better
+     compliance with the SQL standard and to reduce confusion from
+     inconsistent treatment of logically equivalent constructs.  In most
+     cases, these changes will result in no behavioral change, or perhaps
+     in <span class="quote">“<span class="quote">no such operator</span>”</span> failures which can be resolved by adding
+     parentheses.  However there are corner cases in which a query might
+     change behavior without any parsing error being reported.
+    </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-expressions.html" title="4.2. Value Expressions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 4. SQL Syntax </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 4.2. Value Expressions</td></tr></table></div></body></html>

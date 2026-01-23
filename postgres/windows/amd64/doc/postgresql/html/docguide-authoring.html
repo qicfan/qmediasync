@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>J.4. Documentation Authoring</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="docguide-build.html" title="J.3. Building the Documentation" /><link rel="next" href="docguide-style.html" title="J.5. Style Guide" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">J.4. Documentation Authoring</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="docguide-build.html" title="J.3. Building the Documentation">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="docguide.html" title="Appendix J. Documentation">Up</a></td><th width="60%" align="center">Appendix J. Documentation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="docguide-style.html" title="J.5. Style Guide">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DOCGUIDE-AUTHORING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">J.4. Documentation Authoring</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="docguide-authoring.html#id-1.11.11.7.4">J.4.1. Emacs</a></span></dt></dl></div><p>
+    The documentation sources are most conveniently modified with an editor
+    that has a mode for editing XML, and even more so if it has some awareness
+    of XML schema languages so that it can know about
+    <span class="productname">DocBook</span> syntax specifically.
+   </p><p>
+    Note that for historical reasons the documentation source files are named
+    with an extension <code class="filename">.sgml</code> even though they are now XML
+    files.  So you might need to adjust your editor configuration to set the
+    correct mode.
+   </p><div class="sect2" id="id-1.11.11.7.4"><div class="titlepage"><div><div><h3 class="title">J.4.1. Emacs</h3></div></div></div><p>
+     <span class="productname">nXML Mode</span>, which ships with
+     <span class="productname">Emacs</span>, is the most common mode for editing
+     <acronym class="acronym">XML</acronym> documents with <span class="productname">Emacs</span>.
+     It will allow you to use <span class="application">Emacs</span> to insert tags
+     and check markup consistency, and it supports
+     <span class="productname">DocBook</span> out of the box.  Check the <a class="ulink" href="https://www.gnu.org/software/emacs/manual/html_mono/nxml-mode.html" target="_top">
+     nXML manual</a> for detailed documentation.
+    </p><p>
+     <code class="filename">src/tools/editors/emacs.samples</code> contains
+     recommended settings for this mode.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="docguide-build.html" title="J.3. Building the Documentation">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="docguide.html" title="Appendix J. Documentation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="docguide-style.html" title="J.5. Style Guide">Next</a></td></tr><tr><td width="40%" align="left" valign="top">J.3. Building the Documentation </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> J.5. Style Guide</td></tr></table></div></body></html>

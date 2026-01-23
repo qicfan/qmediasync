@@ -3,10 +3,16 @@ package controllers
 import (
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
+	"Q115-STRM/internal/notificationmanager"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,12 +28,22 @@ type EmbyEvent struct {
 		Version string `json:"Version"`
 	} `json:"Server"`
 	Item struct {
-		Name     string `json:"Name"`
-		ID       string `json:"Id"`
-		Type     string `json:"Type"`
-		IsFolder bool   `json:"IsFolder"`
-		FileName string `json:"FileName"`
-		Path     string `json:"Path"`
+		Name              string            `json:"Name"`
+		ID                string            `json:"Id"`
+		Type              string            `json:"Type"`
+		IsFolder          bool              `json:"IsFolder"`
+		FileName          string            `json:"FileName"`
+		Path              string            `json:"Path"`
+		Overview          string            `json:"Overview"`
+		SeriesName        string            `json:"SeriesName"`
+		SeasonName        string            `json:"SeasonName"`
+		SeriesId          string            `json:"SeriesId"`
+		SeasonId          string            `json:"SeasonId"`
+		IndexNumber       int               `json:"IndexNumber"`
+		ParentIndexNumber int               `json:"ParentIndexNumber"`
+		ProductionYear    int               `json:"ProductionYear"`
+		Genres            []string          `json:"Genres"`
+		ImageTags         map[string]string `json:"ImageTags"`
 	} `json:"Item"`
 }
 
@@ -68,7 +84,53 @@ func Webhook(ctx *gin.Context) {
 		}()
 		// 触发通知
 		go func() {
-			helpers.GlobalNotificationManager.SendSystemNotification("Emby媒体入库通知", fmt.Sprintf("新入库媒体名称：%s", event.Item.Name))
+			ctx := context.Background()
+			// 拼接Content内容
+			content := ""
+			imagePath := ""
+			id := event.Item.ID
+			switch event.Item.Type {
+			case "Movie":
+				content = fmt.Sprintf("电影名称：%s\n简介：%s\n流派：%s\n⏰ 入库时间: %s", event.Item.Name, event.Item.Overview, strings.Join(event.Item.Genres, ", "), time.Now().Format("2006-01-02 15:04:05"))
+			case "Episode":
+				content = fmt.Sprintf("电视剧名称：%s\n简介：%s\n流派：%s\n入库季集：S%dE%d\n集主题：%s\n⏰ 入库时间: %s", event.Item.SeriesName, event.Item.Overview, strings.Join(event.Item.Genres, ", "), event.Item.ParentIndexNumber, event.Item.IndexNumber, event.Item.Name, time.Now().Format("2006-01-02 15:04:05"))
+				id = event.Item.SeriesId
+			default:
+				// 只有电影和集会发送通知
+				return
+			}
+			if event.Item.ImageTags != nil {
+				if tag, ok := event.Item.ImageTags["Primary"]; ok {
+					imageUrl := fmt.Sprintf("%s/emby/Items/%s/Images/Primary?tag=%s&api_key=%s", models.SettingsGlobal.EmbyUrl, id, tag, models.SettingsGlobal.EmbyApiKey)
+					// 将图片下载/tmp目录，作为通知图片
+					posterPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s.jpg", event.Item.ID))
+					derr := helpers.DownloadFile(imageUrl, posterPath, "Q115-STRM")
+					if derr != nil {
+						helpers.AppLogger.Errorf("下载Emby海报失败: %v", derr)
+					} else {
+						imagePath = posterPath
+					}
+				}
+			}
+			notif := &models.Notification{
+				Type:      models.MediaAdded,
+				Title:     "📚 Emby媒体入库通知",
+				Content:   content,
+				Timestamp: time.Now(),
+				Priority:  models.NormalPriority,
+			}
+			if imagePath != "" {
+				notif.Image = imagePath
+			}
+			if notificationmanager.GlobalEnhancedNotificationManager != nil {
+				if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+					helpers.AppLogger.Errorf("发送媒体入库通知失败: %v", err)
+				}
+			}
+			// 删除临时图片文件
+			if imagePath != "" {
+				os.Remove(imagePath)
+			}
 		}()
 	}
 	if event.Event == "library.deleted" {
@@ -77,7 +139,29 @@ func Webhook(ctx *gin.Context) {
 		helpers.AppLogger.Infof("Emby媒体已删除，当前版本仅通知不执行删除 %+v", event.Item)
 		// 触发通知
 		go func() {
-			helpers.GlobalNotificationManager.SendSystemNotification("Emby媒体删除通知", fmt.Sprintf("已删除媒体名称：%s", event.Item.Name))
+			ctx := context.Background()
+			content := ""
+			switch event.Item.Type {
+			case "Movie":
+				content = fmt.Sprintf("电影名称：%s\n⏰ 删除时间: %s", event.Item.Name, time.Now().Format("2006-01-02 15:04:05"))
+			case "Episode":
+				content = fmt.Sprintf("电视剧名称：%s\n删除季集：S%dE%d\n⏰ 删除时间: %s", event.Item.SeriesName, event.Item.ParentIndexNumber, event.Item.IndexNumber, time.Now().Format("2006-01-02 15:04:05"))
+			default:
+				// 只有电影和集会发送通知
+				return
+			}
+			notif := &models.Notification{
+				Type:      models.MediaRemoved,
+				Title:     "🗑️ Emby媒体删除通知",
+				Content:   content,
+				Timestamp: time.Now(),
+				Priority:  models.NormalPriority,
+			}
+			if notificationmanager.GlobalEnhancedNotificationManager != nil {
+				if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+					helpers.AppLogger.Errorf("发送媒体删除通知失败: %v", err)
+				}
+			}
 		}()
 	}
 

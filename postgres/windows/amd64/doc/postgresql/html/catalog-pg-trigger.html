@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.56. pg_trigger</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-transform.html" title="52.55. pg_transform" /><link rel="next" href="catalog-pg-ts-config.html" title="52.57. pg_ts_config" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.56. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_trigger</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-transform.html" title="52.55. pg_transform">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-ts-config.html" title="52.57. pg_ts_config">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-TRIGGER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.56. <code class="structname">pg_trigger</code></h2></div></div></div><a id="id-1.10.4.58.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_trigger</code> stores triggers on tables
+   and views.
+   See <a class="xref" href="sql-createtrigger.html" title="CREATE TRIGGER"><span class="refentrytitle">CREATE TRIGGER</span></a>
+   for more information.
+  </p><div class="table" id="id-1.10.4.58.4"><p class="title"><strong>Table 52.56. <code class="structname">pg_trigger</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_trigger Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgrelid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The table this trigger is on
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgparentid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-trigger.html" title="52.56. pg_trigger"><code class="structname">pg_trigger</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Parent trigger that this trigger is cloned from (this happens when
+       partitions are created or attached to a partitioned table);
+       zero if not a clone
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Trigger name (must be unique among triggers of same table)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgfoid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The function to be called
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgtype</code> <code class="type">int2</code>
+      </p>
+      <p>
+       Bit mask identifying trigger firing conditions
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgenabled</code> <code class="type">char</code>
+      </p>
+      <p>
+       Controls in which <a class="xref" href="runtime-config-client.html#GUC-SESSION-REPLICATION-ROLE">session_replication_role</a> modes
+       the trigger fires.
+       <code class="literal">O</code> = trigger fires in <span class="quote">“<span class="quote">origin</span>”</span> and <span class="quote">“<span class="quote">local</span>”</span> modes,
+       <code class="literal">D</code> = trigger is disabled,
+       <code class="literal">R</code> = trigger fires in <span class="quote">“<span class="quote">replica</span>”</span> mode,
+       <code class="literal">A</code> = trigger fires always.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgisinternal</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if trigger is internally generated (usually, to enforce
+       the constraint identified by <code class="structfield">tgconstraint</code>)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgconstrrelid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The table referenced by a referential integrity constraint
+       (zero if trigger is not for a referential integrity constraint)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgconstrindid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The index supporting a unique, primary key, referential integrity,
+       or exclusion constraint
+       (zero if trigger is not for one of these types of constraint)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgconstraint</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-constraint.html" title="52.13. pg_constraint"><code class="structname">pg_constraint</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The <a class="link" href="catalog-pg-constraint.html" title="52.13. pg_constraint"><code class="structname">pg_constraint</code></a> entry associated with the trigger
+       (zero if trigger is not for a constraint)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgdeferrable</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if constraint trigger is deferrable
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tginitdeferred</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True if constraint trigger is initially deferred
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgnargs</code> <code class="type">int2</code>
+      </p>
+      <p>
+       Number of argument strings passed to trigger function
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgattr</code> <code class="type">int2vector</code>
+       (references <a class="link" href="catalog-pg-attribute.html" title="52.7. pg_attribute"><code class="structname">pg_attribute</code></a>.<code class="structfield">attnum</code>)
+      </p>
+      <p>
+       Column numbers, if trigger is column-specific; otherwise an
+       empty array
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgargs</code> <code class="type">bytea</code>
+      </p>
+      <p>
+       Argument strings to pass to trigger, each NULL-terminated
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgqual</code> <code class="type">pg_node_tree</code>
+      </p>
+      <p>
+       Expression tree (in <code class="function">nodeToString()</code>
+       representation) for the trigger's <code class="literal">WHEN</code> condition, or null
+       if none
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgoldtable</code> <code class="type">name</code>
+      </p>
+      <p>
+       <code class="literal">REFERENCING</code> clause name for <code class="literal">OLD TABLE</code>,
+       or null if none
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">tgnewtable</code> <code class="type">name</code>
+      </p>
+      <p>
+       <code class="literal">REFERENCING</code> clause name for <code class="literal">NEW TABLE</code>,
+       or null if none
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   Currently, column-specific triggering is supported only for
+   <code class="literal">UPDATE</code> events, and so <code class="structfield">tgattr</code> is relevant
+   only for that event type.  <code class="structfield">tgtype</code> might
+   contain bits for other event types as well, but those are presumed
+   to be table-wide regardless of what is in <code class="structfield">tgattr</code>.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    When <code class="structfield">tgconstraint</code> is nonzero,
+    <code class="structfield">tgconstrrelid</code>, <code class="structfield">tgconstrindid</code>,
+    <code class="structfield">tgdeferrable</code>, and <code class="structfield">tginitdeferred</code> are
+    largely redundant with the referenced <a class="link" href="catalog-pg-constraint.html" title="52.13. pg_constraint"><code class="structname">pg_constraint</code></a> entry.
+    However, it is possible for a non-deferrable trigger to be associated
+    with a deferrable constraint: foreign key constraints can have some
+    deferrable and some non-deferrable triggers.
+   </p></div><div class="note"><h3 class="title">Note</h3><p>
+    <code class="literal">pg_class.relhastriggers</code>
+    must be true if a relation has any triggers in this catalog.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-transform.html" title="52.55. pg_transform">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-ts-config.html" title="52.57. pg_ts_config">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.55. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_transform</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.57. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_ts_config</code></td></tr></table></div></body></html>

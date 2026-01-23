@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>3.4. Transactions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="tutorial-fk.html" title="3.3. Foreign Keys" /><link rel="next" href="tutorial-window.html" title="3.5. Window Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">3.4. Transactions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="tutorial-fk.html" title="3.3. Foreign Keys">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="tutorial-advanced.html" title="Chapter 3. Advanced Features">Up</a></td><th width="60%" align="center">Chapter 3. Advanced Features</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="tutorial-window.html" title="3.5. Window Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TUTORIAL-TRANSACTIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">3.4. Transactions</h2></div></div></div><a id="id-1.4.5.5.2" class="indexterm"></a><p>
+    <em class="firstterm">Transactions</em> are a fundamental concept of all database
+    systems.  The essential point of a transaction is that it bundles
+    multiple steps into a single, all-or-nothing operation.  The intermediate
+    states between the steps are not visible to other concurrent transactions,
+    and if some failure occurs that prevents the transaction from completing,
+    then none of the steps affect the database at all.
+   </p><p>
+    For example, consider a bank database that contains balances for various
+    customer accounts, as well as total deposit balances for branches.
+    Suppose that we want to record a payment of $100.00 from Alice's account
+    to Bob's account.  Simplifying outrageously, the SQL commands for this
+    might look like:
+
+</p><pre class="programlisting">
+UPDATE accounts SET balance = balance - 100.00
+    WHERE name = 'Alice';
+UPDATE branches SET balance = balance - 100.00
+    WHERE name = (SELECT branch_name FROM accounts WHERE name = 'Alice');
+UPDATE accounts SET balance = balance + 100.00
+    WHERE name = 'Bob';
+UPDATE branches SET balance = balance + 100.00
+    WHERE name = (SELECT branch_name FROM accounts WHERE name = 'Bob');
+</pre><p>
+   </p><p>
+    The details of these commands are not important here; the important
+    point is that there are several separate updates involved to accomplish
+    this rather simple operation.  Our bank's officers will want to be
+    assured that either all these updates happen, or none of them happen.
+    It would certainly not do for a system failure to result in Bob
+    receiving $100.00 that was not debited from Alice.  Nor would Alice long
+    remain a happy customer if she was debited without Bob being credited.
+    We need a guarantee that if something goes wrong partway through the
+    operation, none of the steps executed so far will take effect.  Grouping
+    the updates into a <em class="firstterm">transaction</em> gives us this guarantee.
+    A transaction is said to be <em class="firstterm">atomic</em>: from the point of
+    view of other transactions, it either happens completely or not at all.
+   </p><p>
+    We also want a
+    guarantee that once a transaction is completed and acknowledged by
+    the database system, it has indeed been permanently recorded
+    and won't be lost even if a crash ensues shortly thereafter.
+    For example, if we are recording a cash withdrawal by Bob,
+    we do not want any chance that the debit to his account will
+    disappear in a crash just after he walks out the bank door.
+    A transactional database guarantees that all the updates made by
+    a transaction are logged in permanent storage (i.e., on disk) before
+    the transaction is reported complete.
+   </p><p>
+    Another important property of transactional databases is closely
+    related to the notion of atomic updates: when multiple transactions
+    are running concurrently, each one should not be able to see the
+    incomplete changes made by others.  For example, if one transaction
+    is busy totalling all the branch balances, it would not do for it
+    to include the debit from Alice's branch but not the credit to
+    Bob's branch, nor vice versa.  So transactions must be all-or-nothing
+    not only in terms of their permanent effect on the database, but
+    also in terms of their visibility as they happen.  The updates made
+    so far by an open transaction are invisible to other transactions
+    until the transaction completes, whereupon all the updates become
+    visible simultaneously.
+   </p><p>
+    In <span class="productname">PostgreSQL</span>, a transaction is set up by surrounding
+    the SQL commands of the transaction with
+    <code class="command">BEGIN</code> and <code class="command">COMMIT</code> commands.  So our banking
+    transaction would actually look like:
+
+</p><pre class="programlisting">
+BEGIN;
+UPDATE accounts SET balance = balance - 100.00
+    WHERE name = 'Alice';
+-- etc etc
+COMMIT;
+</pre><p>
+   </p><p>
+    If, partway through the transaction, we decide we do not want to
+    commit (perhaps we just noticed that Alice's balance went negative),
+    we can issue the command <code class="command">ROLLBACK</code> instead of
+    <code class="command">COMMIT</code>, and all our updates so far will be canceled.
+   </p><p>
+    <span class="productname">PostgreSQL</span> actually treats every SQL statement as being
+    executed within a transaction.  If you do not issue a <code class="command">BEGIN</code>
+    command,
+    then each individual statement has an implicit <code class="command">BEGIN</code> and
+    (if successful) <code class="command">COMMIT</code> wrapped around it.  A group of
+    statements surrounded by <code class="command">BEGIN</code> and <code class="command">COMMIT</code>
+    is sometimes called a <em class="firstterm">transaction block</em>.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     Some client libraries issue <code class="command">BEGIN</code> and <code class="command">COMMIT</code>
+     commands automatically, so that you might get the effect of transaction
+     blocks without asking.  Check the documentation for the interface
+     you are using.
+    </p></div><p>
+    It's possible to control the statements in a transaction in a more
+    granular fashion through the use of <em class="firstterm">savepoints</em>.  Savepoints
+    allow you to selectively discard parts of the transaction, while
+    committing the rest.  After defining a savepoint with
+    <code class="command">SAVEPOINT</code>, you can if needed roll back to the savepoint
+    with <code class="command">ROLLBACK TO</code>.  All the transaction's database changes
+    between defining the savepoint and rolling back to it are discarded, but
+    changes earlier than the savepoint are kept.
+   </p><p>
+    After rolling back to a savepoint, it continues to be defined, so you can
+    roll back to it several times.  Conversely, if you are sure you won't need
+    to roll back to a particular savepoint again, it can be released, so the
+    system can free some resources.  Keep in mind that either releasing or
+    rolling back to a savepoint
+    will automatically release all savepoints that were defined after it.
+   </p><p>
+    All this is happening within the transaction block, so none of it
+    is visible to other database sessions.  When and if you commit the
+    transaction block, the committed actions become visible as a unit
+    to other sessions, while the rolled-back actions never become visible
+    at all.
+   </p><p>
+    Remembering the bank database, suppose we debit $100.00 from Alice's
+    account, and credit Bob's account, only to find later that we should
+    have credited Wally's account.  We could do it using savepoints like
+    this:
+
+</p><pre class="programlisting">
+BEGIN;
+UPDATE accounts SET balance = balance - 100.00
+    WHERE name = 'Alice';
+SAVEPOINT my_savepoint;
+UPDATE accounts SET balance = balance + 100.00
+    WHERE name = 'Bob';
+-- oops ... forget that and use Wally's account
+ROLLBACK TO my_savepoint;
+UPDATE accounts SET balance = balance + 100.00
+    WHERE name = 'Wally';
+COMMIT;
+</pre><p>
+   </p><p>
+    This example is, of course, oversimplified, but there's a lot of control
+    possible in a transaction block through the use of savepoints.
+    Moreover, <code class="command">ROLLBACK TO</code> is the only way to regain control of a
+    transaction block that was put in aborted state by the
+    system due to an error, short of rolling it back completely and starting
+    again.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tutorial-fk.html" title="3.3. Foreign Keys">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="tutorial-advanced.html" title="Chapter 3. Advanced Features">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="tutorial-window.html" title="3.5. Window Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">3.3. Foreign Keys </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 3.5. Window Functions</td></tr></table></div></body></html>

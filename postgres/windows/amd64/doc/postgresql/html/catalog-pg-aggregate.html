@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.2. pg_aggregate</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalogs-overview.html" title="52.1. Overview" /><link rel="next" href="catalog-pg-am.html" title="52.3. pg_am" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.2. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_aggregate</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalogs-overview.html" title="52.1. Overview">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-am.html" title="52.3. pg_am">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-AGGREGATE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.2. <code class="structname">pg_aggregate</code></h2></div></div></div><a id="id-1.10.4.4.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_aggregate</code> stores information about
+   aggregate functions.  An aggregate function is a function that
+   operates on a set of values (typically one column from each row
+   that matches a query condition) and returns a single value computed
+   from all these values.  Typical aggregate functions are
+   <code class="function">sum</code>, <code class="function">count</code>, and
+   <code class="function">max</code>.  Each entry in
+   <code class="structname">pg_aggregate</code> is an extension of an entry
+   in <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.
+   The <code class="structname">pg_proc</code> entry carries the aggregate's name,
+   input and output data types, and other information that is similar to
+   ordinary functions.
+  </p><div class="table" id="id-1.10.4.4.4"><p class="title"><strong>Table 52.2. <code class="structname">pg_aggregate</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_aggregate Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggfnoid</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       <code class="structname">pg_proc</code> OID of the aggregate function
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggkind</code> <code class="type">char</code>
+      </p>
+      <p>
+       Aggregate kind:
+       <code class="literal">n</code> for <span class="quote">“<span class="quote">normal</span>”</span> aggregates,
+       <code class="literal">o</code> for <span class="quote">“<span class="quote">ordered-set</span>”</span> aggregates, or
+       <code class="literal">h</code> for <span class="quote">“<span class="quote">hypothetical-set</span>”</span> aggregates
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggnumdirectargs</code> <code class="type">int2</code>
+      </p>
+      <p>
+       Number of direct (non-aggregated) arguments of an ordered-set or
+       hypothetical-set aggregate, counting a variadic array as one argument.
+       If equal to <code class="structfield">pronargs</code>, the aggregate must be variadic
+       and the variadic array describes the aggregated arguments as well as
+       the final direct arguments.
+       Always zero for normal aggregates.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggtransfn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Transition function
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggfinalfn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Final function (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggcombinefn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Combine function (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggserialfn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Serialization function (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggdeserialfn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Deserialization function (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggmtransfn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Forward transition function for moving-aggregate mode (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggminvtransfn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Inverse transition function for moving-aggregate mode (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggmfinalfn</code> <code class="type">regproc</code>
+       (references <a class="link" href="catalog-pg-proc.html" title="52.38. pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Final function for moving-aggregate mode (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggfinalextra</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True to pass extra dummy arguments to <code class="structfield">aggfinalfn</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggmfinalextra</code> <code class="type">bool</code>
+      </p>
+      <p>
+       True to pass extra dummy arguments to <code class="structfield">aggmfinalfn</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggfinalmodify</code> <code class="type">char</code>
+      </p>
+      <p>
+       Whether <code class="structfield">aggfinalfn</code> modifies the
+       transition state value:
+       <code class="literal">r</code> if it is read-only,
+       <code class="literal">s</code> if the <code class="structfield">aggtransfn</code>
+       cannot be applied after the <code class="structfield">aggfinalfn</code>, or
+       <code class="literal">w</code> if it writes on the value
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggmfinalmodify</code> <code class="type">char</code>
+      </p>
+      <p>
+       Like <code class="structfield">aggfinalmodify</code>, but for
+       the <code class="structfield">aggmfinalfn</code>
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggsortop</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-operator.html" title="52.34. pg_operator"><code class="structname">pg_operator</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Associated sort operator (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggtranstype</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-type.html" title="52.62. pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Data type of the aggregate function's internal transition (state) data
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggtransspace</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Approximate average size (in bytes) of the transition state
+       data, or zero to use a default estimate
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggmtranstype</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-type.html" title="52.62. pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Data type of the aggregate function's internal transition (state)
+       data for moving-aggregate mode (zero if none)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggmtransspace</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Approximate average size (in bytes) of the transition state data
+       for moving-aggregate mode, or zero to use a default estimate
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">agginitval</code> <code class="type">text</code>
+      </p>
+      <p>
+       The initial value of the transition state.  This is a text
+       field containing the initial value in its external string
+       representation.  If this field is null, the transition state
+       value starts out null.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">aggminitval</code> <code class="type">text</code>
+      </p>
+      <p>
+       The initial value of the transition state for moving-aggregate mode.
+       This is a text field containing the initial value in its external
+       string representation.  If this field is null, the transition state
+       value starts out null.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   New aggregate functions are registered with the <a class="link" href="sql-createaggregate.html" title="CREATE AGGREGATE"><code class="command">CREATE AGGREGATE</code></a>
+   command.  See <a class="xref" href="xaggr.html" title="38.12. User-Defined Aggregates">Section 38.12</a> for more information about
+   writing aggregate functions and the meaning of the transition
+   functions, etc.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalogs-overview.html" title="52.1. Overview">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-am.html" title="52.3. pg_am">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.1. Overview </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.3. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_am</code></td></tr></table></div></body></html>

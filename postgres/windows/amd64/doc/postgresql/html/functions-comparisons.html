@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.24. Row and Array Comparisons</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-subquery.html" title="9.23. Subquery Expressions" /><link rel="next" href="functions-srf.html" title="9.25. Set Returning Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.24. Row and Array Comparisons</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-subquery.html" title="9.23. Subquery Expressions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-srf.html" title="9.25. Set Returning Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-COMPARISONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.24. Row and Array Comparisons</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="functions-comparisons.html#FUNCTIONS-COMPARISONS-IN-SCALAR">9.24.1. <code class="literal">IN</code></a></span></dt><dt><span class="sect2"><a href="functions-comparisons.html#id-1.5.8.30.15">9.24.2. <code class="literal">NOT IN</code></a></span></dt><dt><span class="sect2"><a href="functions-comparisons.html#id-1.5.8.30.16">9.24.3. <code class="literal">ANY</code>/<code class="literal">SOME</code> (array)</a></span></dt><dt><span class="sect2"><a href="functions-comparisons.html#id-1.5.8.30.17">9.24.4. <code class="literal">ALL</code> (array)</a></span></dt><dt><span class="sect2"><a href="functions-comparisons.html#ROW-WISE-COMPARISON">9.24.5. Row Constructor Comparison</a></span></dt><dt><span class="sect2"><a href="functions-comparisons.html#COMPOSITE-TYPE-COMPARISON">9.24.6. Composite Type Comparison</a></span></dt></dl></div><a id="id-1.5.8.30.2" class="indexterm"></a><a id="id-1.5.8.30.3" class="indexterm"></a><a id="id-1.5.8.30.4" class="indexterm"></a><a id="id-1.5.8.30.5" class="indexterm"></a><a id="id-1.5.8.30.6" class="indexterm"></a><a id="id-1.5.8.30.7" class="indexterm"></a><a id="id-1.5.8.30.8" class="indexterm"></a><a id="id-1.5.8.30.9" class="indexterm"></a><a id="id-1.5.8.30.10" class="indexterm"></a><a id="id-1.5.8.30.11" class="indexterm"></a><a id="id-1.5.8.30.12" class="indexterm"></a><p>
+   This section describes several specialized constructs for making
+   multiple comparisons between groups of values.  These forms are
+   syntactically related to the subquery forms of the previous section,
+   but do not involve subqueries.
+   The forms involving array subexpressions are
+   <span class="productname">PostgreSQL</span> extensions; the rest are
+   <acronym class="acronym">SQL</acronym>-compliant.
+   All of the expression forms documented in this section return
+   Boolean (true/false) results.
+  </p><div class="sect2" id="FUNCTIONS-COMPARISONS-IN-SCALAR"><div class="titlepage"><div><div><h3 class="title">9.24.1. <code class="literal">IN</code></h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> IN (<em class="replaceable"><code>value</code></em> [<span class="optional">, ...</span>])
+</pre><p>
+   The right-hand side is a parenthesized list
+   of expressions.  The result is <span class="quote">“<span class="quote">true</span>”</span> if the left-hand expression's
+   result is equal to any of the right-hand expressions.  This is a shorthand
+   notation for
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> = <em class="replaceable"><code>value1</code></em>
+OR
+<em class="replaceable"><code>expression</code></em> = <em class="replaceable"><code>value2</code></em>
+OR
+...
+</pre><p>
+  </p><p>
+   Note that if the left-hand expression yields null, or if there are
+   no equal right-hand values and at least one right-hand expression yields
+   null, the result of the <code class="token">IN</code> construct will be null, not false.
+   This is in accordance with SQL's normal rules for Boolean combinations
+   of null values.
+  </p></div><div class="sect2" id="id-1.5.8.30.15"><div class="titlepage"><div><div><h3 class="title">9.24.2. <code class="literal">NOT IN</code></h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> NOT IN (<em class="replaceable"><code>value</code></em> [<span class="optional">, ...</span>])
+</pre><p>
+   The right-hand side is a parenthesized list
+   of expressions.  The result is <span class="quote">“<span class="quote">true</span>”</span> if the left-hand expression's
+   result is unequal to all of the right-hand expressions.  This is a shorthand
+   notation for
+
+</p><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> &lt;&gt; <em class="replaceable"><code>value1</code></em>
+AND
+<em class="replaceable"><code>expression</code></em> &lt;&gt; <em class="replaceable"><code>value2</code></em>
+AND
+...
+</pre><p>
+  </p><p>
+   Note that if the left-hand expression yields null, or if there are
+   no equal right-hand values and at least one right-hand expression yields
+   null, the result of the <code class="token">NOT IN</code> construct will be null, not true
+   as one might naively expect.
+   This is in accordance with SQL's normal rules for Boolean combinations
+   of null values.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+   <code class="literal">x NOT IN y</code> is equivalent to <code class="literal">NOT (x IN y)</code> in all
+   cases.  However, null values are much more likely to trip up the novice when
+   working with <code class="token">NOT IN</code> than when working with <code class="token">IN</code>.
+   It is best to express your condition positively if possible.
+  </p></div></div><div class="sect2" id="id-1.5.8.30.16"><div class="titlepage"><div><div><h3 class="title">9.24.3. <code class="literal">ANY</code>/<code class="literal">SOME</code> (array)</h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> <em class="replaceable"><code>operator</code></em> ANY (<em class="replaceable"><code>array expression</code></em>)
+<em class="replaceable"><code>expression</code></em> <em class="replaceable"><code>operator</code></em> SOME (<em class="replaceable"><code>array expression</code></em>)
+</pre><p>
+   The right-hand side is a parenthesized expression, which must yield an
+   array value.
+   The left-hand expression
+   is evaluated and compared to each element of the array using the
+   given <em class="replaceable"><code>operator</code></em>, which must yield a Boolean
+   result.
+   The result of <code class="token">ANY</code> is <span class="quote">“<span class="quote">true</span>”</span> if any true result is obtained.
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if no true result is found (including the
+   case where the array has zero elements).
+  </p><p>
+   If the array expression yields a null array, the result of
+   <code class="token">ANY</code> will be null.  If the left-hand expression yields null,
+   the result of <code class="token">ANY</code> is ordinarily null (though a non-strict
+   comparison operator could possibly yield a different result).
+   Also, if the right-hand array contains any null elements and no true
+   comparison result is obtained, the result of <code class="token">ANY</code>
+   will be null, not false (again, assuming a strict comparison operator).
+   This is in accordance with SQL's normal rules for Boolean combinations
+   of null values.
+  </p><p>
+   <code class="token">SOME</code> is a synonym for <code class="token">ANY</code>.
+  </p></div><div class="sect2" id="id-1.5.8.30.17"><div class="titlepage"><div><div><h3 class="title">9.24.4. <code class="literal">ALL</code> (array)</h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>expression</code></em> <em class="replaceable"><code>operator</code></em> ALL (<em class="replaceable"><code>array expression</code></em>)
+</pre><p>
+   The right-hand side is a parenthesized expression, which must yield an
+   array value.
+   The left-hand expression
+   is evaluated and compared to each element of the array using the
+   given <em class="replaceable"><code>operator</code></em>, which must yield a Boolean
+   result.
+   The result of <code class="token">ALL</code> is <span class="quote">“<span class="quote">true</span>”</span> if all comparisons yield true
+   (including the case where the array has zero elements).
+   The result is <span class="quote">“<span class="quote">false</span>”</span> if any false result is found.
+  </p><p>
+   If the array expression yields a null array, the result of
+   <code class="token">ALL</code> will be null.  If the left-hand expression yields null,
+   the result of <code class="token">ALL</code> is ordinarily null (though a non-strict
+   comparison operator could possibly yield a different result).
+   Also, if the right-hand array contains any null elements and no false
+   comparison result is obtained, the result of <code class="token">ALL</code>
+   will be null, not true (again, assuming a strict comparison operator).
+   This is in accordance with SQL's normal rules for Boolean combinations
+   of null values.
+  </p></div><div class="sect2" id="ROW-WISE-COMPARISON"><div class="titlepage"><div><div><h3 class="title">9.24.5. Row Constructor Comparison</h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> <em class="replaceable"><code>operator</code></em> <em class="replaceable"><code>row_constructor</code></em>
+</pre><p>
+   Each side is a row constructor,
+   as described in <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS" title="4.2.13. Row Constructors">Section 4.2.13</a>.
+   The two row constructors must have the same number of fields.
+   The given <em class="replaceable"><code>operator</code></em> is applied to each pair
+   of corresponding fields.  (Since the fields could be of different
+   types, this means that a different specific operator could be selected
+   for each pair.)
+   All the selected operators must be members of some B-tree operator
+   class, or be the negator of an <code class="literal">=</code> member of a B-tree
+   operator class, meaning that row constructor comparison is only
+   possible when the <em class="replaceable"><code>operator</code></em> is
+   <code class="literal">=</code>,
+   <code class="literal">&lt;&gt;</code>,
+   <code class="literal">&lt;</code>,
+   <code class="literal">&lt;=</code>,
+   <code class="literal">&gt;</code>, or
+   <code class="literal">&gt;=</code>,
+   or has semantics similar to one of these.
+  </p><p>
+   The <code class="literal">=</code> and <code class="literal">&lt;&gt;</code> cases work slightly differently
+   from the others.  Two rows are considered
+   equal if all their corresponding members are non-null and equal; the rows
+   are unequal if any corresponding members are non-null and unequal;
+   otherwise the result of the row comparison is unknown (null).
+  </p><p>
+   For the <code class="literal">&lt;</code>, <code class="literal">&lt;=</code>, <code class="literal">&gt;</code> and
+   <code class="literal">&gt;=</code> cases, the row elements are compared left-to-right,
+   stopping as soon as an unequal or null pair of elements is found.
+   If either of this pair of elements is null, the result of the
+   row comparison is unknown (null); otherwise comparison of this pair
+   of elements determines the result.  For example,
+   <code class="literal">ROW(1,2,NULL) &lt; ROW(1,3,0)</code>
+   yields true, not null, because the third pair of elements are not
+   considered.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    Prior to <span class="productname">PostgreSQL</span> 8.2, the
+    <code class="literal">&lt;</code>, <code class="literal">&lt;=</code>, <code class="literal">&gt;</code> and <code class="literal">&gt;=</code>
+    cases were not handled per SQL specification.  A comparison like
+    <code class="literal">ROW(a,b) &lt; ROW(c,d)</code>
+    was implemented as
+    <code class="literal">a &lt; c AND b &lt; d</code>
+    whereas the correct behavior is equivalent to
+    <code class="literal">a &lt; c OR (a = c AND b &lt; d)</code>.
+   </p></div><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> IS DISTINCT FROM <em class="replaceable"><code>row_constructor</code></em>
+</pre><p>
+   This construct is similar to a <code class="literal">&lt;&gt;</code> row comparison,
+   but it does not yield null for null inputs.  Instead, any null value is
+   considered unequal to (distinct from) any non-null value, and any two
+   nulls are considered equal (not distinct).  Thus the result will
+   either be true or false, never null.
+  </p><pre class="synopsis">
+<em class="replaceable"><code>row_constructor</code></em> IS NOT DISTINCT FROM <em class="replaceable"><code>row_constructor</code></em>
+</pre><p>
+   This construct is similar to a <code class="literal">=</code> row comparison,
+   but it does not yield null for null inputs.  Instead, any null value is
+   considered unequal to (distinct from) any non-null value, and any two
+   nulls are considered equal (not distinct).  Thus the result will always
+   be either true or false, never null.
+  </p></div><div class="sect2" id="COMPOSITE-TYPE-COMPARISON"><div class="titlepage"><div><div><h3 class="title">9.24.6. Composite Type Comparison</h3></div></div></div><pre class="synopsis">
+<em class="replaceable"><code>record</code></em> <em class="replaceable"><code>operator</code></em> <em class="replaceable"><code>record</code></em>
+</pre><p>
+   The SQL specification requires row-wise comparison to return NULL if the
+   result depends on comparing two NULL values or a NULL and a non-NULL.
+   <span class="productname">PostgreSQL</span> does this only when comparing the
+   results of two row constructors (as in
+   <a class="xref" href="functions-comparisons.html#ROW-WISE-COMPARISON" title="9.24.5. Row Constructor Comparison">Section 9.24.5</a>) or comparing a row constructor
+   to the output of a subquery (as in <a class="xref" href="functions-subquery.html" title="9.23. Subquery Expressions">Section 9.23</a>).
+   In other contexts where two composite-type values are compared, two
+   NULL field values are considered equal, and a NULL is considered larger
+   than a non-NULL.  This is necessary in order to have consistent sorting
+   and indexing behavior for composite types.
+  </p><p>
+   Each side is evaluated and they are compared row-wise.  Composite type
+   comparisons are allowed when the <em class="replaceable"><code>operator</code></em> is
+   <code class="literal">=</code>,
+   <code class="literal">&lt;&gt;</code>,
+   <code class="literal">&lt;</code>,
+   <code class="literal">&lt;=</code>,
+   <code class="literal">&gt;</code> or
+   <code class="literal">&gt;=</code>,
+   or has semantics similar to one of these.  (To be specific, an operator
+   can be a row comparison operator if it is a member of a B-tree operator
+   class, or is the negator of the <code class="literal">=</code> member of a B-tree operator
+   class.)  The default behavior of the above operators is the same as for
+   <code class="literal">IS [ NOT ] DISTINCT FROM</code> for row constructors (see
+   <a class="xref" href="functions-comparisons.html#ROW-WISE-COMPARISON" title="9.24.5. Row Constructor Comparison">Section 9.24.5</a>).
+  </p><p>
+   To support matching of rows which include elements without a default
+   B-tree operator class, the following operators are defined for composite
+   type comparison:
+   <code class="literal">*=</code>,
+   <code class="literal">*&lt;&gt;</code>,
+   <code class="literal">*&lt;</code>,
+   <code class="literal">*&lt;=</code>,
+   <code class="literal">*&gt;</code>, and
+   <code class="literal">*&gt;=</code>.
+   These operators compare the internal binary representation of the two
+   rows.  Two rows might have a different binary representation even
+   though comparisons of the two rows with the equality operator is true.
+   The ordering of rows under these comparison operators is deterministic
+   but not otherwise meaningful.  These operators are used internally
+   for materialized views and might be useful for other specialized
+   purposes such as replication and B-Tree deduplication (see <a class="xref" href="btree-implementation.html#BTREE-DEDUPLICATION" title="64.4.3. Deduplication">Section 64.4.3</a>).  They are not intended to be
+   generally useful for writing queries, though.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-subquery.html" title="9.23. Subquery Expressions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-srf.html" title="9.25. Set Returning Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.23. Subquery Expressions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.25. Set Returning Functions</td></tr></table></div></body></html>

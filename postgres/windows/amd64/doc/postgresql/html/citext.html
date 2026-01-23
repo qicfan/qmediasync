@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.8. citext</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="btree-gist.html" title="F.7. btree_gist" /><link rel="next" href="cube.html" title="F.9. cube" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.8. citext</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="btree-gist.html" title="F.7. btree_gist">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="cube.html" title="F.9. cube">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CITEXT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.8. citext</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="citext.html#id-1.11.7.17.6">F.8.1. Rationale</a></span></dt><dt><span class="sect2"><a href="citext.html#id-1.11.7.17.7">F.8.2. How to Use It</a></span></dt><dt><span class="sect2"><a href="citext.html#id-1.11.7.17.8">F.8.3. String Comparison Behavior</a></span></dt><dt><span class="sect2"><a href="citext.html#id-1.11.7.17.9">F.8.4. Limitations</a></span></dt><dt><span class="sect2"><a href="citext.html#id-1.11.7.17.10">F.8.5. Author</a></span></dt></dl></div><a id="id-1.11.7.17.2" class="indexterm"></a><p>
+  The <code class="filename">citext</code> module provides a case-insensitive
+  character string type, <code class="type">citext</code>. Essentially, it internally calls
+  <code class="function">lower</code> when comparing values. Otherwise, it behaves almost
+  exactly like <code class="type">text</code>.
+ </p><div class="tip"><h3 class="title">Tip</h3><p>
+   Consider using <em class="firstterm">nondeterministic collations</em> (see
+   <a class="xref" href="collation.html#COLLATION-NONDETERMINISTIC" title="24.2.2.4. Nondeterministic Collations">Section 24.2.2.4</a>) instead of this module.  They
+   can be used for case-insensitive comparisons, accent-insensitive
+   comparisons, and other combinations, and they handle more Unicode special
+   cases correctly.
+  </p></div><p>
+  This module is considered <span class="quote">“<span class="quote">trusted</span>”</span>, that is, it can be
+  installed by non-superusers who have <code class="literal">CREATE</code> privilege
+  on the current database.
+ </p><div class="sect2" id="id-1.11.7.17.6"><div class="titlepage"><div><div><h3 class="title">F.8.1. Rationale</h3></div></div></div><p>
+   The standard approach to doing case-insensitive matches
+   in <span class="productname">PostgreSQL</span> has been to use the <code class="function">lower</code>
+   function when comparing values, for example
+
+</p><pre class="programlisting">
+SELECT * FROM tab WHERE lower(col) = LOWER(?);
+</pre><p>
+  </p><p>
+   This works reasonably well, but has a number of drawbacks:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      It makes your SQL statements verbose, and you always have to remember to
+      use <code class="function">lower</code> on both the column and the query value.
+     </p></li><li class="listitem"><p>
+      It won't use an index, unless you create a functional index using
+      <code class="function">lower</code>.
+     </p></li><li class="listitem"><p>
+      If you declare a column as <code class="literal">UNIQUE</code> or <code class="literal">PRIMARY
+      KEY</code>, the implicitly generated index is case-sensitive.  So it's
+      useless for case-insensitive searches, and it won't enforce
+      uniqueness case-insensitively.
+     </p></li></ul></div><p>
+    The <code class="type">citext</code> data type allows you to eliminate calls
+    to <code class="function">lower</code> in SQL queries, and allows a primary key to
+    be case-insensitive. <code class="type">citext</code> is locale-aware, just
+    like <code class="type">text</code>, which means that the matching of upper case and
+    lower case characters is dependent on the rules of
+    the database's <code class="literal">LC_CTYPE</code> setting. Again, this behavior is
+    identical to the use of <code class="function">lower</code> in queries. But because it's
+    done transparently by the data type, you don't have to remember to do
+    anything special in your queries.
+   </p></div><div class="sect2" id="id-1.11.7.17.7"><div class="titlepage"><div><div><h3 class="title">F.8.2. How to Use It</h3></div></div></div><p>
+   Here's a simple example of usage:
+
+</p><pre class="programlisting">
+CREATE TABLE users (
+    nick CITEXT PRIMARY KEY,
+    pass TEXT   NOT NULL
+);
+
+INSERT INTO users VALUES ( 'larry',  sha256(random()::text::bytea) );
+INSERT INTO users VALUES ( 'Tom',    sha256(random()::text::bytea) );
+INSERT INTO users VALUES ( 'Damian', sha256(random()::text::bytea) );
+INSERT INTO users VALUES ( 'NEAL',   sha256(random()::text::bytea) );
+INSERT INTO users VALUES ( 'Bjørn',  sha256(random()::text::bytea) );
+
+SELECT * FROM users WHERE nick = 'Larry';
+</pre><p>
+
+   The <code class="command">SELECT</code> statement will return one tuple, even though
+   the <code class="structfield">nick</code> column was set to <code class="literal">larry</code> and the query
+   was for <code class="literal">Larry</code>.
+  </p></div><div class="sect2" id="id-1.11.7.17.8"><div class="titlepage"><div><div><h3 class="title">F.8.3. String Comparison Behavior</h3></div></div></div><p>
+   <code class="type">citext</code> performs comparisons by converting each string to lower
+   case (as though <code class="function">lower</code> were called) and then comparing the
+   results normally.  Thus, for example, two strings are considered equal
+   if <code class="function">lower</code> would produce identical results for them.
+  </p><p>
+   In order to emulate a case-insensitive collation as closely as possible,
+   there are <code class="type">citext</code>-specific versions of a number of string-processing
+   operators and functions.  So, for example, the regular expression
+   operators <code class="literal">~</code> and <code class="literal">~*</code> exhibit the same behavior when
+   applied to <code class="type">citext</code>: they both match case-insensitively.
+   The same is true
+   for <code class="literal">!~</code> and <code class="literal">!~*</code>, as well as for the
+   <code class="literal">LIKE</code> operators <code class="literal">~~</code> and <code class="literal">~~*</code>, and
+   <code class="literal">!~~</code> and <code class="literal">!~~*</code>. If you'd like to match
+   case-sensitively, you can cast the operator's arguments to <code class="type">text</code>.
+  </p><p>
+   Similarly, all of the following functions perform matching
+   case-insensitively if their arguments are <code class="type">citext</code>:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      <code class="function">regexp_match()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">regexp_matches()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">regexp_replace()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">regexp_split_to_array()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">regexp_split_to_table()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">replace()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">split_part()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">strpos()</code>
+    </p></li><li class="listitem"><p>
+      <code class="function">translate()</code>
+    </p></li></ul></div><p>
+   For the regexp functions, if you want to match case-sensitively, you can
+   specify the <span class="quote">“<span class="quote">c</span>”</span> flag to force a case-sensitive match.  Otherwise,
+   you must cast to <code class="type">text</code> before using one of these functions if
+   you want case-sensitive behavior.
+  </p></div><div class="sect2" id="id-1.11.7.17.9"><div class="titlepage"><div><div><h3 class="title">F.8.4. Limitations</h3></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      <code class="type">citext</code>'s case-folding behavior depends on
+      the <code class="literal">LC_CTYPE</code> setting of your database. How it compares
+      values is therefore determined when the database is created.
+      It is not truly
+      case-insensitive in the terms defined by the Unicode standard.
+      Effectively, what this means is that, as long as you're happy with your
+      collation, you should be happy with <code class="type">citext</code>'s comparisons. But
+      if you have data in different languages stored in your database, users
+      of one language may find their query results are not as expected if the
+      collation is for another language.
+     </p></li><li class="listitem"><p>
+      As of <span class="productname">PostgreSQL</span> 9.1, you can attach a
+      <code class="literal">COLLATE</code> specification to <code class="type">citext</code> columns or data
+      values.  Currently, <code class="type">citext</code> operators will honor a non-default
+      <code class="literal">COLLATE</code> specification while comparing case-folded strings,
+      but the initial folding to lower case is always done according to the
+      database's <code class="literal">LC_CTYPE</code> setting (that is, as though
+      <code class="literal">COLLATE "default"</code> were given).  This may be changed in a
+      future release so that both steps follow the input <code class="literal">COLLATE</code>
+      specification.
+     </p></li><li class="listitem"><p>
+       <code class="type">citext</code> is not as efficient as <code class="type">text</code> because the
+       operator functions and the B-tree comparison functions must make copies
+       of the data and convert it to lower case for comparisons.  Also, only
+       <code class="type">text</code> can support B-Tree deduplication.  However,
+       <code class="type">citext</code> is slightly more efficient than using
+       <code class="function">lower</code> to get case-insensitive matching.
+     </p></li><li class="listitem"><p>
+      <code class="type">citext</code> doesn't help much if you need data to compare
+      case-sensitively in some contexts and case-insensitively in other
+      contexts.  The standard answer is to use the <code class="type">text</code> type and
+      manually use the <code class="function">lower</code> function when you need to compare
+      case-insensitively; this works all right if case-insensitive comparison
+      is needed only infrequently.  If you need case-insensitive behavior most
+      of the time and case-sensitive infrequently, consider storing the data
+      as <code class="type">citext</code> and explicitly casting the column to <code class="type">text</code>
+      when you want case-sensitive comparison.  In either situation, you will
+      need two indexes if you want both types of searches to be fast.
+    </p></li><li class="listitem"><p>
+      The schema containing the <code class="type">citext</code> operators must be
+      in the current <code class="varname">search_path</code> (typically <code class="literal">public</code>);
+      if it is not, the normal case-sensitive <code class="type">text</code> operators
+      will be invoked instead.
+    </p></li><li class="listitem"><p>
+      The approach of lower-casing strings for comparison does not handle some
+      Unicode special cases correctly, for example when one upper-case letter
+      has two lower-case letter equivalents.  Unicode distinguishes between
+      <em class="firstterm">case mapping</em> and <em class="firstterm">case
+      folding</em> for this reason.  Use nondeterministic collations
+      instead of <code class="type">citext</code> to handle that correctly.
+     </p></li></ul></div></div><div class="sect2" id="id-1.11.7.17.10"><div class="titlepage"><div><div><h3 class="title">F.8.5. Author</h3></div></div></div><p>
+   David E. Wheeler <code class="email">&lt;<a class="email" href="mailto:david@kineticode.com">david@kineticode.com</a>&gt;</code>
+  </p><p>
+    Inspired by the original <code class="type">citext</code> module by Donald Fraser.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="btree-gist.html" title="F.7. btree_gist">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="cube.html" title="F.9. cube">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.7. btree_gist </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.9. cube</td></tr></table></div></body></html>

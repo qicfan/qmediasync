@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE ACCESS METHOD</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-copy.html" title="COPY" /><link rel="next" href="sql-createaggregate.html" title="CREATE AGGREGATE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE ACCESS METHOD</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-copy.html" title="COPY">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createaggregate.html" title="CREATE AGGREGATE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATE-ACCESS-METHOD"><div class="titlepage"></div><a id="id-1.9.3.56.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE ACCESS METHOD</span></h2><p>CREATE ACCESS METHOD — define a new access method</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE ACCESS METHOD <em class="replaceable"><code>name</code></em>
+    TYPE <em class="replaceable"><code>access_method_type</code></em>
+    HANDLER <em class="replaceable"><code>handler_function</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.56.5"><h2>Description</h2><p>
+   <code class="command">CREATE ACCESS METHOD</code> creates a new access method.
+  </p><p>
+   The access method name must be unique within the database.
+  </p><p>
+   Only superusers can define new access methods.
+  </p></div><div class="refsect1" id="id-1.9.3.56.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of the access method to be created.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>access_method_type</code></em></span></dt><dd><p>
+      This clause specifies the type of access method to define.
+      Only <code class="literal">TABLE</code> and <code class="literal">INDEX</code>
+      are supported at present.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>handler_function</code></em></span></dt><dd><p>
+      <em class="replaceable"><code>handler_function</code></em> is the
+      name (possibly schema-qualified) of a previously registered function
+      that represents the access method.  The handler function must be
+      declared to take a single argument of type <code class="type">internal</code>,
+      and its return type depends on the type of access method;
+      for <code class="literal">TABLE</code> access methods, it must
+      be <code class="type">table_am_handler</code> and for <code class="literal">INDEX</code>
+      access methods, it must be <code class="type">index_am_handler</code>.
+      The C-level API that the handler function must implement varies
+      depending on the type of access method. The table access method API
+      is described in <a class="xref" href="tableam.html" title="Chapter 61. Table Access Method Interface Definition">Chapter 61</a> and the index access method
+      API is described in <a class="xref" href="indexam.html" title="Chapter 62. Index Access Method Interface Definition">Chapter 62</a>.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.56.7"><h2>Examples</h2><p>
+   Create an index access method <code class="literal">heptree</code> with
+   handler function <code class="literal">heptree_handler</code>:
+</p><pre class="programlisting">
+CREATE ACCESS METHOD heptree TYPE INDEX HANDLER heptree_handler;
+</pre></div><div class="refsect1" id="id-1.9.3.56.8"><h2>Compatibility</h2><p>
+   <code class="command">CREATE ACCESS METHOD</code> is a
+   <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.56.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-drop-access-method.html" title="DROP ACCESS METHOD"><span class="refentrytitle">DROP ACCESS METHOD</span></a>, <a class="xref" href="sql-createopclass.html" title="CREATE OPERATOR CLASS"><span class="refentrytitle">CREATE OPERATOR CLASS</span></a>, <a class="xref" href="sql-createopfamily.html" title="CREATE OPERATOR FAMILY"><span class="refentrytitle">CREATE OPERATOR FAMILY</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-copy.html" title="COPY">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createaggregate.html" title="CREATE AGGREGATE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">COPY </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE AGGREGATE</td></tr></table></div></body></html>

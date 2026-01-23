@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>7.1. Overview</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="queries.html" title="Chapter 7. Queries" /><link rel="next" href="queries-table-expressions.html" title="7.2. Table Expressions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">7.1. Overview</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="queries.html" title="Chapter 7. Queries">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="queries.html" title="Chapter 7. Queries">Up</a></td><th width="60%" align="center">Chapter 7. Queries</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="queries-table-expressions.html" title="7.2. Table Expressions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="QUERIES-OVERVIEW"><div class="titlepage"><div><div><h2 class="title" style="clear: both">7.1. Overview</h2></div></div></div><p>
+   The process of retrieving or the command to retrieve data from a
+   database is called a <em class="firstterm">query</em>.  In SQL the
+   <a class="link" href="sql-select.html" title="SELECT"><code class="command">SELECT</code></a> command is
+   used to specify queries.  The general syntax of the
+   <code class="command">SELECT</code> command is
+</p><pre class="synopsis">
+[<span class="optional">WITH <em class="replaceable"><code>with_queries</code></em></span>] SELECT <em class="replaceable"><code>select_list</code></em> FROM <em class="replaceable"><code>table_expression</code></em> [<span class="optional"><em class="replaceable"><code>sort_specification</code></em></span>]
+</pre><p>
+   The following sections describe the details of the select list, the
+   table expression, and the sort specification.  <code class="literal">WITH</code>
+   queries are treated last since they are an advanced feature.
+  </p><p>
+   A simple kind of query has the form:
+</p><pre class="programlisting">
+SELECT * FROM table1;
+</pre><p>
+  Assuming that there is a table called <code class="literal">table1</code>,
+  this command would retrieve all rows and all user-defined columns from
+  <code class="literal">table1</code>.  (The method of retrieval depends on the
+  client application.  For example, the
+  <span class="application">psql</span> program will display an ASCII-art
+  table on the screen, while client libraries will offer functions to
+  extract individual values from the query result.)  The select list
+  specification <code class="literal">*</code> means all columns that the table
+  expression happens to provide.  A select list can also select a
+  subset of the available columns or make calculations using the
+  columns.  For example, if
+  <code class="literal">table1</code> has columns named <code class="literal">a</code>,
+  <code class="literal">b</code>, and <code class="literal">c</code> (and perhaps others) you can make
+  the following query:
+</p><pre class="programlisting">
+SELECT a, b + c FROM table1;
+</pre><p>
+  (assuming that <code class="literal">b</code> and <code class="literal">c</code> are of a numerical
+  data type).
+  See <a class="xref" href="queries-select-lists.html" title="7.3. Select Lists">Section 7.3</a> for more details.
+ </p><p>
+  <code class="literal">FROM table1</code> is a simple kind of
+  table expression: it reads just one table.  In general, table
+  expressions can be complex constructs of base tables, joins, and
+  subqueries.  But you can also omit the table expression entirely and
+  use the <code class="command">SELECT</code> command as a calculator:
+</p><pre class="programlisting">
+SELECT 3 * 4;
+</pre><p>
+  This is more useful if the expressions in the select list return
+  varying results.  For example, you could call a function this way:
+</p><pre class="programlisting">
+SELECT random();
+</pre><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="queries.html" title="Chapter 7. Queries">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="queries.html" title="Chapter 7. Queries">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="queries-table-expressions.html" title="7.2. Table Expressions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 7. Queries </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 7.2. Table Expressions</td></tr></table></div></body></html>

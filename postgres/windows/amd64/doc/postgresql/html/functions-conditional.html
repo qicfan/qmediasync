@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.18. Conditional Expressions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-sequence.html" title="9.17. Sequence Manipulation Functions" /><link rel="next" href="functions-array.html" title="9.19. Array Functions and Operators" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.18. Conditional Expressions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-sequence.html" title="9.17. Sequence Manipulation Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-array.html" title="9.19. Array Functions and Operators">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-CONDITIONAL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.18. Conditional Expressions</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="functions-conditional.html#FUNCTIONS-CASE">9.18.1. <code class="literal">CASE</code></a></span></dt><dt><span class="sect2"><a href="functions-conditional.html#FUNCTIONS-COALESCE-NVL-IFNULL">9.18.2. <code class="literal">COALESCE</code></a></span></dt><dt><span class="sect2"><a href="functions-conditional.html#FUNCTIONS-NULLIF">9.18.3. <code class="literal">NULLIF</code></a></span></dt><dt><span class="sect2"><a href="functions-conditional.html#FUNCTIONS-GREATEST-LEAST">9.18.4. <code class="literal">GREATEST</code> and <code class="literal">LEAST</code></a></span></dt></dl></div><a id="id-1.5.8.24.2" class="indexterm"></a><a id="id-1.5.8.24.3" class="indexterm"></a><p>
+   This section describes the <acronym class="acronym">SQL</acronym>-compliant conditional expressions
+   available in <span class="productname">PostgreSQL</span>.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    If your needs go beyond the capabilities of these conditional
+    expressions, you might want to consider writing a server-side function
+    in a more expressive programming language.
+   </p></div><div class="note"><h3 class="title">Note</h3><p>
+     Although <code class="token">COALESCE</code>, <code class="token">GREATEST</code>, and
+     <code class="token">LEAST</code> are syntactically similar to functions, they are
+     not ordinary functions, and thus cannot be used with explicit
+     <code class="token">VARIADIC</code> array arguments.
+    </p></div><div class="sect2" id="FUNCTIONS-CASE"><div class="titlepage"><div><div><h3 class="title">9.18.1. <code class="literal">CASE</code></h3></div></div></div><p>
+   The <acronym class="acronym">SQL</acronym> <code class="token">CASE</code> expression is a
+   generic conditional expression, similar to if/else statements in
+   other programming languages:
+
+</p><pre class="synopsis">
+CASE WHEN <em class="replaceable"><code>condition</code></em> THEN <em class="replaceable"><code>result</code></em>
+     [<span class="optional">WHEN ...</span>]
+     [<span class="optional">ELSE <em class="replaceable"><code>result</code></em></span>]
+END
+</pre><p>
+
+   <code class="token">CASE</code> clauses can be used wherever
+   an expression is valid.  Each <em class="replaceable"><code>condition</code></em> is an
+   expression that returns a <code class="type">boolean</code> result.  If the condition's
+   result is true, the value of the <code class="token">CASE</code> expression is the
+   <em class="replaceable"><code>result</code></em> that follows the condition, and the
+   remainder of the <code class="token">CASE</code> expression is not processed.  If the
+   condition's result is not true, any subsequent <code class="token">WHEN</code> clauses
+   are examined in the same manner.  If no <code class="token">WHEN</code>
+   <em class="replaceable"><code>condition</code></em> yields true, the value of the
+   <code class="token">CASE</code> expression is the <em class="replaceable"><code>result</code></em> of the
+   <code class="token">ELSE</code> clause.  If the <code class="token">ELSE</code> clause is
+   omitted and no condition is true, the result is null.
+  </p><p>
+    An example:
+</p><pre class="screen">
+SELECT * FROM test;
+
+ a
+---
+ 1
+ 2
+ 3
+
+
+SELECT a,
+       CASE WHEN a=1 THEN 'one'
+            WHEN a=2 THEN 'two'
+            ELSE 'other'
+       END
+    FROM test;
+
+ a | case
+---+-------
+ 1 | one
+ 2 | two
+ 3 | other
+</pre><p>
+   </p><p>
+   The data types of all the <em class="replaceable"><code>result</code></em>
+   expressions must be convertible to a single output type.
+   See <a class="xref" href="typeconv-union-case.html" title="10.5. UNION, CASE, and Related Constructs">Section 10.5</a> for more details.
+  </p><p>
+   There is a <span class="quote">“<span class="quote">simple</span>”</span> form of <code class="token">CASE</code> expression
+   that is a variant of the general form above:
+
+</p><pre class="synopsis">
+CASE <em class="replaceable"><code>expression</code></em>
+    WHEN <em class="replaceable"><code>value</code></em> THEN <em class="replaceable"><code>result</code></em>
+    [<span class="optional">WHEN ...</span>]
+    [<span class="optional">ELSE <em class="replaceable"><code>result</code></em></span>]
+END
+</pre><p>
+
+   The first
+   <em class="replaceable"><code>expression</code></em> is computed, then compared to
+   each of the <em class="replaceable"><code>value</code></em> expressions in the
+   <code class="token">WHEN</code> clauses until one is found that is equal to it.  If
+   no match is found, the <em class="replaceable"><code>result</code></em> of the
+   <code class="token">ELSE</code> clause (or a null value) is returned.  This is similar
+   to the <code class="function">switch</code> statement in C.
+  </p><p>
+    The example above can be written using the simple
+    <code class="token">CASE</code> syntax:
+</p><pre class="screen">
+SELECT a,
+       CASE a WHEN 1 THEN 'one'
+              WHEN 2 THEN 'two'
+              ELSE 'other'
+       END
+    FROM test;
+
+ a | case
+---+-------
+ 1 | one
+ 2 | two
+ 3 | other
+</pre><p>
+   </p><p>
+    A <code class="token">CASE</code> expression does not evaluate any subexpressions
+    that are not needed to determine the result.  For example, this is a
+    possible way of avoiding a division-by-zero failure:
+</p><pre class="programlisting">
+SELECT ... WHERE CASE WHEN x &lt;&gt; 0 THEN y/x &gt; 1.5 ELSE false END;
+</pre><p>
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     As described in <a class="xref" href="sql-expressions.html#SYNTAX-EXPRESS-EVAL" title="4.2.14. Expression Evaluation Rules">Section 4.2.14</a>, there are various
+     situations in which subexpressions of an expression are evaluated at
+     different times, so that the principle that <span class="quote">“<span class="quote"><code class="token">CASE</code>
+     evaluates only necessary subexpressions</span>”</span> is not ironclad.  For
+     example a constant <code class="literal">1/0</code> subexpression will usually result in
+     a division-by-zero failure at planning time, even if it's within
+     a <code class="token">CASE</code> arm that would never be entered at run time.
+    </p></div></div><div class="sect2" id="FUNCTIONS-COALESCE-NVL-IFNULL"><div class="titlepage"><div><div><h3 class="title">9.18.2. <code class="literal">COALESCE</code></h3></div></div></div><a id="id-1.5.8.24.8.2" class="indexterm"></a><a id="id-1.5.8.24.8.3" class="indexterm"></a><a id="id-1.5.8.24.8.4" class="indexterm"></a><pre class="synopsis">
+<code class="function">COALESCE</code>(<em class="replaceable"><code>value</code></em> [<span class="optional">, ...</span>])
+</pre><p>
+   The <code class="function">COALESCE</code> function returns the first of its
+   arguments that is not null.  Null is returned only if all arguments
+   are null.  It is often used to substitute a default value for
+   null values when data is retrieved for display, for example:
+</p><pre class="programlisting">
+SELECT COALESCE(description, short_description, '(none)') ...
+</pre><p>
+   This returns <code class="varname">description</code> if it is not null, otherwise
+   <code class="varname">short_description</code> if it is not null, otherwise <code class="literal">(none)</code>.
+  </p><p>
+    The arguments must all be convertible to a common data type, which
+    will be the type of the result (see
+    <a class="xref" href="typeconv-union-case.html" title="10.5. UNION, CASE, and Related Constructs">Section 10.5</a> for details).
+   </p><p>
+    Like a <code class="token">CASE</code> expression, <code class="function">COALESCE</code> only
+    evaluates the arguments that are needed to determine the result;
+    that is, arguments to the right of the first non-null argument are
+    not evaluated.  This SQL-standard function provides capabilities similar
+    to <code class="function">NVL</code> and <code class="function">IFNULL</code>, which are used in some other
+    database systems.
+   </p></div><div class="sect2" id="FUNCTIONS-NULLIF"><div class="titlepage"><div><div><h3 class="title">9.18.3. <code class="literal">NULLIF</code></h3></div></div></div><a id="id-1.5.8.24.9.2" class="indexterm"></a><pre class="synopsis">
+<code class="function">NULLIF</code>(<em class="replaceable"><code>value1</code></em>, <em class="replaceable"><code>value2</code></em>)
+</pre><p>
+   The <code class="function">NULLIF</code> function returns a null value if
+   <em class="replaceable"><code>value1</code></em> equals <em class="replaceable"><code>value2</code></em>;
+   otherwise it returns <em class="replaceable"><code>value1</code></em>.
+   This can be used to perform the inverse operation of the
+   <code class="function">COALESCE</code> example given above:
+</p><pre class="programlisting">
+SELECT NULLIF(value, '(none)') ...
+</pre><p>
+   In this example, if <code class="literal">value</code> is <code class="literal">(none)</code>,
+   null is returned, otherwise the value of <code class="literal">value</code>
+   is returned.
+  </p><p>
+   The two arguments must be of comparable types.
+   To be specific, they are compared exactly as if you had
+   written <code class="literal"><em class="replaceable"><code>value1</code></em>
+   = <em class="replaceable"><code>value2</code></em></code>, so there must be a
+   suitable <code class="literal">=</code> operator available.
+  </p><p>
+   The result has the same type as the first argument — but there is
+   a subtlety.  What is actually returned is the first argument of the
+   implied <code class="literal">=</code> operator, and in some cases that will have
+   been promoted to match the second argument's type.  For
+   example, <code class="literal">NULLIF(1, 2.2)</code> yields <code class="type">numeric</code>,
+   because there is no <code class="type">integer</code> <code class="literal">=</code>
+   <code class="type">numeric</code> operator,
+   only <code class="type">numeric</code> <code class="literal">=</code> <code class="type">numeric</code>.
+  </p></div><div class="sect2" id="FUNCTIONS-GREATEST-LEAST"><div class="titlepage"><div><div><h3 class="title">9.18.4. <code class="literal">GREATEST</code> and <code class="literal">LEAST</code></h3></div></div></div><a id="id-1.5.8.24.10.2" class="indexterm"></a><a id="id-1.5.8.24.10.3" class="indexterm"></a><pre class="synopsis">
+<code class="function">GREATEST</code>(<em class="replaceable"><code>value</code></em> [<span class="optional">, ...</span>])
+</pre><pre class="synopsis">
+<code class="function">LEAST</code>(<em class="replaceable"><code>value</code></em> [<span class="optional">, ...</span>])
+</pre><p>
+    The <code class="function">GREATEST</code> and <code class="function">LEAST</code> functions select the
+    largest or smallest value from a list of any number of expressions.
+    The expressions must all be convertible to a common data type, which
+    will be the type of the result
+    (see <a class="xref" href="typeconv-union-case.html" title="10.5. UNION, CASE, and Related Constructs">Section 10.5</a> for details).  NULL values
+    in the list are ignored.  The result will be NULL only if all the
+    expressions evaluate to NULL.
+   </p><p>
+    Note that <code class="function">GREATEST</code> and <code class="function">LEAST</code> are not in
+    the SQL standard, but are a common extension.  Some other databases
+    make them return NULL if any argument is NULL, rather than only when
+    all are NULL.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-sequence.html" title="9.17. Sequence Manipulation Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-array.html" title="9.19. Array Functions and Operators">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.17. Sequence Manipulation Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.19. Array Functions and Operators</td></tr></table></div></body></html>

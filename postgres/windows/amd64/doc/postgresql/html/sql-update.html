@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>UPDATE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-unlisten.html" title="UNLISTEN" /><link rel="next" href="sql-vacuum.html" title="VACUUM" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">UPDATE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-unlisten.html" title="UNLISTEN">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-vacuum.html" title="VACUUM">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-UPDATE"><div class="titlepage"></div><a id="id-1.9.3.182.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">UPDATE</span></h2><p>UPDATE — update rows of a table</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+[ WITH [ RECURSIVE ] <em class="replaceable"><code>with_query</code></em> [, ...] ]
+UPDATE [ ONLY ] <em class="replaceable"><code>table_name</code></em> [ * ] [ [ AS ] <em class="replaceable"><code>alias</code></em> ]
+    SET { <em class="replaceable"><code>column_name</code></em> = { <em class="replaceable"><code>expression</code></em> | DEFAULT } |
+          ( <em class="replaceable"><code>column_name</code></em> [, ...] ) = [ ROW ] ( { <em class="replaceable"><code>expression</code></em> | DEFAULT } [, ...] ) |
+          ( <em class="replaceable"><code>column_name</code></em> [, ...] ) = ( <em class="replaceable"><code>sub-SELECT</code></em> )
+        } [, ...]
+    [ FROM <em class="replaceable"><code>from_item</code></em> [, ...] ]
+    [ WHERE <em class="replaceable"><code>condition</code></em> | WHERE CURRENT OF <em class="replaceable"><code>cursor_name</code></em> ]
+    [ RETURNING * | <em class="replaceable"><code>output_expression</code></em> [ [ AS ] <em class="replaceable"><code>output_name</code></em> ] [, ...] ]
+</pre></div><div class="refsect1" id="id-1.9.3.182.5"><h2>Description</h2><p>
+   <code class="command">UPDATE</code> changes the values of the specified
+   columns in all rows that satisfy the condition. Only the columns to
+   be modified need be mentioned in the <code class="literal">SET</code> clause;
+   columns not explicitly modified retain their previous values.
+  </p><p>
+   There are two ways to modify a table using information contained in
+   other tables in the database: using sub-selects, or specifying
+   additional tables in the <code class="literal">FROM</code> clause. Which
+   technique is more appropriate depends on the specific
+   circumstances.
+  </p><p>
+   The optional <code class="literal">RETURNING</code> clause causes <code class="command">UPDATE</code>
+   to compute and return value(s) based on each row actually updated.
+   Any expression using the table's columns, and/or columns of other
+   tables mentioned in <code class="literal">FROM</code>, can be computed.
+   The new (post-update) values of the table's columns are used.
+   The syntax of the <code class="literal">RETURNING</code> list is identical to that of the
+   output list of <code class="command">SELECT</code>.
+  </p><p>
+   You must have the <code class="literal">UPDATE</code> privilege on the table,
+   or at least on the column(s) that are listed to be updated.
+   You must also have the <code class="literal">SELECT</code>
+   privilege on any column whose values are read in the
+   <em class="replaceable"><code>expressions</code></em> or
+   <em class="replaceable"><code>condition</code></em>.
+  </p></div><div class="refsect1" id="id-1.9.3.182.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>with_query</code></em></span></dt><dd><p>
+      The <code class="literal">WITH</code> clause allows you to specify one or more
+      subqueries that can be referenced by name in the <code class="command">UPDATE</code>
+      query. See <a class="xref" href="queries-with.html" title="7.8. WITH Queries (Common Table Expressions)">Section 7.8</a> and <a class="xref" href="sql-select.html" title="SELECT"><span class="refentrytitle">SELECT</span></a>
+      for details.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of the table to update.
+      If <code class="literal">ONLY</code> is specified before the table name, matching rows
+      are updated in the named table only.  If <code class="literal">ONLY</code> is not
+      specified, matching rows are also updated in any tables inheriting from
+      the named table.  Optionally, <code class="literal">*</code> can be specified after the
+      table name to explicitly indicate that descendant tables are included.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>alias</code></em></span></dt><dd><p>
+      A substitute name for the target table. When an alias is
+      provided, it completely hides the actual name of the table.  For
+      example, given <code class="literal">UPDATE foo AS f</code>, the remainder of the
+      <code class="command">UPDATE</code> statement must refer to this table as
+      <code class="literal">f</code> not <code class="literal">foo</code>.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>column_name</code></em></span></dt><dd><p>
+      The name of a column in the table named by <em class="replaceable"><code>table_name</code></em>.
+      The column name can be qualified with a subfield name or array
+      subscript, if needed.  Do not include the table's name in the
+      specification of a target column — for example,
+      <code class="literal">UPDATE table_name SET table_name.col = 1</code> is invalid.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>expression</code></em></span></dt><dd><p>
+      An expression to assign to the column.  The expression can use the
+      old values of this and other columns in the table.
+     </p></dd><dt><span class="term"><code class="literal">DEFAULT</code></span></dt><dd><p>
+      Set the column to its default value (which will be NULL if no specific
+      default expression has been assigned to it).  An identity column will be
+      set to a new value generated by the associated sequence.  For a
+      generated column, specifying this is permitted but merely specifies the
+      normal behavior of computing the column from its generation expression.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>sub-SELECT</code></em></span></dt><dd><p>
+      A <code class="literal">SELECT</code> sub-query that produces as many output columns
+      as are listed in the parenthesized column list preceding it.  The
+      sub-query must yield no more than one row when executed.  If it
+      yields one row, its column values are assigned to the target columns;
+      if it yields no rows, NULL values are assigned to the target columns.
+      The sub-query can refer to old values of the current row of the table
+      being updated.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>from_item</code></em></span></dt><dd><p>
+      A table expression allowing columns from other tables to appear in
+      the <code class="literal">WHERE</code> condition and update expressions. This
+      uses the same syntax as the <a class="link" href="sql-select.html#SQL-FROM" title="FROM Clause"><code class="literal">FROM</code></a> clause of
+      a <code class="command">SELECT</code> statement;
+      for example, an alias for the table name can be specified.  Do not
+      repeat the target table as a <em class="replaceable"><code>from_item</code></em>
+      unless you intend a self-join (in which case it must appear with
+      an alias in the <em class="replaceable"><code>from_item</code></em>).
+     </p></dd><dt><span class="term"><em class="replaceable"><code>condition</code></em></span></dt><dd><p>
+      An expression that returns a value of type <code class="type">boolean</code>.
+      Only rows for which this expression returns <code class="literal">true</code>
+      will be updated.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>cursor_name</code></em></span></dt><dd><p>
+      The name of the cursor to use in a <code class="literal">WHERE CURRENT OF</code>
+      condition.  The row to be updated is the one most recently fetched
+      from this cursor.  The cursor must be a non-grouping
+      query on the <code class="command">UPDATE</code>'s target table.
+      Note that <code class="literal">WHERE CURRENT OF</code> cannot be
+      specified together with a Boolean condition.  See
+      <a class="xref" href="sql-declare.html" title="DECLARE"><span class="refentrytitle">DECLARE</span></a>
+      for more information about using cursors with
+      <code class="literal">WHERE CURRENT OF</code>.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>output_expression</code></em></span></dt><dd><p>
+      An expression to be computed and returned by the <code class="command">UPDATE</code>
+      command after each row is updated.  The expression can use any
+      column names of the table named by <em class="replaceable"><code>table_name</code></em>
+      or table(s) listed in <code class="literal">FROM</code>.
+      Write <code class="literal">*</code> to return all columns.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>output_name</code></em></span></dt><dd><p>
+      A name to use for a returned column.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.182.7"><h2>Outputs</h2><p>
+   On successful completion, an <code class="command">UPDATE</code> command returns a command
+   tag of the form
+</p><pre class="screen">
+UPDATE <em class="replaceable"><code>count</code></em>
+</pre><p>
+   The <em class="replaceable"><code>count</code></em> is the number
+   of rows updated, including matched rows whose values did not change.
+   Note that the number may be less than the number of rows that matched
+   the <em class="replaceable"><code>condition</code></em> when
+   updates were suppressed by a <code class="literal">BEFORE UPDATE</code> trigger.  If
+   <em class="replaceable"><code>count</code></em> is 0, no rows were
+   updated by the query (this is not considered an error).
+  </p><p>
+   If the <code class="command">UPDATE</code> command contains a <code class="literal">RETURNING</code>
+   clause, the result will be similar to that of a <code class="command">SELECT</code>
+   statement containing the columns and values defined in the
+   <code class="literal">RETURNING</code> list, computed over the row(s) updated by the
+   command.
+  </p></div><div class="refsect1" id="id-1.9.3.182.8"><h2>Notes</h2><p>
+   When a <code class="literal">FROM</code> clause is present, what essentially happens
+   is that the target table is joined to the tables mentioned in the
+   <em class="replaceable"><code>from_item</code></em> list, and each output row of the join
+   represents an update operation for the target table.  When using
+   <code class="literal">FROM</code> you should ensure that the join
+   produces at most one output row for each row to be modified.  In
+   other words, a target row shouldn't join to more than one row from
+   the other table(s).  If it does, then only one of the join rows
+   will be used to update the target row, but which one will be used
+   is not readily predictable.
+  </p><p>
+   Because of this indeterminacy, referencing other tables only within
+   sub-selects is safer, though often harder to read and slower than
+   using a join.
+  </p><p>
+   In the case of a partitioned table, updating a row might cause it to no
+   longer satisfy the partition constraint of the containing partition. In that
+   case, if there is some other partition in the partition tree for which this
+   row satisfies its partition constraint, then the row is moved to that
+   partition. If there is no such partition, an error will occur.  Behind the
+   scenes, the row movement is actually a <code class="command">DELETE</code> and
+   <code class="command">INSERT</code> operation.
+  </p><p>
+   There is a possibility that a concurrent <code class="command">UPDATE</code> or
+   <code class="command">DELETE</code> on the row being moved will get a serialization
+   failure error.  Suppose session 1 is performing an <code class="command">UPDATE</code>
+   on a partition key, and meanwhile a concurrent session 2 for which this
+   row is visible performs an <code class="command">UPDATE</code> or
+   <code class="command">DELETE</code> operation on this row.  In such case,
+   session 2's <code class="command">UPDATE</code> or <code class="command">DELETE</code> will
+   detect the row movement and raise a serialization failure error (which
+   always returns with an SQLSTATE code '40001').  Applications may wish to
+   retry the transaction if this occurs.  In the usual case where the table
+   is not partitioned, or where there is no row movement, session 2 would
+   have identified the newly updated row and carried out the
+   <code class="command">UPDATE</code>/<code class="command">DELETE</code> on this new row
+    version.
+  </p><p>
+   Note that while rows can be moved from local partitions to a foreign-table
+   partition (provided the foreign data wrapper supports tuple routing), they
+   cannot be moved from a foreign-table partition to another partition.
+  </p></div><div class="refsect1" id="id-1.9.3.182.9"><h2>Examples</h2><p>
+   Change the word <code class="literal">Drama</code> to <code class="literal">Dramatic</code> in the
+   column <code class="structfield">kind</code> of the table <code class="structname">films</code>:
+
+</p><pre class="programlisting">
+UPDATE films SET kind = 'Dramatic' WHERE kind = 'Drama';
+</pre><p>
+  </p><p>
+   Adjust temperature entries and reset precipitation to its default
+   value in one row of the table <code class="structname">weather</code>:
+
+</p><pre class="programlisting">
+UPDATE weather SET temp_lo = temp_lo+1, temp_hi = temp_lo+15, prcp = DEFAULT
+  WHERE city = 'San Francisco' AND date = '2003-07-03';
+</pre><p>
+  </p><p>
+   Perform the same operation and return the updated entries:
+
+</p><pre class="programlisting">
+UPDATE weather SET temp_lo = temp_lo+1, temp_hi = temp_lo+15, prcp = DEFAULT
+  WHERE city = 'San Francisco' AND date = '2003-07-03'
+  RETURNING temp_lo, temp_hi, prcp;
+</pre><p>
+  </p><p>
+   Use the alternative column-list syntax to do the same update:
+</p><pre class="programlisting">
+UPDATE weather SET (temp_lo, temp_hi, prcp) = (temp_lo+1, temp_lo+15, DEFAULT)
+  WHERE city = 'San Francisco' AND date = '2003-07-03';
+</pre><p>
+  </p><p>
+   Increment the sales count of the salesperson who manages the
+   account for Acme Corporation, using the <code class="literal">FROM</code>
+   clause syntax:
+</p><pre class="programlisting">
+UPDATE employees SET sales_count = sales_count + 1 FROM accounts
+  WHERE accounts.name = 'Acme Corporation'
+  AND employees.id = accounts.sales_person;
+</pre><p>
+  </p><p>
+   Perform the same operation, using a sub-select in the
+   <code class="literal">WHERE</code> clause:
+</p><pre class="programlisting">
+UPDATE employees SET sales_count = sales_count + 1 WHERE id =
+  (SELECT sales_person FROM accounts WHERE name = 'Acme Corporation');
+</pre><p>
+  </p><p>
+   Update contact names in an accounts table to match the currently assigned
+   salesmen:
+</p><pre class="programlisting">
+UPDATE accounts SET (contact_first_name, contact_last_name) =
+    (SELECT first_name, last_name FROM salesmen
+     WHERE salesmen.id = accounts.sales_id);
+</pre><p>
+   A similar result could be accomplished with a join:
+</p><pre class="programlisting">
+UPDATE accounts SET contact_first_name = first_name,
+                    contact_last_name = last_name
+  FROM salesmen WHERE salesmen.id = accounts.sales_id;
+</pre><p>
+   However, the second query may give unexpected results
+   if <code class="structname">salesmen</code>.<code class="structfield">id</code> is not a unique key, whereas
+   the first query is guaranteed to raise an error if there are multiple
+   <code class="structfield">id</code> matches.  Also, if there is no match for a particular
+   <code class="structname">accounts</code>.<code class="structfield">sales_id</code> entry, the first query
+   will set the corresponding name fields to NULL, whereas the second query
+   will not update that row at all.
+  </p><p>
+   Update statistics in a summary table to match the current data:
+</p><pre class="programlisting">
+UPDATE summary s SET (sum_x, sum_y, avg_x, avg_y) =
+    (SELECT sum(x), sum(y), avg(x), avg(y) FROM data d
+     WHERE d.group_id = s.group_id);
+</pre><p>
+  </p><p>
+   Attempt to insert a new stock item along with the quantity of stock. If
+   the item already exists, instead update the stock count of the existing
+   item. To do this without failing the entire transaction, use savepoints:
+</p><pre class="programlisting">
+BEGIN;
+-- other operations
+SAVEPOINT sp1;
+INSERT INTO wines VALUES('Chateau Lafite 2003', '24');
+-- Assume the above fails because of a unique key violation,
+-- so now we issue these commands:
+ROLLBACK TO sp1;
+UPDATE wines SET stock = stock + 24 WHERE winename = 'Chateau Lafite 2003';
+-- continue with other operations, and eventually
+COMMIT;
+</pre><p>
+  </p><p>
+   Change the <code class="structfield">kind</code> column of the table
+   <code class="structname">films</code> in the row on which the cursor
+   <code class="literal">c_films</code> is currently positioned:
+</p><pre class="programlisting">
+UPDATE films SET kind = 'Dramatic' WHERE CURRENT OF c_films;
+</pre></div><div class="refsect1" id="id-1.9.3.182.10"><h2>Compatibility</h2><p>
+   This command conforms to the <acronym class="acronym">SQL</acronym> standard, except
+   that the <code class="literal">FROM</code> and <code class="literal">RETURNING</code> clauses
+   are <span class="productname">PostgreSQL</span> extensions, as is the ability
+   to use <code class="literal">WITH</code> with <code class="command">UPDATE</code>.
+  </p><p>
+   Some other database systems offer a <code class="literal">FROM</code> option in which
+   the target table is supposed to be listed again within <code class="literal">FROM</code>.
+   That is not how <span class="productname">PostgreSQL</span> interprets
+   <code class="literal">FROM</code>.  Be careful when porting applications that use this
+   extension.
+  </p><p>
+   According to the standard, the source value for a parenthesized sub-list of
+   target column names can be any row-valued expression yielding the correct
+   number of columns.  <span class="productname">PostgreSQL</span> only allows the
+   source value to be a <a class="link" href="sql-expressions.html#SQL-SYNTAX-ROW-CONSTRUCTORS" title="4.2.13. Row Constructors">row
+   constructor</a> or a sub-<code class="literal">SELECT</code>.  An individual column's
+   updated value can be specified as <code class="literal">DEFAULT</code> in the
+   row-constructor case, but not inside a sub-<code class="literal">SELECT</code>.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-unlisten.html" title="UNLISTEN">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-vacuum.html" title="VACUUM">Next</a></td></tr><tr><td width="40%" align="left" valign="top">UNLISTEN </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> VACUUM</td></tr></table></div></body></html>

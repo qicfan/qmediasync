@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.17. intagg</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="hstore.html" title="F.16. hstore" /><link rel="next" href="intarray.html" title="F.18. intarray" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.17. intagg</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="hstore.html" title="F.16. hstore">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="intarray.html" title="F.18. intarray">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INTAGG"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.17. intagg</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="intagg.html#id-1.11.7.26.4">F.17.1. Functions</a></span></dt><dt><span class="sect2"><a href="intagg.html#id-1.11.7.26.5">F.17.2. Sample Uses</a></span></dt></dl></div><a id="id-1.11.7.26.2" class="indexterm"></a><p>
+  The <code class="filename">intagg</code> module provides an integer aggregator and an
+  enumerator.  <code class="filename">intagg</code> is now obsolete, because there
+  are built-in functions that provide a superset of its capabilities.
+  However, the module is still provided as a compatibility wrapper around
+  the built-in functions.
+ </p><div class="sect2" id="id-1.11.7.26.4"><div class="titlepage"><div><div><h3 class="title">F.17.1. Functions</h3></div></div></div><a id="id-1.11.7.26.4.2" class="indexterm"></a><a id="id-1.11.7.26.4.3" class="indexterm"></a><p>
+  The aggregator is an aggregate function
+  <code class="function">int_array_aggregate(integer)</code>
+  that produces an integer array
+  containing exactly the integers it is fed.
+  This is a wrapper around <code class="function">array_agg</code>,
+  which does the same thing for any array type.
+ </p><a id="id-1.11.7.26.4.5" class="indexterm"></a><p>
+  The enumerator is a function
+  <code class="function">int_array_enum(integer[])</code>
+  that returns <code class="type">setof integer</code>.  It is essentially the reverse
+  operation of the aggregator: given an array of integers, expand it
+  into a set of rows.  This is a wrapper around <code class="function">unnest</code>,
+  which does the same thing for any array type.
+ </p></div><div class="sect2" id="id-1.11.7.26.5"><div class="titlepage"><div><div><h3 class="title">F.17.2. Sample Uses</h3></div></div></div><p>
+   Many database systems have the notion of a one to many table. Such a table
+   usually sits between two indexed tables, for example:
+
+</p><pre class="programlisting">
+CREATE TABLE left (id INT PRIMARY KEY, ...);
+CREATE TABLE right (id INT PRIMARY KEY, ...);
+CREATE TABLE one_to_many(left INT REFERENCES left, right INT REFERENCES right);
+</pre><p>
+
+  It is typically used like this:
+
+</p><pre class="programlisting">
+SELECT right.* from right JOIN one_to_many ON (right.id = one_to_many.right)
+  WHERE one_to_many.left = <em class="replaceable"><code>item</code></em>;
+</pre><p>
+
+  This will return all the items in the right hand table for an entry
+  in the left hand table. This is a very common construct in SQL.
+ </p><p>
+  Now, this methodology can be cumbersome with a very large number of
+  entries in the <code class="structname">one_to_many</code> table.  Often,
+  a join like this would result in an index scan
+  and a fetch for each right hand entry in the table for a particular
+  left hand entry. If you have a very dynamic system, there is not much you
+  can do. However, if you have some data which is fairly static, you can
+  create a summary table with the aggregator.
+
+</p><pre class="programlisting">
+CREATE TABLE summary AS
+  SELECT left, int_array_aggregate(right) AS right
+  FROM one_to_many
+  GROUP BY left;
+</pre><p>
+
+  This will create a table with one row per left item, and an array
+  of right items. Now this is pretty useless without some way of using
+  the array; that's why there is an array enumerator.  You can do
+
+</p><pre class="programlisting">
+SELECT left, int_array_enum(right) FROM summary WHERE left = <em class="replaceable"><code>item</code></em>;
+</pre><p>
+
+  The above query using <code class="function">int_array_enum</code> produces the same results
+  as
+
+</p><pre class="programlisting">
+SELECT left, right FROM one_to_many WHERE left = <em class="replaceable"><code>item</code></em>;
+</pre><p>
+
+  The difference is that the query against the summary table has to get
+  only one row from the table, whereas the direct query against
+  <code class="structname">one_to_many</code> must index scan and fetch a row for each entry.
+ </p><p>
+  On one system, an <code class="command">EXPLAIN</code> showed a query with a cost of 8488 was
+  reduced to a cost of 329.  The original query was a join involving the
+  <code class="structname">one_to_many</code> table, which was replaced by:
+
+</p><pre class="programlisting">
+SELECT right, count(right) FROM
+  ( SELECT left, int_array_enum(right) AS right
+    FROM summary JOIN (SELECT left FROM left_table WHERE left = <em class="replaceable"><code>item</code></em>) AS lefts
+         ON (summary.left = lefts.left)
+  ) AS list
+  GROUP BY right
+  ORDER BY count DESC;
+</pre><p>
+ </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="hstore.html" title="F.16. hstore">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="intarray.html" title="F.18. intarray">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.16. hstore </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.18. intarray</td></tr></table></div></body></html>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>37.21. domain_constraints</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="infoschema-data-type-privileges.html" title="37.20. data_type_privileges" /><link rel="next" href="infoschema-domain-udt-usage.html" title="37.22. domain_udt_usage" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">37.21. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">domain_constraints</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="infoschema-data-type-privileges.html" title="37.20. data_type_privileges">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><th width="60%" align="center">Chapter 37. The Information Schema</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="infoschema-domain-udt-usage.html" title="37.22. domain_udt_usage">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INFOSCHEMA-DOMAIN-CONSTRAINTS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">37.21. <code class="literal">domain_constraints</code></h2></div></div></div><p>
+   The view <code class="literal">domain_constraints</code> contains all constraints
+   belonging to domains defined in the current database.  Only those domains
+   are shown that the current user has access to (by way of being the owner or
+   having some privilege).
+  </p><div class="table" id="id-1.7.6.25.3"><p class="title"><strong>Table 37.19. <code class="structname">domain_constraints</code> Columns</strong></p><div class="table-contents"><table class="table" summary="domain_constraints Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">constraint_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database that contains the constraint (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">constraint_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema that contains the constraint
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">constraint_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the constraint
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">domain_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database that contains the domain (always the current database)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">domain_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema that contains the domain
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">domain_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the domain
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">is_deferrable</code> <code class="type">yes_or_no</code>
+      </p>
+      <p>
+       <code class="literal">YES</code> if the constraint is deferrable, <code class="literal">NO</code> if not
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">initially_deferred</code> <code class="type">yes_or_no</code>
+      </p>
+      <p>
+       <code class="literal">YES</code> if the constraint is deferrable and initially deferred, <code class="literal">NO</code> if not
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="infoschema-data-type-privileges.html" title="37.20. data_type_privileges">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="infoschema-domain-udt-usage.html" title="37.22. domain_udt_usage">Next</a></td></tr><tr><td width="40%" align="left" valign="top">37.20. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">data_type_privileges</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 37.22. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">domain_udt_usage</code></td></tr></table></div></body></html>

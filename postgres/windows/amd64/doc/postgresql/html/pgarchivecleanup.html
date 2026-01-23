@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_archivecleanup</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-initdb.html" title="initdb" /><link rel="next" href="app-pgchecksums.html" title="pg_checksums" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_archivecleanup</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-initdb.html" title="initdb">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><th width="60%" align="center">PostgreSQL Server Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="app-pgchecksums.html" title="pg_checksums">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="PGARCHIVECLEANUP"><div class="titlepage"></div><a id="id-1.9.5.4.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_archivecleanup</span></span></h2><p>pg_archivecleanup — clean up <span class="productname">PostgreSQL</span> WAL archive files</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.5.4.4.1"><code class="command">pg_archivecleanup</code> [<em class="replaceable"><code>option</code></em>...]  <em class="replaceable"><code>archivelocation</code></em>   <em class="replaceable"><code>oldestkeptwalfile</code></em> </p></div></div><div class="refsect1" id="id-1.9.5.4.5"><h2>Description</h2><p>
+  <span class="application">pg_archivecleanup</span> is designed to be used as an
+  <code class="literal">archive_cleanup_command</code> to clean up WAL file archives when
+  running as a standby server (see <a class="xref" href="warm-standby.html" title="27.2. Log-Shipping Standby Servers">Section 27.2</a>).
+  <span class="application">pg_archivecleanup</span> can also be used as a standalone program to
+  clean WAL file archives.
+ </p><p>
+   To configure a standby
+   server to use <span class="application">pg_archivecleanup</span>, put this into its
+   <code class="filename">postgresql.conf</code> configuration file:
+</p><pre class="programlisting">
+archive_cleanup_command = 'pg_archivecleanup <em class="replaceable"><code>archivelocation</code></em> %r'
+</pre><p>
+   where <em class="replaceable"><code>archivelocation</code></em> is the directory from which WAL segment
+   files should be removed.
+  </p><p>
+   When used within <a class="xref" href="runtime-config-wal.html#GUC-ARCHIVE-CLEANUP-COMMAND">archive_cleanup_command</a>, all WAL files
+   logically preceding the value of the <code class="literal">%r</code> argument will be removed
+   from <em class="replaceable"><code>archivelocation</code></em>. This minimizes the number of files
+   that need to be retained, while preserving crash-restart capability.  Use of
+   this parameter is appropriate if the <em class="replaceable"><code>archivelocation</code></em> is a
+   transient staging area for this particular standby server, but
+   <span class="emphasis"><em>not</em></span> when the <em class="replaceable"><code>archivelocation</code></em> is intended as a
+   long-term WAL archive area, or when multiple standby servers are recovering
+   from the same archive location.
+  </p><p>
+   When used as a standalone program all WAL files logically preceding the
+   <em class="replaceable"><code>oldestkeptwalfile</code></em> will be removed from <em class="replaceable"><code>archivelocation</code></em>.
+   In this mode, if you specify a <code class="filename">.partial</code> or <code class="filename">.backup</code>
+   file name, then only the file prefix will be used as the
+   <em class="replaceable"><code>oldestkeptwalfile</code></em>. This treatment of <code class="filename">.backup</code>
+   file name allows you to remove
+   all WAL files archived prior to a specific base backup without error.
+   For example, the following example will remove all files older than
+   WAL file name <code class="filename">000000010000003700000010</code>:
+</p><pre class="programlisting">
+pg_archivecleanup -d archive 000000010000003700000010.00000020.backup
+
+pg_archivecleanup:  keep WAL file "archive/000000010000003700000010" and later
+pg_archivecleanup:  removing file "archive/00000001000000370000000F"
+pg_archivecleanup:  removing file "archive/00000001000000370000000E"
+</pre><p>
+  </p><p>
+   <span class="application">pg_archivecleanup</span> assumes that
+   <em class="replaceable"><code>archivelocation</code></em> is a directory readable and writable by the
+   server-owning user.
+  </p></div><div class="refsect1" id="id-1.9.5.4.6"><h2>Options</h2><p>
+    <span class="application">pg_archivecleanup</span> accepts the following command-line arguments:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-d</code></span></dt><dd><p>
+        Print lots of debug logging output on <code class="filename">stderr</code>.
+       </p></dd><dt><span class="term"><code class="option">-n</code></span></dt><dd><p>
+        Print the names of the files that would have been removed on <code class="filename">stdout</code> (performs a dry run).
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+        Print the <span class="application">pg_archivecleanup</span> version and exit.
+       </p></dd><dt><span class="term"><code class="option">-x</code> <em class="replaceable"><code>extension</code></em></span></dt><dd><p>
+        Provide an extension
+        that will be stripped from all file names before deciding if they
+        should be deleted.  This is typically useful for cleaning up archives
+        that have been compressed during storage, and therefore have had an
+        extension added by the compression program.  For example: <code class="literal">-x
+        .gz</code>.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+        Show help about <span class="application">pg_archivecleanup</span> command line
+        arguments, and exit.
+       </p></dd></dl></div><p>
+   </p></div><div class="refsect1" id="id-1.9.5.4.7"><h2>Environment</h2><p>
+   The environment variable <code class="envar">PG_COLOR</code> specifies whether to use
+   color in diagnostic messages. Possible values are
+   <code class="literal">always</code>, <code class="literal">auto</code> and
+   <code class="literal">never</code>.
+  </p></div><div class="refsect1" id="id-1.9.5.4.8"><h2>Notes</h2><p>
+   <span class="application">pg_archivecleanup</span> is designed to work with
+   <span class="productname">PostgreSQL</span> 8.0 and later when used as a standalone utility,
+   or with <span class="productname">PostgreSQL</span> 9.0 and later when used as an
+   archive cleanup command.
+  </p><p>
+   <span class="application">pg_archivecleanup</span> is written in C and has an
+   easy-to-modify source code, with specifically designated sections to modify
+   for your own needs
+  </p></div><div class="refsect1" id="id-1.9.5.4.9"><h2>Examples</h2><p>On Linux or Unix systems, you might use:
+</p><pre class="programlisting">
+archive_cleanup_command = 'pg_archivecleanup -d /mnt/standby/archive %r 2&gt;&gt;cleanup.log'
+</pre><p>
+   where the archive directory is physically located on the standby server,
+   so that the <code class="varname">archive_command</code> is accessing it across NFS,
+   but the files are local to the standby.
+   This will:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     produce debugging output in <code class="filename">cleanup.log</code>
+    </p></li><li class="listitem"><p>
+     remove no-longer-needed files from the archive directory
+    </p></li></ul></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-initdb.html" title="initdb">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-server.html" title="PostgreSQL Server Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="app-pgchecksums.html" title="pg_checksums">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">initdb</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> <span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_checksums</span></td></tr></table></div></body></html>

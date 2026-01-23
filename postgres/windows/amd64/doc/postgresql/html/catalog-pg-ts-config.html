@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.57. pg_ts_config</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-trigger.html" title="52.56. pg_trigger" /><link rel="next" href="catalog-pg-ts-config-map.html" title="52.58. pg_ts_config_map" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.57. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_ts_config</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-trigger.html" title="52.56. pg_trigger">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-ts-config-map.html" title="52.58. pg_ts_config_map">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-TS-CONFIG"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.57. <code class="structname">pg_ts_config</code></h2></div></div></div><a id="id-1.10.4.59.2" class="indexterm"></a><p>
+   The <code class="structname">pg_ts_config</code> catalog contains entries
+   representing text search configurations.  A configuration specifies
+   a particular text search parser and a list of dictionaries to use
+   for each of the parser's output token types.  The parser is shown
+   in the <code class="structname">pg_ts_config</code> entry, but the
+   token-to-dictionary mapping is defined by subsidiary entries in <a class="link" href="catalog-pg-ts-config-map.html" title="52.58. pg_ts_config_map"><code class="structname">pg_ts_config_map</code></a>.
+  </p><p>
+   <span class="productname">PostgreSQL</span>'s text search features are
+   described at length in <a class="xref" href="textsearch.html" title="Chapter 12. Full Text Search">Chapter 12</a>.
+  </p><div class="table" id="id-1.10.4.59.5"><p class="title"><strong>Table 52.57. <code class="structname">pg_ts_config</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_ts_config Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">cfgname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Text search configuration name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">cfgnamespace</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-namespace.html" title="52.32. pg_namespace"><code class="structname">pg_namespace</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The OID of the namespace that contains this configuration
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">cfgowner</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the configuration
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">cfgparser</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-ts-parser.html" title="52.60. pg_ts_parser"><code class="structname">pg_ts_parser</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The OID of the text search parser for this configuration
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-trigger.html" title="52.56. pg_trigger">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-ts-config-map.html" title="52.58. pg_ts_config_map">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.56. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_trigger</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.58. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_ts_config_map</code></td></tr></table></div></body></html>

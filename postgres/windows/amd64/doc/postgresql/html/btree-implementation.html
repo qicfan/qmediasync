@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>64.4. Implementation</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="btree-support-funcs.html" title="64.3. B-Tree Support Functions" /><link rel="next" href="gist.html" title="Chapter 65. GiST Indexes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">64.4. Implementation</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="btree-support-funcs.html" title="64.3. B-Tree Support Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="btree.html" title="Chapter 64. B-Tree Indexes">Up</a></td><th width="60%" align="center">Chapter 64. B-Tree Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="gist.html" title="Chapter 65. GiST Indexes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BTREE-IMPLEMENTATION"><div class="titlepage"><div><div><h2 class="title" style="clear: both">64.4. Implementation</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="btree-implementation.html#BTREE-STRUCTURE">64.4.1. B-Tree Structure</a></span></dt><dt><span class="sect2"><a href="btree-implementation.html#BTREE-DELETION">64.4.2. Bottom-up Index Deletion</a></span></dt><dt><span class="sect2"><a href="btree-implementation.html#BTREE-DEDUPLICATION">64.4.3. Deduplication</a></span></dt></dl></div><p>
+  This section covers B-Tree index implementation details that may be
+  of use to advanced users.  See
+  <code class="filename">src/backend/access/nbtree/README</code> in the source
+  distribution for a much more detailed, internals-focused description
+  of the B-Tree implementation.
+ </p><div class="sect2" id="BTREE-STRUCTURE"><div class="titlepage"><div><div><h3 class="title">64.4.1. B-Tree Structure</h3></div></div></div><p>
+   <span class="productname">PostgreSQL</span> B-Tree indexes are
+   multi-level tree structures, where each level of the tree can be
+   used as a doubly-linked list of pages.  A single metapage is stored
+   in a fixed position at the start of the first segment file of the
+   index.  All other pages are either leaf pages or internal pages.
+   Leaf pages are the pages on the lowest level of the tree.  All
+   other levels consist of internal pages.  Each leaf page contains
+   tuples that point to table rows.  Each internal page contains
+   tuples that point to the next level down in the tree.  Typically,
+   over 99% of all pages are leaf pages.  Both internal pages and leaf
+   pages use the standard page format described in <a class="xref" href="storage-page-layout.html" title="70.6. Database Page Layout">Section 70.6</a>.
+  </p><p>
+   New leaf pages are added to a B-Tree index when an existing leaf
+   page cannot fit an incoming tuple.  A <em class="firstterm">page
+    split</em> operation makes room for items that originally
+   belonged on the overflowing page by moving a portion of the items
+   to a new page.  Page splits must also insert a new
+   <em class="firstterm">downlink</em> to the new page in the parent page,
+   which may cause the parent to split in turn.  Page splits
+   <span class="quote">“<span class="quote">cascade upwards</span>”</span> in a recursive fashion.  When the
+   root page finally cannot fit a new downlink, a <em class="firstterm">root page
+    split</em> operation takes place.  This adds a new level to
+   the tree structure by creating a new root page that is one level
+   above the original root page.
+  </p></div><div class="sect2" id="BTREE-DELETION"><div class="titlepage"><div><div><h3 class="title">64.4.2. Bottom-up Index Deletion</h3></div></div></div><p>
+   B-Tree indexes are not directly aware that under MVCC, there might
+   be multiple extant versions of the same logical table row; to an
+   index, each tuple is an independent object that needs its own index
+   entry.  <span class="quote">“<span class="quote">Version churn</span>”</span> tuples may sometimes
+   accumulate and adversely affect query latency and throughput.  This
+   typically occurs with <code class="command">UPDATE</code>-heavy workloads
+   where most individual updates cannot apply the
+   <a class="link" href="storage-hot.html" title="70.7. Heap-Only Tuples (HOT)"><acronym class="acronym">HOT</acronym> optimization.</a>
+   Changing the value of only
+   one column covered by one index during an <code class="command">UPDATE</code>
+   <span class="emphasis"><em>always</em></span> necessitates a new set of index tuples
+   — one for <span class="emphasis"><em>each and every</em></span> index on the
+   table.  Note in particular that this includes indexes that were not
+   <span class="quote">“<span class="quote">logically modified</span>”</span> by the <code class="command">UPDATE</code>.
+   All indexes will need a successor physical index tuple that points
+   to the latest version in the table.  Each new tuple within each
+   index will generally need to coexist with the original
+   <span class="quote">“<span class="quote">updated</span>”</span> tuple for a short period of time (typically
+   until shortly after the <code class="command">UPDATE</code> transaction
+   commits).
+  </p><p>
+   B-Tree indexes incrementally delete version churn index tuples by
+   performing <em class="firstterm">bottom-up index deletion</em> passes.
+   Each deletion pass is triggered in reaction to an anticipated
+   <span class="quote">“<span class="quote">version churn page split</span>”</span>.  This only happens with
+   indexes that are not logically modified by
+   <code class="command">UPDATE</code> statements, where concentrated build up
+   of obsolete versions in particular pages would occur otherwise.  A
+   page split will usually be avoided, though it's possible that
+   certain implementation-level heuristics will fail to identify and
+   delete even one garbage index tuple (in which case a page split or
+   deduplication pass resolves the issue of an incoming new tuple not
+   fitting on a leaf page).  The worst-case number of versions that
+   any index scan must traverse (for any single logical row) is an
+   important contributor to overall system responsiveness and
+   throughput.  A bottom-up index deletion pass targets suspected
+   garbage tuples in a single leaf page based on
+   <span class="emphasis"><em>qualitative</em></span> distinctions involving logical
+   rows and versions.  This contrasts with the <span class="quote">“<span class="quote">top-down</span>”</span>
+   index cleanup performed by autovacuum workers, which is triggered
+   when certain <span class="emphasis"><em>quantitative</em></span> table-level
+   thresholds are exceeded (see <a class="xref" href="routine-vacuuming.html#AUTOVACUUM" title="25.1.6. The Autovacuum Daemon">Section 25.1.6</a>).
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    Not all deletion operations that are performed within B-Tree
+    indexes are bottom-up deletion operations.  There is a distinct
+    category of index tuple deletion: <em class="firstterm">simple index tuple
+     deletion</em>.  This is a deferred maintenance operation
+    that deletes index tuples that are known to be safe to delete
+    (those whose item identifier's <code class="literal">LP_DEAD</code> bit is
+    already set).  Like bottom-up index deletion, simple index
+    deletion takes place at the point that a page split is anticipated
+    as a way of avoiding the split.
+   </p><p>
+    Simple deletion is opportunistic in the sense that it can only
+    take place when recent index scans set the
+    <code class="literal">LP_DEAD</code> bits of affected items in passing.
+    Prior to <span class="productname">PostgreSQL</span> 14, the only
+    category of B-Tree deletion was simple deletion.  The main
+    differences between it and bottom-up deletion are that only the
+    former is opportunistically driven by the activity of passing
+    index scans, while only the latter specifically targets version
+    churn from <code class="command">UPDATE</code>s that do not logically modify
+    indexed columns.
+   </p></div><p>
+   Bottom-up index deletion performs the vast majority of all garbage
+   index tuple cleanup for particular indexes with certain workloads.
+   This is expected with any B-Tree index that is subject to
+   significant version churn from <code class="command">UPDATE</code>s that
+   rarely or never logically modify the columns that the index covers.
+   The average and worst-case number of versions per logical row can
+   be kept low purely through targeted incremental deletion passes.
+   It's quite possible that the on-disk size of certain indexes will
+   never increase by even one single page/block despite
+   <span class="emphasis"><em>constant</em></span> version churn from
+   <code class="command">UPDATE</code>s.  Even then, an exhaustive <span class="quote">“<span class="quote">clean
+    sweep</span>”</span> by a <code class="command">VACUUM</code> operation (typically
+   run in an autovacuum worker process) will eventually be required as
+   a part of <span class="emphasis"><em>collective</em></span> cleanup of the table and
+   each of its indexes.
+  </p><p>
+   Unlike <code class="command">VACUUM</code>, bottom-up index deletion does not
+   provide any strong guarantees about how old the oldest garbage
+   index tuple may be.  No index can be permitted to retain
+   <span class="quote">“<span class="quote">floating garbage</span>”</span> index tuples that became dead prior
+   to a conservative cutoff point shared by the table and all of its
+   indexes collectively.  This fundamental table-level invariant makes
+   it safe to recycle table <acronym class="acronym">TID</acronym>s.  This is how it
+   is possible for distinct logical rows to reuse the same table
+   <acronym class="acronym">TID</acronym> over time (though this can never happen with
+   two logical rows whose lifetimes span the same
+   <code class="command">VACUUM</code> cycle).
+  </p></div><div class="sect2" id="BTREE-DEDUPLICATION"><div class="titlepage"><div><div><h3 class="title">64.4.3. Deduplication</h3></div></div></div><p>
+   A duplicate is a leaf page tuple (a tuple that points to a table
+   row) where <span class="emphasis"><em>all</em></span> indexed key columns have values
+   that match corresponding column values from at least one other leaf
+   page tuple in the same index.  Duplicate tuples are quite common in
+   practice.  B-Tree indexes can use a special, space-efficient
+   representation for duplicates when an optional technique is
+   enabled: <em class="firstterm">deduplication</em>.
+  </p><p>
+   Deduplication works by periodically merging groups of duplicate
+   tuples together, forming a single <em class="firstterm">posting list</em> tuple for each
+   group.  The column key value(s) only appear once in this
+   representation.  This is followed by a sorted array of
+   <acronym class="acronym">TID</acronym>s that point to rows in the table.  This
+   significantly reduces the storage size of indexes where each value
+   (or each distinct combination of column values) appears several
+   times on average.  The latency of queries can be reduced
+   significantly.  Overall query throughput may increase
+   significantly.  The overhead of routine index vacuuming may also be
+   reduced significantly.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    B-Tree deduplication is just as effective with
+    <span class="quote">“<span class="quote">duplicates</span>”</span> that contain a NULL value, even though
+    NULL values are never equal to each other according to the
+    <code class="literal">=</code> member of any B-Tree operator class.  As far
+    as any part of the implementation that understands the on-disk
+    B-Tree structure is concerned, NULL is just another value from the
+    domain of indexed values.
+   </p></div><p>
+   The deduplication process occurs lazily, when a new item is
+   inserted that cannot fit on an existing leaf page, though only when
+   index tuple deletion could not free sufficient space for the new
+   item (typically deletion is briefly considered and then skipped
+   over).  Unlike GIN posting list tuples, B-Tree posting list tuples
+   do not need to expand every time a new duplicate is inserted; they
+   are merely an alternative physical representation of the original
+   logical contents of the leaf page.  This design prioritizes
+   consistent performance with mixed read-write workloads.  Most
+   client applications will at least see a moderate performance
+   benefit from using deduplication.  Deduplication is enabled by
+   default.
+  </p><p>
+   <code class="command">CREATE INDEX</code> and <code class="command">REINDEX</code>
+   apply deduplication to create posting list tuples, though the
+   strategy they use is slightly different.  Each group of duplicate
+   ordinary tuples encountered in the sorted input taken from the
+   table is merged into a posting list tuple
+   <span class="emphasis"><em>before</em></span> being added to the current pending leaf
+   page.  Individual posting list tuples are packed with as many
+   <acronym class="acronym">TID</acronym>s as possible.  Leaf pages are written out in
+   the usual way, without any separate deduplication pass.  This
+   strategy is well-suited to <code class="command">CREATE INDEX</code> and
+   <code class="command">REINDEX</code> because they are once-off batch
+   operations.
+  </p><p>
+   Write-heavy workloads that don't benefit from deduplication due to
+   having few or no duplicate values in indexes will incur a small,
+   fixed performance penalty (unless deduplication is explicitly
+   disabled).  The <code class="literal">deduplicate_items</code> storage
+   parameter can be used to disable deduplication within individual
+   indexes.  There is never any performance penalty with read-only
+   workloads, since reading posting list tuples is at least as
+   efficient as reading the standard tuple representation.  Disabling
+   deduplication isn't usually helpful.
+  </p><p>
+   It is sometimes possible for unique indexes (as well as unique
+   constraints) to use deduplication.  This allows leaf pages to
+   temporarily <span class="quote">“<span class="quote">absorb</span>”</span> extra version churn duplicates.
+   Deduplication in unique indexes augments bottom-up index deletion,
+   especially in cases where a long-running transaction holds a
+   snapshot that blocks garbage collection.  The goal is to buy time
+   for the bottom-up index deletion strategy to become effective
+   again.  Delaying page splits until a single long-running
+   transaction naturally goes away can allow a bottom-up deletion pass
+   to succeed where an earlier deletion pass failed.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    A special heuristic is applied to determine whether a
+    deduplication pass in a unique index should take place.  It can
+    often skip straight to splitting a leaf page, avoiding a
+    performance penalty from wasting cycles on unhelpful deduplication
+    passes.  If you're concerned about the overhead of deduplication,
+    consider setting <code class="literal">deduplicate_items = off</code>
+    selectively.  Leaving deduplication enabled in unique indexes has
+    little downside.
+   </p></div><p>
+   Deduplication cannot be used in all cases due to
+   implementation-level restrictions.  Deduplication safety is
+   determined when <code class="command">CREATE INDEX</code> or
+   <code class="command">REINDEX</code> is run.
+  </p><p>
+   Note that deduplication is deemed unsafe and cannot be used in the
+   following cases involving semantically significant differences
+   among equal datums:
+  </p><p>
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      <code class="type">text</code>, <code class="type">varchar</code>, and <code class="type">char</code>
+      cannot use deduplication when a
+      <span class="emphasis"><em>nondeterministic</em></span> collation is used.  Case
+      and accent differences must be preserved among equal datums.
+     </p></li><li class="listitem"><p>
+      <code class="type">numeric</code> cannot use deduplication.  Numeric display
+      scale must be preserved among equal datums.
+     </p></li><li class="listitem"><p>
+      <code class="type">jsonb</code> cannot use deduplication, since the
+      <code class="type">jsonb</code> B-Tree operator class uses
+      <code class="type">numeric</code> internally.
+     </p></li><li class="listitem"><p>
+      <code class="type">float4</code> and <code class="type">float8</code> cannot use
+      deduplication.  These types have distinct representations for
+      <code class="literal">-0</code> and <code class="literal">0</code>, which are
+      nevertheless considered equal.  This difference must be
+      preserved.
+     </p></li></ul></div><p>
+  </p><p>
+   There is one further implementation-level restriction that may be
+   lifted in a future version of
+   <span class="productname">PostgreSQL</span>:
+  </p><p>
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Container types (such as composite types, arrays, or range
+      types) cannot use deduplication.
+     </p></li></ul></div><p>
+  </p><p>
+   There is one further implementation-level restriction that applies
+   regardless of the operator class or collation used:
+  </p><p>
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      <code class="literal">INCLUDE</code> indexes can never use deduplication.
+     </p></li></ul></div><p>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="btree-support-funcs.html" title="64.3. B-Tree Support Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="btree.html" title="Chapter 64. B-Tree Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="gist.html" title="Chapter 65. GiST Indexes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">64.3. B-Tree Support Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 65. GiST Indexes</td></tr></table></div></body></html>

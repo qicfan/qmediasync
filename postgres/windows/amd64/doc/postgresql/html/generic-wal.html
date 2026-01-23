@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Chapter 63. Generic WAL Records</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="index-cost-estimation.html" title="62.6. Index Cost Estimation Functions" /><link rel="next" href="btree.html" title="Chapter 64. B-Tree Indexes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">Chapter 63. Generic WAL Records</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="index-cost-estimation.html" title="62.6. Index Cost Estimation Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><th width="60%" align="center">Part VII. Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="btree.html" title="Chapter 64. B-Tree Indexes">Next</a></td></tr></table><hr></hr></div><div class="chapter" id="GENERIC-WAL"><div class="titlepage"><div><div><h2 class="title">Chapter 63. Generic WAL Records</h2></div></div></div><p>
+   Although all built-in WAL-logged modules have their own types of WAL
+   records, there is also a generic WAL record type, which describes changes
+   to pages in a generic way.  This is useful for extensions that provide
+   custom access methods, because they cannot register their own WAL redo
+   routines.
+  </p><p>
+   The API for constructing generic WAL records is defined in
+   <code class="filename">access/generic_xlog.h</code> and implemented
+   in <code class="filename">access/transam/generic_xlog.c</code>.
+  </p><p>
+   To perform a WAL-logged data update using the generic WAL record
+   facility, follow these steps:
+
+   </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>
+      <code class="function">state = GenericXLogStart(relation)</code> — start
+      construction of a generic WAL record for the given relation.
+     </p></li><li class="listitem"><p>
+      <code class="function">page = GenericXLogRegisterBuffer(state, buffer, flags)</code>
+      — register a buffer to be modified within the current generic WAL
+      record.  This function returns a pointer to a temporary copy of the
+      buffer's page, where modifications should be made.  (Do not modify the
+      buffer's contents directly.)  The third argument is a bit mask of flags
+      applicable to the operation.  Currently the only such flag is
+      <code class="literal">GENERIC_XLOG_FULL_IMAGE</code>, which indicates that a full-page
+      image rather than a delta update should be included in the WAL record.
+      Typically this flag would be set if the page is new or has been
+      rewritten completely.
+      <code class="function">GenericXLogRegisterBuffer</code> can be repeated if the
+      WAL-logged action needs to modify multiple pages.
+     </p></li><li class="listitem"><p>
+      Apply modifications to the page images obtained in the previous step.
+     </p></li><li class="listitem"><p>
+      <code class="function">GenericXLogFinish(state)</code> — apply the changes to
+      the buffers and emit the generic WAL record.
+     </p></li></ol></div><p>
+  </p><p>
+   WAL record construction can be canceled between any of the above steps by
+   calling <code class="function">GenericXLogAbort(state)</code>.  This will discard all
+   changes to the page image copies.
+  </p><p>
+   Please note the following points when using the generic WAL record
+   facility:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      No direct modifications of buffers are allowed!  All modifications must
+      be done in copies acquired from <code class="function">GenericXLogRegisterBuffer()</code>.
+      In other words, code that makes generic WAL records should never call
+      <code class="function">BufferGetPage()</code> for itself.  However, it remains the
+      caller's responsibility to pin/unpin and lock/unlock the buffers at
+      appropriate times.  Exclusive lock must be held on each target buffer
+      from before <code class="function">GenericXLogRegisterBuffer()</code> until after
+      <code class="function">GenericXLogFinish()</code>.
+     </p></li><li class="listitem"><p>
+      Registrations of buffers (step 2) and modifications of page images
+      (step 3) can be mixed freely, i.e., both steps may be repeated in any
+      sequence.  Keep in mind that buffers should be registered in the same
+      order in which locks are to be obtained on them during replay.
+     </p></li><li class="listitem"><p>
+      The maximum number of buffers that can be registered for a generic WAL
+      record is <code class="literal">MAX_GENERIC_XLOG_PAGES</code>.  An error will be thrown
+      if this limit is exceeded.
+     </p></li><li class="listitem"><p>
+      Generic WAL assumes that the pages to be modified have standard
+      layout, and in particular that there is no useful data between
+      <code class="structfield">pd_lower</code> and <code class="structfield">pd_upper</code>.
+     </p></li><li class="listitem"><p>
+      Since you are modifying copies of buffer
+      pages, <code class="function">GenericXLogStart()</code> does not start a critical
+      section.  Thus, you can safely do memory allocation, error throwing,
+      etc. between <code class="function">GenericXLogStart()</code> and
+      <code class="function">GenericXLogFinish()</code>.  The only actual critical section is
+      present inside <code class="function">GenericXLogFinish()</code>.  There is no need to
+      worry about calling  <code class="function">GenericXLogAbort()</code> during an error
+      exit, either.
+     </p></li><li class="listitem"><p>
+      <code class="function">GenericXLogFinish()</code> takes care of marking buffers dirty
+      and setting their LSNs.  You do not need to do this explicitly.
+     </p></li><li class="listitem"><p>
+      For unlogged relations, everything works the same except that no
+      actual WAL record is emitted.  Thus, you typically do not need to do
+      any explicit checks for unlogged relations.
+     </p></li><li class="listitem"><p>
+      The generic WAL redo function will acquire exclusive locks to buffers
+      in the same order as they were registered.  After redoing all changes,
+      the locks will be released in the same order.
+     </p></li><li class="listitem"><p>
+      If <code class="literal">GENERIC_XLOG_FULL_IMAGE</code> is not specified for a
+      registered buffer, the generic WAL record contains a delta between
+      the old and the new page images.  This delta is based on byte-by-byte
+      comparison.  This is not very compact for the case of moving data
+      within a page, and might be improved in the future.
+     </p></li></ul></div><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="index-cost-estimation.html" title="62.6. Index Cost Estimation Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="btree.html" title="Chapter 64. B-Tree Indexes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">62.6. Index Cost Estimation Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 64. B-Tree Indexes</td></tr></table></div></body></html>

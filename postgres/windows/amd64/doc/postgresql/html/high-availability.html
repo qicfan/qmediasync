@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Chapter 27. High Availability, Load Balancing, and Replication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="continuous-archiving.html" title="26.3. Continuous Archiving and Point-in-Time Recovery (PITR)" /><link rel="next" href="different-replication-solutions.html" title="27.1. Comparison of Different Solutions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">Chapter 27. High Availability, Load Balancing, and Replication</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="continuous-archiving.html" title="26.3. Continuous Archiving and Point-in-Time Recovery (PITR)">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="admin.html" title="Part III. Server Administration">Up</a></td><th width="60%" align="center">Part III. Server Administration</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="different-replication-solutions.html" title="27.1. Comparison of Different Solutions">Next</a></td></tr></table><hr></hr></div><div class="chapter" id="HIGH-AVAILABILITY"><div class="titlepage"><div><div><h2 class="title">Chapter 27. High Availability, Load Balancing, and Replication</h2></div></div></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="sect1"><a href="different-replication-solutions.html">27.1. Comparison of Different Solutions</a></span></dt><dt><span class="sect1"><a href="warm-standby.html">27.2. Log-Shipping Standby Servers</a></span></dt><dd><dl><dt><span class="sect2"><a href="warm-standby.html#STANDBY-PLANNING">27.2.1. Planning</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#STANDBY-SERVER-OPERATION">27.2.2. Standby Server Operation</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#PREPARING-PRIMARY-FOR-STANDBY">27.2.3. Preparing the Primary for Standby Servers</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#STANDBY-SERVER-SETUP">27.2.4. Setting Up a Standby Server</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#STREAMING-REPLICATION">27.2.5. Streaming Replication</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#STREAMING-REPLICATION-SLOTS">27.2.6. Replication Slots</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#CASCADING-REPLICATION">27.2.7. Cascading Replication</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#SYNCHRONOUS-REPLICATION">27.2.8. Synchronous Replication</a></span></dt><dt><span class="sect2"><a href="warm-standby.html#CONTINUOUS-ARCHIVING-IN-STANDBY">27.2.9. Continuous Archiving in Standby</a></span></dt></dl></dd><dt><span class="sect1"><a href="warm-standby-failover.html">27.3. Failover</a></span></dt><dt><span class="sect1"><a href="hot-standby.html">27.4. Hot Standby</a></span></dt><dd><dl><dt><span class="sect2"><a href="hot-standby.html#HOT-STANDBY-USERS">27.4.1. User's Overview</a></span></dt><dt><span class="sect2"><a href="hot-standby.html#HOT-STANDBY-CONFLICT">27.4.2. Handling Query Conflicts</a></span></dt><dt><span class="sect2"><a href="hot-standby.html#HOT-STANDBY-ADMIN">27.4.3. Administrator's Overview</a></span></dt><dt><span class="sect2"><a href="hot-standby.html#HOT-STANDBY-PARAMETERS">27.4.4. Hot Standby Parameter Reference</a></span></dt><dt><span class="sect2"><a href="hot-standby.html#HOT-STANDBY-CAVEATS">27.4.5. Caveats</a></span></dt></dl></dd></dl></div><a id="id-1.6.14.2" class="indexterm"></a><a id="id-1.6.14.3" class="indexterm"></a><a id="id-1.6.14.4" class="indexterm"></a><a id="id-1.6.14.5" class="indexterm"></a><a id="id-1.6.14.6" class="indexterm"></a><a id="id-1.6.14.7" class="indexterm"></a><p>
+  Database servers can work together to allow a second server to
+  take over quickly if the primary server fails (high
+  availability), or to allow several computers to serve the same
+  data (load balancing).  Ideally, database servers could work
+  together seamlessly.  Web servers serving static web pages can
+  be combined quite easily by merely load-balancing web requests
+  to multiple machines.  In fact, read-only database servers can
+  be combined relatively easily too.  Unfortunately, most database
+  servers have a read/write mix of requests, and read/write servers
+  are much harder to combine.  This is because though read-only
+  data needs to be placed on each server only once, a write to any
+  server has to be propagated to all servers so that future read
+  requests to those servers return consistent results.
+ </p><p>
+  This synchronization problem is the fundamental difficulty for
+  servers working together.  Because there is no single solution
+  that eliminates the impact of the sync problem for all use cases,
+  there are multiple solutions.  Each solution addresses this
+  problem in a different way, and minimizes its impact for a specific
+  workload.
+ </p><p>
+  Some solutions deal with synchronization by allowing only one
+  server to modify the data.  Servers that can modify data are
+  called read/write, <em class="firstterm">master</em> or <em class="firstterm">primary</em> servers.
+  Servers that track changes in the primary are called <em class="firstterm">standby</em>
+  or <em class="firstterm">secondary</em> servers. A standby server that cannot be connected
+  to until it is promoted to a primary server is called a <em class="firstterm">warm
+  standby</em> server, and one that can accept connections and serves read-only
+  queries is called a <em class="firstterm">hot standby</em> server.
+ </p><p>
+  Some solutions are synchronous,
+  meaning that a data-modifying transaction is not considered
+  committed until all servers have committed the transaction.  This
+  guarantees that a failover will not lose any data and that all
+  load-balanced servers will return consistent results no matter
+  which server is queried. In contrast, asynchronous solutions allow some
+  delay between the time of a commit and its propagation to the other servers,
+  opening the possibility that some transactions might be lost in
+  the switch to a backup server, and that load balanced servers
+  might return slightly stale results.  Asynchronous communication
+  is used when synchronous would be too slow.
+ </p><p>
+  Solutions can also be categorized by their granularity.  Some solutions
+  can deal only with an entire database server, while others allow control
+  at the per-table or per-database level.
+ </p><p>
+  Performance must be considered in any choice.  There is usually a
+  trade-off between functionality and
+  performance.  For example, a fully synchronous solution over a slow
+  network might cut performance by more than half, while an asynchronous
+  one might have a minimal performance impact.
+ </p><p>
+  The remainder of this section outlines various failover, replication,
+  and load balancing solutions.
+ </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="continuous-archiving.html" title="26.3. Continuous Archiving and Point-in-Time Recovery (PITR)">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="admin.html" title="Part III. Server Administration">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="different-replication-solutions.html" title="27.1. Comparison of Different Solutions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">26.3. Continuous Archiving and Point-in-Time Recovery (PITR) </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 27.1. Comparison of Different Solutions</td></tr></table></div></body></html>

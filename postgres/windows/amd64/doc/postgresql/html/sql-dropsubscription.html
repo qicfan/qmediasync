@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>DROP SUBSCRIPTION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-dropstatistics.html" title="DROP STATISTICS" /><link rel="next" href="sql-droptable.html" title="DROP TABLE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">DROP SUBSCRIPTION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-dropstatistics.html" title="DROP STATISTICS">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-droptable.html" title="DROP TABLE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-DROPSUBSCRIPTION"><div class="titlepage"></div><a id="id-1.9.3.133.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">DROP SUBSCRIPTION</span></h2><p>DROP SUBSCRIPTION — remove a subscription</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+DROP SUBSCRIPTION [ IF EXISTS ] <em class="replaceable"><code>name</code></em> [ CASCADE | RESTRICT ]
+</pre></div><div class="refsect1" id="id-1.9.3.133.5"><h2>Description</h2><p>
+   <code class="command">DROP SUBSCRIPTION</code> removes a subscription from the
+   database cluster.
+  </p><p>
+   A subscription can only be dropped by a superuser.
+  </p><p>
+   <code class="command">DROP SUBSCRIPTION</code> cannot be executed inside a
+   transaction block if the subscription is associated with a replication
+   slot.  (You can use <code class="command">ALTER SUBSCRIPTION</code> to unset the
+   slot.)
+  </p></div><div class="refsect1" id="id-1.9.3.133.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of a subscription to be dropped.
+     </p></dd><dt><span class="term"><code class="literal">CASCADE</code><br /></span><span class="term"><code class="literal">RESTRICT</code></span></dt><dd><p>
+      These key words do not have any effect, since there are no dependencies
+      on subscriptions.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.133.7"><h2>Notes</h2><p>
+   When dropping a subscription that is associated with a replication slot on
+   the remote host (the normal state), <code class="command">DROP SUBSCRIPTION</code>
+   will connect to the remote host and try to drop the replication slot (and
+   any remaining table synchronization slots) as
+   part of its operation.  This is necessary so that the resources allocated
+   for the subscription on the remote host are released.  If this fails,
+   either because the remote host is not reachable or because the remote
+   replication slot cannot be dropped or does not exist or never existed,
+   the <code class="command">DROP SUBSCRIPTION</code> command will fail.  To proceed
+   in this situation, first disable the subscription by executing
+   <code class="literal">ALTER SUBSCRIPTION ... DISABLE</code>, and then disassociate
+   it from the replication slot by executing
+   <code class="literal">ALTER SUBSCRIPTION ... SET (slot_name = NONE)</code>.
+   After that, <code class="command">DROP SUBSCRIPTION</code> will no longer attempt any
+   actions on a remote host.  Note that if the remote replication slot still
+   exists, it (and any related table synchronization slots) should then be
+   dropped manually; otherwise it/they will continue to
+   reserve WAL and might eventually cause the disk to fill up.  See
+   also <a class="xref" href="logical-replication-subscription.html#LOGICAL-REPLICATION-SUBSCRIPTION-SLOT" title="31.2.1. Replication Slot Management">Section 31.2.1</a>.
+  </p><p>
+   If a subscription is associated with a replication slot, then <code class="command">DROP
+   SUBSCRIPTION</code> cannot be executed inside a transaction block.
+  </p></div><div class="refsect1" id="id-1.9.3.133.8"><h2>Examples</h2><p>
+   Drop a subscription:
+</p><pre class="programlisting">
+DROP SUBSCRIPTION mysub;
+</pre></div><div class="refsect1" id="id-1.9.3.133.9"><h2>Compatibility</h2><p>
+   <code class="command">DROP SUBSCRIPTION</code> is a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.133.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createsubscription.html" title="CREATE SUBSCRIPTION"><span class="refentrytitle">CREATE SUBSCRIPTION</span></a>, <a class="xref" href="sql-altersubscription.html" title="ALTER SUBSCRIPTION"><span class="refentrytitle">ALTER SUBSCRIPTION</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-dropstatistics.html" title="DROP STATISTICS">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-droptable.html" title="DROP TABLE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">DROP STATISTICS </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> DROP TABLE</td></tr></table></div></body></html>

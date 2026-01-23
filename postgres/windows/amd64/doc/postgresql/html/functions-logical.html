@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.1. Logical Operators</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions.html" title="Chapter 9. Functions and Operators" /><link rel="next" href="functions-comparison.html" title="9.2. Comparison Functions and Operators" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.1. Logical Operators</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions.html" title="Chapter 9. Functions and Operators">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-comparison.html" title="9.2. Comparison Functions and Operators">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-LOGICAL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.1. Logical Operators</h2></div></div></div><a id="id-1.5.8.7.2" class="indexterm"></a><a id="id-1.5.8.7.3" class="indexterm"></a><p>
+    The usual logical operators are available:
+
+    <a id="id-1.5.8.7.4.1" class="indexterm"></a>
+
+    <a id="id-1.5.8.7.4.2" class="indexterm"></a>
+
+    <a id="id-1.5.8.7.4.3" class="indexterm"></a>
+
+    <a id="id-1.5.8.7.4.4" class="indexterm"></a>
+
+    <a id="id-1.5.8.7.4.5" class="indexterm"></a>
+
+    <a id="id-1.5.8.7.4.6" class="indexterm"></a>
+
+</p><pre class="synopsis">
+<code class="type">boolean</code> <code class="literal">AND</code> <code class="type">boolean</code> → <code class="returnvalue">boolean</code>
+<code class="type">boolean</code> <code class="literal">OR</code> <code class="type">boolean</code> → <code class="returnvalue">boolean</code>
+<code class="literal">NOT</code> <code class="type">boolean</code> → <code class="returnvalue">boolean</code>
+</pre><p>
+
+    <acronym class="acronym">SQL</acronym> uses a three-valued logic system with true,
+    false, and <code class="literal">null</code>, which represents <span class="quote">“<span class="quote">unknown</span>”</span>.
+    Observe the following truth tables:
+
+    </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /><col /><col /></colgroup><thead><tr><th><em class="replaceable"><code>a</code></em></th><th><em class="replaceable"><code>b</code></em></th><th><em class="replaceable"><code>a</code></em> AND <em class="replaceable"><code>b</code></em></th><th><em class="replaceable"><code>a</code></em> OR <em class="replaceable"><code>b</code></em></th></tr></thead><tbody><tr><td>TRUE</td><td>TRUE</td><td>TRUE</td><td>TRUE</td></tr><tr><td>TRUE</td><td>FALSE</td><td>FALSE</td><td>TRUE</td></tr><tr><td>TRUE</td><td>NULL</td><td>NULL</td><td>TRUE</td></tr><tr><td>FALSE</td><td>FALSE</td><td>FALSE</td><td>FALSE</td></tr><tr><td>FALSE</td><td>NULL</td><td>FALSE</td><td>NULL</td></tr><tr><td>NULL</td><td>NULL</td><td>NULL</td><td>NULL</td></tr></tbody></table></div><p>
+
+    </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /></colgroup><thead><tr><th><em class="replaceable"><code>a</code></em></th><th>NOT <em class="replaceable"><code>a</code></em></th></tr></thead><tbody><tr><td>TRUE</td><td>FALSE</td></tr><tr><td>FALSE</td><td>TRUE</td></tr><tr><td>NULL</td><td>NULL</td></tr></tbody></table></div><p>
+   </p><p>
+    The operators <code class="literal">AND</code> and <code class="literal">OR</code> are
+    commutative, that is, you can switch the left and right operands
+    without affecting the result.  (However, it is not guaranteed that
+    the left operand is evaluated before the right operand.  See <a class="xref" href="sql-expressions.html#SYNTAX-EXPRESS-EVAL" title="4.2.14. Expression Evaluation Rules">Section 4.2.14</a> for more information about the
+    order of evaluation of subexpressions.)
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions.html" title="Chapter 9. Functions and Operators">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-comparison.html" title="9.2. Comparison Functions and Operators">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 9. Functions and Operators </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.2. Comparison Functions and Operators</td></tr></table></div></body></html>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER CONVERSION</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altercollation.html" title="ALTER COLLATION" /><link rel="next" href="sql-alterdatabase.html" title="ALTER DATABASE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER CONVERSION</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altercollation.html" title="ALTER COLLATION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-alterdatabase.html" title="ALTER DATABASE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERCONVERSION"><div class="titlepage"></div><a id="id-1.9.3.6.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER CONVERSION</span></h2><p>ALTER CONVERSION — change the definition of a conversion</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER CONVERSION <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER CONVERSION <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER CONVERSION <em class="replaceable"><code>name</code></em> SET SCHEMA <em class="replaceable"><code>new_schema</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.6.5"><h2>Description</h2><p>
+   <code class="command">ALTER CONVERSION</code> changes the definition of a
+   conversion.
+  </p><p>
+   You must own the conversion to use <code class="command">ALTER CONVERSION</code>.
+   To alter the owner, you must also be a direct or indirect member of the new
+   owning role, and that role must have <code class="literal">CREATE</code> privilege on
+   the conversion's schema.  (These restrictions enforce that altering the
+   owner doesn't do anything you couldn't do by dropping and recreating the
+   conversion. However, a superuser can alter ownership of any conversion
+   anyway.)
+  </p></div><div class="refsect1" id="id-1.9.3.6.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of an existing conversion.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name of the conversion.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The new owner of the conversion.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_schema</code></em></span></dt><dd><p>
+      The new schema for the conversion.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.6.7"><h2>Examples</h2><p>
+   To rename the conversion <code class="literal">iso_8859_1_to_utf8</code> to
+   <code class="literal">latin1_to_unicode</code>:
+</p><pre class="programlisting">
+ALTER CONVERSION iso_8859_1_to_utf8 RENAME TO latin1_to_unicode;
+</pre><p>
+  </p><p>
+   To change the owner of the conversion <code class="literal">iso_8859_1_to_utf8</code> to
+   <code class="literal">joe</code>:
+</p><pre class="programlisting">
+ALTER CONVERSION iso_8859_1_to_utf8 OWNER TO joe;
+</pre></div><div class="refsect1" id="id-1.9.3.6.8"><h2>Compatibility</h2><p>
+   There is no <code class="command">ALTER CONVERSION</code> statement in the SQL
+   standard.
+  </p></div><div class="refsect1" id="id-1.9.3.6.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createconversion.html" title="CREATE CONVERSION"><span class="refentrytitle">CREATE CONVERSION</span></a>, <a class="xref" href="sql-dropconversion.html" title="DROP CONVERSION"><span class="refentrytitle">DROP CONVERSION</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altercollation.html" title="ALTER COLLATION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-alterdatabase.html" title="ALTER DATABASE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER COLLATION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER DATABASE</td></tr></table></div></body></html>

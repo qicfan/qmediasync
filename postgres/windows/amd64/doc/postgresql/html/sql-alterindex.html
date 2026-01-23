@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER INDEX</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altergroup.html" title="ALTER GROUP" /><link rel="next" href="sql-alterlanguage.html" title="ALTER LANGUAGE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER INDEX</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altergroup.html" title="ALTER GROUP">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-alterlanguage.html" title="ALTER LANGUAGE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERINDEX"><div class="titlepage"></div><a id="id-1.9.3.16.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER INDEX</span></h2><p>ALTER INDEX — change the definition of an index</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER INDEX [ IF EXISTS ] <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER INDEX [ IF EXISTS ] <em class="replaceable"><code>name</code></em> SET TABLESPACE <em class="replaceable"><code>tablespace_name</code></em>
+ALTER INDEX <em class="replaceable"><code>name</code></em> ATTACH PARTITION <em class="replaceable"><code>index_name</code></em>
+ALTER INDEX <em class="replaceable"><code>name</code></em> [ NO ] DEPENDS ON EXTENSION <em class="replaceable"><code>extension_name</code></em>
+ALTER INDEX [ IF EXISTS ] <em class="replaceable"><code>name</code></em> SET ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )
+ALTER INDEX [ IF EXISTS ] <em class="replaceable"><code>name</code></em> RESET ( <em class="replaceable"><code>storage_parameter</code></em> [, ... ] )
+ALTER INDEX [ IF EXISTS ] <em class="replaceable"><code>name</code></em> ALTER [ COLUMN ] <em class="replaceable"><code>column_number</code></em>
+    SET STATISTICS <em class="replaceable"><code>integer</code></em>
+ALTER INDEX ALL IN TABLESPACE <em class="replaceable"><code>name</code></em> [ OWNED BY <em class="replaceable"><code>role_name</code></em> [, ... ] ]
+    SET TABLESPACE <em class="replaceable"><code>new_tablespace</code></em> [ NOWAIT ]
+</pre></div><div class="refsect1" id="id-1.9.3.16.5"><h2>Description</h2><p>
+   <code class="command">ALTER INDEX</code> changes the definition of an existing index.
+   There are several subforms described below. Note that the lock level required
+   may differ for each subform. An <code class="literal">ACCESS EXCLUSIVE</code> lock is held
+   unless explicitly noted. When multiple subcommands are listed, the lock
+   held will be the strictest one required from any subcommand.
+
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">RENAME</code></span></dt><dd><p>
+      The <code class="literal">RENAME</code> form changes the name of the index.
+      If the index is associated with a table constraint (either
+      <code class="literal">UNIQUE</code>, <code class="literal">PRIMARY KEY</code>,
+      or <code class="literal">EXCLUDE</code>), the constraint is renamed as well.
+      There is no effect on the stored data.
+     </p><p>
+      Renaming an index acquires a <code class="literal">SHARE UPDATE EXCLUSIVE</code>
+      lock.
+     </p></dd><dt><span class="term"><code class="literal">SET TABLESPACE</code></span></dt><dd><p>
+      This form changes the index's tablespace to the specified tablespace and
+      moves the data file(s) associated with the index to the new tablespace.
+      To change the tablespace of an index, you must own the index and have
+      <code class="literal">CREATE</code> privilege on the new tablespace.
+      All indexes in the current database in a tablespace can be moved by using
+      the <code class="literal">ALL IN TABLESPACE</code> form, which will lock all
+      indexes to be moved and then move each one.  This form also supports
+      <code class="literal">OWNED BY</code>, which will only move indexes owned by the
+      roles specified.  If the <code class="literal">NOWAIT</code> option is specified
+      then the command will fail if it is unable to acquire all of the locks
+      required immediately.  Note that system catalogs will not be moved by
+      this command, use <code class="command">ALTER DATABASE</code> or explicit
+      <code class="command">ALTER INDEX</code> invocations instead if desired.
+      See also
+      <a class="link" href="sql-createtablespace.html" title="CREATE TABLESPACE"><code class="command">CREATE TABLESPACE</code></a>.
+     </p></dd><dt><span class="term"><code class="literal">ATTACH PARTITION</code></span></dt><dd><p>
+      Causes the named index to become attached to the altered index.
+      The named index must be on a partition of the table containing the
+      index being altered, and have an equivalent definition.  An attached
+      index cannot be dropped by itself, and will automatically be dropped
+      if its parent index is dropped.
+     </p></dd><dt><span class="term"><code class="literal">DEPENDS ON EXTENSION <em class="replaceable"><code>extension_name</code></em></code><br /></span><span class="term"><code class="literal">NO DEPENDS ON EXTENSION <em class="replaceable"><code>extension_name</code></em></code></span></dt><dd><p>
+      This form marks the index as dependent on the extension, or no longer
+      dependent on that extension if <code class="literal">NO</code> is specified.
+      An index that's marked as dependent on an extension is automatically
+      dropped when the extension is dropped.
+     </p></dd><dt><span class="term"><code class="literal">SET ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )</code></span></dt><dd><p>
+      This form changes one or more index-method-specific storage parameters
+      for the index.  See
+      <a class="link" href="sql-createindex.html" title="CREATE INDEX"><code class="command">CREATE INDEX</code></a>
+      for details on the available parameters.  Note that the index contents
+      will not be modified immediately by this command; depending on the
+      parameter you might need to rebuild the index with
+      <a class="link" href="sql-reindex.html" title="REINDEX"><code class="command">REINDEX</code></a>
+      to get the desired effects.
+     </p></dd><dt><span class="term"><code class="literal">RESET ( <em class="replaceable"><code>storage_parameter</code></em> [, ... ] )</code></span></dt><dd><p>
+      This form resets one or more index-method-specific storage parameters to
+      their defaults.  As with <code class="literal">SET</code>, a <code class="literal">REINDEX</code>
+      might be needed to update the index entirely.
+     </p></dd><dt><span class="term"><code class="literal">ALTER [ COLUMN ] <em class="replaceable"><code>column_number</code></em> SET STATISTICS <em class="replaceable"><code>integer</code></em></code></span></dt><dd><p>
+      This form sets the per-column statistics-gathering target for
+      subsequent <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a> operations, though can
+      be used only on index columns that are defined as an expression.
+      Since expressions lack a unique name, we refer to them using the
+      ordinal number of the index column.
+      The target can be set in the range 0 to 10000; alternatively, set it
+      to -1 to revert to using the system default statistics
+      target (<a class="xref" href="runtime-config-query.html#GUC-DEFAULT-STATISTICS-TARGET">default_statistics_target</a>).
+      For more information on the use of statistics by the
+      <span class="productname">PostgreSQL</span> query planner, refer to
+      <a class="xref" href="planner-stats.html" title="14.2. Statistics Used by the Planner">Section 14.2</a>.
+     </p></dd></dl></div><p>
+  </p></div><div class="refsect1" id="id-1.9.3.16.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">IF EXISTS</code></span></dt><dd><p>
+        Do not throw an error if the index does not exist. A notice is issued
+        in this case.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>column_number</code></em></span></dt><dd><p>
+        The ordinal number refers to the ordinal (left-to-right) position
+        of the index column.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+        The name (possibly schema-qualified) of an existing index to
+        alter.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+        The new name for the index.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>tablespace_name</code></em></span></dt><dd><p>
+        The tablespace to which the index will be moved.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>extension_name</code></em></span></dt><dd><p>
+        The name of the extension that the index is to depend on.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>storage_parameter</code></em></span></dt><dd><p>
+        The name of an index-method-specific storage parameter.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>value</code></em></span></dt><dd><p>
+        The new value for an index-method-specific storage parameter.
+        This might be a number or a word depending on the parameter.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.16.7"><h2>Notes</h2><p>
+    These operations are also possible using
+    <a class="link" href="sql-altertable.html" title="ALTER TABLE"><code class="command">ALTER TABLE</code></a>.
+    <code class="command">ALTER INDEX</code> is in fact just an alias for the forms
+    of <code class="command">ALTER TABLE</code> that apply to indexes.
+   </p><p>
+    There was formerly an <code class="command">ALTER INDEX OWNER</code> variant, but
+    this is now ignored (with a warning).  An index cannot have an owner
+    different from its table's owner.  Changing the table's owner
+    automatically changes the index as well.
+   </p><p>
+    Changing any part of a system catalog index is not permitted.
+   </p></div><div class="refsect1" id="id-1.9.3.16.8"><h2>Examples</h2><p>
+   To rename an existing index:
+</p><pre class="programlisting">
+ALTER INDEX distributors RENAME TO suppliers;
+</pre><p>
+  </p><p>
+   To move an index to a different tablespace:
+</p><pre class="programlisting">
+ALTER INDEX distributors SET TABLESPACE fasttablespace;
+</pre><p>
+  </p><p>
+   To change an index's fill factor (assuming that the index method
+   supports it):
+</p><pre class="programlisting">
+ALTER INDEX distributors SET (fillfactor = 75);
+REINDEX INDEX distributors;
+</pre><p>
+   Set the statistics-gathering target for an expression index:
+</p><pre class="programlisting">
+CREATE INDEX coord_idx ON measured (x, y, (z + t));
+ALTER INDEX coord_idx ALTER COLUMN 3 SET STATISTICS 1000;
+</pre></div><div class="refsect1" id="id-1.9.3.16.9"><h2>Compatibility</h2><p>
+   <code class="command">ALTER INDEX</code> is a <span class="productname">PostgreSQL</span>
+   extension.
+  </p></div><div class="refsect1" id="id-1.9.3.16.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createindex.html" title="CREATE INDEX"><span class="refentrytitle">CREATE INDEX</span></a>, <a class="xref" href="sql-reindex.html" title="REINDEX"><span class="refentrytitle">REINDEX</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altergroup.html" title="ALTER GROUP">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-alterlanguage.html" title="ALTER LANGUAGE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER GROUP </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER LANGUAGE</td></tr></table></div></body></html>

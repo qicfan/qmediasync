@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>vacuumdb</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="app-reindexdb.html" title="reindexdb" /><link rel="next" href="reference-server.html" title="PostgreSQL Server Applications" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">vacuumdb</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="app-reindexdb.html" title="reindexdb">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><th width="60%" align="center">PostgreSQL Client Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="reference-server.html" title="PostgreSQL Server Applications">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="APP-VACUUMDB"><div class="titlepage"></div><a id="id-1.9.4.22.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">vacuumdb</span></span></h2><p>vacuumdb — garbage-collect and analyze a <span class="productname">PostgreSQL</span> database</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.9.4.22.4.1"><code class="command">vacuumdb</code> [<em class="replaceable"><code>connection-option</code></em>...] [<em class="replaceable"><code>option</code></em>...]  
+    [
+       <code class="option">-t</code>  |   <code class="option">--table</code>  
+     <em class="replaceable"><code>table</code></em>
+      [( <em class="replaceable"><code>column</code></em> [,...] )]
+    ]
+   ...  [<em class="replaceable"><code>dbname</code></em>]</p></div><div class="cmdsynopsis"><p id="id-1.9.4.22.4.2"><code class="command">vacuumdb</code> [<em class="replaceable"><code>connection-option</code></em>...] [<em class="replaceable"><code>option</code></em>...]   <code class="option">-a</code>  |   <code class="option">--all</code>  </p></div></div><div class="refsect1" id="id-1.9.4.22.5"><h2>Description</h2><p>
+   <span class="application">vacuumdb</span> is a utility for cleaning a
+   <span class="productname">PostgreSQL</span> database.
+   <span class="application">vacuumdb</span> will also generate internal statistics
+   used by the <span class="productname">PostgreSQL</span> query optimizer.
+  </p><p>
+   <span class="application">vacuumdb</span> is a wrapper around the SQL
+   command <a class="link" href="sql-vacuum.html" title="VACUUM"><code class="command">VACUUM</code></a>.
+   There is no effective difference between vacuuming and analyzing
+   databases via this utility and via other methods for accessing the
+   server.
+  </p></div><div class="refsect1" id="id-1.9.4.22.6"><h2>Options</h2><p>
+    <span class="application">vacuumdb</span> accepts the following command-line arguments:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-a</code><br /></span><span class="term"><code class="option">--all</code></span></dt><dd><p>
+        Vacuum all databases.
+       </p></dd><dt><span class="term"><code class="option">[<span class="optional">-d</span>] <em class="replaceable"><code>dbname</code></em></code><br /></span><span class="term"><code class="option">[<span class="optional">--dbname=</span>]<em class="replaceable"><code>dbname</code></em></code></span></dt><dd><p>
+        Specifies the name of the database to be cleaned or analyzed,
+        when <code class="option">-a</code>/<code class="option">--all</code> is not used.
+        If this is not specified, the database name is read
+        from the environment variable <code class="envar">PGDATABASE</code>.  If
+        that is not set, the user name specified for the connection is
+        used.  The <em class="replaceable"><code>dbname</code></em> can be a <a class="link" href="libpq-connect.html#LIBPQ-CONNSTRING" title="34.1.1. Connection Strings">connection string</a>.  If so,
+        connection string parameters will override any conflicting command
+        line options.
+       </p></dd><dt><span class="term"><code class="option">--disable-page-skipping</code></span></dt><dd><p>
+        Disable skipping pages based on the contents of the visibility map.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 9.6 and later.
+        </p></div></dd><dt><span class="term"><code class="option">-e</code><br /></span><span class="term"><code class="option">--echo</code></span></dt><dd><p>
+        Echo the commands that <span class="application">vacuumdb</span> generates
+        and sends to the server.
+       </p></dd><dt><span class="term"><code class="option">-f</code><br /></span><span class="term"><code class="option">--full</code></span></dt><dd><p>
+        Perform <span class="quote">“<span class="quote">full</span>”</span> vacuuming.
+       </p></dd><dt><span class="term"><code class="option">-F</code><br /></span><span class="term"><code class="option">--freeze</code></span></dt><dd><p>
+        Aggressively <span class="quote">“<span class="quote">freeze</span>”</span> tuples.
+       </p></dd><dt><span class="term"><code class="option">--force-index-cleanup</code></span></dt><dd><p>
+        Always remove index entries pointing to dead tuples.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 12 and later.
+        </p></div></dd><dt><span class="term"><code class="option">-j <em class="replaceable"><code>njobs</code></em></code><br /></span><span class="term"><code class="option">--jobs=<em class="replaceable"><code>njobs</code></em></code></span></dt><dd><p>
+        Execute the vacuum or analyze commands in parallel by running
+        <em class="replaceable"><code>njobs</code></em>
+        commands simultaneously.  This option may reduce the processing time
+        but it also increases the load on the database server.
+       </p><p>
+        <span class="application">vacuumdb</span> will open
+        <em class="replaceable"><code>njobs</code></em> connections to the
+        database, so make sure your <a class="xref" href="runtime-config-connection.html#GUC-MAX-CONNECTIONS">max_connections</a>
+        setting is high enough to accommodate all connections.
+       </p><p>
+        Note that using this mode together with the <code class="option">-f</code>
+        (<code class="literal">FULL</code>) option might cause deadlock failures if
+        certain system catalogs are processed in parallel.
+       </p></dd><dt><span class="term"><code class="option">--min-mxid-age <em class="replaceable"><code>mxid_age</code></em></code></span></dt><dd><p>
+        Only execute the vacuum or analyze commands on tables with a multixact
+        ID age of at least <em class="replaceable"><code>mxid_age</code></em>.
+        This setting is useful for prioritizing tables to process to prevent
+        multixact ID wraparound (see
+        <a class="xref" href="routine-vacuuming.html#VACUUM-FOR-MULTIXACT-WRAPAROUND" title="25.1.5.1. Multixacts and Wraparound">Section 25.1.5.1</a>).
+       </p><p>
+        For the purposes of this option, the multixact ID age of a relation is
+        the greatest of the ages of the main relation and its associated
+        <acronym class="acronym">TOAST</acronym> table, if one exists.  Since the commands
+        issued by <span class="application">vacuumdb</span> will also process the
+        <acronym class="acronym">TOAST</acronym> table for the relation if necessary, it does
+        not need to be considered separately.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 9.6 and later.
+        </p></div></dd><dt><span class="term"><code class="option">--min-xid-age <em class="replaceable"><code>xid_age</code></em></code></span></dt><dd><p>
+        Only execute the vacuum or analyze commands on tables with a
+        transaction ID age of at least
+        <em class="replaceable"><code>xid_age</code></em>.  This setting
+        is useful for prioritizing tables to process to prevent transaction
+        ID wraparound (see <a class="xref" href="routine-vacuuming.html#VACUUM-FOR-WRAPAROUND" title="25.1.5. Preventing Transaction ID Wraparound Failures">Section 25.1.5</a>).
+       </p><p>
+        For the purposes of this option, the transaction ID age of a relation
+        is the greatest of the ages of the main relation and its associated
+        <acronym class="acronym">TOAST</acronym> table, if one exists.  Since the commands
+        issued by <span class="application">vacuumdb</span> will also process the
+        <acronym class="acronym">TOAST</acronym> table for the relation if necessary, it does
+        not need to be considered separately.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 9.6 and later.
+        </p></div></dd><dt><span class="term"><code class="option">--no-index-cleanup</code></span></dt><dd><p>
+        Do not remove index entries pointing to dead tuples.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 12 and later.
+        </p></div></dd><dt><span class="term"><code class="option">--no-process-toast</code></span></dt><dd><p>
+        Skip the TOAST table associated with the table to vacuum, if any.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 14 and later.
+        </p></div></dd><dt><span class="term"><code class="option">--no-truncate</code></span></dt><dd><p>
+        Do not truncate empty pages at the end of the table.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 12 and later.
+        </p></div></dd><dt><span class="term"><code class="option">-P <em class="replaceable"><code>parallel_workers</code></em></code><br /></span><span class="term"><code class="option">--parallel=<em class="replaceable"><code>parallel_workers</code></em></code></span></dt><dd><p>
+        Specify the number of parallel workers for <em class="firstterm">parallel vacuum</em>.
+        This allows the vacuum to leverage multiple CPUs to process indexes.
+        See <a class="xref" href="sql-vacuum.html" title="VACUUM"><span class="refentrytitle">VACUUM</span></a>.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 13 and later.
+        </p></div></dd><dt><span class="term"><code class="option">-q</code><br /></span><span class="term"><code class="option">--quiet</code></span></dt><dd><p>
+        Do not display progress messages.
+       </p></dd><dt><span class="term"><code class="option">--skip-locked</code></span></dt><dd><p>
+        Skip relations that cannot be immediately locked for processing.
+       </p><div class="note"><h3 class="title">Note</h3><p>
+         This option is only available for servers running
+         <span class="productname">PostgreSQL</span> 12 and later.
+        </p></div></dd><dt><span class="term"><code class="option">-t <em class="replaceable"><code>table</code></em> [ (<em class="replaceable"><code>column</code></em> [,...]) ]</code><br /></span><span class="term"><code class="option">--table=<em class="replaceable"><code>table</code></em> [ (<em class="replaceable"><code>column</code></em> [,...]) ]</code></span></dt><dd><p>
+        Clean or analyze <em class="replaceable"><code>table</code></em> only.
+        Column names can be specified only in conjunction with
+        the <code class="option">--analyze</code> or <code class="option">--analyze-only</code> options.
+        Multiple tables can be vacuumed by writing multiple
+        <code class="option">-t</code> switches.
+       </p><div class="tip"><h3 class="title">Tip</h3><p>
+         If you specify columns, you probably have to escape the parentheses
+         from the shell.  (See examples below.)
+        </p></div></dd><dt><span class="term"><code class="option">-v</code><br /></span><span class="term"><code class="option">--verbose</code></span></dt><dd><p>
+        Print detailed information during processing.
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+       Print the <span class="application">vacuumdb</span> version and exit.
+       </p></dd><dt><span class="term"><code class="option">-z</code><br /></span><span class="term"><code class="option">--analyze</code></span></dt><dd><p>
+        Also calculate statistics for use by the optimizer.
+       </p></dd><dt><span class="term"><code class="option">-Z</code><br /></span><span class="term"><code class="option">--analyze-only</code></span></dt><dd><p>
+        Only calculate statistics for use by the optimizer (no vacuum).
+       </p></dd><dt><span class="term"><code class="option">--analyze-in-stages</code></span></dt><dd><p>
+        Only calculate statistics for use by the optimizer (no vacuum),
+        like <code class="option">--analyze-only</code>.  Run several (currently three)
+        stages of analyze with different configuration settings, to produce
+        usable statistics faster.
+       </p><p>
+        This option is useful to analyze a database that was newly populated
+        from a restored dump or by <code class="command">pg_upgrade</code>.  This option
+        will try to create some statistics as fast as possible, to make the
+        database usable, and then produce full statistics in the subsequent
+        stages.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+       Show help about <span class="application">vacuumdb</span> command line
+       arguments, and exit.
+       </p></dd></dl></div><p>
+   </p><p>
+    <span class="application">vacuumdb</span> also accepts
+    the following command-line arguments for connection parameters:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-h <em class="replaceable"><code>host</code></em></code><br /></span><span class="term"><code class="option">--host=<em class="replaceable"><code>host</code></em></code></span></dt><dd><p>
+        Specifies the host name of the machine on which the server
+        is running.  If the value begins with a slash, it is used
+        as the directory for the Unix domain socket.
+       </p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>port</code></em></code><br /></span><span class="term"><code class="option">--port=<em class="replaceable"><code>port</code></em></code></span></dt><dd><p>
+        Specifies the TCP port or local Unix domain socket file
+        extension on which the server
+        is listening for connections.
+       </p></dd><dt><span class="term"><code class="option">-U <em class="replaceable"><code>username</code></em></code><br /></span><span class="term"><code class="option">--username=<em class="replaceable"><code>username</code></em></code></span></dt><dd><p>
+        User name to connect as.
+       </p></dd><dt><span class="term"><code class="option">-w</code><br /></span><span class="term"><code class="option">--no-password</code></span></dt><dd><p>
+        Never issue a password prompt.  If the server requires
+        password authentication and a password is not available by
+        other means such as a <code class="filename">.pgpass</code> file, the
+        connection attempt will fail.  This option can be useful in
+        batch jobs and scripts where no user is present to enter a
+        password.
+       </p></dd><dt><span class="term"><code class="option">-W</code><br /></span><span class="term"><code class="option">--password</code></span></dt><dd><p>
+        Force <span class="application">vacuumdb</span> to prompt for a
+        password before connecting to a database.
+       </p><p>
+        This option is never essential, since
+        <span class="application">vacuumdb</span> will automatically prompt
+        for a password if the server demands password authentication.
+        However, <span class="application">vacuumdb</span> will waste a
+        connection attempt finding out that the server wants a password.
+        In some cases it is worth typing <code class="option">-W</code> to avoid the extra
+        connection attempt.
+       </p></dd><dt><span class="term"><code class="option">--maintenance-db=<em class="replaceable"><code>dbname</code></em></code></span></dt><dd><p>
+        Specifies the name of the database to connect to to discover which
+        databases should be vacuumed,
+        when <code class="option">-a</code>/<code class="option">--all</code> is used.
+        If not specified, the <code class="literal">postgres</code> database will be used,
+        or if that does not exist, <code class="literal">template1</code> will be used.
+        This can be a <a class="link" href="libpq-connect.html#LIBPQ-CONNSTRING" title="34.1.1. Connection Strings">connection
+        string</a>.  If so, connection string parameters will override any
+        conflicting command line options.  Also, connection string parameters
+        other than the database name itself will be re-used when connecting
+        to other databases.
+       </p></dd></dl></div><p>
+   </p></div><div class="refsect1" id="id-1.9.4.22.7"><h2>Environment</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="envar">PGDATABASE</code><br /></span><span class="term"><code class="envar">PGHOST</code><br /></span><span class="term"><code class="envar">PGPORT</code><br /></span><span class="term"><code class="envar">PGUSER</code></span></dt><dd><p>
+      Default connection parameters
+     </p></dd><dt><span class="term"><code class="envar">PG_COLOR</code></span></dt><dd><p>
+      Specifies whether to use color in diagnostic messages. Possible values
+      are <code class="literal">always</code>, <code class="literal">auto</code> and
+      <code class="literal">never</code>.
+     </p></dd></dl></div><p>
+   This utility, like most other <span class="productname">PostgreSQL</span> utilities,
+   also uses the environment variables supported by <span class="application">libpq</span>
+   (see <a class="xref" href="libpq-envars.html" title="34.15. Environment Variables">Section 34.15</a>).
+  </p></div><div class="refsect1" id="id-1.9.4.22.8"><h2>Diagnostics</h2><p>
+   In case of difficulty, see <a class="xref" href="sql-vacuum.html" title="VACUUM"><span class="refentrytitle">VACUUM</span></a>
+   and <a class="xref" href="app-psql.html" title="psql"><span class="refentrytitle"><span class="application">psql</span></span></a> for
+   discussions of potential problems and error messages.
+   The database server must be running at the
+   targeted host.  Also, any default connection settings and environment
+   variables used by the <span class="application">libpq</span> front-end
+   library will apply.
+  </p></div><div class="refsect1" id="id-1.9.4.22.9"><h2>Notes</h2><p>
+   <span class="application">vacuumdb</span> might need to connect several
+   times to the <span class="productname">PostgreSQL</span> server, asking
+   for a password each time. It is convenient to have a
+   <code class="filename">~/.pgpass</code> file in such cases. See <a class="xref" href="libpq-pgpass.html" title="34.16. The Password File">Section 34.16</a> for more information.
+  </p></div><div class="refsect1" id="id-1.9.4.22.10"><h2>Examples</h2><p>
+    To clean the database <code class="literal">test</code>:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>vacuumdb test</code></strong>
+</pre><p>
+   </p><p>
+    To clean and analyze for the optimizer a database named
+    <code class="literal">bigdb</code>:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>vacuumdb --analyze bigdb</code></strong>
+</pre><p>
+   </p><p>
+    To clean a single table
+    <code class="literal">foo</code> in a database named
+    <code class="literal">xyzzy</code>, and analyze a single column
+    <code class="literal">bar</code> of the table for the optimizer:
+</p><pre class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>vacuumdb --analyze --verbose --table='foo(bar)' xyzzy</code></strong>
+</pre></div><div class="refsect1" id="id-1.9.4.22.11"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-vacuum.html" title="VACUUM"><span class="refentrytitle">VACUUM</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="app-reindexdb.html" title="reindexdb">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="reference-client.html" title="PostgreSQL Client Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="reference-server.html" title="PostgreSQL Server Applications">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><span xmlns="http://www.w3.org/1999/xhtml" class="application">reindexdb</span> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> PostgreSQL Server Applications</td></tr></table></div></body></html>

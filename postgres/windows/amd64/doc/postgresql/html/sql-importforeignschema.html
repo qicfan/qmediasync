@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>IMPORT FOREIGN SCHEMA</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-grant.html" title="GRANT" /><link rel="next" href="sql-insert.html" title="INSERT" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">IMPORT FOREIGN SCHEMA</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-grant.html" title="GRANT">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-insert.html" title="INSERT">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-IMPORTFOREIGNSCHEMA"><div class="titlepage"></div><a id="id-1.9.3.151.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">IMPORT FOREIGN SCHEMA</span></h2><p>IMPORT FOREIGN SCHEMA — import table definitions from a foreign server</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+IMPORT FOREIGN SCHEMA <em class="replaceable"><code>remote_schema</code></em>
+    [ { LIMIT TO | EXCEPT } ( <em class="replaceable"><code>table_name</code></em> [, ...] ) ]
+    FROM SERVER <em class="replaceable"><code>server_name</code></em>
+    INTO <em class="replaceable"><code>local_schema</code></em>
+    [ OPTIONS ( <em class="replaceable"><code>option</code></em> '<em class="replaceable"><code>value</code></em>' [, ... ] ) ]
+</pre></div><div class="refsect1" id="SQL-IMPORTFOREIGNSCHEMA-DESCRIPTION"><h2>Description</h2><p>
+   <code class="command">IMPORT FOREIGN SCHEMA</code> creates foreign tables that
+   represent tables existing on a foreign server.  The new foreign tables
+   will be owned by the user issuing the command and are created with
+   the correct column definitions and options to match the remote tables.
+  </p><p>
+   By default, all tables and views existing in a particular schema on the
+   foreign server are imported.  Optionally, the list of tables can be limited
+   to a specified subset, or specific tables can be excluded.  The new foreign
+   tables are all created in the target schema, which must already exist.
+  </p><p>
+   To use <code class="command">IMPORT FOREIGN SCHEMA</code>, the user must have
+   <code class="literal">USAGE</code> privilege on the foreign server, as well as
+   <code class="literal">CREATE</code> privilege on the target schema.
+  </p></div><div class="refsect1" id="id-1.9.3.151.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>remote_schema</code></em></span></dt><dd><p>
+      The remote schema to import from. The specific meaning of a remote schema
+      depends on the foreign data wrapper in use.
+     </p></dd><dt><span class="term"><code class="literal">LIMIT TO ( <em class="replaceable"><code>table_name</code></em> [, ...] )</code></span></dt><dd><p>
+      Import only foreign tables matching one of the given table names.
+      Other tables existing in the foreign schema will be ignored.
+     </p></dd><dt><span class="term"><code class="literal">EXCEPT ( <em class="replaceable"><code>table_name</code></em> [, ...] )</code></span></dt><dd><p>
+      Exclude specified foreign tables from the import.  All tables
+      existing in the foreign schema will be imported except the
+      ones listed here.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>server_name</code></em></span></dt><dd><p>
+      The foreign server to import from.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>local_schema</code></em></span></dt><dd><p>
+      The schema in which the imported foreign tables will be created.
+     </p></dd><dt><span class="term"><code class="literal">OPTIONS ( <em class="replaceable"><code>option</code></em> '<em class="replaceable"><code>value</code></em>' [, ...] )</code></span></dt><dd><p>
+      Options to be used during the import.
+      The allowed option names and values are specific to each foreign
+      data wrapper.
+     </p></dd></dl></div></div><div class="refsect1" id="SQL-IMPORTFOREIGNSCHEMA-EXAMPLES"><h2>Examples</h2><p>
+   Import table definitions from a remote schema <code class="structname">foreign_films</code>
+   on server <code class="structname">film_server</code>, creating the foreign tables in
+   local schema <code class="structname">films</code>:
+
+</p><pre class="programlisting">
+IMPORT FOREIGN SCHEMA foreign_films
+    FROM SERVER film_server INTO films;
+</pre><p>
+   </p><p>
+   As above, but import only the two tables <code class="structname">actors</code> and
+   <code class="literal">directors</code> (if they exist):
+
+</p><pre class="programlisting">
+IMPORT FOREIGN SCHEMA foreign_films LIMIT TO (actors, directors)
+    FROM SERVER film_server INTO films;
+</pre></div><div class="refsect1" id="SQL-IMPORTFOREIGNSCHEMA-COMPATIBILITY"><h2>Compatibility</h2><p>
+   The <code class="command">IMPORT FOREIGN SCHEMA</code> command conforms to the
+   <acronym class="acronym">SQL</acronym> standard, except that the <code class="literal">OPTIONS</code>
+   clause is a <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.151.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createforeigntable.html" title="CREATE FOREIGN TABLE"><span class="refentrytitle">CREATE FOREIGN TABLE</span></a>, <a class="xref" href="sql-createserver.html" title="CREATE SERVER"><span class="refentrytitle">CREATE SERVER</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-grant.html" title="GRANT">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-insert.html" title="INSERT">Next</a></td></tr><tr><td width="40%" align="left" valign="top">GRANT </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> INSERT</td></tr></table></div></body></html>

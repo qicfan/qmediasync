@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>21.6. GSSAPI Authentication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="auth-password.html" title="21.5. Password Authentication" /><link rel="next" href="sspi-auth.html" title="21.7. SSPI Authentication" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">21.6. GSSAPI Authentication</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="auth-password.html" title="21.5. Password Authentication">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><th width="60%" align="center">Chapter 21. Client Authentication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sspi-auth.html" title="21.7. SSPI Authentication">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="GSSAPI-AUTH"><div class="titlepage"><div><div><h2 class="title" style="clear: both">21.6. GSSAPI Authentication</h2></div></div></div><a id="id-1.6.8.13.2" class="indexterm"></a><p>
+    <span class="productname">GSSAPI</span> is an industry-standard protocol
+    for secure authentication defined in
+    <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc2743" target="_top">RFC 2743</a>.
+    <span class="productname">PostgreSQL</span>
+    supports <span class="productname">GSSAPI</span> for authentication,
+    communications encryption, or both.
+    <span class="productname">GSSAPI</span> provides automatic authentication
+    (single sign-on) for systems that support it. The authentication itself is
+    secure.  If <span class="productname">GSSAPI</span> encryption
+    or <acronym class="acronym">SSL</acronym> encryption is
+    used, the data sent along the database connection will be encrypted;
+    otherwise, it will not.
+   </p><p>
+    GSSAPI support has to be enabled when <span class="productname">PostgreSQL</span> is built;
+    see <a class="xref" href="installation.html" title="Chapter 17. Installation from Source Code">Chapter 17</a> for more information.
+   </p><p>
+    When <span class="productname">GSSAPI</span> uses
+    <span class="productname">Kerberos</span>, it uses a standard service
+    principal (authentication identity) name in the format
+    <code class="literal"><em class="replaceable"><code>servicename</code></em>/<em class="replaceable"><code>hostname</code></em>@<em class="replaceable"><code>realm</code></em></code>.
+    The principal name used by a particular installation is not encoded in
+    the <span class="productname">PostgreSQL</span> server in any way; rather it
+    is specified in the <em class="firstterm">keytab</em> file that the server
+    reads to determine its identity.  If multiple principals are listed in
+    the keytab file, the server will accept any one of them.
+    The server's realm name is the preferred realm specified in the Kerberos
+    configuration file(s) accessible to the server.
+   </p><p>
+    When connecting, the client must know the principal name of the server
+    it intends to connect to.  The <em class="replaceable"><code>servicename</code></em>
+    part of the principal is ordinarily <code class="literal">postgres</code>,
+    but another value can be selected via <span class="application">libpq</span>'s
+    <a class="xref" href="libpq-connect.html#LIBPQ-CONNECT-KRBSRVNAME">krbsrvname</a> connection parameter.
+    The <em class="replaceable"><code>hostname</code></em> part is the fully qualified
+    host name that <span class="application">libpq</span> is told to connect to.
+    The realm name is the preferred realm specified in the Kerberos
+    configuration file(s) accessible to the client.
+   </p><p>
+    The client will also have a principal name for its own identity
+    (and it must have a valid ticket for this principal).  To
+    use <span class="productname">GSSAPI</span> for authentication, the client
+    principal must be associated with
+    a <span class="productname">PostgreSQL</span> database user name.
+    The <code class="filename">pg_ident.conf</code> configuration file can be used
+    to map principals to user names; for example,
+    <code class="literal">pgusername@realm</code> could be mapped to just <code class="literal">pgusername</code>.
+    Alternatively, you can use the full <code class="literal">username@realm</code> principal as
+    the role name in <span class="productname">PostgreSQL</span> without any mapping.
+   </p><p>
+    <span class="productname">PostgreSQL</span> also supports mapping
+    client principals to user names by just stripping the realm from
+    the principal.  This method is supported for backwards compatibility and is
+    strongly discouraged as it is then impossible to distinguish different users
+    with the same user name but coming from different realms.  To enable this,
+    set <code class="literal">include_realm</code> to 0.  For simple single-realm
+    installations, doing that combined with setting the
+    <code class="literal">krb_realm</code> parameter (which checks that the principal's realm
+    matches exactly what is in the <code class="literal">krb_realm</code> parameter)
+    is still secure; but this is a
+    less capable approach compared to specifying an explicit mapping in
+    <code class="filename">pg_ident.conf</code>.
+   </p><p>
+    The location of the server's keytab file is specified by the <a class="xref" href="runtime-config-connection.html#GUC-KRB-SERVER-KEYFILE">krb_server_keyfile</a> configuration parameter.
+    For security reasons, it is recommended to use a separate keytab
+    just for the <span class="productname">PostgreSQL</span> server rather
+    than allowing the server to read the system keytab file.
+    Make sure that your server keytab file is readable (and preferably
+    only readable, not writable) by the <span class="productname">PostgreSQL</span>
+    server account.  (See also <a class="xref" href="postgres-user.html" title="19.1. The PostgreSQL User Account">Section 19.1</a>.)
+   </p><p>
+    The keytab file is generated using the Kerberos software; see the
+    Kerberos documentation for details. The following example shows
+    doing this using the <span class="application">kadmin</span> tool of
+    MIT-compatible Kerberos 5 implementations:
+</p><pre class="screen">
+<code class="prompt">kadmin% </code><strong class="userinput"><code>addprinc -randkey postgres/server.my.domain.org</code></strong>
+<code class="prompt">kadmin% </code><strong class="userinput"><code>ktadd -k krb5.keytab postgres/server.my.domain.org</code></strong>
+</pre><p>
+   </p><p>
+    The following authentication options are supported for
+    the <span class="productname">GSSAPI</span> authentication method:
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">include_realm</code></span></dt><dd><p>
+        If set to 0, the realm name from the authenticated user principal is
+        stripped off before being passed through the user name mapping
+        (<a class="xref" href="auth-username-maps.html" title="21.2. User Name Maps">Section 21.2</a>). This is discouraged and is
+        primarily available for backwards compatibility, as it is not secure
+        in multi-realm environments unless <code class="literal">krb_realm</code> is
+        also used.  It is recommended to
+        leave <code class="literal">include_realm</code> set to the default (1) and to
+        provide an explicit mapping in <code class="filename">pg_ident.conf</code> to convert
+        principal names to <span class="productname">PostgreSQL</span> user names.
+       </p></dd><dt><span class="term"><code class="literal">map</code></span></dt><dd><p>
+        Allows mapping from client principals to database user names. See
+        <a class="xref" href="auth-username-maps.html" title="21.2. User Name Maps">Section 21.2</a> for details.  For a GSSAPI/Kerberos
+        principal, such as <code class="literal">username@EXAMPLE.COM</code> (or, less
+        commonly, <code class="literal">username/hostbased@EXAMPLE.COM</code>), the
+        user name used for mapping is
+        <code class="literal">username@EXAMPLE.COM</code> (or
+        <code class="literal">username/hostbased@EXAMPLE.COM</code>, respectively),
+        unless <code class="literal">include_realm</code> has been set to 0, in which case
+        <code class="literal">username</code> (or <code class="literal">username/hostbased</code>)
+        is what is seen as the system user name when mapping.
+       </p></dd><dt><span class="term"><code class="literal">krb_realm</code></span></dt><dd><p>
+        Sets the realm to match user principal names against. If this parameter
+        is set, only users of that realm will be accepted.  If it is not set,
+        users of any realm can connect, subject to whatever user name mapping
+        is done.
+       </p></dd></dl></div><p>
+   </p><p>
+    In addition to these settings, which can be different for
+    different <code class="filename">pg_hba.conf</code> entries, there is the
+    server-wide <a class="xref" href="runtime-config-connection.html#GUC-KRB-CASEINS-USERS">krb_caseins_users</a> configuration
+    parameter.  If that is set to true, client principals are matched to
+    user map entries case-insensitively.  <code class="literal">krb_realm</code>, if
+    set, is also matched case-insensitively.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="auth-password.html" title="21.5. Password Authentication">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sspi-auth.html" title="21.7. SSPI Authentication">Next</a></td></tr><tr><td width="40%" align="left" valign="top">21.5. Password Authentication </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.7. SSPI Authentication</td></tr></table></div></body></html>

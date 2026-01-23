@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>71.4. BKI Commands</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="bki-format.html" title="71.3. BKI File Format" /><link rel="next" href="bki-structure.html" title="71.5. Structure of the Bootstrap BKI File" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">71.4. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">BKI</acronym> Commands</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="bki-format.html" title="71.3. BKI File Format">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Up</a></td><th width="60%" align="center">Chapter 71. System Catalog Declarations and Initial Contents</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="bki-structure.html" title="71.5. Structure of the Bootstrap BKI File">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BKI-COMMANDS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">71.4. <acronym class="acronym">BKI</acronym> Commands</h2></div></div></div><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+     <code class="literal">create</code>
+     <em class="replaceable"><code>tablename</code></em>
+     <em class="replaceable"><code>tableoid</code></em>
+     [<span class="optional"><code class="literal">bootstrap</code></span>]
+     [<span class="optional"><code class="literal">shared_relation</code></span>]
+     [<span class="optional"><code class="literal">rowtype_oid</code> <em class="replaceable"><code>oid</code></em></span>]
+     (<em class="replaceable"><code>name1</code></em> =
+     <em class="replaceable"><code>type1</code></em>
+     [<span class="optional"><code class="literal">FORCE NOT NULL</code> | <code class="literal">FORCE NULL</code> </span>] [<span class="optional">,
+     <em class="replaceable"><code>name2</code></em> =
+     <em class="replaceable"><code>type2</code></em>
+     [<span class="optional"><code class="literal">FORCE NOT NULL</code> | <code class="literal">FORCE NULL</code> </span>],
+     ...</span>])
+    </span></dt><dd><p>
+      Create a table named <em class="replaceable"><code>tablename</code></em>, and having the OID
+      <em class="replaceable"><code>tableoid</code></em>,
+      with the columns given in parentheses.
+     </p><p>
+      The following column types are supported directly by
+      <code class="filename">bootstrap.c</code>: <code class="type">bool</code>,
+      <code class="type">bytea</code>, <code class="type">char</code> (1 byte),
+      <code class="type">name</code>, <code class="type">int2</code>,
+      <code class="type">int4</code>, <code class="type">regproc</code>, <code class="type">regclass</code>,
+      <code class="type">regtype</code>, <code class="type">text</code>,
+      <code class="type">oid</code>, <code class="type">tid</code>, <code class="type">xid</code>,
+      <code class="type">cid</code>, <code class="type">int2vector</code>, <code class="type">oidvector</code>,
+      <code class="type">_int4</code> (array), <code class="type">_text</code> (array),
+      <code class="type">_oid</code> (array), <code class="type">_char</code> (array),
+      <code class="type">_aclitem</code> (array).  Although it is possible to create
+      tables containing columns of other types, this cannot be done until
+      after <code class="structname">pg_type</code> has been created and filled with
+      appropriate entries.  (That effectively means that only these
+      column types can be used in bootstrap catalogs, but non-bootstrap
+      catalogs can contain any built-in type.)
+     </p><p>
+      When <code class="literal">bootstrap</code> is specified,
+      the table will only be created on disk; nothing is entered into
+      <code class="structname">pg_class</code>,
+      <code class="structname">pg_attribute</code>, etc, for it.  Thus the
+      table will not be accessible by ordinary SQL operations until
+      such entries are made the hard way (with <code class="literal">insert</code>
+      commands).  This option is used for creating
+      <code class="structname">pg_class</code> etc themselves.
+     </p><p>
+      The table is created as shared if <code class="literal">shared_relation</code> is
+      specified.
+      The table's row type OID (<code class="structname">pg_type</code> OID) can optionally
+      be specified via the <code class="literal">rowtype_oid</code> clause; if not specified,
+      an OID is automatically generated for it.  (The <code class="literal">rowtype_oid</code>
+      clause is useless if <code class="literal">bootstrap</code> is specified, but it can be
+      provided anyway for documentation.)
+     </p></dd><dt><span class="term">
+     <code class="literal">open</code> <em class="replaceable"><code>tablename</code></em>
+    </span></dt><dd><p>
+      Open the table named
+      <em class="replaceable"><code>tablename</code></em>
+      for insertion of data.  Any currently open table is closed.
+     </p></dd><dt><span class="term">
+     <code class="literal">close</code> <em class="replaceable"><code>tablename</code></em>
+    </span></dt><dd><p>
+      Close the open table.  The name of the table must be given as a
+      cross-check.
+     </p></dd><dt><span class="term">
+     <code class="literal">insert</code> <code class="literal">(</code> [<span class="optional"><em class="replaceable"><code>oid_value</code></em></span>] <em class="replaceable"><code>value1</code></em> <em class="replaceable"><code>value2</code></em> ... <code class="literal">)</code>
+    </span></dt><dd><p>
+      Insert a new row into the open table using <em class="replaceable"><code>value1</code></em>, <em class="replaceable"><code>value2</code></em>, etc., for its column
+      values.
+     </p><p>
+      NULL values can be specified using the special key word
+      <code class="literal">_null_</code>.  Values that do not look like
+      identifiers or digit strings must be single-quoted.
+      (To include a single quote in a value, write it twice.
+      Escape-string-style backslash escapes are allowed in the string, too.)
+     </p></dd><dt><span class="term">
+     <code class="literal">declare</code> [<span class="optional"><code class="literal">unique</code></span>]
+     <code class="literal">index</code> <em class="replaceable"><code>indexname</code></em>
+     <em class="replaceable"><code>indexoid</code></em>
+     <code class="literal">on</code> <em class="replaceable"><code>tablename</code></em>
+     <code class="literal">using</code> <em class="replaceable"><code>amname</code></em>
+     <code class="literal">(</code> <em class="replaceable"><code>opclass1</code></em>
+     <em class="replaceable"><code>name1</code></em>
+     [<span class="optional">, ...</span>] <code class="literal">)</code>
+    </span></dt><dd><p>
+      Create an index named <em class="replaceable"><code>indexname</code></em>, having OID
+      <em class="replaceable"><code>indexoid</code></em>,
+      on the table named
+      <em class="replaceable"><code>tablename</code></em>, using the
+      <em class="replaceable"><code>amname</code></em> access
+      method.  The fields to index are called <em class="replaceable"><code>name1</code></em>, <em class="replaceable"><code>name2</code></em> etc., and the operator
+      classes to use are <em class="replaceable"><code>opclass1</code></em>, <em class="replaceable"><code>opclass2</code></em> etc., respectively.
+      The index file is created and appropriate catalog entries are
+      made for it, but the index contents are not initialized by this command.
+     </p></dd><dt><span class="term">
+     <code class="literal">declare toast</code>
+     <em class="replaceable"><code>toasttableoid</code></em>
+     <em class="replaceable"><code>toastindexoid</code></em>
+     <code class="literal">on</code> <em class="replaceable"><code>tablename</code></em>
+    </span></dt><dd><p>
+      Create a TOAST table for the table named
+      <em class="replaceable"><code>tablename</code></em>.
+      The TOAST table is assigned OID
+      <em class="replaceable"><code>toasttableoid</code></em>
+      and its index is assigned OID
+      <em class="replaceable"><code>toastindexoid</code></em>.
+      As with <code class="literal">declare index</code>, filling of the index
+      is postponed.
+     </p></dd><dt><span class="term"><code class="literal">build indices</code></span></dt><dd><p>
+      Fill in the indices that have previously been declared.
+     </p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="bki-format.html" title="71.3. BKI File Format">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="bki.html" title="Chapter 71. System Catalog Declarations and Initial Contents">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="bki-structure.html" title="71.5. Structure of the Bootstrap BKI File">Next</a></td></tr><tr><td width="40%" align="left" valign="top">71.3. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">BKI</acronym> File Format </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 71.5. Structure of the Bootstrap <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">BKI</acronym> File</td></tr></table></div></body></html>

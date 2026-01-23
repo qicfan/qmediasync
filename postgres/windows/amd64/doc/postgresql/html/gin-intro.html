@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>67.1. Introduction</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="gin.html" title="Chapter 67. GIN Indexes" /><link rel="next" href="gin-builtin-opclasses.html" title="67.2. Built-in Operator Classes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">67.1. Introduction</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="gin.html" title="Chapter 67. GIN Indexes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="gin.html" title="Chapter 67. GIN Indexes">Up</a></td><th width="60%" align="center">Chapter 67. GIN Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="gin-builtin-opclasses.html" title="67.2. Built-in Operator Classes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="GIN-INTRO"><div class="titlepage"><div><div><h2 class="title" style="clear: both">67.1. Introduction</h2></div></div></div><p>
+  <acronym class="acronym">GIN</acronym> stands for Generalized Inverted Index.
+  <acronym class="acronym">GIN</acronym> is designed for handling cases where the items
+  to be indexed are composite values, and the queries to be handled by
+  the index need to search for element values that appear within
+  the composite items.  For example, the items could be documents,
+  and the queries could be searches for documents containing specific words.
+ </p><p>
+  We use the word <em class="firstterm">item</em> to refer to a composite value that
+  is to be indexed, and the word <em class="firstterm">key</em> to refer to an element
+  value.  <acronym class="acronym">GIN</acronym> always stores and searches for keys,
+  not item values per se.
+ </p><p>
+  A <acronym class="acronym">GIN</acronym> index stores a set of (key, posting list) pairs,
+  where a <em class="firstterm">posting list</em> is a set of row IDs in which the key
+  occurs.  The same row ID can appear in multiple posting lists, since
+  an item can contain more than one key.  Each key value is stored only
+  once, so a <acronym class="acronym">GIN</acronym> index is very compact for cases
+  where the same key appears many times.
+ </p><p>
+  <acronym class="acronym">GIN</acronym> is generalized in the sense that the
+  <acronym class="acronym">GIN</acronym> access method code does not need to know the
+  specific operations that it accelerates.
+  Instead, it uses custom strategies defined for particular data types.
+  The strategy defines how keys are extracted from indexed items and
+  query conditions, and how to determine whether a row that contains
+  some of the key values in a query actually satisfies the query.
+ </p><p>
+  One advantage of <acronym class="acronym">GIN</acronym> is that it allows the development
+  of custom data types with the appropriate access methods, by
+  an expert in the domain of the data type, rather than a database expert.
+  This is much the same advantage as using <acronym class="acronym">GiST</acronym>.
+ </p><p>
+  The <acronym class="acronym">GIN</acronym>
+  implementation in <span class="productname">PostgreSQL</span> is primarily
+  maintained by Teodor Sigaev and Oleg Bartunov. There is more
+  information about <acronym class="acronym">GIN</acronym> on their
+  <a class="ulink" href="http://www.sai.msu.su/~megera/wiki/Gin" target="_top">website</a>.
+ </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="gin.html" title="Chapter 67. GIN Indexes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="gin.html" title="Chapter 67. GIN Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="gin-builtin-opclasses.html" title="67.2. Built-in Operator Classes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 67. GIN Indexes </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 67.2. Built-in Operator Classes</td></tr></table></div></body></html>

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 
 	"github.com/gin-gonic/gin"
@@ -41,12 +42,12 @@ func GetAccountList(c *gin.Context) {
 			TokenFailedReason: account.TokenFailedReason,
 		}
 		switch account.AppId {
-		// case helpers.GlobalConfig.Open115AppId:
-		// 	a.AppId = ""
-		// 	a.AppIdName = "Q115-STRM"
-		// case helpers.GlobalConfig.Open115TestAppId:
-		// 	a.AppId = ""
-		// 	a.AppIdName = "MQ的媒体库"
+		case "Q115-STRM":
+			a.AppId = ""
+			a.AppIdName = "Q115-STRM"
+		case "MQ的媒体库":
+			a.AppId = ""
+			a.AppIdName = "MQ的媒体库"
 		default:
 			a.AppIdName = "自定义"
 			a.AppId = account.AppId
@@ -73,9 +74,9 @@ func CreateTmpAccount(c *gin.Context) {
 		return
 	}
 	var v115AppIdMap = map[string]string{
-		// "Q115-STRM": helpers.GlobalConfig.Open115AppId,
-		// "MQ的媒体库":    helpers.GlobalConfig.Open115TestAppId,
-		"自定义": "",
+		"Q115-STRM": helpers.GlobalConfig.Open115AppId,
+		"MQ的媒体库":    helpers.GlobalConfig.Open115TestAppId,
+		"自定义":       "",
 	}
 	// 创建临时账号
 	var appId string
@@ -95,6 +96,7 @@ func CreateTmpAccount(c *gin.Context) {
 				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "无效的115开放平台应用ID名称", Data: nil})
 				return
 			}
+			appId = tmpAccount.AppIdName
 		}
 	}
 	account, err := models.CreateAccountByName(tmpAccount.Name, tmpAccount.SourceType, appId)

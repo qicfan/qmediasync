@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4.3. Calling Functions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-expressions.html" title="4.2. Value Expressions" /><link rel="next" href="ddl.html" title="Chapter 5. Data Definition" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">4.3. Calling Functions</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-expressions.html" title="4.2. Value Expressions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Up</a></td><th width="60%" align="center">Chapter 4. SQL Syntax</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ddl.html" title="Chapter 5. Data Definition">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SQL-SYNTAX-CALLING-FUNCS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">4.3. Calling Functions</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="sql-syntax-calling-funcs.html#SQL-SYNTAX-CALLING-FUNCS-POSITIONAL">4.3.1. Using Positional Notation</a></span></dt><dt><span class="sect2"><a href="sql-syntax-calling-funcs.html#SQL-SYNTAX-CALLING-FUNCS-NAMED">4.3.2. Using Named Notation</a></span></dt><dt><span class="sect2"><a href="sql-syntax-calling-funcs.html#SQL-SYNTAX-CALLING-FUNCS-MIXED">4.3.3. Using Mixed Notation</a></span></dt></dl></div><a id="id-1.5.3.7.2" class="indexterm"></a><p>
+    <span class="productname">PostgreSQL</span> allows functions that have named
+    parameters to be called using either <em class="firstterm">positional</em> or
+    <em class="firstterm">named</em> notation.  Named notation is especially
+    useful for functions that have a large number of parameters, since it
+    makes the associations between parameters and actual arguments more
+    explicit and reliable.
+    In positional notation, a function call is written with
+    its argument values in the same order as they are defined in the function
+    declaration.  In named notation, the arguments are matched to the
+    function parameters by name and can be written in any order.
+    For each notation, also consider the effect of function argument types,
+    documented in <a class="xref" href="typeconv-func.html" title="10.3. Functions">Section 10.3</a>.
+   </p><p>
+    In either notation, parameters that have default values given in the
+    function declaration need not be written in the call at all.  But this
+    is particularly useful in named notation, since any combination of
+    parameters can be omitted; while in positional notation parameters can
+    only be omitted from right to left.
+   </p><p>
+    <span class="productname">PostgreSQL</span> also supports
+    <em class="firstterm">mixed</em> notation, which combines positional and
+    named notation.  In this case, positional parameters are written first
+    and named parameters appear after them.
+   </p><p>
+    The following examples will illustrate the usage of all three
+    notations, using the following function definition:
+</p><pre class="programlisting">
+CREATE FUNCTION concat_lower_or_upper(a text, b text, uppercase boolean DEFAULT false)
+RETURNS text
+AS
+$$
+ SELECT CASE
+        WHEN $3 THEN UPPER($1 || ' ' || $2)
+        ELSE LOWER($1 || ' ' || $2)
+        END;
+$$
+LANGUAGE SQL IMMUTABLE STRICT;
+</pre><p>
+    Function <code class="function">concat_lower_or_upper</code> has two mandatory
+    parameters, <code class="literal">a</code> and <code class="literal">b</code>.  Additionally
+    there is one optional parameter <code class="literal">uppercase</code> which defaults
+    to <code class="literal">false</code>.  The <code class="literal">a</code> and
+    <code class="literal">b</code> inputs will be concatenated, and forced to either
+    upper or lower case depending on the <code class="literal">uppercase</code>
+    parameter.  The remaining details of this function
+    definition are not important here (see <a class="xref" href="extend.html" title="Chapter 38. Extending SQL">Chapter 38</a> for
+    more information).
+   </p><div class="sect2" id="SQL-SYNTAX-CALLING-FUNCS-POSITIONAL"><div class="titlepage"><div><div><h3 class="title">4.3.1. Using Positional Notation</h3></div></div></div><a id="id-1.5.3.7.7.2" class="indexterm"></a><p>
+     Positional notation is the traditional mechanism for passing arguments
+     to functions in <span class="productname">PostgreSQL</span>.  An example is:
+</p><pre class="screen">
+SELECT concat_lower_or_upper('Hello', 'World', true);
+ concat_lower_or_upper 
+-----------------------
+ HELLO WORLD
+(1 row)
+</pre><p>
+     All arguments are specified in order.  The result is upper case since
+     <code class="literal">uppercase</code> is specified as <code class="literal">true</code>.
+     Another example is:
+</p><pre class="screen">
+SELECT concat_lower_or_upper('Hello', 'World');
+ concat_lower_or_upper 
+-----------------------
+ hello world
+(1 row)
+</pre><p>
+     Here, the <code class="literal">uppercase</code> parameter is omitted, so it
+     receives its default value of <code class="literal">false</code>, resulting in
+     lower case output.  In positional notation, arguments can be omitted
+     from right to left so long as they have defaults.
+    </p></div><div class="sect2" id="SQL-SYNTAX-CALLING-FUNCS-NAMED"><div class="titlepage"><div><div><h3 class="title">4.3.2. Using Named Notation</h3></div></div></div><a id="id-1.5.3.7.8.2" class="indexterm"></a><p>
+     In named notation, each argument's name is specified using
+     <code class="literal">=&gt;</code> to separate it from the argument expression.
+     For example:
+</p><pre class="screen">
+SELECT concat_lower_or_upper(a =&gt; 'Hello', b =&gt; 'World');
+ concat_lower_or_upper 
+-----------------------
+ hello world
+(1 row)
+</pre><p>
+     Again, the argument <code class="literal">uppercase</code> was omitted
+     so it is set to <code class="literal">false</code> implicitly.  One advantage of
+     using named notation is that the arguments may be specified in any
+     order, for example:
+</p><pre class="screen">
+SELECT concat_lower_or_upper(a =&gt; 'Hello', b =&gt; 'World', uppercase =&gt; true);
+ concat_lower_or_upper 
+-----------------------
+ HELLO WORLD
+(1 row)
+
+SELECT concat_lower_or_upper(a =&gt; 'Hello', uppercase =&gt; true, b =&gt; 'World');
+ concat_lower_or_upper 
+-----------------------
+ HELLO WORLD
+(1 row)
+</pre><p>
+    </p><p>
+      An older syntax based on ":=" is supported for backward compatibility:
+</p><pre class="screen">
+SELECT concat_lower_or_upper(a := 'Hello', uppercase := true, b := 'World');
+ concat_lower_or_upper 
+-----------------------
+ HELLO WORLD
+(1 row)
+</pre><p>
+    </p></div><div class="sect2" id="SQL-SYNTAX-CALLING-FUNCS-MIXED"><div class="titlepage"><div><div><h3 class="title">4.3.3. Using Mixed Notation</h3></div></div></div><a id="id-1.5.3.7.9.2" class="indexterm"></a><p>
+    The mixed notation combines positional and named notation. However, as
+    already mentioned, named arguments cannot precede positional arguments.
+    For example:
+</p><pre class="screen">
+SELECT concat_lower_or_upper('Hello', 'World', uppercase =&gt; true);
+ concat_lower_or_upper 
+-----------------------
+ HELLO WORLD
+(1 row)
+</pre><p>
+    In the above query, the arguments <code class="literal">a</code> and
+    <code class="literal">b</code> are specified positionally, while
+    <code class="literal">uppercase</code> is specified by name.  In this example,
+    that adds little except documentation.  With a more complex function
+    having numerous parameters that have default values, named or mixed
+    notation can save a great deal of writing and reduce chances for error.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     Named and mixed call notations currently cannot be used when calling an
+     aggregate function (but they do work when an aggregate function is used
+     as a window function).
+    </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-expressions.html" title="4.2. Value Expressions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-syntax.html" title="Chapter 4. SQL Syntax">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ddl.html" title="Chapter 5. Data Definition">Next</a></td></tr><tr><td width="40%" align="left" valign="top">4.2. Value Expressions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 5. Data Definition</td></tr></table></div></body></html>

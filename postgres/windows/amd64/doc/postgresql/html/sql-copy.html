@@ -1,0 +1,635 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>COPY</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-commit-prepared.html" title="COMMIT PREPARED" /><link rel="next" href="sql-create-access-method.html" title="CREATE ACCESS METHOD" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">COPY</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-commit-prepared.html" title="COMMIT PREPARED">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-create-access-method.html" title="CREATE ACCESS METHOD">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-COPY"><div class="titlepage"></div><a id="id-1.9.3.55.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">COPY</span></h2><p>COPY — copy data between a file and a table</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+COPY <em class="replaceable"><code>table_name</code></em> [ ( <em class="replaceable"><code>column_name</code></em> [, ...] ) ]
+    FROM { '<em class="replaceable"><code>filename</code></em>' | PROGRAM '<em class="replaceable"><code>command</code></em>' | STDIN }
+    [ [ WITH ] ( <em class="replaceable"><code>option</code></em> [, ...] ) ]
+    [ WHERE <em class="replaceable"><code>condition</code></em> ]
+
+COPY { <em class="replaceable"><code>table_name</code></em> [ ( <em class="replaceable"><code>column_name</code></em> [, ...] ) ] | ( <em class="replaceable"><code>query</code></em> ) }
+    TO { '<em class="replaceable"><code>filename</code></em>' | PROGRAM '<em class="replaceable"><code>command</code></em>' | STDOUT }
+    [ [ WITH ] ( <em class="replaceable"><code>option</code></em> [, ...] ) ]
+
+<span class="phrase">where <em class="replaceable"><code>option</code></em> can be one of:</span>
+
+    FORMAT <em class="replaceable"><code>format_name</code></em>
+    FREEZE [ <em class="replaceable"><code>boolean</code></em> ]
+    DELIMITER '<em class="replaceable"><code>delimiter_character</code></em>'
+    NULL '<em class="replaceable"><code>null_string</code></em>'
+    HEADER [ <em class="replaceable"><code>boolean</code></em> ]
+    QUOTE '<em class="replaceable"><code>quote_character</code></em>'
+    ESCAPE '<em class="replaceable"><code>escape_character</code></em>'
+    FORCE_QUOTE { ( <em class="replaceable"><code>column_name</code></em> [, ...] ) | * }
+    FORCE_NOT_NULL ( <em class="replaceable"><code>column_name</code></em> [, ...] )
+    FORCE_NULL ( <em class="replaceable"><code>column_name</code></em> [, ...] )
+    ENCODING '<em class="replaceable"><code>encoding_name</code></em>'
+</pre></div><div class="refsect1" id="id-1.9.3.55.5"><h2>Description</h2><p>
+   <code class="command">COPY</code> moves data between
+   <span class="productname">PostgreSQL</span> tables and standard file-system
+   files. <code class="command">COPY TO</code> copies the contents of a table
+   <span class="emphasis"><em>to</em></span> a file, while <code class="command">COPY FROM</code> copies
+   data <span class="emphasis"><em>from</em></span> a file to a table (appending the data to
+   whatever is in the table already).  <code class="command">COPY TO</code>
+   can also copy the results of a <code class="command">SELECT</code> query.
+  </p><p>
+   If a column list is specified, <code class="command">COPY TO</code> copies only
+   the data in the specified columns to the file.  For <code class="command">COPY
+   FROM</code>, each field in the file is inserted, in order, into the
+   specified column.  Table columns not specified in the <code class="command">COPY
+   FROM</code> column list will receive their default values.
+  </p><p>
+   <code class="command">COPY</code> with a file name instructs the
+   <span class="productname">PostgreSQL</span> server to directly read from
+   or write to a file. The file must be accessible by the
+   <span class="productname">PostgreSQL</span> user (the user ID the server
+   runs as) and the name must be specified from the viewpoint of the
+   server. When <code class="literal">PROGRAM</code> is specified, the server
+   executes the given command and reads from the standard output of the
+   program, or writes to the standard input of the program. The command
+   must be specified from the viewpoint of the server, and be executable
+   by the <span class="productname">PostgreSQL</span> user.  When
+   <code class="literal">STDIN</code> or <code class="literal">STDOUT</code> is
+   specified, data is transmitted via the connection between the
+   client and the server.
+  </p><p>
+    Each backend running <code class="command">COPY</code> will report its progress
+    in the <code class="structname">pg_stat_progress_copy</code> view. See
+    <a class="xref" href="progress-reporting.html#COPY-PROGRESS-REPORTING" title="28.4.6. COPY Progress Reporting">Section 28.4.6</a> for details.
+  </p></div><div class="refsect1" id="id-1.9.3.55.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of an existing table.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>column_name</code></em></span></dt><dd><p>
+      An optional list of columns to be copied.  If no column list is
+      specified, all columns of the table except generated columns will be
+      copied.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>query</code></em></span></dt><dd><p>
+      A <a class="link" href="sql-select.html" title="SELECT"><code class="command">SELECT</code></a>,
+      <a class="link" href="sql-values.html" title="VALUES"><code class="command">VALUES</code></a>,
+      <a class="link" href="sql-insert.html" title="INSERT"><code class="command">INSERT</code></a>,
+      <a class="link" href="sql-update.html" title="UPDATE"><code class="command">UPDATE</code></a>, or
+      <a class="link" href="sql-delete.html" title="DELETE"><code class="command">DELETE</code></a> command whose results are to be
+      copied.  Note that parentheses are required around the query.
+     </p><p>
+      For <code class="command">INSERT</code>, <code class="command">UPDATE</code> and
+      <code class="command">DELETE</code> queries a <code class="literal">RETURNING</code> clause
+      must be provided, and the target relation must not have a conditional
+      rule, nor an <code class="literal">ALSO</code> rule, nor an
+      <code class="literal">INSTEAD</code> rule that expands to multiple statements.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>filename</code></em></span></dt><dd><p>
+      The path name of the input or output file.  An input file name can be
+      an absolute or relative path, but an output file name must be an absolute
+      path.  Windows users might need to use an <code class="literal">E''</code> string and
+      double any backslashes used in the path name.
+     </p></dd><dt><span class="term"><code class="literal">PROGRAM</code></span></dt><dd><p>
+      A command to execute. In <code class="command">COPY FROM</code>, the input is
+      read from standard output of the command, and in <code class="command">COPY TO</code>,
+      the output is written to the standard input of the command.
+     </p><p>
+      Note that the command is invoked by the shell, so if you need to pass
+      any arguments to shell command that come from an untrusted source, you
+      must be careful to strip or escape any special characters that might
+      have a special meaning for the shell. For security reasons, it is best
+      to use a fixed command string, or at least avoid passing any user input
+      in it.
+     </p></dd><dt><span class="term"><code class="literal">STDIN</code></span></dt><dd><p>
+      Specifies that input comes from the client application.
+     </p></dd><dt><span class="term"><code class="literal">STDOUT</code></span></dt><dd><p>
+      Specifies that output goes to the client application.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>boolean</code></em></span></dt><dd><p>
+      Specifies whether the selected option should be turned on or off.
+      You can write <code class="literal">TRUE</code>, <code class="literal">ON</code>, or
+      <code class="literal">1</code> to enable the option, and <code class="literal">FALSE</code>,
+      <code class="literal">OFF</code>, or <code class="literal">0</code> to disable it.  The
+      <em class="replaceable"><code>boolean</code></em> value can also
+      be omitted, in which case <code class="literal">TRUE</code> is assumed.
+     </p></dd><dt><span class="term"><code class="literal">FORMAT</code></span></dt><dd><p>
+      Selects the data format to be read or written:
+      <code class="literal">text</code>,
+      <code class="literal">csv</code> (Comma Separated Values),
+      or <code class="literal">binary</code>.
+      The default is <code class="literal">text</code>.
+     </p></dd><dt><span class="term"><code class="literal">FREEZE</code></span></dt><dd><p>
+      Requests copying the data with rows already frozen, just as they
+      would be after running the <code class="command">VACUUM FREEZE</code> command.
+      This is intended as a performance option for initial data loading.
+      Rows will be frozen only if the table being loaded has been created
+      or truncated in the current subtransaction, there are no cursors
+      open and there are no older snapshots held by this transaction.  It is
+      currently not possible to perform a <code class="command">COPY FREEZE</code> on
+      a partitioned table.
+     </p><p>
+      Note that all other sessions will immediately be able to see the data
+      once it has been successfully loaded. This violates the normal rules
+      of MVCC visibility and users specifying should be aware of the
+      potential problems this might cause.
+     </p></dd><dt><span class="term"><code class="literal">DELIMITER</code></span></dt><dd><p>
+      Specifies the character that separates columns within each row
+      (line) of the file.  The default is a tab character in text format,
+      a comma in <code class="literal">CSV</code> format.
+      This must be a single one-byte character.
+      This option is not allowed when using <code class="literal">binary</code> format.
+     </p></dd><dt><span class="term"><code class="literal">NULL</code></span></dt><dd><p>
+      Specifies the string that represents a null value. The default is
+      <code class="literal">\N</code> (backslash-N) in text format, and an unquoted empty
+      string in <code class="literal">CSV</code> format. You might prefer an
+      empty string even in text format for cases where you don't want to
+      distinguish nulls from empty strings.
+      This option is not allowed when using <code class="literal">binary</code> format.
+     </p><div class="note"><h3 class="title">Note</h3><p>
+       When using <code class="command">COPY FROM</code>, any data item that matches
+       this string will be stored as a null value, so you should make
+       sure that you use the same string as you used with
+       <code class="command">COPY TO</code>.
+      </p></div></dd><dt><span class="term"><code class="literal">HEADER</code></span></dt><dd><p>
+      Specifies that the file contains a header line with the names of each
+      column in the file.  On output, the first line contains the column
+      names from the table, and on input, the first line is ignored.
+      This option is allowed only when using <code class="literal">CSV</code> format.
+     </p></dd><dt><span class="term"><code class="literal">QUOTE</code></span></dt><dd><p>
+      Specifies the quoting character to be used when a data value is quoted.
+      The default is double-quote.
+      This must be a single one-byte character.
+      This option is allowed only when using <code class="literal">CSV</code> format.
+     </p></dd><dt><span class="term"><code class="literal">ESCAPE</code></span></dt><dd><p>
+      Specifies the character that should appear before a
+      data character that matches the <code class="literal">QUOTE</code> value.
+      The default is the same as the <code class="literal">QUOTE</code> value (so that
+      the quoting character is doubled if it appears in the data).
+      This must be a single one-byte character.
+      This option is allowed only when using <code class="literal">CSV</code> format.
+     </p></dd><dt><span class="term"><code class="literal">FORCE_QUOTE</code></span></dt><dd><p>
+      Forces quoting to be
+      used for all non-<code class="literal">NULL</code> values in each specified column.
+      <code class="literal">NULL</code> output is never quoted. If <code class="literal">*</code> is specified,
+      non-<code class="literal">NULL</code> values will be quoted in all columns.
+      This option is allowed only in <code class="command">COPY TO</code>, and only when
+      using <code class="literal">CSV</code> format.
+     </p></dd><dt><span class="term"><code class="literal">FORCE_NOT_NULL</code></span></dt><dd><p>
+      Do not match the specified columns' values against the null string.
+      In the default case where the null string is empty, this means that
+      empty values will be read as zero-length strings rather than nulls,
+      even when they are not quoted.
+      This option is allowed only in <code class="command">COPY FROM</code>, and only when
+      using <code class="literal">CSV</code> format.
+     </p></dd><dt><span class="term"><code class="literal">FORCE_NULL</code></span></dt><dd><p>
+      Match the specified columns' values against the null string, even
+      if it has been quoted, and if a match is found set the value to
+      <code class="literal">NULL</code>. In the default case where the null string is empty,
+      this converts a quoted empty string into NULL.
+      This option is allowed only in <code class="command">COPY FROM</code>, and only when
+      using <code class="literal">CSV</code> format.
+     </p></dd><dt><span class="term"><code class="literal">ENCODING</code></span></dt><dd><p>
+      Specifies that the file is encoded in the <em class="replaceable"><code>encoding_name</code></em>.  If this option is
+      omitted, the current client encoding is used. See the Notes below
+      for more details.
+     </p></dd><dt><span class="term"><code class="literal">WHERE</code></span></dt><dd><p>
+    The optional <code class="literal">WHERE</code> clause has the general form
+</p><pre class="synopsis">
+WHERE <em class="replaceable"><code>condition</code></em>
+</pre><p>
+    where <em class="replaceable"><code>condition</code></em> is
+    any expression that evaluates to a result of type
+    <code class="type">boolean</code>.  Any row that does not satisfy this
+    condition will not be inserted to the table.  A row satisfies the
+    condition if it returns true when the actual row values are
+    substituted for any variable references.
+   </p><p>
+    Currently, subqueries are not allowed in <code class="literal">WHERE</code>
+    expressions, and the evaluation does not see any changes made by the
+    <code class="command">COPY</code> itself (this matters when the expression
+    contains calls to <code class="literal">VOLATILE</code> functions).
+   </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.55.7"><h2>Outputs</h2><p>
+   On successful completion, a <code class="command">COPY</code> command returns a command
+   tag of the form
+</p><pre class="screen">
+COPY <em class="replaceable"><code>count</code></em>
+</pre><p>
+   The <em class="replaceable"><code>count</code></em> is the number
+   of rows copied.
+  </p><div class="note"><h3 class="title">Note</h3><p>
+    <span class="application">psql</span> will print this command tag only if the command
+    was not <code class="literal">COPY ... TO STDOUT</code>, or the
+    equivalent <span class="application">psql</span> meta-command
+    <code class="literal">\copy ... to stdout</code>.  This is to prevent confusing the
+    command tag with the data that was just printed.
+   </p></div></div><div class="refsect1" id="id-1.9.3.55.8"><h2>Notes</h2><p>
+    <code class="command">COPY TO</code> can be used only with plain
+    tables, not views, and does not copy rows from child tables
+    or child partitions.  For example, <code class="literal">COPY <em class="replaceable"><code>table</code></em> TO</code> copies
+    the same rows as <code class="literal">SELECT * FROM ONLY <em class="replaceable"><code>table</code></em></code>.
+    The syntax <code class="literal">COPY (SELECT * FROM <em class="replaceable"><code>table</code></em>) TO ...</code> can be used to
+    dump all of the rows in an inheritance hierarchy, partitioned table,
+    or view.
+   </p><p>
+    <code class="command">COPY FROM</code> can be used with plain, foreign, or
+    partitioned tables or with views that have
+    <code class="literal">INSTEAD OF INSERT</code> triggers.
+   </p><p>
+    You must have select privilege on the table
+    whose values are read by <code class="command">COPY TO</code>, and
+    insert privilege on the table into which values
+    are inserted by <code class="command">COPY FROM</code>.  It is sufficient
+    to have column privileges on the column(s) listed in the command.
+   </p><p>
+    If row-level security is enabled for the table, the relevant
+    <code class="command">SELECT</code> policies will apply to <code class="literal">COPY
+    <em class="replaceable"><code>table</code></em> TO</code> statements.
+    Currently, <code class="command">COPY FROM</code> is not supported for tables
+    with row-level security. Use equivalent <code class="command">INSERT</code>
+    statements instead.
+   </p><p>
+    Files named in a <code class="command">COPY</code> command are read or written
+    directly by the server, not by the client application. Therefore,
+    they must reside on or be accessible to the database server machine,
+    not the client. They must be accessible to and readable or writable
+    by the <span class="productname">PostgreSQL</span> user (the user ID the
+    server runs as), not the client. Similarly,
+    the command specified with <code class="literal">PROGRAM</code> is executed directly
+    by the server, not by the client application, must be executable by the
+    <span class="productname">PostgreSQL</span> user.
+    <code class="command">COPY</code> naming a file or command is only allowed to
+    database superusers or users who are granted one of the roles
+    <code class="literal">pg_read_server_files</code>,
+    <code class="literal">pg_write_server_files</code>,
+    or <code class="literal">pg_execute_server_program</code>, since it allows reading
+    or writing any file or running a program that the server has privileges to
+    access.
+   </p><p>
+    Do not confuse <code class="command">COPY</code> with the
+    <span class="application">psql</span> instruction
+    <code class="command"><a class="link" href="app-psql.html#APP-PSQL-META-COMMANDS-COPY">\copy</a></code>. <code class="command">\copy</code> invokes
+    <code class="command">COPY FROM STDIN</code> or <code class="command">COPY TO
+    STDOUT</code>, and then fetches/stores the data in a file
+    accessible to the <span class="application">psql</span> client. Thus,
+    file accessibility and access rights depend on the client rather
+    than the server when <code class="command">\copy</code> is used.
+   </p><p>
+    It is recommended that the file name used in <code class="command">COPY</code>
+    always be specified as an absolute path. This is enforced by the
+    server in the case of <code class="command">COPY TO</code>, but for
+    <code class="command">COPY FROM</code> you do have the option of reading from
+    a file specified by a relative path. The path will be interpreted
+    relative to the working directory of the server process (normally
+    the cluster's data directory), not the client's working directory.
+   </p><p>
+    Executing a command with <code class="literal">PROGRAM</code> might be restricted
+    by the operating system's access control mechanisms, such as SELinux.
+   </p><p>
+    <code class="command">COPY FROM</code> will invoke any triggers and check
+    constraints on the destination table. However, it will not invoke rules.
+   </p><p>
+    For identity columns, the <code class="command">COPY FROM</code> command will always
+    write the column values provided in the input data, like
+    the <code class="command">INSERT</code> option <code class="literal">OVERRIDING SYSTEM
+    VALUE</code>.
+   </p><p>
+    <code class="command">COPY</code> input and output is affected by
+    <code class="varname">DateStyle</code>. To ensure portability to other
+    <span class="productname">PostgreSQL</span> installations that might use
+    non-default <code class="varname">DateStyle</code> settings,
+    <code class="varname">DateStyle</code> should be set to <code class="literal">ISO</code> before
+    using <code class="command">COPY TO</code>.  It is also a good idea to avoid dumping
+    data with <code class="varname">IntervalStyle</code> set to
+    <code class="literal">sql_standard</code>, because negative interval values might be
+    misinterpreted by a server that has a different setting for
+    <code class="varname">IntervalStyle</code>.
+   </p><p>
+    Input data is interpreted according to <code class="literal">ENCODING</code>
+    option or the current client encoding, and output data is encoded
+    in <code class="literal">ENCODING</code> or the current client encoding, even
+    if the data does not pass through the client but is read from or
+    written to a file directly by the server.
+   </p><p>
+    <code class="command">COPY</code> stops operation at the first error. This
+    should not lead to problems in the event of a <code class="command">COPY
+    TO</code>, but the target table will already have received
+    earlier rows in a <code class="command">COPY FROM</code>. These rows will not
+    be visible or accessible, but they still occupy disk space. This might
+    amount to a considerable amount of wasted disk space if the failure
+    happened well into a large copy operation. You might wish to invoke
+    <code class="command">VACUUM</code> to recover the wasted space.
+   </p><p>
+    <code class="literal">FORCE_NULL</code> and <code class="literal">FORCE_NOT_NULL</code> can be used
+    simultaneously on the same column. This results in converting quoted
+    null strings to null values and unquoted null strings to empty strings.
+   </p></div><div class="refsect1" id="id-1.9.3.55.9"><h2>File Formats</h2><div class="refsect2" id="id-1.9.3.55.9.2"><h3>Text Format</h3><p>
+    When the <code class="literal">text</code> format is used,
+    the data read or written is a text file with one line per table row.
+    Columns in a row are separated by the delimiter character.
+    The column values themselves are strings generated by the
+    output function, or acceptable to the input function, of each
+    attribute's data type.  The specified null string is used in
+    place of columns that are null.
+    <code class="command">COPY FROM</code> will raise an error if any line of the
+    input file contains more or fewer columns than are expected.
+   </p><p>
+    End of data can be represented by a single line containing just
+    backslash-period (<code class="literal">\.</code>).  An end-of-data marker is
+    not necessary when reading from a file, since the end of file
+    serves perfectly well; it is needed only when copying data to or from
+    client applications using pre-3.0 client protocol.
+   </p><p>
+    Backslash characters (<code class="literal">\</code>) can be used in the
+    <code class="command">COPY</code> data to quote data characters that might
+    otherwise be taken as row or column delimiters. In particular, the
+    following characters <span class="emphasis"><em>must</em></span> be preceded by a backslash if
+    they appear as part of a column value: backslash itself,
+    newline, carriage return, and the current delimiter character.
+   </p><p>
+    The specified null string is sent by <code class="command">COPY TO</code> without
+    adding any backslashes; conversely, <code class="command">COPY FROM</code> matches
+    the input against the null string before removing backslashes.  Therefore,
+    a null string such as <code class="literal">\N</code> cannot be confused with
+    the actual data value <code class="literal">\N</code> (which would be represented
+    as <code class="literal">\\N</code>).
+   </p><p>
+    The following special backslash sequences are recognized by
+    <code class="command">COPY FROM</code>:
+
+   </p><div class="informaltable"><table class="informaltable" border="1"><colgroup><col /><col /></colgroup><thead><tr><th>Sequence</th><th>Represents</th></tr></thead><tbody><tr><td><code class="literal">\b</code></td><td>Backspace (ASCII 8)</td></tr><tr><td><code class="literal">\f</code></td><td>Form feed (ASCII 12)</td></tr><tr><td><code class="literal">\n</code></td><td>Newline (ASCII 10)</td></tr><tr><td><code class="literal">\r</code></td><td>Carriage return (ASCII 13)</td></tr><tr><td><code class="literal">\t</code></td><td>Tab (ASCII 9)</td></tr><tr><td><code class="literal">\v</code></td><td>Vertical tab (ASCII 11)</td></tr><tr><td><code class="literal">\</code><em class="replaceable"><code>digits</code></em></td><td>Backslash followed by one to three octal digits specifies
+       the byte with that numeric code</td></tr><tr><td><code class="literal">\x</code><em class="replaceable"><code>digits</code></em></td><td>Backslash <code class="literal">x</code> followed by one or two hex digits specifies
+       the byte with that numeric code</td></tr></tbody></table></div><p>
+
+    Presently, <code class="command">COPY TO</code> will never emit an octal or
+    hex-digits backslash sequence, but it does use the other sequences
+    listed above for those control characters.
+   </p><p>
+    Any other backslashed character that is not mentioned in the above table
+    will be taken to represent itself.  However, beware of adding backslashes
+    unnecessarily, since that might accidentally produce a string matching the
+    end-of-data marker (<code class="literal">\.</code>) or the null string (<code class="literal">\N</code> by
+    default).  These strings will be recognized before any other backslash
+    processing is done.
+   </p><p>
+    It is strongly recommended that applications generating <code class="command">COPY</code> data convert
+    data newlines and carriage returns to the <code class="literal">\n</code> and
+    <code class="literal">\r</code> sequences respectively.  At present it is
+    possible to represent a data carriage return by a backslash and carriage
+    return, and to represent a data newline by a backslash and newline.
+    However, these representations might not be accepted in future releases.
+    They are also highly vulnerable to corruption if the <code class="command">COPY</code> file is
+    transferred across different machines (for example, from Unix to Windows
+    or vice versa).
+   </p><p>
+     All backslash sequences are interpreted after encoding conversion.
+     The bytes specified with the octal and hex-digit backslash sequences must
+     form valid characters in the database encoding.
+   </p><p>
+    <code class="command">COPY TO</code> will terminate each row with a Unix-style
+    newline (<span class="quote">“<span class="quote"><code class="literal">\n</code></span>”</span>).  Servers running on Microsoft Windows instead
+    output carriage return/newline (<span class="quote">“<span class="quote"><code class="literal">\r\n</code></span>”</span>), but only for
+    <code class="command">COPY</code> to a server file; for consistency across platforms,
+    <code class="command">COPY TO STDOUT</code> always sends <span class="quote">“<span class="quote"><code class="literal">\n</code></span>”</span>
+    regardless of server platform.
+    <code class="command">COPY FROM</code> can handle lines ending with newlines,
+    carriage returns, or carriage return/newlines.  To reduce the risk of
+    error due to un-backslashed newlines or carriage returns that were
+    meant as data, <code class="command">COPY FROM</code> will complain if the line
+    endings in the input are not all alike.
+   </p></div><div class="refsect2" id="id-1.9.3.55.9.3"><h3>CSV Format</h3><p>
+    This format option is used for importing and exporting the Comma
+    Separated Value (<code class="literal">CSV</code>) file format used by many other
+    programs, such as spreadsheets. Instead of the escaping rules used by
+    <span class="productname">PostgreSQL</span>'s standard text format, it
+    produces and recognizes the common CSV escaping mechanism.
+   </p><p>
+    The values in each record are separated by the <code class="literal">DELIMITER</code>
+    character. If the value contains the delimiter character, the
+    <code class="literal">QUOTE</code> character, the <code class="literal">NULL</code> string, a carriage
+    return, or line feed character, then the whole value is prefixed and
+    suffixed by the <code class="literal">QUOTE</code> character, and any occurrence
+    within the value of a <code class="literal">QUOTE</code> character or the
+    <code class="literal">ESCAPE</code> character is preceded by the escape character.
+    You can also use <code class="literal">FORCE_QUOTE</code> to force quotes when outputting
+    non-<code class="literal">NULL</code> values in specific columns.
+   </p><p>
+    The <code class="literal">CSV</code> format has no standard way to distinguish a
+    <code class="literal">NULL</code> value from an empty string.
+    <span class="productname">PostgreSQL</span>'s <code class="command">COPY</code> handles this by quoting.
+    A <code class="literal">NULL</code> is output as the <code class="literal">NULL</code> parameter string
+    and is not quoted, while a non-<code class="literal">NULL</code> value matching the
+    <code class="literal">NULL</code> parameter string is quoted.  For example, with the
+    default settings, a <code class="literal">NULL</code> is written as an unquoted empty
+    string, while an empty string data value is written with double quotes
+    (<code class="literal">""</code>). Reading values follows similar rules. You can
+    use <code class="literal">FORCE_NOT_NULL</code> to prevent <code class="literal">NULL</code> input
+    comparisons for specific columns. You can also use
+    <code class="literal">FORCE_NULL</code> to convert quoted null string data values to
+    <code class="literal">NULL</code>.
+   </p><p>
+    Because backslash is not a special character in the <code class="literal">CSV</code>
+    format, <code class="literal">\.</code>, the end-of-data marker, could also appear
+    as a data value.  To avoid any misinterpretation, a <code class="literal">\.</code>
+    data value appearing as a lone entry on a line is automatically
+    quoted on output, and on input, if quoted, is not interpreted as the
+    end-of-data marker.  If you are loading a file created by another
+    application that has a single unquoted column and might have a
+    value of <code class="literal">\.</code>, you might need to quote that value in the
+    input file.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     In <code class="literal">CSV</code> format, all characters are significant. A quoted value
+     surrounded by white space, or any characters other than
+     <code class="literal">DELIMITER</code>, will include those characters. This can cause
+     errors if you import data from a system that pads <code class="literal">CSV</code>
+     lines with white space out to some fixed width. If such a situation
+     arises you might need to preprocess the <code class="literal">CSV</code> file to remove
+     the trailing white space, before importing the data into
+     <span class="productname">PostgreSQL</span>.
+    </p></div><div class="note"><h3 class="title">Note</h3><p>
+     CSV format will both recognize and produce CSV files with quoted
+     values containing embedded carriage returns and line feeds. Thus
+     the files are not strictly one line per table row like text-format
+     files.
+    </p></div><div class="note"><h3 class="title">Note</h3><p>
+     Many programs produce strange and occasionally perverse CSV files,
+     so the file format is more a convention than a standard. Thus you
+     might encounter some files that cannot be imported using this
+     mechanism, and <code class="command">COPY</code> might produce files that other
+     programs cannot process.
+    </p></div></div><div class="refsect2" id="id-1.9.3.55.9.4"><h3>Binary Format</h3><p>
+    The <code class="literal">binary</code> format option causes all data to be
+    stored/read as binary format rather than as text.  It is
+    somewhat faster than the text and <code class="literal">CSV</code> formats,
+    but a binary-format file is less portable across machine architectures and
+    <span class="productname">PostgreSQL</span> versions.
+    Also, the binary format is very data type specific; for example
+    it will not work to output binary data from a <code class="type">smallint</code> column
+    and read it into an <code class="type">integer</code> column, even though that would work
+    fine in text format.
+   </p><p>
+    The <code class="literal">binary</code> file format consists
+    of a file header, zero or more tuples containing the row data, and
+    a file trailer.  Headers and data are in network byte order.
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     <span class="productname">PostgreSQL</span> releases before 7.4 used a
+     different binary file format.
+    </p></div><div class="refsect3" id="id-1.9.3.55.9.4.5"><h4>File Header</h4><p>
+     The file header consists of 15 bytes of fixed fields, followed
+     by a variable-length header extension area.  The fixed fields are:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">Signature</span></dt><dd><p>
+11-byte sequence <code class="literal">PGCOPY\n\377\r\n\0</code> — note that the zero byte
+is a required part of the signature.  (The signature is designed to allow
+easy identification of files that have been munged by a non-8-bit-clean
+transfer.  This signature will be changed by end-of-line-translation
+filters, dropped zero bytes, dropped high bits, or parity changes.)
+       </p></dd><dt><span class="term">Flags field</span></dt><dd><p>
+32-bit integer bit mask to denote important aspects of the file format. Bits
+are numbered from 0 (<acronym class="acronym">LSB</acronym>) to 31 (<acronym class="acronym">MSB</acronym>).  Note that
+this field is stored in network byte order (most significant byte first),
+as are all the integer fields used in the file format.  Bits
+16–31 are reserved to denote critical file format issues; a reader
+should abort if it finds an unexpected bit set in this range. Bits 0–15
+are reserved to signal backwards-compatible format issues; a reader
+should simply ignore any unexpected bits set in this range. Currently
+only one flag bit is defined, and the rest must be zero:
+        </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">Bit 16</span></dt><dd><p>
+            If 1, OIDs are included in the data; if 0, not. Oid system columns
+            are not supported in <span class="productname">PostgreSQL</span>
+            anymore, but the format still contains the indicator.
+           </p></dd></dl></div></dd><dt><span class="term">Header extension area length</span></dt><dd><p>
+32-bit integer, length in bytes of remainder of header, not including self.
+Currently, this is zero, and the first tuple follows
+immediately.  Future changes to the format might allow additional data
+to be present in the header.  A reader should silently skip over any header
+extension data it does not know what to do with.
+       </p></dd></dl></div><p>
+    </p><p>
+The header extension area is envisioned to contain a sequence of
+self-identifying chunks.  The flags field is not intended to tell readers
+what is in the extension area.  Specific design of header extension contents
+is left for a later release.
+    </p><p>
+     This design allows for both backwards-compatible header additions (add
+     header extension chunks, or set low-order flag bits) and
+     non-backwards-compatible changes (set high-order flag bits to signal such
+     changes, and add supporting data to the extension area if needed).
+    </p></div><div class="refsect3" id="id-1.9.3.55.9.4.6"><h4>Tuples</h4><p>
+Each tuple begins with a 16-bit integer count of the number of fields in the
+tuple.  (Presently, all tuples in a table will have the same count, but that
+might not always be true.)  Then, repeated for each field in the tuple, there
+is a 32-bit length word followed by that many bytes of field data.  (The
+length word does not include itself, and can be zero.)  As a special case,
+-1 indicates a NULL field value.  No value bytes follow in the NULL case.
+    </p><p>
+There is no alignment padding or any other extra data between fields.
+    </p><p>
+Presently, all data values in a binary-format file are
+assumed to be in binary format (format code one).  It is anticipated that a
+future extension might add a header field that allows per-column format codes
+to be specified.
+    </p><p>
+To determine the appropriate binary format for the actual tuple data you
+should consult the <span class="productname">PostgreSQL</span> source, in
+particular the <code class="function">*send</code> and <code class="function">*recv</code> functions for
+each column's data type (typically these functions are found in the
+<code class="filename">src/backend/utils/adt/</code> directory of the source
+distribution).
+    </p><p>
+If OIDs are included in the file, the OID field immediately follows the
+field-count word.  It is a normal field except that it's not included in the
+field-count.  Note that oid system columns are not supported in current
+versions of <span class="productname">PostgreSQL</span>.
+    </p></div><div class="refsect3" id="id-1.9.3.55.9.4.7"><h4>File Trailer</h4><p>
+     The file trailer consists of a 16-bit integer word containing -1.  This
+     is easily distinguished from a tuple's field-count word.
+    </p><p>
+     A reader should report an error if a field-count word is neither -1
+     nor the expected number of columns.  This provides an extra
+     check against somehow getting out of sync with the data.
+    </p></div></div></div><div class="refsect1" id="id-1.9.3.55.10"><h2>Examples</h2><p>
+   The following example copies a table to the client
+   using the vertical bar (<code class="literal">|</code>) as the field delimiter:
+</p><pre class="programlisting">
+COPY country TO STDOUT (DELIMITER '|');
+</pre><p>
+  </p><p>
+   To copy data from a file into the <code class="literal">country</code> table:
+</p><pre class="programlisting">
+COPY country FROM '/usr1/proj/bray/sql/country_data';
+</pre><p>
+  </p><p>
+   To copy into a file just the countries whose names start with 'A':
+</p><pre class="programlisting">
+COPY (SELECT * FROM country WHERE country_name LIKE 'A%') TO '/usr1/proj/bray/sql/a_list_countries.copy';
+</pre><p>
+  </p><p>
+   To copy into a compressed file, you can pipe the output through an external
+   compression program:
+</p><pre class="programlisting">
+COPY country TO PROGRAM 'gzip &gt; /usr1/proj/bray/sql/country_data.gz';
+</pre><p>
+  </p><p>
+   Here is a sample of data suitable for copying into a table from
+   <code class="literal">STDIN</code>:
+</p><pre class="programlisting">
+AF      AFGHANISTAN
+AL      ALBANIA
+DZ      ALGERIA
+ZM      ZAMBIA
+ZW      ZIMBABWE
+</pre><p>
+   Note that the white space on each line is actually a tab character.
+  </p><p>
+   The following is the same data, output in binary format.
+   The data is shown after filtering through the
+   Unix utility <code class="command">od -c</code>. The table has three columns;
+   the first has type <code class="type">char(2)</code>, the second has type <code class="type">text</code>,
+   and the third has type <code class="type">integer</code>. All the rows have a null value
+   in the third column.
+</p><pre class="programlisting">
+0000000   P   G   C   O   P   Y  \n 377  \r  \n  \0  \0  \0  \0  \0  \0
+0000020  \0  \0  \0  \0 003  \0  \0  \0 002   A   F  \0  \0  \0 013   A
+0000040   F   G   H   A   N   I   S   T   A   N 377 377 377 377  \0 003
+0000060  \0  \0  \0 002   A   L  \0  \0  \0 007   A   L   B   A   N   I
+0000100   A 377 377 377 377  \0 003  \0  \0  \0 002   D   Z  \0  \0  \0
+0000120 007   A   L   G   E   R   I   A 377 377 377 377  \0 003  \0  \0
+0000140  \0 002   Z   M  \0  \0  \0 006   Z   A   M   B   I   A 377 377
+0000160 377 377  \0 003  \0  \0  \0 002   Z   W  \0  \0  \0  \b   Z   I
+0000200   M   B   A   B   W   E 377 377 377 377 377 377
+</pre></div><div class="refsect1" id="id-1.9.3.55.11"><h2>Compatibility</h2><p>
+   There is no <code class="command">COPY</code> statement in the SQL standard.
+  </p><p>
+   The following syntax was used before <span class="productname">PostgreSQL</span>
+   version 9.0 and is still supported:
+
+</p><pre class="synopsis">
+COPY <em class="replaceable"><code>table_name</code></em> [ ( <em class="replaceable"><code>column_name</code></em> [, ...] ) ]
+    FROM { '<em class="replaceable"><code>filename</code></em>' | STDIN }
+    [ [ WITH ]
+          [ BINARY ]
+          [ DELIMITER [ AS ] '<em class="replaceable"><code>delimiter_character</code></em>' ]
+          [ NULL [ AS ] '<em class="replaceable"><code>null_string</code></em>' ]
+          [ CSV [ HEADER ]
+                [ QUOTE [ AS ] '<em class="replaceable"><code>quote_character</code></em>' ]
+                [ ESCAPE [ AS ] '<em class="replaceable"><code>escape_character</code></em>' ]
+                [ FORCE NOT NULL <em class="replaceable"><code>column_name</code></em> [, ...] ] ] ]
+
+COPY { <em class="replaceable"><code>table_name</code></em> [ ( <em class="replaceable"><code>column_name</code></em> [, ...] ) ] | ( <em class="replaceable"><code>query</code></em> ) }
+    TO { '<em class="replaceable"><code>filename</code></em>' | STDOUT }
+    [ [ WITH ]
+          [ BINARY ]
+          [ DELIMITER [ AS ] '<em class="replaceable"><code>delimiter_character</code></em>' ]
+          [ NULL [ AS ] '<em class="replaceable"><code>null_string</code></em>' ]
+          [ CSV [ HEADER ]
+                [ QUOTE [ AS ] '<em class="replaceable"><code>quote_character</code></em>' ]
+                [ ESCAPE [ AS ] '<em class="replaceable"><code>escape_character</code></em>' ]
+                [ FORCE QUOTE { <em class="replaceable"><code>column_name</code></em> [, ...] | * } ] ] ]
+</pre><p>
+
+   Note that in this syntax, <code class="literal">BINARY</code> and <code class="literal">CSV</code> are
+   treated as independent keywords, not as arguments of a <code class="literal">FORMAT</code>
+   option.
+  </p><p>
+   The following syntax was used before <span class="productname">PostgreSQL</span>
+   version 7.3 and is still supported:
+
+</p><pre class="synopsis">
+COPY [ BINARY ] <em class="replaceable"><code>table_name</code></em>
+    FROM { '<em class="replaceable"><code>filename</code></em>' | STDIN }
+    [ [USING] DELIMITERS '<em class="replaceable"><code>delimiter_character</code></em>' ]
+    [ WITH NULL AS '<em class="replaceable"><code>null_string</code></em>' ]
+
+COPY [ BINARY ] <em class="replaceable"><code>table_name</code></em>
+    TO { '<em class="replaceable"><code>filename</code></em>' | STDOUT }
+    [ [USING] DELIMITERS '<em class="replaceable"><code>delimiter_character</code></em>' ]
+    [ WITH NULL AS '<em class="replaceable"><code>null_string</code></em>' ]
+</pre></div><div class="refsect1" id="id-1.9.3.55.12"><h2>See Also</h2><span class="simplelist"><a class="xref" href="progress-reporting.html#COPY-PROGRESS-REPORTING" title="28.4.6. COPY Progress Reporting">Section 28.4.6</a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-commit-prepared.html" title="COMMIT PREPARED">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-create-access-method.html" title="CREATE ACCESS METHOD">Next</a></td></tr><tr><td width="40%" align="left" valign="top">COMMIT PREPARED </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE ACCESS METHOD</td></tr></table></div></body></html>

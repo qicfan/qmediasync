@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.69. pg_cursors</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="view-pg-config.html" title="52.68. pg_config" /><link rel="next" href="view-pg-file-settings.html" title="52.70. pg_file_settings" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.69. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_cursors</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="view-pg-config.html" title="52.68. pg_config">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="view-pg-file-settings.html" title="52.70. pg_file_settings">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="VIEW-PG-CURSORS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.69. <code class="structname">pg_cursors</code></h2></div></div></div><a id="id-1.10.4.71.2" class="indexterm"></a><p>
+   The <code class="structname">pg_cursors</code> view lists the cursors that
+   are currently available. Cursors can be defined in several ways:
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      via the <a class="link" href="sql-declare.html" title="DECLARE"><code class="command">DECLARE</code></a>
+      statement in SQL
+     </p></li><li class="listitem"><p>
+      via the Bind message in the frontend/backend protocol, as
+      described in <a class="xref" href="protocol-flow.html#PROTOCOL-FLOW-EXT-QUERY" title="53.2.3. Extended Query">Section 53.2.3</a>
+     </p></li><li class="listitem"><p>
+      via the Server Programming Interface (SPI), as described in
+      <a class="xref" href="spi-interface.html" title="47.1. Interface Functions">Section 47.1</a>
+     </p></li></ul></div><p>
+
+   The <code class="structname">pg_cursors</code> view displays cursors
+   created by any of these means. Cursors only exist for the duration
+   of the transaction that defines them, unless they have been
+   declared <code class="literal">WITH HOLD</code>. Therefore non-holdable
+   cursors are only present in the view until the end of their
+   creating transaction.
+
+   </p><div class="note"><h3 class="title">Note</h3><p>
+     Cursors are used internally to implement some of the components
+     of <span class="productname">PostgreSQL</span>, such as procedural languages.
+     Therefore, the <code class="structname">pg_cursors</code> view might include cursors
+     that have not been explicitly created by the user.
+    </p></div><p>
+  </p><div class="table" id="id-1.10.4.71.4"><p class="title"><strong>Table 52.70. <code class="structname">pg_cursors</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_cursors Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">name</code> <code class="type">text</code>
+      </p>
+      <p>
+       The name of the cursor
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">statement</code> <code class="type">text</code>
+      </p>
+      <p>
+       The verbatim query string submitted to declare this cursor
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">is_holdable</code> <code class="type">bool</code>
+      </p>
+      <p>
+       <code class="literal">true</code> if the cursor is holdable (that is, it
+       can be accessed after the transaction that declared the cursor
+       has committed); <code class="literal">false</code> otherwise
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">is_binary</code> <code class="type">bool</code>
+      </p>
+      <p>
+       <code class="literal">true</code> if the cursor was declared
+       <code class="literal">BINARY</code>; <code class="literal">false</code>
+       otherwise
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">is_scrollable</code> <code class="type">bool</code>
+      </p>
+      <p>
+       <code class="literal">true</code> if the cursor is scrollable (that is, it
+       allows rows to be retrieved in a nonsequential manner);
+       <code class="literal">false</code> otherwise
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">creation_time</code> <code class="type">timestamptz</code>
+      </p>
+      <p>
+       The time at which the cursor was declared
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   The <code class="structname">pg_cursors</code> view is read-only.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="view-pg-config.html" title="52.68. pg_config">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="view-pg-file-settings.html" title="52.70. pg_file_settings">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.68. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_config</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.70. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_file_settings</code></td></tr></table></div></body></html>

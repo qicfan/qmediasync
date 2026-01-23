@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>19.3. Starting the Database Server</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="creating-cluster.html" title="19.2. Creating a Database Cluster" /><link rel="next" href="kernel-resources.html" title="19.4. Managing Kernel Resources" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">19.3. Starting the Database Server</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="creating-cluster.html" title="19.2. Creating a Database Cluster">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><th width="60%" align="center">Chapter 19. Server Setup and Operation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="kernel-resources.html" title="19.4. Managing Kernel Resources">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SERVER-START"><div class="titlepage"><div><div><h2 class="title" style="clear: both">19.3. Starting the Database Server</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="server-start.html#SERVER-START-FAILURES">19.3.1. Server Start-up Failures</a></span></dt><dt><span class="sect2"><a href="server-start.html#CLIENT-CONNECTION-PROBLEMS">19.3.2. Client Connection Problems</a></span></dt></dl></div><p>
+   Before anyone can access the database, you must start the database
+   server. The database server program is called
+   <code class="command">postgres</code>.<a id="id-1.6.6.6.2.2" class="indexterm"></a>
+  </p><p>
+   If you are using a pre-packaged version
+   of <span class="productname">PostgreSQL</span>, it almost certainly includes
+   provisions for running the server as a background task according to the
+   conventions of your operating system.  Using the package's
+   infrastructure to start the server will be much less work than figuring
+   out how to do this yourself.  Consult the package-level documentation
+   for details.
+  </p><p>
+   The bare-bones way to start the server manually is just to invoke
+   <code class="command">postgres</code> directly, specifying the location of the
+   data directory with the <code class="option">-D</code> option, for example:
+</p><pre class="screen">
+$ <strong class="userinput"><code>postgres -D /usr/local/pgsql/data</code></strong>
+</pre><p>
+   which will leave the server running in the foreground. This must be
+   done while logged into the <span class="productname">PostgreSQL</span> user
+   account. Without <code class="option">-D</code>, the server will try to use
+   the data directory named by the environment variable <code class="envar">PGDATA</code>.
+   If that variable is not provided either, it will fail.
+  </p><p>
+   Normally it is better to start <code class="command">postgres</code> in the
+   background.  For this, use the usual Unix shell syntax:
+</p><pre class="screen">
+$ <strong class="userinput"><code>postgres -D /usr/local/pgsql/data &gt;logfile 2&gt;&amp;1 &amp;</code></strong>
+</pre><p>
+   It is important to store the server's <span class="systemitem">stdout</span> and
+   <span class="systemitem">stderr</span> output somewhere, as shown above. It will help
+   for auditing purposes and to diagnose problems. (See <a class="xref" href="logfile-maintenance.html" title="25.3. Log File Maintenance">Section 25.3</a> for a more thorough discussion of log
+   file handling.)
+  </p><p>
+   The <code class="command">postgres</code> program also takes a number of other
+   command-line options. For more information, see the
+   <a class="xref" href="app-postgres.html" title="postgres"><span class="refentrytitle"><span class="application">postgres</span></span></a> reference page
+   and <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a> below.
+  </p><p>
+   This shell syntax can get tedious quickly.  Therefore the wrapper
+   program
+   <a class="xref" href="app-pg-ctl.html" title="pg_ctl"><span class="refentrytitle"><span class="application">pg_ctl</span></span></a><a id="id-1.6.6.6.7.2" class="indexterm"></a>
+   is provided to simplify some tasks.  For example:
+</p><pre class="programlisting">
+pg_ctl start -l logfile
+</pre><p>
+   will start the server in the background and put the output into the
+   named log file. The <code class="option">-D</code> option has the same meaning
+   here as for <code class="command">postgres</code>. <code class="command">pg_ctl</code>
+   is also capable of stopping the server.
+  </p><p>
+   Normally, you will want to start the database server when the
+   computer boots.<a id="id-1.6.6.6.8.1" class="indexterm"></a>
+   Autostart scripts are operating-system-specific.
+   There are a few example scripts distributed with
+   <span class="productname">PostgreSQL</span> in the
+   <code class="filename">contrib/start-scripts</code> directory. Installing one will require
+   root privileges.
+  </p><p>
+   Different systems have different conventions for starting up daemons
+   at boot time. Many systems have a file
+   <code class="filename">/etc/rc.local</code> or
+   <code class="filename">/etc/rc.d/rc.local</code>. Others use <code class="filename">init.d</code> or
+   <code class="filename">rc.d</code> directories. Whatever you do, the server must be
+   run by the <span class="productname">PostgreSQL</span> user account
+   <span class="emphasis"><em>and not by root</em></span> or any other user. Therefore you
+   probably should form your commands using
+   <code class="literal">su postgres -c '...'</code>.  For example:
+</p><pre class="programlisting">
+su postgres -c 'pg_ctl start -D /usr/local/pgsql/data -l serverlog'
+</pre><p>
+  </p><p>
+   Here are a few more operating-system-specific suggestions. (In each
+   case be sure to use the proper installation directory and user
+   name where we show generic values.)
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      For <span class="productname">FreeBSD</span>, look at the file
+      <code class="filename">contrib/start-scripts/freebsd</code> in the
+      <span class="productname">PostgreSQL</span> source distribution.
+      <a id="id-1.6.6.6.10.1.1.1.4" class="indexterm"></a>
+     </p></li><li class="listitem"><p>
+      On <span class="productname">OpenBSD</span>, add the following lines
+      to the file <code class="filename">/etc/rc.local</code>:
+      <a id="id-1.6.6.6.10.1.2.1.3" class="indexterm"></a>
+</p><pre class="programlisting">
+if [ -x /usr/local/pgsql/bin/pg_ctl -a -x /usr/local/pgsql/bin/postgres ]; then
+    su -l postgres -c '/usr/local/pgsql/bin/pg_ctl start -s -l /var/postgresql/log -D /usr/local/pgsql/data'
+    echo -n ' postgresql'
+fi
+</pre><p>
+     </p></li><li class="listitem"><p>
+      On <span class="productname">Linux</span> systems either add
+      <a id="id-1.6.6.6.10.1.3.1.2" class="indexterm"></a>
+</p><pre class="programlisting">
+/usr/local/pgsql/bin/pg_ctl start -l logfile -D /usr/local/pgsql/data
+</pre><p>
+      to <code class="filename">/etc/rc.d/rc.local</code>
+      or <code class="filename">/etc/rc.local</code> or look at the file
+      <code class="filename">contrib/start-scripts/linux</code> in the
+      <span class="productname">PostgreSQL</span> source distribution.
+     </p><p>
+      When using <span class="application">systemd</span>, you can use the following
+      service unit file (e.g.,
+      at <code class="filename">/etc/systemd/system/postgresql.service</code>):<a id="id-1.6.6.6.10.1.3.2.3" class="indexterm"></a>
+</p><pre class="programlisting">
+[Unit]
+Description=PostgreSQL database server
+Documentation=man:postgres(1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=postgres
+ExecStart=/usr/local/pgsql/bin/postgres -D /usr/local/pgsql/data
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutSec=infinity
+
+[Install]
+WantedBy=multi-user.target
+</pre><p>
+      Using <code class="literal">Type=notify</code> requires that the server binary was
+      built with <code class="literal">configure --with-systemd</code>.
+     </p><p>
+      Consider carefully the timeout
+      setting.  <span class="application">systemd</span> has a default timeout of 90
+      seconds as of this writing and will kill a process that does not report
+      readiness within that time.  But a <span class="productname">PostgreSQL</span>
+      server that might have to perform crash recovery at startup could take
+      much longer to become ready.  The suggested value
+      of <code class="literal">infinity</code> disables the timeout logic.
+     </p></li><li class="listitem"><p>
+      On <span class="productname">NetBSD</span>, use either the
+      <span class="productname">FreeBSD</span> or
+      <span class="productname">Linux</span> start scripts, depending on
+      preference.
+      <a id="id-1.6.6.6.10.1.4.1.4" class="indexterm"></a>
+     </p></li><li class="listitem"><p>
+      On <span class="productname">Solaris</span>, create a file called
+      <code class="filename">/etc/init.d/postgresql</code> that contains
+      the following line:
+      <a id="id-1.6.6.6.10.1.5.1.3" class="indexterm"></a>
+</p><pre class="programlisting">
+su - postgres -c "/usr/local/pgsql/bin/pg_ctl start -l logfile -D /usr/local/pgsql/data"
+</pre><p>
+      Then, create a symbolic link to it in <code class="filename">/etc/rc3.d</code> as
+      <code class="filename">S99postgresql</code>.
+     </p></li></ul></div><p>
+
+  </p><p>
+    While the server is running, its
+    <acronym class="acronym">PID</acronym> is stored in the file
+    <code class="filename">postmaster.pid</code> in the data directory. This is
+    used to prevent multiple server instances from
+    running in the same data directory and can also be used for
+    shutting down the server.
+   </p><div class="sect2" id="SERVER-START-FAILURES"><div class="titlepage"><div><div><h3 class="title">19.3.1. Server Start-up Failures</h3></div></div></div><p>
+     There are several common reasons the server might fail to
+     start. Check the server's log file, or start it by hand (without
+     redirecting standard output or standard error) and see what error
+     messages appear. Below we explain some of the most common error
+     messages in more detail.
+    </p><p>
+</p><pre class="screen">
+LOG:  could not bind IPv4 address "127.0.0.1": Address already in use
+HINT:  Is another postmaster already running on port 5432? If not, wait a few seconds and retry.
+FATAL:  could not create any TCP/IP sockets
+</pre><p>
+     This usually means just what it suggests: you tried to start
+     another server on the same port where one is already running.
+     However, if the kernel error message is not <code class="computeroutput">Address
+     already in use</code> or some variant of that, there might
+     be a different problem. For example, trying to start a server
+     on a reserved port number might draw something like:
+</p><pre class="screen">
+$ <strong class="userinput"><code>postgres -p 666</code></strong>
+LOG:  could not bind IPv4 address "127.0.0.1": Permission denied
+HINT:  Is another postmaster already running on port 666? If not, wait a few seconds and retry.
+FATAL:  could not create any TCP/IP sockets
+</pre><p>
+    </p><p>
+     A message like:
+</p><pre class="screen">
+FATAL:  could not create shared memory segment: Invalid argument
+DETAIL:  Failed system call was shmget(key=5440001, size=4011376640, 03600).
+</pre><p>
+     probably means your kernel's limit on the size of shared memory is
+     smaller than the work area <span class="productname">PostgreSQL</span>
+     is trying to create (4011376640 bytes in this example).
+     This is only likely to happen if you have set <code class="literal">shared_memory_type</code>
+     to <code class="literal">sysv</code>.  In that case, you
+     can try starting the server with a smaller-than-normal number of
+     buffers (<a class="xref" href="runtime-config-resource.html#GUC-SHARED-BUFFERS">shared_buffers</a>), or
+     reconfigure your kernel to increase the allowed shared memory
+     size. You might also see this message when trying to start multiple
+     servers on the same machine, if their total space requested
+     exceeds the kernel limit.
+    </p><p>
+     An error like:
+</p><pre class="screen">
+FATAL:  could not create semaphores: No space left on device
+DETAIL:  Failed system call was semget(5440126, 17, 03600).
+</pre><p>
+     does <span class="emphasis"><em>not</em></span> mean you've run out of disk
+     space. It means your kernel's limit on the number of <span class="systemitem">System V</span> semaphores is smaller than the number
+     <span class="productname">PostgreSQL</span> wants to create. As above,
+     you might be able to work around the problem by starting the
+     server with a reduced number of allowed connections
+     (<a class="xref" href="runtime-config-connection.html#GUC-MAX-CONNECTIONS">max_connections</a>), but you'll eventually want to
+     increase the kernel limit.
+    </p><p>
+     Details about configuring <span class="systemitem">System V</span>
+     <acronym class="acronym">IPC</acronym> facilities are given in <a class="xref" href="kernel-resources.html#SYSVIPC" title="19.4.1. Shared Memory and Semaphores">Section 19.4.1</a>.
+    </p></div><div class="sect2" id="CLIENT-CONNECTION-PROBLEMS"><div class="titlepage"><div><div><h3 class="title">19.3.2. Client Connection Problems</h3></div></div></div><p>
+     Although the error conditions possible on the client side are quite
+     varied and application-dependent, a few of them might be directly
+     related to how the server was started. Conditions other than
+     those shown below should be documented with the respective client
+     application.
+    </p><p>
+</p><pre class="screen">
+psql: error: connection to server at "server.joe.com" (123.123.123.123), port 5432 failed: Connection refused
+        Is the server running on that host and accepting TCP/IP connections?
+</pre><p>
+     This is the generic <span class="quote">“<span class="quote">I couldn't find a server to talk
+     to</span>”</span> failure. It looks like the above when TCP/IP
+     communication is attempted. A common mistake is to forget to
+     configure the server to allow TCP/IP connections.
+    </p><p>
+     Alternatively, you might get this when attempting Unix-domain socket
+     communication to a local server:
+</p><pre class="screen">
+psql: error: connection to server on socket "/tmp/.s.PGSQL.5432" failed: No such file or directory
+        Is the server running locally and accepting connections on that socket?
+</pre><p>
+     If the server is indeed running, check that the client's idea of the
+     socket path (here <code class="literal">/tmp</code>) agrees with the server's
+     <a class="xref" href="runtime-config-connection.html#GUC-UNIX-SOCKET-DIRECTORIES">unix_socket_directories</a> setting.
+    </p><p>
+     A connection failure message always shows the server address or socket
+     path name, which is useful in verifying that the client is trying to
+     connect to the right place. If there is in fact no server
+     listening there, the kernel error message will typically be either
+     <code class="computeroutput">Connection refused</code> or
+     <code class="computeroutput">No such file or directory</code>, as
+     illustrated. (It is important to realize that
+     <code class="computeroutput">Connection refused</code> in this context
+     does <span class="emphasis"><em>not</em></span> mean that the server got your
+     connection request and rejected it. That case will produce a
+     different message, as shown in <a class="xref" href="client-authentication-problems.html" title="21.15. Authentication Problems">Section 21.15</a>.) Other error messages
+     such as <code class="computeroutput">Connection timed out</code> might
+     indicate more fundamental problems, like lack of network
+     connectivity, or a firewall blocking the connection.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="creating-cluster.html" title="19.2. Creating a Database Cluster">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="kernel-resources.html" title="19.4. Managing Kernel Resources">Next</a></td></tr><tr><td width="40%" align="left" valign="top">19.2. Creating a Database Cluster </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 19.4. Managing Kernel Resources</td></tr></table></div></body></html>

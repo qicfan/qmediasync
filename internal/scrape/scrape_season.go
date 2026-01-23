@@ -79,6 +79,8 @@ func (t *tvShowScrapeImpl) ScrapeFailedAllEpisodeBySeason(seasonMediaFile *model
 		helpers.AppLogger.Errorf("批量更新电视剧 %s 季 %d 的所有集为刮削失败状态失败, 失败原因: %v", seasonMediaFile.Name, seasonMediaFile.SeasonNumber, err)
 		return err
 	}
+	// 将当前seasonMediaFile也标记为失败
+	seasonMediaFile.Failed(failedReason)
 	helpers.AppLogger.Infof("批量更新电视剧 %s 季 %d 的所有集为刮削失败状态成功", seasonMediaFile.Name, seasonMediaFile.SeasonNumber)
 	return nil
 }

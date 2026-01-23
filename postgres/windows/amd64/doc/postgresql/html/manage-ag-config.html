@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>23.4. Database Configuration</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="manage-ag-templatedbs.html" title="23.3. Template Databases" /><link rel="next" href="manage-ag-dropdb.html" title="23.5. Destroying a Database" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">23.4. Database Configuration</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="manage-ag-templatedbs.html" title="23.3. Template Databases">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="managing-databases.html" title="Chapter 23. Managing Databases">Up</a></td><th width="60%" align="center">Chapter 23. Managing Databases</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="manage-ag-dropdb.html" title="23.5. Destroying a Database">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="MANAGE-AG-CONFIG"><div class="titlepage"><div><div><h2 class="title" style="clear: both">23.4. Database Configuration</h2></div></div></div><p>
+   Recall from <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a> that the
+   <span class="productname">PostgreSQL</span> server provides a large number of
+   run-time configuration variables.  You can set database-specific
+   default values for many of these settings.
+  </p><p>
+   For example, if for some reason you want to disable the
+   <acronym class="acronym">GEQO</acronym> optimizer for a given database, you'd
+   ordinarily have to either disable it for all databases or make sure
+   that every connecting client is careful to issue <code class="literal">SET geqo
+   TO off</code>.  To make this setting the default within a particular
+   database, you can execute the command:
+</p><pre class="programlisting">
+ALTER DATABASE mydb SET geqo TO off;
+</pre><p>
+   This will save the setting (but not set it immediately).  In
+   subsequent connections to this database it will appear as though
+   <code class="literal">SET geqo TO off;</code> had been executed just before the
+   session started.
+   Note that users can still alter this setting during their sessions; it
+   will only be the default.  To undo any such setting, use
+   <code class="literal">ALTER DATABASE <em class="replaceable"><code>dbname</code></em> RESET
+   <em class="replaceable"><code>varname</code></em></code>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="manage-ag-templatedbs.html" title="23.3. Template Databases">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="managing-databases.html" title="Chapter 23. Managing Databases">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="manage-ag-dropdb.html" title="23.5. Destroying a Database">Next</a></td></tr><tr><td width="40%" align="left" valign="top">23.3. Template Databases </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 23.5. Destroying a Database</td></tr></table></div></body></html>

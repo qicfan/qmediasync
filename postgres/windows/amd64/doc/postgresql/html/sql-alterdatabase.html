@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER DATABASE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-alterconversion.html" title="ALTER CONVERSION" /><link rel="next" href="sql-alterdefaultprivileges.html" title="ALTER DEFAULT PRIVILEGES" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER DATABASE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-alterconversion.html" title="ALTER CONVERSION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-alterdefaultprivileges.html" title="ALTER DEFAULT PRIVILEGES">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERDATABASE"><div class="titlepage"></div><a id="id-1.9.3.7.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER DATABASE</span></h2><p>ALTER DATABASE — change a database</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER DATABASE <em class="replaceable"><code>name</code></em> [ [ WITH ] <em class="replaceable"><code>option</code></em> [ ... ] ]
+
+<span class="phrase">where <em class="replaceable"><code>option</code></em> can be:</span>
+
+    ALLOW_CONNECTIONS <em class="replaceable"><code>allowconn</code></em>
+    CONNECTION LIMIT <em class="replaceable"><code>connlimit</code></em>
+    IS_TEMPLATE <em class="replaceable"><code>istemplate</code></em>
+
+ALTER DATABASE <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+
+ALTER DATABASE <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+
+ALTER DATABASE <em class="replaceable"><code>name</code></em> SET TABLESPACE <em class="replaceable"><code>new_tablespace</code></em>
+
+ALTER DATABASE <em class="replaceable"><code>name</code></em> SET <em class="replaceable"><code>configuration_parameter</code></em> { TO | = } { <em class="replaceable"><code>value</code></em> | DEFAULT }
+ALTER DATABASE <em class="replaceable"><code>name</code></em> SET <em class="replaceable"><code>configuration_parameter</code></em> FROM CURRENT
+ALTER DATABASE <em class="replaceable"><code>name</code></em> RESET <em class="replaceable"><code>configuration_parameter</code></em>
+ALTER DATABASE <em class="replaceable"><code>name</code></em> RESET ALL
+</pre></div><div class="refsect1" id="id-1.9.3.7.5"><h2>Description</h2><p>
+   <code class="command">ALTER DATABASE</code> changes the attributes
+   of a database.
+  </p><p>
+   The first form changes certain per-database settings.  (See below for
+   details.)  Only the database owner or a superuser can change these settings.
+  </p><p>
+   The second form changes the name of the database.  Only the database
+   owner or a superuser can rename a database; non-superuser owners must
+   also have the
+   <code class="literal">CREATEDB</code> privilege.  The current database cannot
+   be renamed.  (Connect to a different database if you need to do
+   that.)
+  </p><p>
+   The third form changes the owner of the database.
+   To alter the owner, you must own the database and also be a direct or
+   indirect member of the new owning role, and you must have the
+   <code class="literal">CREATEDB</code> privilege.
+   (Note that superusers have all these privileges automatically.)
+  </p><p>
+   The fourth form changes the default tablespace of the database.
+   Only the database owner or a superuser can do this; you must also have
+   create privilege for the new tablespace.
+   This command physically moves any tables or indexes in the database's old
+   default tablespace to the new tablespace.  The new default tablespace
+   must be empty for this database, and no one can be connected to
+   the database.  Tables and indexes in non-default tablespaces are
+   unaffected.
+  </p><p>
+   The remaining forms change the session default for a run-time
+   configuration variable for a <span class="productname">PostgreSQL</span>
+   database. Whenever a new session is subsequently started in that
+   database, the specified value becomes the session default value.
+   The database-specific default overrides whatever setting is present
+   in <code class="filename">postgresql.conf</code> or has been received from the
+   <code class="command">postgres</code> command line.  Only the database
+   owner or a superuser can change the session defaults for a
+   database.  Certain variables cannot be set this way, or can only be
+   set by a superuser.
+  </p></div><div class="refsect1" id="id-1.9.3.7.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+        The name of the database whose attributes are to be altered.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>allowconn</code></em></span></dt><dd><p>
+         If false then no one can connect to this database.
+        </p></dd><dt><span class="term"><em class="replaceable"><code>connlimit</code></em></span></dt><dd><p>
+        How many concurrent connections can be made
+        to this database.  -1 means no limit.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>istemplate</code></em></span></dt><dd><p>
+         If true, then this database can be cloned by any user with <code class="literal">CREATEDB</code>
+         privileges; if false, then only superusers or the owner of the
+         database can clone it.
+        </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name of the database.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The new owner of the database.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_tablespace</code></em></span></dt><dd><p>
+      The new default tablespace of the database.
+     </p><p>
+      This form of the command cannot be executed inside a transaction block.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>configuration_parameter</code></em><br /></span><span class="term"><em class="replaceable"><code>value</code></em></span></dt><dd><p>
+        Set this database's session default for the specified configuration
+        parameter to the given value.  If
+        <em class="replaceable"><code>value</code></em> is <code class="literal">DEFAULT</code>
+        or, equivalently, <code class="literal">RESET</code> is used, the
+        database-specific setting is removed, so the system-wide default
+        setting will be inherited in new sessions.  Use <code class="literal">RESET
+        ALL</code> to clear all database-specific settings.
+        <code class="literal">SET FROM CURRENT</code> saves the session's current value of
+        the parameter as the database-specific value.
+       </p><p>
+        See <a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a> and <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a>
+        for more information about allowed parameter names
+        and values.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.7.7"><h2>Notes</h2><p>
+   It is also possible to tie a session default to a specific role
+   rather than to a database; see
+   <a class="xref" href="sql-alterrole.html" title="ALTER ROLE"><span class="refentrytitle">ALTER ROLE</span></a>.
+   Role-specific settings override database-specific
+   ones if there is a conflict.
+  </p></div><div class="refsect1" id="id-1.9.3.7.8"><h2>Examples</h2><p>
+   To disable index scans by default in the database
+   <code class="literal">test</code>:
+
+</p><pre class="programlisting">
+ALTER DATABASE test SET enable_indexscan TO off;
+</pre></div><div class="refsect1" id="id-1.9.3.7.9"><h2>Compatibility</h2><p>
+   The <code class="command">ALTER DATABASE</code> statement is a
+   <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.7.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createdatabase.html" title="CREATE DATABASE"><span class="refentrytitle">CREATE DATABASE</span></a>, <a class="xref" href="sql-dropdatabase.html" title="DROP DATABASE"><span class="refentrytitle">DROP DATABASE</span></a>, <a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a>, <a class="xref" href="sql-createtablespace.html" title="CREATE TABLESPACE"><span class="refentrytitle">CREATE TABLESPACE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-alterconversion.html" title="ALTER CONVERSION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-alterdefaultprivileges.html" title="ALTER DEFAULT PRIVILEGES">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER CONVERSION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER DEFAULT PRIVILEGES</td></tr></table></div></body></html>

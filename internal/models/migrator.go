@@ -28,7 +28,7 @@ func (*Migrator) TableName() string {
 func Migrate() {
 	dbFile := filepath.Join(helpers.RootDir, helpers.GlobalConfig.Db.File)
 	sqliteDb := db.GetDb(dbFile)
-	maxVersion := 7
+	maxVersion := 11
 	if sqliteDb != nil {
 		// 从sqlite迁移数据到postgres
 		moveSqliteToPostres(sqliteDb, maxVersion)
@@ -204,6 +204,48 @@ func Migrate() {
 		db.Db.Model(&Settings{}).Where("id > ?", 0).Updates(updates)
 		migrator.UpdateVersionCode(db.Db)
 	}
+	if migrator.VersionCode == 8 {
+		// 创建新的通知渠道表
+		db.Db.AutoMigrate(
+			&NotificationChannel{},
+			&TelegramChannelConfig{},
+			&MeoWChannelConfig{},
+			&BarkChannelConfig{},
+			&ServerChanChannelConfig{},
+			&NotificationRule{},
+		)
+		// 迁移现有的Telegram设置到新表
+		migrateExistingNotificationSettings(db.Db)
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 9 {
+		// 增加自定义Webhook通知渠道表
+		db.Db.AutoMigrate(&CustomWebhookChannelConfig{})
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 10 {
+		// Webhook 渠道配置增加鉴权与 QueryParam 字段
+		db.Db.AutoMigrate(&CustomWebhookChannelConfig{})
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 11 {
+		// 将account表的AppId字段替换为AppIdName
+		// 查询所有Account
+		accounts := []Account{}
+		db.Db.Find(&accounts)
+		for _, account := range accounts {
+			appIdName := "自定义"
+			switch account.AppId {
+			case helpers.GlobalConfig.Open115AppId:
+				appIdName = "Q115-STRM"
+			case helpers.GlobalConfig.Open115TestAppId:
+				appIdName = "MQ的媒体库"
+			}
+			db.Db.Model(&Account{}).Where("id = ?", account.ID).Update("app_id", appIdName)
+			helpers.AppLogger.Infof("Account %d 的 AppId 字段已更新为 AppIdName：%s", account.ID, appIdName)
+		}
+		migrator.UpdateVersionCode(db.Db)
+	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
 }
 
@@ -217,6 +259,8 @@ func BatchCreateTable() {
 	db.Db.AutoMigrate(ScrapeSettings{}, ScrapePath{}, MovieCategory{}, TvShowCategory{}, ScrapePathCategory{}, ScrapeMediaFile{}, Media{}, MediaSeason{}, MediaEpisode{})
 	// 下载队列
 	db.Db.AutoMigrate(DbDownloadTask{}, DbUploadTask{})
+	// 通知渠道表
+	db.Db.AutoMigrate(NotificationChannel{}, TelegramChannelConfig{}, MeoWChannelConfig{}, BarkChannelConfig{}, ServerChanChannelConfig{}, CustomWebhookChannelConfig{}, NotificationRule{})
 }
 
 func InitMigrationTable(version int) {
@@ -631,5 +675,78 @@ func InitScrapeSetting() {
 		helpers.AppLogger.Errorf("添加纪录片分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加纪录片分类")
+	}
+}
+
+// migrateExistingNotificationSettings 迁移现有的通知设置
+func migrateExistingNotificationSettings(dbConn *gorm.DB) {
+	var settings Settings
+	if err := dbConn.First(&settings).Error; err != nil {
+		return
+	}
+
+	// 如果存在Telegram配置，创建新的记录
+	if settings.UseTelegram == 1 && settings.TelegramBotToken != "" {
+		channel := NotificationChannel{
+			ChannelType: "telegram",
+			ChannelName: "Telegram Bot",
+			IsEnabled:   true,
+		}
+		if err := dbConn.Create(&channel).Error; err == nil {
+			config := TelegramChannelConfig{
+				ChannelID: channel.ID,
+				BotToken:  settings.TelegramBotToken,
+				ChatID:    settings.TelegramChatId,
+				ProxyURL:  settings.HttpProxy,
+			}
+			dbConn.Create(&config)
+
+			// 创建默认规则（所有事件都发送到此渠道）
+			eventTypes := []string{
+				"sync_finish", "sync_error", "scrape_finish",
+				"system_alert", "media_added", "media_removed",
+			}
+			for _, eventType := range eventTypes {
+				rule := NotificationRule{
+					ChannelID: channel.ID,
+					EventType: eventType,
+					IsEnabled: true,
+				}
+				dbConn.Create(&rule)
+			}
+			helpers.AppLogger.Infof("已迁移Telegram通知配置到新表")
+		}
+	}
+
+	// 如果存在MeoW配置，创建新的记录
+	if settings.MeoWName != "" {
+		channel := NotificationChannel{
+			ChannelType: "meow",
+			ChannelName: "MeoW",
+			IsEnabled:   true,
+		}
+		if err := dbConn.Create(&channel).Error; err == nil {
+			config := MeoWChannelConfig{
+				ChannelID: channel.ID,
+				Nickname:  settings.MeoWName,
+				Endpoint:  "http://api.chuckfang.com",
+			}
+			dbConn.Create(&config)
+
+			// 创建默认规则
+			eventTypes := []string{
+				"sync_finish", "sync_error", "scrape_finish",
+				"system_alert", "media_added", "media_removed",
+			}
+			for _, eventType := range eventTypes {
+				rule := NotificationRule{
+					ChannelID: channel.ID,
+					EventType: eventType,
+					IsEnabled: true,
+				}
+				dbConn.Create(&rule)
+			}
+			helpers.AppLogger.Infof("已迁移MeoW通知配置到新表")
+		}
 	}
 }

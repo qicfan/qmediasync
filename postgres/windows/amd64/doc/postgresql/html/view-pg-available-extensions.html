@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.65. pg_available_extensions</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="views-overview.html" title="52.64. System Views" /><link rel="next" href="view-pg-available-extension-versions.html" title="52.66. pg_available_extension_versions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.65. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_available_extensions</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="views-overview.html" title="52.64. System Views">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="view-pg-available-extension-versions.html" title="52.66. pg_available_extension_versions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="VIEW-PG-AVAILABLE-EXTENSIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.65. <code class="structname">pg_available_extensions</code></h2></div></div></div><a id="id-1.10.4.67.2" class="indexterm"></a><p>
+   The <code class="structname">pg_available_extensions</code> view lists the
+   extensions that are available for installation.
+   See also the
+   <a class="link" href="catalog-pg-extension.html" title="52.22. pg_extension"><code class="structname">pg_extension</code></a>
+   catalog, which shows the extensions currently installed.
+  </p><div class="table" id="id-1.10.4.67.4"><p class="title"><strong>Table 52.66. <code class="structname">pg_available_extensions</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_available_extensions Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">name</code> <code class="type">name</code>
+      </p>
+      <p>
+       Extension name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">default_version</code> <code class="type">text</code>
+      </p>
+      <p>
+       Name of default version, or <code class="literal">NULL</code> if none is
+       specified
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">installed_version</code> <code class="type">text</code>
+      </p>
+      <p>
+       Currently installed version of the extension,
+       or <code class="literal">NULL</code> if not installed
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">comment</code> <code class="type">text</code>
+      </p>
+      <p>
+       Comment string from the extension's control file
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   The <code class="structname">pg_available_extensions</code> view is read-only.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="views-overview.html" title="52.64. System Views">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="view-pg-available-extension-versions.html" title="52.66. pg_available_extension_versions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.64. System Views </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.66. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_available_extension_versions</code></td></tr></table></div></body></html>

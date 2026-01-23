@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>21.3. Authentication Methods</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="auth-username-maps.html" title="21.2. User Name Maps" /><link rel="next" href="auth-trust.html" title="21.4. Trust Authentication" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">21.3. Authentication Methods</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="auth-username-maps.html" title="21.2. User Name Maps">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><th width="60%" align="center">Chapter 21. Client Authentication</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="auth-trust.html" title="21.4. Trust Authentication">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="AUTH-METHODS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">21.3. Authentication Methods</h2></div></div></div><p>
+   <span class="productname">PostgreSQL</span> provides various methods for
+   authenticating users:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      <a class="link" href="auth-trust.html" title="21.4. Trust Authentication">Trust authentication</a>, which
+      simply trusts that users are who they say they are.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-password.html" title="21.5. Password Authentication">Password authentication</a>, which
+      requires that users send a password.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="gssapi-auth.html" title="21.6. GSSAPI Authentication">GSSAPI authentication</a>, which
+      relies on a GSSAPI-compatible security library.  Typically this is
+      used to access an authentication server such as a Kerberos or
+      Microsoft Active Directory server.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="sspi-auth.html" title="21.7. SSPI Authentication">SSPI authentication</a>, which
+      uses a Windows-specific protocol similar to GSSAPI.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-ident.html" title="21.8. Ident Authentication">Ident authentication</a>, which
+      relies on an <span class="quote">“<span class="quote">Identification Protocol</span>”</span>
+      (<a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc1413" target="_top">RFC 1413</a>)
+      service on the client's machine.  (On local Unix-socket connections,
+      this is treated as peer authentication.)
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-peer.html" title="21.9. Peer Authentication">Peer authentication</a>, which
+      relies on operating system facilities to identify the process at the
+      other end of a local connection.  This is not supported for remote
+      connections.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-ldap.html" title="21.10. LDAP Authentication">LDAP authentication</a>, which
+      relies on an LDAP authentication server.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-radius.html" title="21.11. RADIUS Authentication">RADIUS authentication</a>, which
+      relies on a RADIUS authentication server.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-cert.html" title="21.12. Certificate Authentication">Certificate authentication</a>, which
+      requires an SSL connection and authenticates users by checking the
+      SSL certificate they send.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-pam.html" title="21.13. PAM Authentication">PAM authentication</a>, which
+      relies on a PAM (Pluggable Authentication Modules) library.
+     </p></li><li class="listitem"><p>
+      <a class="link" href="auth-bsd.html" title="21.14. BSD Authentication">BSD authentication</a>, which
+      relies on the BSD Authentication framework (currently available
+      only on OpenBSD).
+     </p></li></ul></div><p>
+  </p><p>
+   Peer authentication is usually recommendable for local connections,
+   though trust authentication might be sufficient in some circumstances.
+   Password authentication is the easiest choice for remote connections.
+   All the other options require some kind of external security
+   infrastructure (usually an authentication server or a certificate
+   authority for issuing SSL certificates), or are platform-specific.
+  </p><p>
+   The following sections describe each of these authentication methods
+   in more detail.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="auth-username-maps.html" title="21.2. User Name Maps">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="client-authentication.html" title="Chapter 21. Client Authentication">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="auth-trust.html" title="21.4. Trust Authentication">Next</a></td></tr><tr><td width="40%" align="left" valign="top">21.2. User Name Maps </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.4. Trust Authentication</td></tr></table></div></body></html>

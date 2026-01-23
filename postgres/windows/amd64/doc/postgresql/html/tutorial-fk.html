@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>3.3. Foreign Keys</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="tutorial-views.html" title="3.2. Views" /><link rel="next" href="tutorial-transactions.html" title="3.4. Transactions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">3.3. Foreign Keys</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="tutorial-views.html" title="3.2. Views">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="tutorial-advanced.html" title="Chapter 3. Advanced Features">Up</a></td><th width="60%" align="center">Chapter 3. Advanced Features</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="tutorial-transactions.html" title="3.4. Transactions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TUTORIAL-FK"><div class="titlepage"><div><div><h2 class="title" style="clear: both">3.3. Foreign Keys</h2></div></div></div><a id="id-1.4.5.4.2" class="indexterm"></a><a id="id-1.4.5.4.3" class="indexterm"></a><p>
+    Recall the <code class="classname">weather</code> and
+    <code class="classname">cities</code> tables from <a class="xref" href="tutorial-sql.html" title="Chapter 2. The SQL Language">Chapter 2</a>.  Consider the following problem:  You
+    want to make sure that no one can insert rows in the
+    <code class="classname">weather</code> table that do not have a matching
+    entry in the <code class="classname">cities</code> table.  This is called
+    maintaining the <em class="firstterm">referential integrity</em> of
+    your data.  In simplistic database systems this would be
+    implemented (if at all) by first looking at the
+    <code class="classname">cities</code> table to check if a matching record
+    exists, and then inserting or rejecting the new
+    <code class="classname">weather</code> records.  This approach has a
+    number of problems and is very inconvenient, so
+    <span class="productname">PostgreSQL</span> can do this for you.
+   </p><p>
+    The new declaration of the tables would look like this:
+
+</p><pre class="programlisting">
+CREATE TABLE cities (
+        name     varchar(80) primary key,
+        location point
+);
+
+CREATE TABLE weather (
+        city      varchar(80) references cities(name),
+        temp_lo   int,
+        temp_hi   int,
+        prcp      real,
+        date      date
+);
+</pre><p>
+
+    Now try inserting an invalid record:
+
+</p><pre class="programlisting">
+INSERT INTO weather VALUES ('Berkeley', 45, 53, 0.0, '1994-11-28');
+</pre><p>
+
+</p><pre class="screen">
+ERROR:  insert or update on table "weather" violates foreign key constraint "weather_city_fkey"
+DETAIL:  Key (city)=(Berkeley) is not present in table "cities".
+</pre><p>
+   </p><p>
+    The behavior of foreign keys can be finely tuned to your
+    application.  We will not go beyond this simple example in this
+    tutorial, but just refer you to <a class="xref" href="ddl.html" title="Chapter 5. Data Definition">Chapter 5</a>
+    for more information.  Making correct use of
+    foreign keys will definitely improve the quality of your database
+    applications, so you are strongly encouraged to learn about them.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tutorial-views.html" title="3.2. Views">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="tutorial-advanced.html" title="Chapter 3. Advanced Features">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="tutorial-transactions.html" title="3.4. Transactions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">3.2. Views </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 3.4. Transactions</td></tr></table></div></body></html>

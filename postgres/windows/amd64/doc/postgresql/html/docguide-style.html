@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>J.5. Style Guide</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="docguide-authoring.html" title="J.4. Documentation Authoring" /><link rel="next" href="limits.html" title="Appendix K. PostgreSQL Limits" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">J.5. Style Guide</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="docguide-authoring.html" title="J.4. Documentation Authoring">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="docguide.html" title="Appendix J. Documentation">Up</a></td><th width="60%" align="center">Appendix J. Documentation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="limits.html" title="Appendix K. PostgreSQL Limits">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DOCGUIDE-STYLE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">J.5. Style Guide</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="docguide-style.html#id-1.11.11.8.2">J.5.1. Reference Pages</a></span></dt></dl></div><div class="sect2" id="id-1.11.11.8.2"><div class="titlepage"><div><div><h3 class="title">J.5.1. Reference Pages</h3></div></div></div><p>
+    Reference pages should follow a standard layout.  This allows
+    users to find the desired information more quickly, and it also
+    encourages writers to document all relevant aspects of a command.
+    Consistency is not only desired among
+    <span class="productname">PostgreSQL</span> reference pages, but also
+    with reference pages provided by the operating system and other
+    packages.  Hence the following guidelines have been developed.
+    They are for the most part consistent with similar guidelines
+    established by various operating systems.
+   </p><p>
+    Reference pages that describe executable commands should contain
+    the following sections, in this order.  Sections that do not apply
+    can be omitted.  Additional top-level sections should only be used
+    in special circumstances; often that information belongs in the
+    <span class="quote">“<span class="quote">Usage</span>”</span> section.
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">Name</span></dt><dd><p>
+        This section is generated automatically.  It contains the
+        command name and a half-sentence summary of its functionality.
+       </p></dd><dt><span class="term">Synopsis</span></dt><dd><p>
+        This section contains the syntax diagram of the command.  The
+        synopsis should normally not list each command-line option;
+        that is done below.  Instead, list the major components of the
+        command line, such as where input and output files go.
+       </p></dd><dt><span class="term">Description</span></dt><dd><p>
+        Several paragraphs explaining what the command does.
+       </p></dd><dt><span class="term">Options</span></dt><dd><p>
+        A list describing each command-line option.  If there are a
+        lot of options, subsections can be used.
+       </p></dd><dt><span class="term">Exit Status</span></dt><dd><p>
+        If the program uses 0 for success and non-zero for failure,
+        then you do not need to document it.  If there is a meaning
+        behind the different non-zero exit codes, list them here.
+       </p></dd><dt><span class="term">Usage</span></dt><dd><p>
+        Describe any sublanguage or run-time interface of the program.
+        If the program is not interactive, this section can usually be
+        omitted.  Otherwise, this section is a catch-all for
+        describing run-time features.  Use subsections if appropriate.
+       </p></dd><dt><span class="term">Environment</span></dt><dd><p>
+        List all environment variables that the program might use.
+        Try to be complete; even seemingly trivial variables like
+        <code class="envar">SHELL</code> might be of interest to the user.
+       </p></dd><dt><span class="term">Files</span></dt><dd><p>
+        List any files that the program might access implicitly.  That
+        is, do not list input and output files that were specified on
+        the command line, but list configuration files, etc.
+       </p></dd><dt><span class="term">Diagnostics</span></dt><dd><p>
+        Explain any unusual output that the program might create.
+        Refrain from listing every possible error message.  This is a
+        lot of work and has little use in practice.  But if, say, the
+        error messages have a standard format that the user can parse,
+        this would be the place to explain it.
+       </p></dd><dt><span class="term">Notes</span></dt><dd><p>
+        Anything that doesn't fit elsewhere, but in particular bugs,
+        implementation flaws, security considerations, compatibility
+        issues.
+       </p></dd><dt><span class="term">Examples</span></dt><dd><p>
+        Examples
+       </p></dd><dt><span class="term">History</span></dt><dd><p>
+        If there were some major milestones in the history of the
+        program, they might be listed here.  Usually, this section can
+        be omitted.
+       </p></dd><dt><span class="term">Author</span></dt><dd><p>
+        Author (only used in the contrib section)
+       </p></dd><dt><span class="term">See Also</span></dt><dd><p>
+        Cross-references, listed in the following order: other
+        <span class="productname">PostgreSQL</span> command reference pages,
+        <span class="productname">PostgreSQL</span> SQL command reference
+        pages, citation of <span class="productname">PostgreSQL</span>
+        manuals, other reference pages (e.g., operating system, other
+        packages), other documentation.  Items in the same group are
+        listed alphabetically.
+       </p></dd></dl></div><p>
+   </p><p>
+    Reference pages describing SQL commands should contain the
+    following sections: Name, Synopsis, Description, Parameters,
+    Outputs, Notes, Examples, Compatibility, History, See
+    Also.  The Parameters section is like the Options section, but
+    there is more freedom about which clauses of the command can be
+    listed.  The Outputs section is only needed if the command returns
+    something other than a default command-completion tag.  The Compatibility
+    section should explain to what extent
+    this command conforms to the SQL standard(s), or to which other
+    database system it is compatible.  The See Also section of SQL
+    commands should list SQL commands before cross-references to
+    programs.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="docguide-authoring.html" title="J.4. Documentation Authoring">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="docguide.html" title="Appendix J. Documentation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="limits.html" title="Appendix K. PostgreSQL Limits">Next</a></td></tr><tr><td width="40%" align="left" valign="top">J.4. Documentation Authoring </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Appendix K. <span xmlns="http://www.w3.org/1999/xhtml" class="productname">PostgreSQL</span> Limits</td></tr></table></div></body></html>

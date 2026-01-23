@@ -1,0 +1,621 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>66.3. Extensibility</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spgist-builtin-opclasses.html" title="66.2. Built-in Operator Classes" /><link rel="next" href="spgist-implementation.html" title="66.4. Implementation" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">66.3. Extensibility</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spgist-builtin-opclasses.html" title="66.2. Built-in Operator Classes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spgist.html" title="Chapter 66. SP-GiST Indexes">Up</a></td><th width="60%" align="center">Chapter 66. SP-GiST Indexes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spgist-implementation.html" title="66.4. Implementation">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SPGIST-EXTENSIBILITY"><div class="titlepage"><div><div><h2 class="title" style="clear: both">66.3. Extensibility</h2></div></div></div><p>
+  <acronym class="acronym">SP-GiST</acronym> offers an interface with a high level of
+  abstraction, requiring the access method developer to implement only
+  methods specific to a given data type. The <acronym class="acronym">SP-GiST</acronym> core
+  is responsible for efficient disk mapping and searching the tree structure.
+  It also takes care of concurrency and logging considerations.
+ </p><p>
+  Leaf tuples of an <acronym class="acronym">SP-GiST</acronym> tree usually contain values
+  of the same data type as the indexed column, although it is also possible
+  for them to contain lossy representations of the indexed column.
+  Leaf tuples stored at the root level will directly represent
+  the original indexed data value, but leaf tuples at lower
+  levels might contain only a partial value, such as a suffix.
+  In that case the operator class support functions must be able to
+  reconstruct the original value using information accumulated from the
+  inner tuples that are passed through to reach the leaf level.
+ </p><p>
+  When an <acronym class="acronym">SP-GiST</acronym> index is created with
+  <code class="literal">INCLUDE</code> columns, the values of those columns are also
+  stored in leaf tuples.  The <code class="literal">INCLUDE</code> columns are of no
+  concern to the <acronym class="acronym">SP-GiST</acronym> operator class, so they are
+  not discussed further here.
+ </p><p>
+  Inner tuples are more complex, since they are branching points in the
+  search tree.  Each inner tuple contains a set of one or more
+  <em class="firstterm">nodes</em>, which represent groups of similar leaf values.
+  A node contains a downlink that leads either to another, lower-level inner
+  tuple, or to a short list of leaf tuples that all lie on the same index page.
+  Each node normally has a <em class="firstterm">label</em> that describes it; for example,
+  in a radix tree the node label could be the next character of the string
+  value.  (Alternatively, an operator class can omit the node labels, if it
+  works with a fixed set of nodes for all inner tuples;
+  see <a class="xref" href="spgist-implementation.html#SPGIST-NULL-LABELS" title="66.4.2. SP-GiST Without Node Labels">Section 66.4.2</a>.)
+  Optionally, an inner tuple can have a <em class="firstterm">prefix</em> value
+  that describes all its members.  In a radix tree this could be the common
+  prefix of the represented strings.  The prefix value is not necessarily
+  really a prefix, but can be any data needed by the operator class;
+  for example, in a quad-tree it can store the central point that the four
+  quadrants are measured with respect to.  A quad-tree inner tuple would
+  then also contain four nodes corresponding to the quadrants around this
+  central point.
+ </p><p>
+  Some tree algorithms require knowledge of level (or depth) of the current
+  tuple, so the <acronym class="acronym">SP-GiST</acronym> core provides the possibility for
+  operator classes to manage level counting while descending the tree.
+  There is also support for incrementally reconstructing the represented
+  value when that is needed, and for passing down additional data (called
+  <em class="firstterm">traverse values</em>) during a tree descent.
+ </p><div class="note"><h3 class="title">Note</h3><p>
+   The <acronym class="acronym">SP-GiST</acronym> core code takes care of null entries.
+   Although <acronym class="acronym">SP-GiST</acronym> indexes do store entries for nulls
+   in indexed columns, this is hidden from the index operator class code:
+   no null index entries or search conditions will ever be passed to the
+   operator class methods.  (It is assumed that <acronym class="acronym">SP-GiST</acronym>
+   operators are strict and so cannot succeed for null values.)  Null values
+   are therefore not discussed further here.
+  </p></div><p>
+  There are five user-defined methods that an index operator class for
+  <acronym class="acronym">SP-GiST</acronym> must provide, and two are optional.  All five
+  mandatory methods follow the convention of accepting two <code class="type">internal</code>
+  arguments, the first of which is a pointer to a C struct containing input
+  values for the support method, while the second argument is a pointer to a
+  C struct where output values must be placed.  Four of the mandatory methods just
+  return <code class="type">void</code>, since all their results appear in the output struct; but
+  <code class="function">leaf_consistent</code> returns a <code class="type">boolean</code> result.
+  The methods must not modify any fields of their input structs.  In all
+  cases, the output struct is initialized to zeroes before calling the
+  user-defined method.  The optional sixth method <code class="function">compress</code>
+  accepts a <code class="type">datum</code> to be indexed as the only argument and returns a value suitable
+  for physical storage in a leaf tuple.  The optional seventh method
+  <code class="function">options</code> accepts an <code class="type">internal</code> pointer to a C struct, where
+  opclass-specific parameters should be placed, and returns <code class="type">void</code>.
+ </p><p>
+  The five mandatory user-defined methods are:
+ </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">config</code></span></dt><dd><p>
+       Returns static information about the index implementation, including
+       the data type OIDs of the prefix and node label data types.
+      </p><p>
+      The <acronym class="acronym">SQL</acronym> declaration of the function must look like this:
+</p><pre class="programlisting">
+CREATE FUNCTION my_config(internal, internal) RETURNS void ...
+</pre><p>
+      The first argument is a pointer to a <code class="structname">spgConfigIn</code>
+      C struct, containing input data for the function.
+      The second argument is a pointer to a <code class="structname">spgConfigOut</code>
+      C struct, which the function must fill with result data.
+</p><pre class="programlisting">
+typedef struct spgConfigIn
+{
+    Oid         attType;        /* Data type to be indexed */
+} spgConfigIn;
+
+typedef struct spgConfigOut
+{
+    Oid         prefixType;     /* Data type of inner-tuple prefixes */
+    Oid         labelType;      /* Data type of inner-tuple node labels */
+    Oid         leafType;       /* Data type of leaf-tuple values */
+    bool        canReturnData;  /* Opclass can reconstruct original data */
+    bool        longValuesOK;   /* Opclass can cope with values &gt; 1 page */
+} spgConfigOut;
+</pre><p>
+
+      <code class="structfield">attType</code> is passed in order to support polymorphic
+      index operator classes; for ordinary fixed-data-type operator classes, it
+      will always have the same value and so can be ignored.
+     </p><p>
+      For operator classes that do not use prefixes,
+      <code class="structfield">prefixType</code> can be set to <code class="literal">VOIDOID</code>.
+      Likewise, for operator classes that do not use node labels,
+      <code class="structfield">labelType</code> can be set to <code class="literal">VOIDOID</code>.
+      <code class="structfield">canReturnData</code> should be set true if the operator class
+      is capable of reconstructing the originally-supplied index value.
+      <code class="structfield">longValuesOK</code> should be set true only when the
+      <code class="structfield">attType</code> is of variable length and the operator
+      class is capable of segmenting long values by repeated suffixing
+      (see <a class="xref" href="spgist-implementation.html#SPGIST-LIMITS" title="66.4.1. SP-GiST Limits">Section 66.4.1</a>).
+     </p><p>
+      <code class="structfield">leafType</code> should match the index storage type
+      defined by the operator class's <code class="structfield">opckeytype</code>
+      catalog entry.
+      (Note that <code class="structfield">opckeytype</code> can be zero,
+      implying the storage type is the same as the operator class's input
+      type, which is the most common situation.)
+      For reasons of backward compatibility, the <code class="function">config</code>
+      method can set <code class="structfield">leafType</code> to some other value,
+      and that value will be used; but this is deprecated since the index
+      contents are then incorrectly identified in the catalogs.
+      Also, it's permissible to
+      leave <code class="structfield">leafType</code> uninitialized (zero);
+      that is interpreted as meaning the index storage type derived from
+      <code class="structfield">opckeytype</code>.
+     </p><p>
+      When <code class="structfield">attType</code>
+      and <code class="structfield">leafType</code> are different, the optional
+      method <code class="function">compress</code> must be provided.
+      Method <code class="function">compress</code> is responsible
+      for transformation of datums to be indexed from <code class="structfield">attType</code>
+      to <code class="structfield">leafType</code>.
+     </p></dd><dt><span class="term"><code class="function">choose</code></span></dt><dd><p>
+        Chooses a method for inserting a new value into an inner tuple.
+      </p><p>
+      The <acronym class="acronym">SQL</acronym> declaration of the function must look like this:
+</p><pre class="programlisting">
+CREATE FUNCTION my_choose(internal, internal) RETURNS void ...
+</pre><p>
+      The first argument is a pointer to a <code class="structname">spgChooseIn</code>
+      C struct, containing input data for the function.
+      The second argument is a pointer to a <code class="structname">spgChooseOut</code>
+      C struct, which the function must fill with result data.
+</p><pre class="programlisting">
+typedef struct spgChooseIn
+{
+    Datum       datum;          /* original datum to be indexed */
+    Datum       leafDatum;      /* current datum to be stored at leaf */
+    int         level;          /* current level (counting from zero) */
+
+    /* Data from current inner tuple */
+    bool        allTheSame;     /* tuple is marked all-the-same? */
+    bool        hasPrefix;      /* tuple has a prefix? */
+    Datum       prefixDatum;    /* if so, the prefix value */
+    int         nNodes;         /* number of nodes in the inner tuple */
+    Datum      *nodeLabels;     /* node label values (NULL if none) */
+} spgChooseIn;
+
+typedef enum spgChooseResultType
+{
+    spgMatchNode = 1,           /* descend into existing node */
+    spgAddNode,                 /* add a node to the inner tuple */
+    spgSplitTuple               /* split inner tuple (change its prefix) */
+} spgChooseResultType;
+
+typedef struct spgChooseOut
+{
+    spgChooseResultType resultType;     /* action code, see above */
+    union
+    {
+        struct                  /* results for spgMatchNode */
+        {
+            int         nodeN;      /* descend to this node (index from 0) */
+            int         levelAdd;   /* increment level by this much */
+            Datum       restDatum;  /* new leaf datum */
+        }           matchNode;
+        struct                  /* results for spgAddNode */
+        {
+            Datum       nodeLabel;  /* new node's label */
+            int         nodeN;      /* where to insert it (index from 0) */
+        }           addNode;
+        struct                  /* results for spgSplitTuple */
+        {
+            /* Info to form new upper-level inner tuple with one child tuple */
+            bool        prefixHasPrefix;    /* tuple should have a prefix? */
+            Datum       prefixPrefixDatum;  /* if so, its value */
+            int         prefixNNodes;       /* number of nodes */
+            Datum      *prefixNodeLabels;   /* their labels (or NULL for
+                                             * no labels) */
+            int         childNodeN;         /* which node gets child tuple */
+
+            /* Info to form new lower-level inner tuple with all old nodes */
+            bool        postfixHasPrefix;   /* tuple should have a prefix? */
+            Datum       postfixPrefixDatum; /* if so, its value */
+        }           splitTuple;
+    }           result;
+} spgChooseOut;
+</pre><p>
+
+       <code class="structfield">datum</code> is the original datum of
+       <code class="structname">spgConfigIn</code>.<code class="structfield">attType</code>
+       type that was to be inserted into the index.
+       <code class="structfield">leafDatum</code> is a value of
+       <code class="structname">spgConfigOut</code>.<code class="structfield">leafType</code>
+       type, which is initially a result of method
+       <code class="function">compress</code> applied to <code class="structfield">datum</code>
+       when method <code class="function">compress</code> is provided, or the same value as
+       <code class="structfield">datum</code> otherwise.
+       <code class="structfield">leafDatum</code> can change at lower levels of the tree
+       if the <code class="function">choose</code> or <code class="function">picksplit</code>
+       methods change it.  When the insertion search reaches a leaf page,
+       the current value of <code class="structfield">leafDatum</code> is what will be stored
+       in the newly created leaf tuple.
+       <code class="structfield">level</code> is the current inner tuple's level, starting at
+       zero for the root level.
+       <code class="structfield">allTheSame</code> is true if the current inner tuple is
+       marked as containing multiple equivalent nodes
+       (see <a class="xref" href="spgist-implementation.html#SPGIST-ALL-THE-SAME" title="66.4.3. “All-the-Same” Inner Tuples">Section 66.4.3</a>).
+       <code class="structfield">hasPrefix</code> is true if the current inner tuple contains
+       a prefix; if so,
+       <code class="structfield">prefixDatum</code> is its value.
+       <code class="structfield">nNodes</code> is the number of child nodes contained in the
+       inner tuple, and
+       <code class="structfield">nodeLabels</code> is an array of their label values, or
+       NULL if there are no labels.
+      </p><p>
+       The <code class="function">choose</code> function can determine either that
+       the new value matches one of the existing child nodes, or that a new
+       child node must be added, or that the new value is inconsistent with
+       the tuple prefix and so the inner tuple must be split to create a
+       less restrictive prefix.
+      </p><p>
+       If the new value matches one of the existing child nodes,
+       set <code class="structfield">resultType</code> to <code class="literal">spgMatchNode</code>.
+       Set <code class="structfield">nodeN</code> to the index (from zero) of that node in
+       the node array.
+       Set <code class="structfield">levelAdd</code> to the increment in
+       <code class="structfield">level</code> caused by descending through that node,
+       or leave it as zero if the operator class does not use levels.
+       Set <code class="structfield">restDatum</code> to equal <code class="structfield">leafDatum</code>
+       if the operator class does not modify datums from one level to the
+       next, or otherwise set it to the modified value to be used as
+       <code class="structfield">leafDatum</code> at the next level.
+      </p><p>
+       If a new child node must be added,
+       set <code class="structfield">resultType</code> to <code class="literal">spgAddNode</code>.
+       Set <code class="structfield">nodeLabel</code> to the label to be used for the new
+       node, and set <code class="structfield">nodeN</code> to the index (from zero) at which
+       to insert the node in the node array.
+       After the node has been added, the <code class="function">choose</code>
+       function will be called again with the modified inner tuple;
+       that call should result in an <code class="literal">spgMatchNode</code> result.
+      </p><p>
+       If the new value is inconsistent with the tuple prefix,
+       set <code class="structfield">resultType</code> to <code class="literal">spgSplitTuple</code>.
+       This action moves all the existing nodes into a new lower-level
+       inner tuple, and replaces the existing inner tuple with a tuple
+       having a single downlink pointing to the new lower-level inner tuple.
+       Set <code class="structfield">prefixHasPrefix</code> to indicate whether the new
+       upper tuple should have a prefix, and if so set
+       <code class="structfield">prefixPrefixDatum</code> to the prefix value.  This new
+       prefix value must be sufficiently less restrictive than the original
+       to accept the new value to be indexed.
+       Set <code class="structfield">prefixNNodes</code> to the number of nodes needed in the
+       new tuple, and set <code class="structfield">prefixNodeLabels</code> to a palloc'd array
+       holding their labels, or to NULL if node labels are not required.
+       Note that the total size of the new upper tuple must be no more
+       than the total size of the tuple it is replacing; this constrains
+       the lengths of the new prefix and new labels.
+       Set <code class="structfield">childNodeN</code> to the index (from zero) of the node
+       that will downlink to the new lower-level inner tuple.
+       Set <code class="structfield">postfixHasPrefix</code> to indicate whether the new
+       lower-level inner tuple should have a prefix, and if so set
+       <code class="structfield">postfixPrefixDatum</code> to the prefix value.  The
+       combination of these two prefixes and the downlink node's label
+       (if any) must have the same meaning as the original prefix, because
+       there is no opportunity to alter the node labels that are moved to
+       the new lower-level tuple, nor to change any child index entries.
+       After the node has been split, the <code class="function">choose</code>
+       function will be called again with the replacement inner tuple.
+       That call may return an <code class="literal">spgAddNode</code> result, if no suitable
+       node was created by the <code class="literal">spgSplitTuple</code> action.  Eventually
+       <code class="function">choose</code> must return <code class="literal">spgMatchNode</code> to
+       allow the insertion to descend to the next level.
+      </p></dd><dt><span class="term"><code class="function">picksplit</code></span></dt><dd><p>
+       Decides how to create a new inner tuple over a set of leaf tuples.
+      </p><p>
+        The <acronym class="acronym">SQL</acronym> declaration of the function must look like this:
+</p><pre class="programlisting">
+CREATE FUNCTION my_picksplit(internal, internal) RETURNS void ...
+</pre><p>
+      The first argument is a pointer to a <code class="structname">spgPickSplitIn</code>
+      C struct, containing input data for the function.
+      The second argument is a pointer to a <code class="structname">spgPickSplitOut</code>
+      C struct, which the function must fill with result data.
+</p><pre class="programlisting">
+typedef struct spgPickSplitIn
+{
+    int         nTuples;        /* number of leaf tuples */
+    Datum      *datums;         /* their datums (array of length nTuples) */
+    int         level;          /* current level (counting from zero) */
+} spgPickSplitIn;
+
+typedef struct spgPickSplitOut
+{
+    bool        hasPrefix;      /* new inner tuple should have a prefix? */
+    Datum       prefixDatum;    /* if so, its value */
+
+    int         nNodes;         /* number of nodes for new inner tuple */
+    Datum      *nodeLabels;     /* their labels (or NULL for no labels) */
+
+    int        *mapTuplesToNodes;   /* node index for each leaf tuple */
+    Datum      *leafTupleDatums;    /* datum to store in each new leaf tuple */
+} spgPickSplitOut;
+</pre><p>
+
+       <code class="structfield">nTuples</code> is the number of leaf tuples provided.
+       <code class="structfield">datums</code> is an array of their datum values of
+       <code class="structname">spgConfigOut</code>.<code class="structfield">leafType</code>
+       type.
+       <code class="structfield">level</code> is the current level that all the leaf tuples
+       share, which will become the level of the new inner tuple.
+      </p><p>
+       Set <code class="structfield">hasPrefix</code> to indicate whether the new inner
+       tuple should have a prefix, and if so set
+       <code class="structfield">prefixDatum</code> to the prefix value.
+       Set <code class="structfield">nNodes</code> to indicate the number of nodes that
+       the new inner tuple will contain, and
+       set <code class="structfield">nodeLabels</code> to an array of their label values,
+       or to NULL if node labels are not required.
+       Set <code class="structfield">mapTuplesToNodes</code> to an array that gives the index
+       (from zero) of the node that each leaf tuple should be assigned to.
+       Set <code class="structfield">leafTupleDatums</code> to an array of the values to
+       be stored in the new leaf tuples (these will be the same as the
+       input <code class="structfield">datums</code> if the operator class does not modify
+       datums from one level to the next).
+       Note that the <code class="function">picksplit</code> function is
+       responsible for palloc'ing the
+       <code class="structfield">nodeLabels</code>, <code class="structfield">mapTuplesToNodes</code> and
+       <code class="structfield">leafTupleDatums</code> arrays.
+      </p><p>
+       If more than one leaf tuple is supplied, it is expected that the
+       <code class="function">picksplit</code> function will classify them into more than
+       one node; otherwise it is not possible to split the leaf tuples
+       across multiple pages, which is the ultimate purpose of this
+       operation.  Therefore, if the <code class="function">picksplit</code> function
+       ends up placing all the leaf tuples in the same node, the core
+       SP-GiST code will override that decision and generate an inner
+       tuple in which the leaf tuples are assigned at random to several
+       identically-labeled nodes.  Such a tuple is marked
+       <code class="literal">allTheSame</code> to signify that this has happened.  The
+       <code class="function">choose</code> and <code class="function">inner_consistent</code> functions
+       must take suitable care with such inner tuples.
+       See <a class="xref" href="spgist-implementation.html#SPGIST-ALL-THE-SAME" title="66.4.3. “All-the-Same” Inner Tuples">Section 66.4.3</a> for more information.
+      </p><p>
+       <code class="function">picksplit</code> can be applied to a single leaf tuple only
+       in the case that the <code class="function">config</code> function set
+       <code class="structfield">longValuesOK</code> to true and a larger-than-a-page input
+       value has been supplied.  In this case the point of the operation is
+       to strip off a prefix and produce a new, shorter leaf datum value.
+       The call will be repeated until a leaf datum short enough to fit on
+       a page has been produced.  See <a class="xref" href="spgist-implementation.html#SPGIST-LIMITS" title="66.4.1. SP-GiST Limits">Section 66.4.1</a> for
+       more information.
+      </p></dd><dt><span class="term"><code class="function">inner_consistent</code></span></dt><dd><p>
+       Returns set of nodes (branches) to follow during tree search.
+      </p><p>
+       The <acronym class="acronym">SQL</acronym> declaration of the function must look like this:
+</p><pre class="programlisting">
+CREATE FUNCTION my_inner_consistent(internal, internal) RETURNS void ...
+</pre><p>
+      The first argument is a pointer to a <code class="structname">spgInnerConsistentIn</code>
+      C struct, containing input data for the function.
+      The second argument is a pointer to a <code class="structname">spgInnerConsistentOut</code>
+      C struct, which the function must fill with result data.
+
+</p><pre class="programlisting">
+typedef struct spgInnerConsistentIn
+{
+    ScanKey     scankeys;       /* array of operators and comparison values */
+    ScanKey     orderbys;       /* array of ordering operators and comparison
+                                 * values */
+    int         nkeys;          /* length of scankeys array */
+    int         norderbys;      /* length of orderbys array */
+
+    Datum       reconstructedValue;     /* value reconstructed at parent */
+    void       *traversalValue; /* opclass-specific traverse value */
+    MemoryContext traversalMemoryContext;   /* put new traverse values here */
+    int         level;          /* current level (counting from zero) */
+    bool        returnData;     /* original data must be returned? */
+
+    /* Data from current inner tuple */
+    bool        allTheSame;     /* tuple is marked all-the-same? */
+    bool        hasPrefix;      /* tuple has a prefix? */
+    Datum       prefixDatum;    /* if so, the prefix value */
+    int         nNodes;         /* number of nodes in the inner tuple */
+    Datum      *nodeLabels;     /* node label values (NULL if none) */
+} spgInnerConsistentIn;
+
+typedef struct spgInnerConsistentOut
+{
+    int         nNodes;         /* number of child nodes to be visited */
+    int        *nodeNumbers;    /* their indexes in the node array */
+    int        *levelAdds;      /* increment level by this much for each */
+    Datum      *reconstructedValues;    /* associated reconstructed values */
+    void      **traversalValues;        /* opclass-specific traverse values */
+    double    **distances;              /* associated distances */
+} spgInnerConsistentOut;
+</pre><p>
+
+       The array <code class="structfield">scankeys</code>, of length <code class="structfield">nkeys</code>,
+       describes the index search condition(s).  These conditions are
+       combined with AND — only index entries that satisfy all of
+       them are interesting.  (Note that <code class="structfield">nkeys</code> = 0 implies
+       that all index entries satisfy the query.)  Usually the consistent
+       function only cares about the <code class="structfield">sk_strategy</code> and
+       <code class="structfield">sk_argument</code> fields of each array entry, which
+       respectively give the indexable operator and comparison value.
+       In particular it is not necessary to check <code class="structfield">sk_flags</code> to
+       see if the comparison value is NULL, because the SP-GiST core code
+       will filter out such conditions.
+       The array <code class="structfield">orderbys</code>, of length <code class="structfield">norderbys</code>,
+       describes ordering operators (if any) in the same manner.
+       <code class="structfield">reconstructedValue</code> is the value reconstructed for the
+       parent tuple; it is <code class="literal">(Datum) 0</code> at the root level or if the
+       <code class="function">inner_consistent</code> function did not provide a value at the
+       parent level.
+       <code class="structfield">traversalValue</code> is a pointer to any traverse data
+       passed down from the previous call of <code class="function">inner_consistent</code>
+       on the parent index tuple, or NULL at the root level.
+       <code class="structfield">traversalMemoryContext</code> is the memory context in which
+       to store output traverse values (see below).
+       <code class="structfield">level</code> is the current inner tuple's level, starting at
+       zero for the root level.
+       <code class="structfield">returnData</code> is <code class="literal">true</code> if reconstructed data is
+       required for this query; this will only be so if the
+       <code class="function">config</code> function asserted <code class="structfield">canReturnData</code>.
+       <code class="structfield">allTheSame</code> is true if the current inner tuple is
+       marked <span class="quote">“<span class="quote">all-the-same</span>”</span>; in this case all the nodes have the
+       same label (if any) and so either all or none of them match the query
+       (see <a class="xref" href="spgist-implementation.html#SPGIST-ALL-THE-SAME" title="66.4.3. “All-the-Same” Inner Tuples">Section 66.4.3</a>).
+       <code class="structfield">hasPrefix</code> is true if the current inner tuple contains
+       a prefix; if so,
+       <code class="structfield">prefixDatum</code> is its value.
+       <code class="structfield">nNodes</code> is the number of child nodes contained in the
+       inner tuple, and
+       <code class="structfield">nodeLabels</code> is an array of their label values, or
+       NULL if the nodes do not have labels.
+      </p><p>
+       <code class="structfield">nNodes</code> must be set to the number of child nodes that
+       need to be visited by the search, and
+       <code class="structfield">nodeNumbers</code> must be set to an array of their indexes.
+       If the operator class keeps track of levels, set
+       <code class="structfield">levelAdds</code> to an array of the level increments
+       required when descending to each node to be visited.  (Often these
+       increments will be the same for all the nodes, but that's not
+       necessarily so, so an array is used.)
+       If value reconstruction is needed, set
+       <code class="structfield">reconstructedValues</code> to an array of the values
+       reconstructed for each child node to be visited; otherwise, leave
+       <code class="structfield">reconstructedValues</code> as NULL.
+       The reconstructed values are assumed to be of type
+       <code class="structname">spgConfigOut</code>.<code class="structfield">leafType</code>.
+       (However, since the core system will do nothing with them except
+       possibly copy them, it is sufficient for them to have the
+       same <code class="literal">typlen</code> and <code class="literal">typbyval</code>
+       properties as <code class="structfield">leafType</code>.)
+       If ordered search is performed, set <code class="structfield">distances</code>
+       to an array of distance values according to <code class="structfield">orderbys</code>
+       array (nodes with lowest distances will be processed first).  Leave it
+       NULL otherwise.
+       If it is desired to pass down additional out-of-band information
+       (<span class="quote">“<span class="quote">traverse values</span>”</span>) to lower levels of the tree search,
+       set <code class="structfield">traversalValues</code> to an array of the appropriate
+       traverse values, one for each child node to be visited; otherwise,
+       leave <code class="structfield">traversalValues</code> as NULL.
+       Note that the <code class="function">inner_consistent</code> function is
+       responsible for palloc'ing the
+       <code class="structfield">nodeNumbers</code>, <code class="structfield">levelAdds</code>,
+       <code class="structfield">distances</code>,
+       <code class="structfield">reconstructedValues</code>, and
+       <code class="structfield">traversalValues</code> arrays in the current memory context.
+       However, any output traverse values pointed to by
+       the <code class="structfield">traversalValues</code> array should be allocated
+       in <code class="structfield">traversalMemoryContext</code>.
+       Each traverse value must be a single palloc'd chunk.
+      </p></dd><dt><span class="term"><code class="function">leaf_consistent</code></span></dt><dd><p>
+       Returns true if a leaf tuple satisfies a query.
+      </p><p>
+       The <acronym class="acronym">SQL</acronym> declaration of the function must look like this:
+</p><pre class="programlisting">
+CREATE FUNCTION my_leaf_consistent(internal, internal) RETURNS bool ...
+</pre><p>
+      The first argument is a pointer to a <code class="structname">spgLeafConsistentIn</code>
+      C struct, containing input data for the function.
+      The second argument is a pointer to a <code class="structname">spgLeafConsistentOut</code>
+      C struct, which the function must fill with result data.
+</p><pre class="programlisting">
+typedef struct spgLeafConsistentIn
+{
+    ScanKey     scankeys;       /* array of operators and comparison values */
+    ScanKey     orderbys;       /* array of ordering operators and comparison
+                                 * values */
+    int         nkeys;          /* length of scankeys array */
+    int         norderbys;      /* length of orderbys array */
+
+    Datum       reconstructedValue;     /* value reconstructed at parent */
+    void       *traversalValue; /* opclass-specific traverse value */
+    int         level;          /* current level (counting from zero) */
+    bool        returnData;     /* original data must be returned? */
+
+    Datum       leafDatum;      /* datum in leaf tuple */
+} spgLeafConsistentIn;
+
+typedef struct spgLeafConsistentOut
+{
+    Datum       leafValue;        /* reconstructed original data, if any */
+    bool        recheck;          /* set true if operator must be rechecked */
+    bool        recheckDistances; /* set true if distances must be rechecked */
+    double     *distances;        /* associated distances */
+} spgLeafConsistentOut;
+</pre><p>
+
+       The array <code class="structfield">scankeys</code>, of length <code class="structfield">nkeys</code>,
+       describes the index search condition(s).  These conditions are
+       combined with AND — only index entries that satisfy all of
+       them satisfy the query.  (Note that <code class="structfield">nkeys</code> = 0 implies
+       that all index entries satisfy the query.)  Usually the consistent
+       function only cares about the <code class="structfield">sk_strategy</code> and
+       <code class="structfield">sk_argument</code> fields of each array entry, which
+       respectively give the indexable operator and comparison value.
+       In particular it is not necessary to check <code class="structfield">sk_flags</code> to
+       see if the comparison value is NULL, because the SP-GiST core code
+       will filter out such conditions.
+       The array <code class="structfield">orderbys</code>, of length <code class="structfield">norderbys</code>,
+       describes the ordering operators in the same manner.
+       <code class="structfield">reconstructedValue</code> is the value reconstructed for the
+       parent tuple; it is <code class="literal">(Datum) 0</code> at the root level or if the
+       <code class="function">inner_consistent</code> function did not provide a value at the
+       parent level.
+       <code class="structfield">traversalValue</code> is a pointer to any traverse data
+       passed down from the previous call of <code class="function">inner_consistent</code>
+       on the parent index tuple, or NULL at the root level.
+       <code class="structfield">level</code> is the current leaf tuple's level, starting at
+       zero for the root level.
+       <code class="structfield">returnData</code> is <code class="literal">true</code> if reconstructed data is
+       required for this query; this will only be so if the
+       <code class="function">config</code> function asserted <code class="structfield">canReturnData</code>.
+       <code class="structfield">leafDatum</code> is the key value of
+       <code class="structname">spgConfigOut</code>.<code class="structfield">leafType</code>
+       stored in the current leaf tuple.
+      </p><p>
+       The function must return <code class="literal">true</code> if the leaf tuple matches the
+       query, or <code class="literal">false</code> if not.  In the <code class="literal">true</code> case,
+       if <code class="structfield">returnData</code> is <code class="literal">true</code> then
+       <code class="structfield">leafValue</code> must be set to the value (of type
+       <code class="structname">spgConfigIn</code>.<code class="structfield">attType</code>)
+       originally supplied to be indexed for this leaf tuple.  Also,
+       <code class="structfield">recheck</code> may be set to <code class="literal">true</code> if the match
+       is uncertain and so the operator(s) must be re-applied to the actual
+       heap tuple to verify the match.
+       If ordered search is performed, set <code class="structfield">distances</code>
+       to an array of distance values according to <code class="structfield">orderbys</code>
+       array.  Leave it NULL otherwise.  If at least one of returned distances
+       is not exact, set <code class="structfield">recheckDistances</code> to true.
+       In this case, the executor will calculate the exact distances after
+       fetching the tuple from the heap, and will reorder the tuples if needed.
+      </p></dd></dl></div><p>
+  The optional user-defined methods are:
+ </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">Datum compress(Datum in)</code></span></dt><dd><p>
+       Converts a data item into a format suitable for physical storage in
+       a leaf tuple of the index.  It accepts a value of type
+       <code class="structname">spgConfigIn</code>.<code class="structfield">attType</code>
+       and returns a value of type
+       <code class="structname">spgConfigOut</code>.<code class="structfield">leafType</code>.
+       The output value must not contain an out-of-line TOAST pointer.
+      </p><p>
+       Note: the <code class="function">compress</code> method is only applied to
+       values to be stored.  The consistent methods receive query
+       <code class="structfield">scankeys</code> unchanged, without transformation
+       using <code class="function">compress</code>.
+      </p></dd><dt><span class="term"><code class="function">options</code></span></dt><dd><p>
+       Defines a set of user-visible parameters that control operator class
+       behavior.
+      </p><p>
+        The <acronym class="acronym">SQL</acronym> declaration of the function must look like this:
+
+</p><pre class="programlisting">
+CREATE OR REPLACE FUNCTION my_options(internal)
+RETURNS void
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT;
+</pre><p>
+      </p><p>
+       The function is passed a pointer to a <code class="structname">local_relopts</code>
+       struct, which needs to be filled with a set of operator class
+       specific options.  The options can be accessed from other support
+       functions using the <code class="literal">PG_HAS_OPCLASS_OPTIONS()</code> and
+       <code class="literal">PG_GET_OPCLASS_OPTIONS()</code> macros.
+      </p><p>
+       Since the representation of the key in <acronym class="acronym">SP-GiST</acronym> is
+       flexible, it may depend on user-specified parameters.
+      </p></dd></dl></div><p>
+   All the SP-GiST support methods are normally called in a short-lived
+   memory context; that is, <code class="varname">CurrentMemoryContext</code> will be reset
+   after processing of each tuple.  It is therefore not very important to
+   worry about pfree'ing everything you palloc.  (The <code class="function">config</code>
+   method is an exception: it should try to avoid leaking memory.  But
+   usually the <code class="function">config</code> method need do nothing but assign
+   constants into the passed parameter struct.)
+  </p><p>
+   If the indexed column is of a collatable data type, the index collation
+   will be passed to all the support methods, using the standard
+   <code class="function">PG_GET_COLLATION()</code> mechanism.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spgist-builtin-opclasses.html" title="66.2. Built-in Operator Classes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spgist.html" title="Chapter 66. SP-GiST Indexes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spgist-implementation.html" title="66.4. Implementation">Next</a></td></tr><tr><td width="40%" align="left" valign="top">66.2. Built-in Operator Classes </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 66.4. Implementation</td></tr></table></div></body></html>

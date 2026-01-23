@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER ROLE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-alterpublication.html" title="ALTER PUBLICATION" /><link rel="next" href="sql-alterroutine.html" title="ALTER ROUTINE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER ROLE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-alterpublication.html" title="ALTER PUBLICATION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-alterroutine.html" title="ALTER ROUTINE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERROLE"><div class="titlepage"></div><a id="id-1.9.3.26.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER ROLE</span></h2><p>ALTER ROLE — change a database role</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER ROLE <em class="replaceable"><code>role_specification</code></em> [ WITH ] <em class="replaceable"><code>option</code></em> [ ... ]
+
+<span class="phrase">where <em class="replaceable"><code>option</code></em> can be:</span>
+
+      SUPERUSER | NOSUPERUSER
+    | CREATEDB | NOCREATEDB
+    | CREATEROLE | NOCREATEROLE
+    | INHERIT | NOINHERIT
+    | LOGIN | NOLOGIN
+    | REPLICATION | NOREPLICATION
+    | BYPASSRLS | NOBYPASSRLS
+    | CONNECTION LIMIT <em class="replaceable"><code>connlimit</code></em>
+    | [ ENCRYPTED ] PASSWORD '<em class="replaceable"><code>password</code></em>' | PASSWORD NULL
+    | VALID UNTIL '<em class="replaceable"><code>timestamp</code></em>'
+
+ALTER ROLE <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+
+ALTER ROLE { <em class="replaceable"><code>role_specification</code></em> | ALL } [ IN DATABASE <em class="replaceable"><code>database_name</code></em> ] SET <em class="replaceable"><code>configuration_parameter</code></em> { TO | = } { <em class="replaceable"><code>value</code></em> | DEFAULT }
+ALTER ROLE { <em class="replaceable"><code>role_specification</code></em> | ALL } [ IN DATABASE <em class="replaceable"><code>database_name</code></em> ] SET <em class="replaceable"><code>configuration_parameter</code></em> FROM CURRENT
+ALTER ROLE { <em class="replaceable"><code>role_specification</code></em> | ALL } [ IN DATABASE <em class="replaceable"><code>database_name</code></em> ] RESET <em class="replaceable"><code>configuration_parameter</code></em>
+ALTER ROLE { <em class="replaceable"><code>role_specification</code></em> | ALL } [ IN DATABASE <em class="replaceable"><code>database_name</code></em> ] RESET ALL
+
+<span class="phrase">where <em class="replaceable"><code>role_specification</code></em> can be:</span>
+
+    <em class="replaceable"><code>role_name</code></em>
+  | CURRENT_ROLE
+  | CURRENT_USER
+  | SESSION_USER
+</pre></div><div class="refsect1" id="id-1.9.3.26.5"><h2>Description</h2><p>
+   <code class="command">ALTER ROLE</code> changes the attributes of a
+   <span class="productname">PostgreSQL</span> role.
+  </p><p>
+   The first variant of this command listed in the synopsis can change
+   many of the role attributes that can be specified in
+   <a class="link" href="sql-createrole.html" title="CREATE ROLE"><code class="command">CREATE ROLE</code></a>.
+   (All the possible attributes are covered,
+   except that there are no options for adding or removing memberships; use
+   <a class="link" href="sql-grant.html" title="GRANT"><code class="command">GRANT</code></a> and
+   <a class="link" href="sql-revoke.html" title="REVOKE"><code class="command">REVOKE</code></a> for that.)
+   Attributes not mentioned in the command retain their previous settings.
+   Database superusers can change any of these settings for any role.
+   Roles having <code class="literal">CREATEROLE</code> privilege can change any of these
+   settings except <code class="literal">SUPERUSER</code>, <code class="literal">REPLICATION</code>,
+   and <code class="literal">BYPASSRLS</code>; but only for non-superuser and
+   non-replication roles.
+   Ordinary roles can only change their own password.
+  </p><p>
+   The second variant changes the name of the role.
+   Database superusers can rename any role.
+   Roles having <code class="literal">CREATEROLE</code> privilege can rename non-superuser
+   roles.
+   The current session user cannot be renamed.
+   (Connect as a different user if you need to do that.)
+   Because <code class="literal">MD5</code>-encrypted passwords use the role name as
+   cryptographic salt, renaming a role clears its password if the
+   password is <code class="literal">MD5</code>-encrypted.
+  </p><p>
+   The remaining variants change a role's session default for a configuration
+   variable, either for all databases or, when the <code class="literal">IN
+   DATABASE</code> clause is specified, only for sessions in the named
+   database.  If <code class="literal">ALL</code> is specified instead of a role name,
+   this changes the setting for all roles.  Using <code class="literal">ALL</code>
+   with <code class="literal">IN DATABASE</code> is effectively the same as using the
+   command <code class="literal">ALTER DATABASE ... SET ...</code>.
+  </p><p>
+   Whenever the role subsequently
+   starts a new session, the specified value becomes the session
+   default, overriding whatever setting is present in
+   <code class="filename">postgresql.conf</code> or has been received from the <code class="command">postgres</code>
+   command line. This only happens at login time; executing
+   <a class="link" href="sql-set-role.html" title="SET ROLE"><code class="command">SET ROLE</code></a> or
+   <a class="link" href="sql-set-session-authorization.html" title="SET SESSION AUTHORIZATION"><code class="command">SET SESSION AUTHORIZATION</code></a> does not cause new
+   configuration values to be set.
+   Settings set for all databases are overridden by database-specific settings
+   attached to a role.  Settings for specific databases or specific roles override
+   settings for all roles.
+  </p><p>
+   Superusers can change anyone's session defaults. Roles having
+   <code class="literal">CREATEROLE</code> privilege can change defaults for non-superuser
+   roles. Ordinary roles can only set defaults for themselves.
+   Certain configuration variables cannot be set this way, or can only be
+   set if a superuser issues the command.  Only superusers can change a setting
+   for all roles in all databases.
+  </p></div><div class="refsect1" id="id-1.9.3.26.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+        The name of the role whose attributes are to be altered.
+       </p></dd><dt><span class="term"><code class="literal">CURRENT_ROLE</code><br /></span><span class="term"><code class="literal">CURRENT_USER</code></span></dt><dd><p>
+        Alter the current user instead of an explicitly identified role.
+       </p></dd><dt><span class="term"><code class="literal">SESSION_USER</code></span></dt><dd><p>
+        Alter the current session user instead of an explicitly identified
+        role.
+       </p></dd><dt><span class="term"><code class="literal">SUPERUSER</code><br /></span><span class="term"><code class="literal">NOSUPERUSER</code><br /></span><span class="term"><code class="literal">CREATEDB</code><br /></span><span class="term"><code class="literal">NOCREATEDB</code><br /></span><span class="term"><code class="literal">CREATEROLE</code><br /></span><span class="term"><code class="literal">NOCREATEROLE</code><br /></span><span class="term"><code class="literal">INHERIT</code><br /></span><span class="term"><code class="literal">NOINHERIT</code><br /></span><span class="term"><code class="literal">LOGIN</code><br /></span><span class="term"><code class="literal">NOLOGIN</code><br /></span><span class="term"><code class="literal">REPLICATION</code><br /></span><span class="term"><code class="literal">NOREPLICATION</code><br /></span><span class="term"><code class="literal">BYPASSRLS</code><br /></span><span class="term"><code class="literal">NOBYPASSRLS</code><br /></span><span class="term"><code class="literal">CONNECTION LIMIT</code> <em class="replaceable"><code>connlimit</code></em><br /></span><span class="term">[ <code class="literal">ENCRYPTED</code> ] <code class="literal">PASSWORD</code> '<em class="replaceable"><code>password</code></em>'<br /></span><span class="term"><code class="literal">PASSWORD NULL</code><br /></span><span class="term"><code class="literal">VALID UNTIL</code> '<em class="replaceable"><code>timestamp</code></em>'</span></dt><dd><p>
+        These clauses alter attributes originally set by
+        <a class="link" href="sql-createrole.html" title="CREATE ROLE"><code class="command">CREATE ROLE</code></a>. For more information, see the
+        <code class="command">CREATE ROLE</code> reference page.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+        The new name of the role.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>database_name</code></em></span></dt><dd><p>
+           The name of the database the configuration variable should be set in.
+         </p></dd><dt><span class="term"><em class="replaceable"><code>configuration_parameter</code></em><br /></span><span class="term"><em class="replaceable"><code>value</code></em></span></dt><dd><p>
+        Set this role's session default for the specified configuration
+        parameter to the given value.  If
+        <em class="replaceable"><code>value</code></em> is <code class="literal">DEFAULT</code>
+        or, equivalently, <code class="literal">RESET</code> is used, the
+        role-specific variable setting is removed, so the role will
+        inherit the system-wide default setting in new sessions.  Use
+        <code class="literal">RESET ALL</code> to clear all role-specific settings.
+        <code class="literal">SET FROM CURRENT</code> saves the session's current value of
+        the parameter as the role-specific value.
+        If <code class="literal">IN DATABASE</code> is specified, the configuration
+        parameter is set or removed for the given role and database only.
+       </p><p>
+        Role-specific variable settings take effect only at login;
+        <a class="link" href="sql-set-role.html" title="SET ROLE"><code class="command">SET ROLE</code></a> and
+        <a class="link" href="sql-set-session-authorization.html" title="SET SESSION AUTHORIZATION"><code class="command">SET SESSION AUTHORIZATION</code></a>
+        do not process role-specific variable settings.
+       </p><p>
+        See <a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a> and <a class="xref" href="runtime-config.html" title="Chapter 20. Server Configuration">Chapter 20</a> for more information about allowed
+        parameter names and values.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.26.7"><h2>Notes</h2><p>
+   Use <a class="link" href="sql-createrole.html" title="CREATE ROLE"><code class="command">CREATE ROLE</code></a>
+   to add new roles, and <a class="link" href="sql-droprole.html" title="DROP ROLE"><code class="command">DROP ROLE</code></a> to remove a role.
+  </p><p>
+   <code class="command">ALTER ROLE</code> cannot change a role's memberships.
+   Use <a class="link" href="sql-grant.html" title="GRANT"><code class="command">GRANT</code></a> and
+   <a class="link" href="sql-revoke.html" title="REVOKE"><code class="command">REVOKE</code></a>
+   to do that.
+  </p><p>
+   Caution must be exercised when specifying an unencrypted password
+   with this command.  The password will be transmitted to the server
+   in cleartext, and it might also be logged in the client's command
+   history or the server log.  <a class="xref" href="app-psql.html" title="psql"><span class="refentrytitle"><span class="application">psql</span></span></a>
+   contains a command
+   <code class="command">\password</code> that can be used to change a
+   role's password without exposing the cleartext password.
+  </p><p>
+   It is also possible to tie a
+   session default to a specific database rather than to a role; see
+   <a class="xref" href="sql-alterdatabase.html" title="ALTER DATABASE"><span class="refentrytitle">ALTER DATABASE</span></a>.
+   If there is a conflict, database-role-specific settings override role-specific
+   ones, which in turn override database-specific ones.
+  </p></div><div class="refsect1" id="id-1.9.3.26.8"><h2>Examples</h2><p>
+   Change a role's password:
+
+</p><pre class="programlisting">
+ALTER ROLE davide WITH PASSWORD 'hu8jmn3';
+</pre><p>
+  </p><p>
+   Remove a role's password:
+
+</p><pre class="programlisting">
+ALTER ROLE davide WITH PASSWORD NULL;
+</pre><p>
+  </p><p>
+   Change a password expiration date, specifying that the password
+   should expire at midday on 4th May 2015 using
+   the time zone which is one hour ahead of <acronym class="acronym">UTC</acronym>:
+</p><pre class="programlisting">
+ALTER ROLE chris VALID UNTIL 'May 4 12:00:00 2015 +1';
+</pre><p>
+  </p><p>
+   Make a password valid forever:
+</p><pre class="programlisting">
+ALTER ROLE fred VALID UNTIL 'infinity';
+</pre><p>
+  </p><p>
+   Give a role the ability to manage other roles and create new databases:
+
+</p><pre class="programlisting">
+ALTER ROLE miriam CREATEROLE CREATEDB;
+</pre><p>
+  </p><p>
+   Give a role a non-default setting of the
+   <a class="xref" href="runtime-config-resource.html#GUC-MAINTENANCE-WORK-MEM">maintenance_work_mem</a> parameter:
+
+</p><pre class="programlisting">
+ALTER ROLE worker_bee SET maintenance_work_mem = 100000;
+</pre><p>
+  </p><p>
+   Give a role a non-default, database-specific setting of the
+   <a class="xref" href="runtime-config-client.html#GUC-CLIENT-MIN-MESSAGES">client_min_messages</a> parameter:
+
+</p><pre class="programlisting">
+ALTER ROLE fred IN DATABASE devel SET client_min_messages = DEBUG;
+</pre></div><div class="refsect1" id="id-1.9.3.26.9"><h2>Compatibility</h2><p>
+   The <code class="command">ALTER ROLE</code> statement is a
+   <span class="productname">PostgreSQL</span> extension.
+  </p></div><div class="refsect1" id="id-1.9.3.26.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createrole.html" title="CREATE ROLE"><span class="refentrytitle">CREATE ROLE</span></a>, <a class="xref" href="sql-droprole.html" title="DROP ROLE"><span class="refentrytitle">DROP ROLE</span></a>, <a class="xref" href="sql-alterdatabase.html" title="ALTER DATABASE"><span class="refentrytitle">ALTER DATABASE</span></a>, <a class="xref" href="sql-set.html" title="SET"><span class="refentrytitle">SET</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-alterpublication.html" title="ALTER PUBLICATION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-alterroutine.html" title="ALTER ROUTINE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER PUBLICATION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER ROUTINE</td></tr></table></div></body></html>

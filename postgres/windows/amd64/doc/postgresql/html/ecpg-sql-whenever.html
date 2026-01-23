@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>WHENEVER</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-sql-var.html" title="VAR" /><link rel="next" href="ecpg-informix-compat.html" title="36.15. Informix Compatibility Mode" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">WHENEVER</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-sql-var.html" title="VAR">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><th width="60%" align="center">36.14. Embedded SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-informix-compat.html" title="36.15. Informix Compatibility Mode">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="ECPG-SQL-WHENEVER"><div class="titlepage"></div><div class="refnamediv"><h2>WHENEVER</h2><p>WHENEVER — specify the action to be taken when an SQL statement causes a specific class condition to be raised</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+WHENEVER { NOT FOUND | SQLERROR | SQLWARNING } <em class="replaceable"><code>action</code></em>
+</pre></div><div class="refsect1" id="id-1.7.5.20.19.3"><h2>Description</h2><p>
+     Define a behavior which is called on the special cases (Rows not
+     found, SQL warnings or errors) in the result of SQL execution.
+    </p></div><div class="refsect1" id="id-1.7.5.20.19.4"><h2>Parameters</h2><p>
+     See <a class="xref" href="ecpg-errors.html#ECPG-WHENEVER" title="36.8.1. Setting Callbacks">Section 36.8.1</a> for a description of the
+     parameters.
+    </p></div><div class="refsect1" id="id-1.7.5.20.19.5"><h2>Examples</h2><pre class="programlisting">
+EXEC SQL WHENEVER NOT FOUND CONTINUE;
+EXEC SQL WHENEVER NOT FOUND DO BREAK;
+EXEC SQL WHENEVER NOT FOUND DO CONTINUE;
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+EXEC SQL WHENEVER SQLWARNING DO warn();
+EXEC SQL WHENEVER SQLERROR sqlprint;
+EXEC SQL WHENEVER SQLERROR CALL print2();
+EXEC SQL WHENEVER SQLERROR DO handle_error("select");
+EXEC SQL WHENEVER SQLERROR DO sqlnotice(NULL, NONO);
+EXEC SQL WHENEVER SQLERROR DO sqlprint();
+EXEC SQL WHENEVER SQLERROR GOTO error_label;
+EXEC SQL WHENEVER SQLERROR STOP;
+</pre><p>
+     A typical application is the use of <code class="literal">WHENEVER NOT FOUND
+     BREAK</code> to handle looping through result sets:
+</p><pre class="programlisting">
+int
+main(void)
+{
+    EXEC SQL CONNECT TO testdb AS con1;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+    EXEC SQL ALLOCATE DESCRIPTOR d;
+    EXEC SQL DECLARE cur CURSOR FOR SELECT current_database(), 'hoge', 256;
+    EXEC SQL OPEN cur;
+
+    /* when end of result set reached, break out of while loop */
+    EXEC SQL WHENEVER NOT FOUND DO BREAK;
+
+    while (1)
+    {
+        EXEC SQL FETCH NEXT FROM cur INTO SQL DESCRIPTOR d;
+        ...
+    }
+
+    EXEC SQL CLOSE cur;
+    EXEC SQL COMMIT;
+
+    EXEC SQL DEALLOCATE DESCRIPTOR d;
+    EXEC SQL DISCONNECT ALL;
+
+    return 0;
+}
+</pre><p>
+    </p></div><div class="refsect1" id="id-1.7.5.20.19.6"><h2>Compatibility</h2><p>
+     <code class="command">WHENEVER</code> is specified in the SQL standard, but
+     most of the actions are PostgreSQL extensions.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-sql-var.html" title="VAR">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-informix-compat.html" title="36.15. Informix Compatibility Mode">Next</a></td></tr><tr><td width="40%" align="left" valign="top">VAR </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 36.15. <span xmlns="http://www.w3.org/1999/xhtml" class="productname">Informix</span> Compatibility Mode</td></tr></table></div></body></html>

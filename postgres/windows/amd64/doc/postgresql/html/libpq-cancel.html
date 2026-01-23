@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>34.7. Canceling Queries in Progress</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="libpq-single-row-mode.html" title="34.6. Retrieving Query Results Row-by-Row" /><link rel="next" href="libpq-fastpath.html" title="34.8. The Fast-Path Interface" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">34.7. Canceling Queries in Progress</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-single-row-mode.html" title="34.6. Retrieving Query Results Row-by-Row">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 34. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-fastpath.html" title="34.8. The Fast-Path Interface">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-CANCEL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">34.7. Canceling Queries in Progress</h2></div></div></div><a id="id-1.7.3.14.2" class="indexterm"></a><p>
+   A client application can request cancellation of a command that is
+   still being processed by the server, using the functions described in
+   this section.
+
+   </p><div class="variablelist"><dl class="variablelist"><dt id="LIBPQ-PQGETCANCEL"><span class="term"><code class="function">PQgetCancel</code><a id="id-1.7.3.14.3.1.1.1.2" class="indexterm"></a></span></dt><dd><p>
+       Creates a data structure containing the information needed to cancel
+       a command issued through a particular database connection.
+</p><pre class="synopsis">
+PGcancel *PQgetCancel(PGconn *conn);
+</pre><p>
+      </p><p>
+       <a class="xref" href="libpq-cancel.html#LIBPQ-PQGETCANCEL"><code class="function">PQgetCancel</code></a> creates a
+       <code class="structname">PGcancel</code><a id="id-1.7.3.14.3.1.1.2.2.3" class="indexterm"></a> object
+       given a <code class="structname">PGconn</code> connection object.  It will return
+       <code class="symbol">NULL</code> if the given <em class="parameter"><code>conn</code></em> is <code class="symbol">NULL</code> or an invalid
+       connection.  The <code class="structname">PGcancel</code> object is an opaque
+       structure that is not meant to be accessed directly by the
+       application; it can only be passed to <a class="xref" href="libpq-cancel.html#LIBPQ-PQCANCEL"><code class="function">PQcancel</code></a>
+       or <a class="xref" href="libpq-cancel.html#LIBPQ-PQFREECANCEL"><code class="function">PQfreeCancel</code></a>.
+      </p></dd><dt id="LIBPQ-PQFREECANCEL"><span class="term"><code class="function">PQfreeCancel</code><a id="id-1.7.3.14.3.1.2.1.2" class="indexterm"></a></span></dt><dd><p>
+       Frees a data structure created by <a class="xref" href="libpq-cancel.html#LIBPQ-PQGETCANCEL"><code class="function">PQgetCancel</code></a>.
+</p><pre class="synopsis">
+void PQfreeCancel(PGcancel *cancel);
+</pre><p>
+      </p><p>
+       <a class="xref" href="libpq-cancel.html#LIBPQ-PQFREECANCEL"><code class="function">PQfreeCancel</code></a> frees a data object previously created
+       by <a class="xref" href="libpq-cancel.html#LIBPQ-PQGETCANCEL"><code class="function">PQgetCancel</code></a>.
+      </p></dd><dt id="LIBPQ-PQCANCEL"><span class="term"><code class="function">PQcancel</code><a id="id-1.7.3.14.3.1.3.1.2" class="indexterm"></a></span></dt><dd><p>
+       Requests that the server abandon processing of the current command.
+</p><pre class="synopsis">
+int PQcancel(PGcancel *cancel, char *errbuf, int errbufsize);
+</pre><p>
+      </p><p>
+       The return value is 1 if the cancel request was successfully
+       dispatched and 0 if not.  If not, <em class="parameter"><code>errbuf</code></em> is filled
+       with an explanatory error message.  <em class="parameter"><code>errbuf</code></em>
+       must be a char array of size <em class="parameter"><code>errbufsize</code></em> (the
+       recommended size is 256 bytes).
+      </p><p>
+       Successful dispatch is no guarantee that the request will have
+       any effect, however.  If the cancellation is effective, the current
+       command will terminate early and return an error result.  If the
+       cancellation fails (say, because the server was already done
+       processing the command), then there will be no visible result at
+       all.
+      </p><p>
+       <a class="xref" href="libpq-cancel.html#LIBPQ-PQCANCEL"><code class="function">PQcancel</code></a> can safely be invoked from a signal
+       handler, if the <em class="parameter"><code>errbuf</code></em> is a local variable in the
+       signal handler.  The <code class="structname">PGcancel</code> object is read-only
+       as far as <a class="xref" href="libpq-cancel.html#LIBPQ-PQCANCEL"><code class="function">PQcancel</code></a> is concerned, so it can
+       also be invoked from a thread that is separate from the one
+       manipulating the <code class="structname">PGconn</code> object.
+      </p></dd></dl></div><p>
+
+   </p><div class="variablelist"><dl class="variablelist"><dt id="LIBPQ-PQREQUESTCANCEL"><span class="term"><code class="function">PQrequestCancel</code><a id="id-1.7.3.14.3.2.1.1.2" class="indexterm"></a></span></dt><dd><p>
+       <a class="xref" href="libpq-cancel.html#LIBPQ-PQREQUESTCANCEL"><code class="function">PQrequestCancel</code></a> is a deprecated variant of
+       <a class="xref" href="libpq-cancel.html#LIBPQ-PQCANCEL"><code class="function">PQcancel</code></a>.
+</p><pre class="synopsis">
+int PQrequestCancel(PGconn *conn);
+</pre><p>
+      </p><p>
+       Requests that the server abandon processing of the current
+       command.  It operates directly on the
+       <code class="structname">PGconn</code> object, and in case of failure stores the
+       error message in the <code class="structname">PGconn</code> object (whence it can
+       be retrieved by <a class="xref" href="libpq-status.html#LIBPQ-PQERRORMESSAGE"><code class="function">PQerrorMessage</code></a>).  Although
+       the functionality is the same, this approach creates hazards for
+       multiple-thread programs and signal handlers, since it is possible
+       that overwriting the <code class="structname">PGconn</code>'s error message will
+       mess up the operation currently in progress on the connection.
+      </p></dd></dl></div><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-single-row-mode.html" title="34.6. Retrieving Query Results Row-by-Row">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 34. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-fastpath.html" title="34.8. The Fast-Path Interface">Next</a></td></tr><tr><td width="40%" align="left" valign="top">34.6. Retrieving Query Results Row-by-Row </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 34.8. The Fast-Path Interface</td></tr></table></div></body></html>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>EXECUTE IMMEDIATE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-sql-disconnect.html" title="DISCONNECT" /><link rel="next" href="ecpg-sql-get-descriptor.html" title="GET DESCRIPTOR" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">EXECUTE IMMEDIATE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-sql-disconnect.html" title="DISCONNECT">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><th width="60%" align="center">36.14. Embedded SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-sql-get-descriptor.html" title="GET DESCRIPTOR">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="ECPG-SQL-EXECUTE-IMMEDIATE"><div class="titlepage"></div><div class="refnamediv"><h2>EXECUTE IMMEDIATE</h2><p>EXECUTE IMMEDIATE — dynamically prepare and execute a statement</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+EXECUTE IMMEDIATE <em class="replaceable"><code>string</code></em>
+</pre></div><div class="refsect1" id="id-1.7.5.20.10.3"><h2>Description</h2><p>
+     <code class="command">EXECUTE IMMEDIATE</code> immediately prepares and
+     executes a dynamically specified SQL statement, without
+     retrieving result rows.
+    </p></div><div class="refsect1" id="id-1.7.5.20.10.4"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>string</code></em></span></dt><dd><p>
+        A literal string or a host variable containing the SQL
+        statement to be executed.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.7.5.20.10.5"><h2>Notes</h2><p>
+     In typical usage, the <em class="replaceable"><code>string</code></em> is a host
+     variable reference to a string containing a dynamically-constructed
+     SQL statement.  The case of a literal string is not very useful;
+     you might as well just write the SQL statement directly, without
+     the extra typing of <code class="command">EXECUTE IMMEDIATE</code>.
+    </p><p>
+     If you do use a literal string, keep in mind that any double quotes
+     you might wish to include in the SQL statement must be written as
+     octal escapes (<code class="literal">\042</code>) not the usual C
+     idiom <code class="literal">\"</code>.  This is because the string is inside
+     an <code class="literal">EXEC SQL</code> section, so the ECPG lexer parses it
+     according to SQL rules not C rules.  Any embedded backslashes will
+     later be handled according to C rules; but <code class="literal">\"</code>
+     causes an immediate syntax error because it is seen as ending the
+     literal.
+    </p></div><div class="refsect1" id="id-1.7.5.20.10.6"><h2>Examples</h2><p>
+     Here is an example that executes an <code class="command">INSERT</code>
+     statement using <code class="command">EXECUTE IMMEDIATE</code> and a host
+     variable named <code class="varname">command</code>:
+</p><pre class="programlisting">
+sprintf(command, "INSERT INTO test (name, amount, letter) VALUES ('db: ''r1''', 1, 'f')");
+EXEC SQL EXECUTE IMMEDIATE :command;
+</pre><p>
+    </p></div><div class="refsect1" id="id-1.7.5.20.10.7"><h2>Compatibility</h2><p>
+     <code class="command">EXECUTE IMMEDIATE</code> is specified in the SQL standard.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-sql-disconnect.html" title="DISCONNECT">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-sql-get-descriptor.html" title="GET DESCRIPTOR">Next</a></td></tr><tr><td width="40%" align="left" valign="top">DISCONNECT </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> GET DESCRIPTOR</td></tr></table></div></body></html>

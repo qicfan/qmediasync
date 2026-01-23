@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>SPI_connect</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="spi-interface.html" title="47.1. Interface Functions" /><link rel="next" href="spi-spi-finish.html" title="SPI_finish" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">SPI_connect</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="spi-interface.html" title="47.1. Interface Functions">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="spi-interface.html" title="47.1. Interface Functions">Up</a></td><th width="60%" align="center">47.1. Interface Functions</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="spi-spi-finish.html" title="SPI_finish">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SPI-SPI-CONNECT"><div class="titlepage"></div><a id="id-1.8.12.8.2.1" class="indexterm"></a><a id="id-1.8.12.8.2.2" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">SPI_connect</span></h2><p>SPI_connect, SPI_connect_ext — connect a C function to the SPI manager</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+int SPI_connect(void)
+</pre><pre class="synopsis">
+int SPI_connect_ext(int <em class="parameter"><code>options</code></em>)
+</pre></div><div class="refsect1" id="id-1.8.12.8.2.6"><h2>Description</h2><p>
+   <code class="function">SPI_connect</code> opens a connection from a
+   C function invocation to the SPI manager.  You must call this
+   function if you want to execute commands through SPI.  Some utility
+   SPI functions can be called from unconnected C functions.
+  </p><p>
+   <code class="function">SPI_connect_ext</code> does the same but has an argument that
+   allows passing option flags.  Currently, the following option values are
+   available:
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="symbol">SPI_OPT_NONATOMIC</code></span></dt><dd><p>
+       Sets the SPI connection to be <em class="firstterm">nonatomic</em>, which
+       means that transaction control calls (<code class="function">SPI_commit</code>,
+       <code class="function">SPI_rollback</code>) are allowed.  Otherwise,
+       calling those functions will result in an immediate error.
+      </p></dd></dl></div><p>
+  </p><p>
+   <code class="literal">SPI_connect()</code> is equivalent to
+   <code class="literal">SPI_connect_ext(0)</code>.
+  </p></div><div class="refsect1" id="id-1.8.12.8.2.7"><h2>Return Value</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="symbol">SPI_OK_CONNECT</code></span></dt><dd><p>
+      on success
+     </p></dd><dt><span class="term"><code class="symbol">SPI_ERROR_CONNECT</code></span></dt><dd><p>
+      on error
+     </p></dd></dl></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="spi-interface.html" title="47.1. Interface Functions">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="spi-interface.html" title="47.1. Interface Functions">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="spi-spi-finish.html" title="SPI_finish">Next</a></td></tr><tr><td width="40%" align="left" valign="top">47.1. Interface Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SPI_finish</td></tr></table></div></body></html>

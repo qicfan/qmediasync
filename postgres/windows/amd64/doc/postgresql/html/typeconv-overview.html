@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>10.1. Overview</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="typeconv.html" title="Chapter 10. Type Conversion" /><link rel="next" href="typeconv-oper.html" title="10.2. Operators" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">10.1. Overview</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="typeconv.html" title="Chapter 10. Type Conversion">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="typeconv.html" title="Chapter 10. Type Conversion">Up</a></td><th width="60%" align="center">Chapter 10. Type Conversion</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="typeconv-oper.html" title="10.2. Operators">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TYPECONV-OVERVIEW"><div class="titlepage"><div><div><h2 class="title" style="clear: both">10.1. Overview</h2></div></div></div><p>
+<acronym class="acronym">SQL</acronym> is a strongly typed language. That is, every data item
+has an associated data type which determines its behavior and allowed usage.
+<span class="productname">PostgreSQL</span> has an extensible type system that is
+more general and flexible than other <acronym class="acronym">SQL</acronym> implementations.
+Hence, most type conversion behavior in <span class="productname">PostgreSQL</span>
+is governed by general rules rather than by ad hoc
+heuristics.  This allows the use of mixed-type expressions even with
+user-defined types.
+</p><p>
+The <span class="productname">PostgreSQL</span> scanner/parser divides lexical
+elements into five fundamental categories: integers, non-integer numbers,
+strings, identifiers, and key words.  Constants of most non-numeric types are
+first classified as strings. The <acronym class="acronym">SQL</acronym> language definition
+allows specifying type names with strings, and this mechanism can be used in
+<span class="productname">PostgreSQL</span> to start the parser down the correct
+path. For example, the query:
+
+</p><pre class="screen">
+SELECT text 'Origin' AS "label", point '(0,0)' AS "value";
+
+ label  | value
+--------+-------
+ Origin | (0,0)
+(1 row)
+</pre><p>
+
+has two literal constants, of type <code class="type">text</code> and <code class="type">point</code>.
+If a type is not specified for a string literal, then the placeholder type
+<code class="type">unknown</code> is assigned initially, to be resolved in later
+stages as described below.
+</p><p>
+There are four fundamental <acronym class="acronym">SQL</acronym> constructs requiring
+distinct type conversion rules in the <span class="productname">PostgreSQL</span>
+parser:
+
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+Function calls
+</span></dt><dd><p>
+Much of the <span class="productname">PostgreSQL</span> type system is built around a
+rich set of functions. Functions can have one or more arguments.
+Since <span class="productname">PostgreSQL</span> permits function
+overloading, the function name alone does not uniquely identify the function
+to be called; the parser must select the right function based on the data
+types of the supplied arguments.
+</p></dd><dt><span class="term">
+Operators
+</span></dt><dd><p>
+<span class="productname">PostgreSQL</span> allows expressions with
+prefix (one-argument) operators,
+as well as infix (two-argument) operators.  Like functions, operators can
+be overloaded, so the same problem of selecting the right operator
+exists.
+</p></dd><dt><span class="term">
+Value Storage
+</span></dt><dd><p>
+<acronym class="acronym">SQL</acronym> <code class="command">INSERT</code> and <code class="command">UPDATE</code> statements place the results of
+expressions into a table. The expressions in the statement must be matched up
+with, and perhaps converted to, the types of the target columns.
+</p></dd><dt><span class="term">
+<code class="literal">UNION</code>, <code class="literal">CASE</code>, and related constructs
+</span></dt><dd><p>
+Since all query results from a unionized <code class="command">SELECT</code> statement
+must appear in a single set of columns, the types of the results of each
+<code class="command">SELECT</code> clause must be matched up and converted to a uniform set.
+Similarly, the result expressions of a <code class="literal">CASE</code> construct must be
+converted to a common type so that the <code class="literal">CASE</code> expression as a whole
+has a known output type.  Some other constructs, such
+as <code class="literal">ARRAY[]</code> and the <code class="function">GREATEST</code>
+and <code class="function">LEAST</code> functions, likewise require determination of a
+common type for several subexpressions.
+</p></dd></dl></div><p>
+</p><p>
+The system catalogs store information about which conversions, or
+<em class="firstterm">casts</em>, exist between which data types, and how to
+perform those conversions.  Additional casts can be added by the user
+with the <a class="xref" href="sql-createcast.html" title="CREATE CAST"><span class="refentrytitle">CREATE CAST</span></a>
+command.  (This is usually
+done in conjunction with defining new data types.  The set of casts
+between built-in types has been carefully crafted and is best not
+altered.)
+</p><a id="id-1.5.9.6.6" class="indexterm"></a><p>
+An additional heuristic provided by the parser allows improved determination
+of the proper casting behavior among groups of types that have implicit casts.
+Data types are divided into several basic <em class="firstterm">type
+categories</em>, including <code class="type">boolean</code>, <code class="type">numeric</code>,
+<code class="type">string</code>, <code class="type">bitstring</code>, <code class="type">datetime</code>,
+<code class="type">timespan</code>, <code class="type">geometric</code>, <code class="type">network</code>, and
+user-defined.  (For a list see <a class="xref" href="catalog-pg-type.html#CATALOG-TYPCATEGORY-TABLE" title="Table 52.63. typcategory Codes">Table 52.63</a>;
+but note it is also possible to create custom type categories.)  Within each
+category there can be one or more <em class="firstterm">preferred types</em>, which
+are preferred when there is a choice of possible types.  With careful selection
+of preferred types and available implicit casts, it is possible to ensure that
+ambiguous expressions (those with multiple candidate parsing solutions) can be
+resolved in a useful way.
+</p><p>
+All type conversion rules are designed with several principles in mind:
+
+</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+Implicit conversions should never have surprising or unpredictable outcomes.
+</p></li><li class="listitem"><p>
+There should be no extra overhead in the parser or executor
+if a query does not need implicit type conversion.
+That is, if a query is well-formed and the types already match, then the query should execute
+without spending extra time in the parser and without introducing unnecessary implicit conversion
+calls in the query.
+</p></li><li class="listitem"><p>
+Additionally, if a query usually requires an implicit conversion for a function, and
+if then the user defines a new function with the correct argument types, the parser
+should use this new function and no longer do implicit conversion to use the old function.
+</p></li></ul></div><p>
+</p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="typeconv.html" title="Chapter 10. Type Conversion">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="typeconv.html" title="Chapter 10. Type Conversion">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="typeconv-oper.html" title="10.2. Operators">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 10. Type Conversion </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 10.2. Operators</td></tr></table></div></body></html>

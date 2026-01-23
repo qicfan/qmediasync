@@ -1,0 +1,1459 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>CREATE TABLE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-createsubscription.html" title="CREATE SUBSCRIPTION" /><link rel="next" href="sql-createtableas.html" title="CREATE TABLE AS" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">CREATE TABLE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-createsubscription.html" title="CREATE SUBSCRIPTION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-createtableas.html" title="CREATE TABLE AS">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-CREATETABLE"><div class="titlepage"></div><a id="id-1.9.3.85.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">CREATE TABLE</span></h2><p>CREATE TABLE — define a new table</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+CREATE [ [ GLOBAL | LOCAL ] { TEMPORARY | TEMP } | UNLOGGED ] TABLE [ IF NOT EXISTS ] <em class="replaceable"><code>table_name</code></em> ( [
+  { <em class="replaceable"><code>column_name</code></em> <em class="replaceable"><code>data_type</code></em> [ COMPRESSION <em class="replaceable"><code>compression_method</code></em> ] [ COLLATE <em class="replaceable"><code>collation</code></em> ] [ <em class="replaceable"><code>column_constraint</code></em> [ ... ] ]
+    | <em class="replaceable"><code>table_constraint</code></em>
+    | LIKE <em class="replaceable"><code>source_table</code></em> [ <em class="replaceable"><code>like_option</code></em> ... ] }
+    [, ... ]
+] )
+[ INHERITS ( <em class="replaceable"><code>parent_table</code></em> [, ... ] ) ]
+[ PARTITION BY { RANGE | LIST | HASH } ( { <em class="replaceable"><code>column_name</code></em> | ( <em class="replaceable"><code>expression</code></em> ) } [ COLLATE <em class="replaceable"><code>collation</code></em> ] [ <em class="replaceable"><code>opclass</code></em> ] [, ... ] ) ]
+[ USING <em class="replaceable"><code>method</code></em> ]
+[ WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] ) | WITHOUT OIDS ]
+[ ON COMMIT { PRESERVE ROWS | DELETE ROWS | DROP } ]
+[ TABLESPACE <em class="replaceable"><code>tablespace_name</code></em> ]
+
+CREATE [ [ GLOBAL | LOCAL ] { TEMPORARY | TEMP } | UNLOGGED ] TABLE [ IF NOT EXISTS ] <em class="replaceable"><code>table_name</code></em>
+    OF <em class="replaceable"><code>type_name</code></em> [ (
+  { <em class="replaceable"><code>column_name</code></em> [ WITH OPTIONS ] [ <em class="replaceable"><code>column_constraint</code></em> [ ... ] ]
+    | <em class="replaceable"><code>table_constraint</code></em> }
+    [, ... ]
+) ]
+[ PARTITION BY { RANGE | LIST | HASH } ( { <em class="replaceable"><code>column_name</code></em> | ( <em class="replaceable"><code>expression</code></em> ) } [ COLLATE <em class="replaceable"><code>collation</code></em> ] [ <em class="replaceable"><code>opclass</code></em> ] [, ... ] ) ]
+[ USING <em class="replaceable"><code>method</code></em> ]
+[ WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] ) | WITHOUT OIDS ]
+[ ON COMMIT { PRESERVE ROWS | DELETE ROWS | DROP } ]
+[ TABLESPACE <em class="replaceable"><code>tablespace_name</code></em> ]
+
+CREATE [ [ GLOBAL | LOCAL ] { TEMPORARY | TEMP } | UNLOGGED ] TABLE [ IF NOT EXISTS ] <em class="replaceable"><code>table_name</code></em>
+    PARTITION OF <em class="replaceable"><code>parent_table</code></em> [ (
+  { <em class="replaceable"><code>column_name</code></em> [ WITH OPTIONS ] [ <em class="replaceable"><code>column_constraint</code></em> [ ... ] ]
+    | <em class="replaceable"><code>table_constraint</code></em> }
+    [, ... ]
+) ] { FOR VALUES <em class="replaceable"><code>partition_bound_spec</code></em> | DEFAULT }
+[ PARTITION BY { RANGE | LIST | HASH } ( { <em class="replaceable"><code>column_name</code></em> | ( <em class="replaceable"><code>expression</code></em> ) } [ COLLATE <em class="replaceable"><code>collation</code></em> ] [ <em class="replaceable"><code>opclass</code></em> ] [, ... ] ) ]
+[ USING <em class="replaceable"><code>method</code></em> ]
+[ WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] ) | WITHOUT OIDS ]
+[ ON COMMIT { PRESERVE ROWS | DELETE ROWS | DROP } ]
+[ TABLESPACE <em class="replaceable"><code>tablespace_name</code></em> ]
+
+<span class="phrase">where <em class="replaceable"><code>column_constraint</code></em> is:</span>
+
+[ CONSTRAINT <em class="replaceable"><code>constraint_name</code></em> ]
+{ NOT NULL |
+  NULL |
+  CHECK ( <em class="replaceable"><code>expression</code></em> ) [ NO INHERIT ] |
+  DEFAULT <em class="replaceable"><code>default_expr</code></em> |
+  GENERATED ALWAYS AS ( <em class="replaceable"><code>generation_expr</code></em> ) STORED |
+  GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( <em class="replaceable"><code>sequence_options</code></em> ) ] |
+  UNIQUE <em class="replaceable"><code>index_parameters</code></em> |
+  PRIMARY KEY <em class="replaceable"><code>index_parameters</code></em> |
+  REFERENCES <em class="replaceable"><code>reftable</code></em> [ ( <em class="replaceable"><code>refcolumn</code></em> ) ] [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ]
+    [ ON DELETE <em class="replaceable"><code>referential_action</code></em> ] [ ON UPDATE <em class="replaceable"><code>referential_action</code></em> ] }
+[ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
+
+<span class="phrase">and <em class="replaceable"><code>table_constraint</code></em> is:</span>
+
+[ CONSTRAINT <em class="replaceable"><code>constraint_name</code></em> ]
+{ CHECK ( <em class="replaceable"><code>expression</code></em> ) [ NO INHERIT ] |
+  UNIQUE ( <em class="replaceable"><code>column_name</code></em> [, ... ] ) <em class="replaceable"><code>index_parameters</code></em> |
+  PRIMARY KEY ( <em class="replaceable"><code>column_name</code></em> [, ... ] ) <em class="replaceable"><code>index_parameters</code></em> |
+  EXCLUDE [ USING <em class="replaceable"><code>index_method</code></em> ] ( <em class="replaceable"><code>exclude_element</code></em> WITH <em class="replaceable"><code>operator</code></em> [, ... ] ) <em class="replaceable"><code>index_parameters</code></em> [ WHERE ( <em class="replaceable"><code>predicate</code></em> ) ] |
+  FOREIGN KEY ( <em class="replaceable"><code>column_name</code></em> [, ... ] ) REFERENCES <em class="replaceable"><code>reftable</code></em> [ ( <em class="replaceable"><code>refcolumn</code></em> [, ... ] ) ]
+    [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ] [ ON DELETE <em class="replaceable"><code>referential_action</code></em> ] [ ON UPDATE <em class="replaceable"><code>referential_action</code></em> ] }
+[ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
+
+<span class="phrase">and <em class="replaceable"><code>like_option</code></em> is:</span>
+
+{ INCLUDING | EXCLUDING } { COMMENTS | COMPRESSION | CONSTRAINTS | DEFAULTS | GENERATED | IDENTITY | INDEXES | STATISTICS | STORAGE | ALL }
+
+<span class="phrase">and <em class="replaceable"><code>partition_bound_spec</code></em> is:</span>
+
+IN ( <em class="replaceable"><code>partition_bound_expr</code></em> [, ...] ) |
+FROM ( { <em class="replaceable"><code>partition_bound_expr</code></em> | MINVALUE | MAXVALUE } [, ...] )
+  TO ( { <em class="replaceable"><code>partition_bound_expr</code></em> | MINVALUE | MAXVALUE } [, ...] ) |
+WITH ( MODULUS <em class="replaceable"><code>numeric_literal</code></em>, REMAINDER <em class="replaceable"><code>numeric_literal</code></em> )
+
+<span class="phrase"><em class="replaceable"><code>index_parameters</code></em> in <code class="literal">UNIQUE</code>, <code class="literal">PRIMARY KEY</code>, and <code class="literal">EXCLUDE</code> constraints are:</span>
+
+[ INCLUDE ( <em class="replaceable"><code>column_name</code></em> [, ... ] ) ]
+[ WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] ) ]
+[ USING INDEX TABLESPACE <em class="replaceable"><code>tablespace_name</code></em> ]
+
+<span class="phrase"><em class="replaceable"><code>exclude_element</code></em> in an <code class="literal">EXCLUDE</code> constraint is:</span>
+
+{ <em class="replaceable"><code>column_name</code></em> | ( <em class="replaceable"><code>expression</code></em> ) } [ COLLATE <em class="replaceable"><code>collation</code></em> ] [ <em class="replaceable"><code>opclass</code></em> [ ( <em class="replaceable"><code>opclass_parameter</code></em> = <em class="replaceable"><code>value</code></em> [, ... ] ) ] ] [ ASC | DESC ] [ NULLS { FIRST | LAST } ]
+</pre></div><div class="refsect1" id="SQL-CREATETABLE-DESCRIPTION"><h2>Description</h2><p>
+   <code class="command">CREATE TABLE</code> will create a new, initially empty table
+   in the current database. The table will be owned by the user issuing the
+   command.
+  </p><p>
+   If a schema name is given (for example, <code class="literal">CREATE TABLE
+   myschema.mytable ...</code>) then the table is created in the specified
+   schema.  Otherwise it is created in the current schema.  Temporary
+   tables exist in a special schema, so a schema name cannot be given
+   when creating a temporary table.  The name of the table must be
+   distinct from the name of any other table, sequence, index, view,
+   or foreign table in the same schema.
+  </p><p>
+   <code class="command">CREATE TABLE</code> also automatically creates a data
+   type that represents the composite type corresponding
+   to one row of the table.  Therefore, tables cannot have the same
+   name as any existing data type in the same schema.
+  </p><p>
+   The optional constraint clauses specify constraints (tests) that
+   new or updated rows must satisfy for an insert or update operation
+   to succeed.  A constraint is an SQL object that helps define the
+   set of valid values in the table in various ways.
+  </p><p>
+   There are two ways to define constraints: table constraints and
+   column constraints.  A column constraint is defined as part of a
+   column definition.  A table constraint definition is not tied to a
+   particular column, and it can encompass more than one column.
+   Every column constraint can also be written as a table constraint;
+   a column constraint is only a notational convenience for use when the
+   constraint only affects one column.
+  </p><p>
+   To be able to create a table, you must have <code class="literal">USAGE</code>
+   privilege on all column types or the type in the <code class="literal">OF</code>
+   clause, respectively.
+  </p></div><div class="refsect1" id="id-1.9.3.85.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt id="SQL-CREATETABLE-TEMPORARY"><span class="term"><code class="literal">TEMPORARY</code> or <code class="literal">TEMP</code></span></dt><dd><p>
+      If specified, the table is created as a temporary table.
+      Temporary tables are automatically dropped at the end of a
+      session, or optionally at the end of the current transaction
+      (see <code class="literal">ON COMMIT</code> below).  The default
+      search_path includes the temporary schema first and so identically
+      named existing permanent tables are not chosen for new plans
+      while the temporary table exists, unless they are referenced
+      with schema-qualified names. Any indexes created on a temporary
+      table are automatically temporary as well.
+     </p><p>
+      The <a class="link" href="routine-vacuuming.html#AUTOVACUUM" title="25.1.6. The Autovacuum Daemon">autovacuum daemon</a> cannot
+      access and therefore cannot vacuum or analyze temporary tables.
+      For this reason, appropriate vacuum and analyze operations should be
+      performed via session SQL commands.  For example, if a temporary
+      table is going to be used in complex queries, it is wise to run
+      <code class="command">ANALYZE</code> on the temporary table after it is populated.
+     </p><p>
+      Optionally, <code class="literal">GLOBAL</code> or <code class="literal">LOCAL</code>
+      can be written before <code class="literal">TEMPORARY</code> or <code class="literal">TEMP</code>.
+      This presently makes no difference in <span class="productname">PostgreSQL</span>
+      and is deprecated; see
+      <a class="xref" href="sql-createtable.html#SQL-CREATETABLE-COMPATIBILITY" title="Compatibility">Compatibility</a> below.
+     </p></dd><dt id="SQL-CREATETABLE-UNLOGGED"><span class="term"><code class="literal">UNLOGGED</code></span></dt><dd><p>
+      If specified, the table is created as an unlogged table.  Data written
+      to unlogged tables is not written to the write-ahead log (see <a class="xref" href="wal.html" title="Chapter 30. Reliability and the Write-Ahead Log">Chapter 30</a>), which makes them considerably faster than ordinary
+      tables.  However, they are not crash-safe: an unlogged table is
+      automatically truncated after a crash or unclean shutdown.  The contents
+      of an unlogged table are also not replicated to standby servers.
+      Any indexes created on an unlogged table are automatically unlogged as
+      well.
+     </p></dd><dt><span class="term"><code class="literal">IF NOT EXISTS</code></span></dt><dd><p>
+      Do not throw an error if a relation with the same name already exists.
+      A notice is issued in this case.  Note that there is no guarantee that
+      the existing relation is anything like the one that would have been
+      created.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>table_name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of the table to be created.
+     </p></dd><dt><span class="term"><code class="literal">OF <em class="replaceable"><code>type_name</code></em></code></span></dt><dd><p>
+      Creates a <em class="firstterm">typed table</em>, which takes its
+      structure from the specified composite type (name optionally
+      schema-qualified).  A typed table is tied to its type; for
+      example the table will be dropped if the type is dropped
+      (with <code class="literal">DROP TYPE ... CASCADE</code>).
+     </p><p>
+      When a typed table is created, then the data types of the
+      columns are determined by the underlying composite type and are
+      not specified by the <code class="literal">CREATE TABLE</code> command.
+      But the <code class="literal">CREATE TABLE</code> command can add defaults
+      and constraints to the table and can specify storage parameters.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>column_name</code></em></span></dt><dd><p>
+      The name of a column to be created in the new table.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>data_type</code></em></span></dt><dd><p>
+      The data type of the column. This can include array
+      specifiers. For more information on the data types supported by
+      <span class="productname">PostgreSQL</span>, refer to <a class="xref" href="datatype.html" title="Chapter 8. Data Types">Chapter 8</a>.
+     </p></dd><dt><span class="term"><code class="literal">COLLATE <em class="replaceable"><code>collation</code></em></code></span></dt><dd><p>
+      The <code class="literal">COLLATE</code> clause assigns a collation to
+      the column (which must be of a collatable data type).
+      If not specified, the column data type's default collation is used.
+     </p></dd><dt><span class="term"><code class="literal">COMPRESSION <em class="replaceable"><code>compression_method</code></em></code></span></dt><dd><p>
+      The <code class="literal">COMPRESSION</code> clause sets the compression method
+      for the column.  Compression is supported only for variable-width data
+      types, and is used only when the column's storage mode
+      is <code class="literal">main</code> or <code class="literal">extended</code>.
+      (See <a class="xref" href="sql-altertable.html" title="ALTER TABLE"><span class="refentrytitle">ALTER TABLE</span></a> for information on
+      column storage modes.) Setting this property for a partitioned table
+      has no direct effect, because such tables have no storage of their own,
+      but the configured value will be inherited by newly-created partitions.
+      The supported compression methods are <code class="literal">pglz</code> and
+      <code class="literal">lz4</code>.  (<code class="literal">lz4</code> is available only if
+      <code class="option">--with-lz4</code> was used when building
+      <span class="productname">PostgreSQL</span>.)  In addition,
+      <em class="replaceable"><code>compression_method</code></em>
+      can be <code class="literal">default</code> to explicitly specify the default
+      behavior, which is to consult the
+      <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TOAST-COMPRESSION">default_toast_compression</a> setting at the time of
+      data insertion to determine the method to use.
+     </p></dd><dt><span class="term"><code class="literal">INHERITS ( <em class="replaceable"><code>parent_table</code></em> [, ... ] )</code></span></dt><dd><p>
+      The optional <code class="literal">INHERITS</code> clause specifies a list of
+      tables from which the new table automatically inherits all
+      columns.  Parent tables can be plain tables or foreign tables.
+     </p><p>
+      Use of <code class="literal">INHERITS</code> creates a persistent relationship
+      between the new child table and its parent table(s).  Schema
+      modifications to the parent(s) normally propagate to children
+      as well, and by default the data of the child table is included in
+      scans of the parent(s).
+     </p><p>
+      If the same column name exists in more than one parent
+      table, an error is reported unless the data types of the columns
+      match in each of the parent tables.  If there is no conflict,
+      then the duplicate columns are merged to form a single column in
+      the new table.  If the column name list of the new table
+      contains a column name that is also inherited, the data type must
+      likewise match the inherited column(s), and the column
+      definitions are merged into one.  If the
+      new table explicitly specifies a default value for the column,
+      this default overrides any defaults from inherited declarations
+      of the column.  Otherwise, any parents that specify default
+      values for the column must all specify the same default, or an
+      error will be reported.
+     </p><p>
+      <code class="literal">CHECK</code> constraints are merged in essentially the same way as
+      columns: if multiple parent tables and/or the new table definition
+      contain identically-named <code class="literal">CHECK</code> constraints, these
+      constraints must all have the same check expression, or an error will be
+      reported.  Constraints having the same name and expression will
+      be merged into one copy.  A constraint marked <code class="literal">NO INHERIT</code> in a
+      parent will not be considered.  Notice that an unnamed <code class="literal">CHECK</code>
+      constraint in the new table will never be merged, since a unique name
+      will always be chosen for it.
+     </p><p>
+      Column <code class="literal">STORAGE</code> settings are also copied from parent tables.
+     </p><p>
+      If a column in the parent table is an identity column, that property is
+      not inherited.  A column in the child table can be declared identity
+      column if desired.
+     </p></dd><dt><span class="term"><code class="literal">PARTITION BY { RANGE | LIST | HASH } ( { <em class="replaceable"><code>column_name</code></em> | ( <em class="replaceable"><code>expression</code></em> ) } [ <em class="replaceable"><code>opclass</code></em> ] [, ...] ) </code></span></dt><dd><p>
+      The optional <code class="literal">PARTITION BY</code> clause specifies a strategy
+      of partitioning the table.  The table thus created is called a
+      <em class="firstterm">partitioned</em> table.  The parenthesized list of
+      columns or expressions forms the <em class="firstterm">partition key</em>
+      for the table.  When using range or hash partitioning, the partition key
+      can include multiple columns or expressions (up to 32, but this limit can
+      be altered when building <span class="productname">PostgreSQL</span>), but for
+      list partitioning, the partition key must consist of a single column or
+      expression.
+     </p><p>
+      Range and list partitioning require a btree operator class, while hash
+      partitioning requires a hash operator class.  If no operator class is
+      specified explicitly, the default operator class of the appropriate
+      type will be used; if no default operator class exists, an error will
+      be raised.  When hash partitioning is used, the operator class used
+      must implement support function 2 (see <a class="xref" href="xindex.html#XINDEX-SUPPORT" title="38.16.3. Index Method Support Routines">Section 38.16.3</a>
+      for details).
+     </p><p>
+      A partitioned table is divided into sub-tables (called partitions),
+      which are created using separate <code class="literal">CREATE TABLE</code> commands.
+      The partitioned table is itself empty.  A data row inserted into the
+      table is routed to a partition based on the value of columns or
+      expressions in the partition key.  If no existing partition matches
+      the values in the new row, an error will be reported.
+     </p><p>
+      Partitioned tables do not support <code class="literal">EXCLUDE</code> constraints;
+      however, you can define these constraints on individual partitions.
+     </p><p>
+      See <a class="xref" href="ddl-partitioning.html" title="5.11. Table Partitioning">Section 5.11</a> for more discussion on table
+      partitioning.
+     </p></dd><dt id="SQL-CREATETABLE-PARTITION"><span class="term"><code class="literal">PARTITION OF <em class="replaceable"><code>parent_table</code></em> { FOR VALUES <em class="replaceable"><code>partition_bound_spec</code></em> | DEFAULT }</code></span></dt><dd><p>
+      Creates the table as a <em class="firstterm">partition</em> of the specified
+      parent table. The table can be created either as a partition for specific
+      values using <code class="literal">FOR VALUES</code> or as a default partition
+      using <code class="literal">DEFAULT</code>.  Any indexes, constraints and
+      user-defined row-level triggers that exist in the parent table are cloned
+      on the new partition.
+     </p><p>
+      The <em class="replaceable"><code>partition_bound_spec</code></em>
+      must correspond to the partitioning method and partition key of the
+      parent table, and must not overlap with any existing partition of that
+      parent.  The form with <code class="literal">IN</code> is used for list partitioning,
+      the form with <code class="literal">FROM</code> and <code class="literal">TO</code> is used
+      for range partitioning, and the form with <code class="literal">WITH</code> is used
+      for hash partitioning.
+     </p><p>
+      <em class="replaceable"><code>partition_bound_expr</code></em> is
+      any variable-free expression (subqueries, window functions, aggregate
+      functions, and set-returning functions are not allowed).  Its data type
+      must match the data type of the corresponding partition key column.
+      The expression is evaluated once at table creation time, so it can
+      even contain volatile expressions such as
+      <code class="literal"><code class="function">CURRENT_TIMESTAMP</code></code>.
+     </p><p>
+      When creating a list partition, <code class="literal">NULL</code> can be
+      specified to signify that the partition allows the partition key
+      column to be null.  However, there cannot be more than one such
+      list partition for a given parent table.  <code class="literal">NULL</code>
+      cannot be specified for range partitions.
+     </p><p>
+      When creating a range partition, the lower bound specified with
+      <code class="literal">FROM</code> is an inclusive bound, whereas the upper
+      bound specified with <code class="literal">TO</code> is an exclusive bound.
+      That is, the values specified in the <code class="literal">FROM</code> list
+      are valid values of the corresponding partition key columns for this
+      partition, whereas those in the <code class="literal">TO</code> list are
+      not.  Note that this statement must be understood according to the
+      rules of row-wise comparison (<a class="xref" href="functions-comparisons.html#ROW-WISE-COMPARISON" title="9.24.5. Row Constructor Comparison">Section 9.24.5</a>).
+      For example, given <code class="literal">PARTITION BY RANGE (x,y)</code>, a partition
+      bound <code class="literal">FROM (1, 2) TO (3, 4)</code>
+      allows <code class="literal">x=1</code> with any <code class="literal">y&gt;=2</code>,
+      <code class="literal">x=2</code> with any non-null <code class="literal">y</code>,
+      and <code class="literal">x=3</code> with any <code class="literal">y&lt;4</code>.
+     </p><p>
+      The special values <code class="literal">MINVALUE</code> and <code class="literal">MAXVALUE</code>
+      may be used when creating a range partition to indicate that there
+      is no lower or upper bound on the column's value. For example, a
+      partition defined using <code class="literal">FROM (MINVALUE) TO (10)</code> allows
+      any values less than 10, and a partition defined using
+      <code class="literal">FROM (10) TO (MAXVALUE)</code> allows any values greater than
+      or equal to 10.
+     </p><p>
+      When creating a range partition involving more than one column, it
+      can also make sense to use <code class="literal">MAXVALUE</code> as part of the lower
+      bound, and <code class="literal">MINVALUE</code> as part of the upper bound. For
+      example, a partition defined using
+      <code class="literal">FROM (0, MAXVALUE) TO (10, MAXVALUE)</code> allows any rows
+      where the first partition key column is greater than 0 and less than
+      or equal to 10. Similarly, a partition defined using
+      <code class="literal">FROM ('a', MINVALUE) TO ('b', MINVALUE)</code> allows any rows
+      where the first partition key column starts with "a".
+     </p><p>
+      Note that if <code class="literal">MINVALUE</code> or <code class="literal">MAXVALUE</code> is used for
+      one column of a partitioning bound, the same value must be used for all
+      subsequent columns.  For example, <code class="literal">(10, MINVALUE, 0)</code> is not
+      a valid bound; you should write <code class="literal">(10, MINVALUE, MINVALUE)</code>.
+     </p><p>
+      Also note that some element types, such as <code class="literal">timestamp</code>,
+      have a notion of "infinity", which is just another value that can
+      be stored. This is different from <code class="literal">MINVALUE</code> and
+      <code class="literal">MAXVALUE</code>, which are not real values that can be stored,
+      but rather they are ways of saying that the value is unbounded.
+      <code class="literal">MAXVALUE</code> can be thought of as being greater than any
+      other value, including "infinity" and <code class="literal">MINVALUE</code> as being
+      less than any other value, including "minus infinity". Thus the range
+      <code class="literal">FROM ('infinity') TO (MAXVALUE)</code> is not an empty range; it
+      allows precisely one value to be stored — "infinity".
+     </p><p>
+      If <code class="literal">DEFAULT</code> is specified, the table will be
+      created as the default partition of the parent table.  This option
+      is not available for hash-partitioned tables.  A partition key value
+      not fitting into any other partition of the given parent will be
+      routed to the default partition.
+     </p><p>
+      When a table has an existing <code class="literal">DEFAULT</code> partition and
+      a new partition is added to it, the default partition must
+      be scanned to verify that it does not contain any rows which properly
+      belong in the new partition.  If the default partition contains a
+      large number of rows, this may be slow.  The scan will be skipped if
+      the default partition is a foreign table or if it has a constraint which
+      proves that it cannot contain rows which should be placed in the new
+      partition.
+     </p><p>
+      When creating a hash partition, a modulus and remainder must be specified.
+      The modulus must be a positive integer, and the remainder must be a
+      non-negative integer less than the modulus.  Typically, when initially
+      setting up a hash-partitioned table, you should choose a modulus equal to
+      the number of partitions and assign every table the same modulus and a
+      different remainder (see examples, below).   However, it is not required
+      that every partition have the same modulus, only that every modulus which
+      occurs among the partitions of a hash-partitioned table is a factor of the
+      next larger modulus.  This allows the number of partitions to be increased
+      incrementally without needing to move all the data at once.  For example,
+      suppose you have a hash-partitioned table with 8 partitions, each of which
+      has modulus 8, but find it necessary to increase the number of partitions
+      to 16.  You can detach one of the modulus-8 partitions, create two new
+      modulus-16 partitions covering the same portion of the key space (one with
+      a remainder equal to the remainder of the detached partition, and the
+      other with a remainder equal to that value plus 8), and repopulate them
+      with data.  You can then repeat this -- perhaps at a later time -- for
+      each modulus-8 partition until none remain.  While this may still involve
+      a large amount of data movement at each step, it is still better than
+      having to create a whole new table and move all the data at once.
+     </p><p>
+      A partition must have the same column names and types as the partitioned
+      table to which it belongs. Modifications to the column names or types of
+      a partitioned table will automatically propagate to all partitions.
+      <code class="literal">CHECK</code> constraints will be inherited automatically by
+      every partition, but an individual partition may specify additional
+      <code class="literal">CHECK</code> constraints; additional constraints with the
+      same name and condition as in the parent will be merged with the parent
+      constraint.  Defaults may be specified separately for each partition.
+      But note that a partition's default value is not applied when inserting
+      a tuple through a partitioned table.
+     </p><p>
+      Rows inserted into a partitioned table will be automatically routed to
+      the correct partition.  If no suitable partition exists, an error will
+      occur.
+     </p><p>
+      Operations such as <code class="command">TRUNCATE</code>
+      which normally affect a table and all of its
+      inheritance children will cascade to all partitions, but may also be
+      performed on an individual partition.
+     </p><p>
+      Note that creating a partition using <code class="literal">PARTITION OF</code>
+      requires taking an <code class="literal">ACCESS EXCLUSIVE</code> lock on the
+      parent partitioned table.  Likewise, dropping a partition
+      with <code class="command">DROP TABLE</code> requires taking
+      an <code class="literal">ACCESS EXCLUSIVE</code> lock on the parent table.
+      It is possible to use <a class="link" href="sql-altertable.html" title="ALTER TABLE"><code class="command">ALTER
+      TABLE ATTACH/DETACH PARTITION</code></a> to perform these
+      operations with a weaker lock, thus reducing interference with
+      concurrent operations on the partitioned table.
+     </p></dd><dt><span class="term"><code class="literal">LIKE <em class="replaceable"><code>source_table</code></em> [ <em class="replaceable"><code>like_option</code></em> ... ]</code></span></dt><dd><p>
+      The <code class="literal">LIKE</code> clause specifies a table from which
+      the new table automatically copies all column names, their data types,
+      and their not-null constraints.
+     </p><p>
+      Unlike <code class="literal">INHERITS</code>, the new table and original table
+      are completely decoupled after creation is complete.  Changes to the
+      original table will not be applied to the new table, and it is not
+      possible to include data of the new table in scans of the original
+      table.
+     </p><p>
+      Also unlike <code class="literal">INHERITS</code>, columns and
+      constraints copied by <code class="literal">LIKE</code> are not merged with similarly
+      named columns and constraints.
+      If the same name is specified explicitly or in another
+      <code class="literal">LIKE</code> clause, an error is signaled.
+     </p><p>
+      The optional <em class="replaceable"><code>like_option</code></em> clauses specify
+      which additional properties of the original table to copy.  Specifying
+      <code class="literal">INCLUDING</code> copies the property, specifying
+      <code class="literal">EXCLUDING</code> omits the property.
+      <code class="literal">EXCLUDING</code> is the default.  If multiple specifications
+      are made for the same kind of object, the last one is used.  The
+      available options are:
+
+      </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">INCLUDING COMMENTS</code></span></dt><dd><p>
+          Comments for the copied columns, constraints, and indexes will be
+          copied.  The default behavior is to exclude comments, resulting in
+          the copied columns and constraints in the new table having no
+          comments.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING COMPRESSION</code></span></dt><dd><p>
+          Compression method of the columns will be copied.  The default
+          behavior is to exclude compression methods, resulting in columns
+          having the default compression method.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING CONSTRAINTS</code></span></dt><dd><p>
+          <code class="literal">CHECK</code> constraints will be copied.  No distinction
+          is made between column constraints and table constraints.  Not-null
+          constraints are always copied to the new table.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING DEFAULTS</code></span></dt><dd><p>
+          Default expressions for the copied column definitions will be
+          copied.  Otherwise, default expressions are not copied, resulting in
+          the copied columns in the new table having null defaults.  Note that
+          copying defaults that call database-modification functions, such as
+          <code class="function">nextval</code>, may create a functional linkage
+          between the original and new tables.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING GENERATED</code></span></dt><dd><p>
+          Any generation expressions of copied column definitions will be
+          copied.  By default, new columns will be regular base columns.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING IDENTITY</code></span></dt><dd><p>
+          Any identity specifications of copied column definitions will be
+          copied.  A new sequence is created for each identity column of the
+          new table, separate from the sequences associated with the old
+          table.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING INDEXES</code></span></dt><dd><p>
+          Indexes, <code class="literal">PRIMARY KEY</code>, <code class="literal">UNIQUE</code>,
+          and <code class="literal">EXCLUDE</code> constraints on the original table
+          will be created on the new table.  Names for the new indexes and
+          constraints are chosen according to the default rules, regardless of
+          how the originals were named.  (This behavior avoids possible
+          duplicate-name failures for the new indexes.)
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING STATISTICS</code></span></dt><dd><p>
+          Extended statistics are copied to the new table.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING STORAGE</code></span></dt><dd><p>
+          <code class="literal">STORAGE</code> settings for the copied column
+          definitions will be copied.  The default behavior is to exclude
+          <code class="literal">STORAGE</code> settings, resulting in the copied columns
+          in the new table having type-specific default settings.  For more on
+          <code class="literal">STORAGE</code> settings, see <a class="xref" href="storage-toast.html" title="70.2. TOAST">Section 70.2</a>.
+         </p></dd><dt><span class="term"><code class="literal">INCLUDING ALL</code></span></dt><dd><p>
+          <code class="literal">INCLUDING ALL</code> is an abbreviated form selecting
+          all the available individual options.  (It could be useful to write
+          individual <code class="literal">EXCLUDING</code> clauses after
+          <code class="literal">INCLUDING ALL</code> to select all but some specific
+          options.)
+         </p></dd></dl></div><p>
+     </p><p>
+      The <code class="literal">LIKE</code> clause can also be used to copy column
+      definitions from views, foreign tables, or composite types.
+      Inapplicable options (e.g., <code class="literal">INCLUDING INDEXES</code> from
+      a view) are ignored.
+     </p></dd><dt><span class="term"><code class="literal">CONSTRAINT <em class="replaceable"><code>constraint_name</code></em></code></span></dt><dd><p>
+      An optional name for a column or table constraint.  If the
+      constraint is violated, the constraint name is present in error messages,
+      so constraint names like <code class="literal">col must be positive</code> can be used
+      to communicate helpful constraint information to client applications.
+      (Double-quotes are needed to specify constraint names that contain spaces.)
+      If a constraint name is not specified, the system generates a name.
+     </p></dd><dt><span class="term"><code class="literal">NOT NULL</code></span></dt><dd><p>
+      The column is not allowed to contain null values.
+     </p></dd><dt><span class="term"><code class="literal">NULL</code></span></dt><dd><p>
+      The column is allowed to contain null values. This is the default.
+     </p><p>
+      This clause is only provided for compatibility with
+      non-standard SQL databases.  Its use is discouraged in new
+      applications.
+     </p></dd><dt><span class="term"><code class="literal">CHECK ( <em class="replaceable"><code>expression</code></em> ) [ NO INHERIT ] </code></span></dt><dd><p>
+      The <code class="literal">CHECK</code> clause specifies an expression producing a
+      Boolean result which new or updated rows must satisfy for an
+      insert or update operation to succeed.  Expressions evaluating
+      to TRUE or UNKNOWN succeed.  Should any row of an insert or
+      update operation produce a FALSE result, an error exception is
+      raised and the insert or update does not alter the database.  A
+      check constraint specified as a column constraint should
+      reference that column's value only, while an expression
+      appearing in a table constraint can reference multiple columns.
+     </p><p>
+      Currently, <code class="literal">CHECK</code> expressions cannot contain
+      subqueries nor refer to variables other than columns of the
+      current row (see <a class="xref" href="ddl-constraints.html#DDL-CONSTRAINTS-CHECK-CONSTRAINTS" title="5.4.1. Check Constraints">Section 5.4.1</a>).
+      The system column <code class="literal">tableoid</code>
+      may be referenced, but not any other system column.
+     </p><p>
+      A constraint marked with <code class="literal">NO INHERIT</code> will not propagate to
+      child tables.
+     </p><p>
+      When a table has multiple <code class="literal">CHECK</code> constraints,
+      they will be tested for each row in alphabetical order by name,
+      after checking <code class="literal">NOT NULL</code> constraints.
+      (<span class="productname">PostgreSQL</span> versions before 9.5 did not honor any
+      particular firing order for <code class="literal">CHECK</code> constraints.)
+     </p></dd><dt><span class="term"><code class="literal">DEFAULT
+    <em class="replaceable"><code>default_expr</code></em></code></span></dt><dd><p>
+      The <code class="literal">DEFAULT</code> clause assigns a default data value for
+      the column whose column definition it appears within.  The value
+      is any variable-free expression (in particular, cross-references
+      to other columns in the current table are not allowed).  Subqueries
+      are not allowed either.  The data type of the default expression must
+      match the data type of the column.
+     </p><p>
+      The default expression will be used in any insert operation that
+      does not specify a value for the column.  If there is no default
+      for a column, then the default is null.
+     </p></dd><dt><span class="term"><code class="literal">GENERATED ALWAYS AS ( <em class="replaceable"><code>generation_expr</code></em> ) STORED</code><a id="id-1.9.3.85.6.2.19.1.2" class="indexterm"></a></span></dt><dd><p>
+      This clause creates the column as a <em class="firstterm">generated
+      column</em>.  The column cannot be written to, and when read the
+      result of the specified expression will be returned.
+     </p><p>
+      The keyword <code class="literal">STORED</code> is required to signify that the
+      column will be computed on write and will be stored on disk.
+     </p><p>
+      The generation expression can refer to other columns in the table, but
+      not other generated columns.  Any functions and operators used must be
+      immutable.  References to other tables are not allowed.
+     </p></dd><dt><span class="term"><code class="literal">GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( <em class="replaceable"><code>sequence_options</code></em> ) ]</code></span></dt><dd><p>
+      This clause creates the column as an <em class="firstterm">identity
+      column</em>.  It will have an implicit sequence attached to it
+      and the column in new rows will automatically have values from the
+      sequence assigned to it.
+      Such a column is implicitly <code class="literal">NOT NULL</code>.
+     </p><p>
+      The clauses <code class="literal">ALWAYS</code> and <code class="literal">BY DEFAULT</code>
+      determine how explicitly user-specified values are handled in
+      <code class="command">INSERT</code> and <code class="command">UPDATE</code> commands.
+     </p><p>
+      In an <code class="command">INSERT</code> command, if <code class="literal">ALWAYS</code> is
+      selected, a user-specified value is only accepted if the
+      <code class="command">INSERT</code> statement specifies <code class="literal">OVERRIDING SYSTEM
+      VALUE</code>.  If <code class="literal">BY DEFAULT</code> is selected, then the
+      user-specified value takes precedence.  See <a class="xref" href="sql-insert.html" title="INSERT"><span class="refentrytitle">INSERT</span></a>
+      for details.  (In the <code class="command">COPY</code> command, user-specified
+      values are always used regardless of this setting.)
+     </p><p>
+      In an <code class="command">UPDATE</code> command, if <code class="literal">ALWAYS</code> is
+      selected, any update of the column to any value other than
+      <code class="literal">DEFAULT</code> will be rejected.  If <code class="literal">BY
+      DEFAULT</code> is selected, the column can be updated normally.
+      (There is no <code class="literal">OVERRIDING</code> clause for the
+      <code class="command">UPDATE</code> command.)
+     </p><p>
+      The optional <em class="replaceable"><code>sequence_options</code></em> clause can be
+      used to override the options of the sequence.
+      See <a class="xref" href="sql-createsequence.html" title="CREATE SEQUENCE"><span class="refentrytitle">CREATE SEQUENCE</span></a> for details.
+     </p></dd><dt><span class="term"><code class="literal">UNIQUE</code> (column constraint)<br /></span><span class="term"><code class="literal">UNIQUE ( <em class="replaceable"><code>column_name</code></em> [, ... ] )</code>
+    [<span class="optional"> <code class="literal">INCLUDE ( <em class="replaceable"><code>column_name</code></em> [, ...])</code> </span>] (table constraint)</span></dt><dd><p>
+      The <code class="literal">UNIQUE</code> constraint specifies that a
+      group of one or more columns of a table can contain
+      only unique values. The behavior of a unique table constraint
+      is the same as that of a unique column constraint, with the
+      additional capability to span multiple columns.  The constraint
+      therefore enforces that any two rows must differ in at least one
+      of these columns.
+     </p><p>
+      For the purpose of a unique constraint, null values are not
+      considered equal.
+     </p><p>
+      Each unique constraint should name a set of columns that is
+      different from the set of columns named by any other unique or
+      primary key constraint defined for the table.  (Otherwise, redundant
+      unique constraints will be discarded.)
+     </p><p>
+      When establishing a unique constraint for a multi-level partition
+      hierarchy, all the columns in the partition key of the target
+      partitioned table, as well as those of all its descendant partitioned
+      tables, must be included in the constraint definition.
+     </p><p>
+      Adding a unique constraint will automatically create a unique btree
+      index on the column or group of columns used in the constraint.
+     </p><p>
+      The optional <code class="literal">INCLUDE</code> clause adds to that index
+      one or more columns that are simply <span class="quote">“<span class="quote">payload</span>”</span>: uniqueness
+      is not enforced on them, and the index cannot be searched on the basis
+      of those columns.  However they can be retrieved by an index-only scan.
+      Note that although the constraint is not enforced on included columns,
+      it still depends on them.  Consequently, some operations on such columns
+      (e.g., <code class="literal">DROP COLUMN</code>) can cause cascaded constraint and
+      index deletion.
+     </p></dd><dt><span class="term"><code class="literal">PRIMARY KEY</code> (column constraint)<br /></span><span class="term"><code class="literal">PRIMARY KEY ( <em class="replaceable"><code>column_name</code></em> [, ... ] )</code>
+    [<span class="optional"> <code class="literal">INCLUDE ( <em class="replaceable"><code>column_name</code></em> [, ...])</code> </span>] (table constraint)</span></dt><dd><p>
+      The <code class="literal">PRIMARY KEY</code> constraint specifies that a column or
+      columns of a table can contain only unique (non-duplicate), nonnull
+      values. Only one primary key can be specified for a table, whether as a
+      column constraint or a table constraint.
+     </p><p>
+      The primary key constraint should name a set of columns that is
+      different from the set of columns named by any unique
+      constraint defined for the same table.  (Otherwise, the unique
+      constraint is redundant and will be discarded.)
+     </p><p>
+      <code class="literal">PRIMARY KEY</code> enforces the same data constraints as
+      a combination of <code class="literal">UNIQUE</code> and <code class="literal">NOT
+      NULL</code>.  However,
+      identifying a set of columns as the primary key also provides metadata
+      about the design of the schema, since a primary key implies that other
+      tables can rely on this set of columns as a unique identifier for rows.
+     </p><p>
+      When placed on a partitioned table, <code class="literal">PRIMARY KEY</code>
+      constraints share the restrictions previously described
+      for <code class="literal">UNIQUE</code> constraints.
+     </p><p>
+      Adding a <code class="literal">PRIMARY KEY</code> constraint will automatically
+      create a unique btree index on the column or group of columns used in the
+      constraint.
+     </p><p>
+      The optional <code class="literal">INCLUDE</code> clause adds to that index
+      one or more columns that are simply <span class="quote">“<span class="quote">payload</span>”</span>: uniqueness
+      is not enforced on them, and the index cannot be searched on the basis
+      of those columns.  However they can be retrieved by an index-only scan.
+      Note that although the constraint is not enforced on included columns,
+      it still depends on them.  Consequently, some operations on such columns
+      (e.g., <code class="literal">DROP COLUMN</code>) can cause cascaded constraint and
+      index deletion.
+     </p></dd><dt id="SQL-CREATETABLE-EXCLUDE"><span class="term"><code class="literal">EXCLUDE [ USING <em class="replaceable"><code>index_method</code></em> ] ( <em class="replaceable"><code>exclude_element</code></em> WITH <em class="replaceable"><code>operator</code></em> [, ... ] ) <em class="replaceable"><code>index_parameters</code></em> [ WHERE ( <em class="replaceable"><code>predicate</code></em> ) ]</code></span></dt><dd><p>
+      The <code class="literal">EXCLUDE</code> clause defines an exclusion
+      constraint, which guarantees that if
+      any two rows are compared on the specified column(s) or
+      expression(s) using the specified operator(s), not all of these
+      comparisons will return <code class="literal">TRUE</code>.  If all of the
+      specified operators test for equality, this is equivalent to a
+      <code class="literal">UNIQUE</code> constraint, although an ordinary unique constraint
+      will be faster.  However, exclusion constraints can specify
+      constraints that are more general than simple equality.
+      For example, you can specify a constraint that
+      no two rows in the table contain overlapping circles
+      (see <a class="xref" href="datatype-geometric.html" title="8.8. Geometric Types">Section 8.8</a>) by using the
+      <code class="literal">&amp;&amp;</code> operator.
+      The operator(s) are required to be commutative.
+     </p><p>
+      Exclusion constraints are implemented using
+      an index, so each specified operator must be associated with an
+      appropriate operator class
+      (see <a class="xref" href="indexes-opclass.html" title="11.10. Operator Classes and Operator Families">Section 11.10</a>) for the index access
+      method <em class="replaceable"><code>index_method</code></em>.
+      Each <em class="replaceable"><code>exclude_element</code></em>
+      defines a column of the index, so it can optionally specify a collation,
+      an operator class, operator class parameters, and/or ordering options;
+      these are described fully under <a class="xref" href="sql-createindex.html" title="CREATE INDEX"><span class="refentrytitle">CREATE INDEX</span></a>.
+     </p><p>
+      The access method must support <code class="literal">amgettuple</code> (see <a class="xref" href="indexam.html" title="Chapter 62. Index Access Method Interface Definition">Chapter 62</a>); at present this means <acronym class="acronym">GIN</acronym>
+      cannot be used.  Although it's allowed, there is little point in using
+      B-tree or hash indexes with an exclusion constraint, because this
+      does nothing that an ordinary unique constraint doesn't do better.
+      So in practice the access method will always be <acronym class="acronym">GiST</acronym> or
+      <acronym class="acronym">SP-GiST</acronym>.
+     </p><p>
+      The <em class="replaceable"><code>predicate</code></em> allows you to specify an
+      exclusion constraint on a subset of the table; internally this creates a
+      partial index. Note that parentheses are required around the predicate.
+     </p></dd><dt><span class="term"><code class="literal">REFERENCES <em class="replaceable"><code>reftable</code></em> [ ( <em class="replaceable"><code>refcolumn</code></em> ) ] [ MATCH <em class="replaceable"><code>matchtype</code></em> ] [ ON DELETE <em class="replaceable"><code>referential_action</code></em> ] [ ON UPDATE <em class="replaceable"><code>referential_action</code></em> ]</code> (column constraint)<br /></span><span class="term"><code class="literal">FOREIGN KEY ( <em class="replaceable"><code>column_name</code></em> [, ... ] )
+    REFERENCES <em class="replaceable"><code>reftable</code></em> [ ( <em class="replaceable"><code>refcolumn</code></em> [, ... ] ) ]
+    [ MATCH <em class="replaceable"><code>matchtype</code></em> ]
+    [ ON DELETE <em class="replaceable"><code>referential_action</code></em> ]
+    [ ON UPDATE <em class="replaceable"><code>referential_action</code></em> ]</code>
+    (table constraint)</span></dt><dd><p>
+      These clauses specify a foreign key constraint, which requires
+      that a group of one or more columns of the new table must only
+      contain values that match values in the referenced
+      column(s) of some row of the referenced table.  If the <em class="replaceable"><code>refcolumn</code></em> list is omitted, the
+      primary key of the <em class="replaceable"><code>reftable</code></em>
+      is used.  Otherwise, the <em class="replaceable"><code>refcolumn</code></em>
+      list must refer to the columns of a non-deferrable unique or primary key
+      constraint or be the columns of a non-partial unique index.  The user
+      must have <code class="literal">REFERENCES</code> permission on the referenced
+      table (either the whole table, or the specific referenced columns).  The
+      addition of a foreign key constraint requires a
+      <code class="literal">SHARE ROW EXCLUSIVE</code> lock on the referenced table.
+      Note that foreign key constraints cannot be defined between temporary
+      tables and permanent tables.
+     </p><p>
+      A value inserted into the referencing column(s) is matched against the
+      values of the referenced table and referenced columns using the
+      given match type.  There are three match types: <code class="literal">MATCH
+      FULL</code>, <code class="literal">MATCH PARTIAL</code>, and <code class="literal">MATCH
+      SIMPLE</code> (which is the default).  <code class="literal">MATCH
+      FULL</code> will not allow one column of a multicolumn foreign key
+      to be null unless all foreign key columns are null; if they are all
+      null, the row is not required to have a match in the referenced table.
+      <code class="literal">MATCH SIMPLE</code> allows any of the foreign key columns
+      to be null; if any of them are null, the row is not required to have a
+      match in the referenced table.
+      <code class="literal">MATCH PARTIAL</code> is not yet implemented.
+      (Of course, <code class="literal">NOT NULL</code> constraints can be applied to the
+      referencing column(s) to prevent these cases from arising.)
+     </p><p>
+      In addition, when the data in the referenced columns is changed,
+      certain actions are performed on the data in this table's
+      columns.  The <code class="literal">ON DELETE</code> clause specifies the
+      action to perform when a referenced row in the referenced table is
+      being deleted.  Likewise, the <code class="literal">ON UPDATE</code>
+      clause specifies the action to perform when a referenced column
+      in the referenced table is being updated to a new value. If the
+      row is updated, but the referenced column is not actually
+      changed, no action is done. Referential actions other than the
+      <code class="literal">NO ACTION</code> check cannot be deferred, even if
+      the constraint is declared deferrable. There are the following possible
+      actions for each clause:
+
+      </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">NO ACTION</code></span></dt><dd><p>
+          Produce an error indicating that the deletion or update
+          would create a foreign key constraint violation.
+          If the constraint is deferred, this
+          error will be produced at constraint check time if there still
+          exist any referencing rows.  This is the default action.
+         </p></dd><dt><span class="term"><code class="literal">RESTRICT</code></span></dt><dd><p>
+          Produce an error indicating that the deletion or update
+          would create a foreign key constraint violation.
+          This is the same as <code class="literal">NO ACTION</code> except that
+          the check is not deferrable.
+         </p></dd><dt><span class="term"><code class="literal">CASCADE</code></span></dt><dd><p>
+          Delete any rows referencing the deleted row, or update the
+          values of the referencing column(s) to the new values of the
+          referenced columns, respectively.
+         </p></dd><dt><span class="term"><code class="literal">SET NULL</code></span></dt><dd><p>
+          Set the referencing column(s) to null.
+         </p></dd><dt><span class="term"><code class="literal">SET DEFAULT</code></span></dt><dd><p>
+          Set the referencing column(s) to their default values.
+          (There must be a row in the referenced table matching the default
+          values, if they are not null, or the operation will fail.)
+         </p></dd></dl></div><p>
+     </p><p>
+      If the referenced column(s) are changed frequently, it might be wise to
+      add an index to the referencing column(s) so that referential actions
+      associated with the foreign key constraint can be performed more
+      efficiently.
+     </p></dd><dt><span class="term"><code class="literal">DEFERRABLE</code><br /></span><span class="term"><code class="literal">NOT DEFERRABLE</code></span></dt><dd><p>
+      This controls whether the constraint can be deferred.  A
+      constraint that is not deferrable will be checked immediately
+      after every command.  Checking of constraints that are
+      deferrable can be postponed until the end of the transaction
+      (using the <a class="link" href="sql-set-constraints.html" title="SET CONSTRAINTS"><code class="command">SET CONSTRAINTS</code></a> command).
+      <code class="literal">NOT DEFERRABLE</code> is the default.
+      Currently, only <code class="literal">UNIQUE</code>, <code class="literal">PRIMARY KEY</code>,
+      <code class="literal">EXCLUDE</code>, and
+      <code class="literal">REFERENCES</code> (foreign key) constraints accept this
+      clause.  <code class="literal">NOT NULL</code> and <code class="literal">CHECK</code> constraints are not
+      deferrable.  Note that deferrable constraints cannot be used as
+      conflict arbitrators in an <code class="command">INSERT</code> statement that
+      includes an <code class="literal">ON CONFLICT DO UPDATE</code> clause.
+     </p></dd><dt><span class="term"><code class="literal">INITIALLY IMMEDIATE</code><br /></span><span class="term"><code class="literal">INITIALLY DEFERRED</code></span></dt><dd><p>
+      If a constraint is deferrable, this clause specifies the default
+      time to check the constraint.  If the constraint is
+      <code class="literal">INITIALLY IMMEDIATE</code>, it is checked after each
+      statement. This is the default.  If the constraint is
+      <code class="literal">INITIALLY DEFERRED</code>, it is checked only at the
+      end of the transaction.  The constraint check time can be
+      altered with the <a class="link" href="sql-set-constraints.html" title="SET CONSTRAINTS"><code class="command">SET CONSTRAINTS</code></a> command.
+     </p></dd><dt id="SQL-CREATETABLE-METHOD"><span class="term"><code class="literal">USING <em class="replaceable"><code>method</code></em></code></span></dt><dd><p>
+      This optional clause specifies the table access method to use to store
+      the contents for the new table; the method needs be an access method of
+      type <code class="literal">TABLE</code>. See <a class="xref" href="tableam.html" title="Chapter 61. Table Access Method Interface Definition">Chapter 61</a> for more
+      information.  If this option is not specified, the default table access
+      method is chosen for the new table. See <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLE-ACCESS-METHOD">default_table_access_method</a> for more information.
+     </p></dd><dt><span class="term"><code class="literal">WITH ( <em class="replaceable"><code>storage_parameter</code></em> [= <em class="replaceable"><code>value</code></em>] [, ... ] )</code></span></dt><dd><p>
+      This clause specifies optional storage parameters for a table or index;
+      see <a class="xref" href="sql-createtable.html#SQL-CREATETABLE-STORAGE-PARAMETERS" title="Storage Parameters">Storage Parameters</a> below for more
+      information.  For backward-compatibility the <code class="literal">WITH</code>
+      clause for a table can also include <code class="literal">OIDS=FALSE</code> to
+      specify that rows of the new table should not contain OIDs (object
+      identifiers), <code class="literal">OIDS=TRUE</code> is not supported anymore.
+     </p></dd><dt><span class="term"><code class="literal">WITHOUT OIDS</code></span></dt><dd><p>
+      This is backward-compatible syntax for declaring a table
+      <code class="literal">WITHOUT OIDS</code>, creating a table <code class="literal">WITH
+      OIDS</code> is not supported anymore.
+     </p></dd><dt><span class="term"><code class="literal">ON COMMIT</code></span></dt><dd><p>
+      The behavior of temporary tables at the end of a transaction
+      block can be controlled using <code class="literal">ON COMMIT</code>.
+      The three options are:
+
+      </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">PRESERVE ROWS</code></span></dt><dd><p>
+          No special action is taken at the ends of transactions.
+          This is the default behavior.
+         </p></dd><dt><span class="term"><code class="literal">DELETE ROWS</code></span></dt><dd><p>
+          All rows in the temporary table will be deleted at the end
+          of each transaction block.  Essentially, an automatic <a class="link" href="sql-truncate.html" title="TRUNCATE"><code class="command">TRUNCATE</code></a> is done
+          at each commit.  When used on a partitioned table, this
+          is not cascaded to its partitions.
+         </p></dd><dt><span class="term"><code class="literal">DROP</code></span></dt><dd><p>
+          The temporary table will be dropped at the end of the current
+          transaction block.  When used on a partitioned table, this action
+          drops its partitions and when used on tables with inheritance
+          children, it drops the dependent children.
+         </p></dd></dl></div></dd><dt id="SQL-CREATETABLE-TABLESPACE"><span class="term"><code class="literal">TABLESPACE <em class="replaceable"><code>tablespace_name</code></em></code></span></dt><dd><p>
+      The <em class="replaceable"><code>tablespace_name</code></em> is the name
+      of the tablespace in which the new table is to be created.
+      If not specified,
+      <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLESPACE">default_tablespace</a> is consulted, or
+      <a class="xref" href="runtime-config-client.html#GUC-TEMP-TABLESPACES">temp_tablespaces</a> if the table is temporary.  For
+      partitioned tables, since no storage is required for the table itself,
+      the tablespace specified overrides <code class="literal">default_tablespace</code>
+      as the default tablespace to use for any newly created partitions when no
+      other tablespace is explicitly specified.
+     </p></dd><dt><span class="term"><code class="literal">USING INDEX TABLESPACE <em class="replaceable"><code>tablespace_name</code></em></code></span></dt><dd><p>
+      This clause allows selection of the tablespace in which the index
+      associated with a <code class="literal">UNIQUE</code>, <code class="literal">PRIMARY
+      KEY</code>, or <code class="literal">EXCLUDE</code> constraint will be created.
+      If not specified,
+      <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TABLESPACE">default_tablespace</a> is consulted, or
+      <a class="xref" href="runtime-config-client.html#GUC-TEMP-TABLESPACES">temp_tablespaces</a> if the table is temporary.
+     </p></dd></dl></div><div class="refsect2" id="SQL-CREATETABLE-STORAGE-PARAMETERS"><h3>Storage Parameters</h3><a id="id-1.9.3.85.6.3.2" class="indexterm"></a><p>
+    The <code class="literal">WITH</code> clause can specify <em class="firstterm">storage parameters</em>
+    for tables, and for indexes associated with a <code class="literal">UNIQUE</code>,
+    <code class="literal">PRIMARY KEY</code>, or <code class="literal">EXCLUDE</code> constraint.
+    Storage parameters for
+    indexes are documented in <a class="xref" href="sql-createindex.html" title="CREATE INDEX"><span class="refentrytitle">CREATE INDEX</span></a>.
+    The storage parameters currently
+    available for tables are listed below.  For many of these parameters, as
+    shown, there is an additional parameter with the same name prefixed with
+    <code class="literal">toast.</code>, which controls the behavior of the
+    table's secondary <acronym class="acronym">TOAST</acronym> table, if any
+    (see <a class="xref" href="storage-toast.html" title="70.2. TOAST">Section 70.2</a> for more information about TOAST).
+    If a table parameter value is set and the
+    equivalent <code class="literal">toast.</code> parameter is not, the TOAST table
+    will use the table's parameter value.
+    Specifying these parameters for partitioned tables is not supported,
+    but you may specify them for individual leaf partitions.
+   </p><div class="variablelist"><dl class="variablelist"><dt id="RELOPTION-FILLFACTOR"><span class="term"><code class="varname">fillfactor</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.1.1.3" class="indexterm"></a>
+    </span></dt><dd><p>
+      The fillfactor for a table is a percentage between 10 and 100.
+      100 (complete packing) is the default.  When a smaller fillfactor
+      is specified, <code class="command">INSERT</code> operations pack table pages only
+      to the indicated percentage; the remaining space on each page is
+      reserved for updating rows on that page.  This gives <code class="command">UPDATE</code>
+      a chance to place the updated copy of a row on the same page as the
+      original, which is more efficient than placing it on a different
+      page, and makes <a class="link" href="storage-hot.html" title="70.7. Heap-Only Tuples (HOT)">heap-only tuple
+      updates</a> more likely.
+      For a table whose entries are never updated, complete packing is the
+      best choice, but in heavily updated tables smaller fillfactors are
+      appropriate.  This parameter cannot be set for TOAST tables.
+     </p></dd><dt id="RELOPTION-TOAST-TUPLE-TARGET"><span class="term"><code class="literal">toast_tuple_target</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.2.1.3" class="indexterm"></a>
+    </span></dt><dd><p>
+      The toast_tuple_target specifies the minimum tuple length required before
+      we try to compress and/or move long column values into TOAST tables, and
+      is also the target length we try to reduce the length below once toasting
+      begins. This affects columns marked as External (for move),
+      Main (for compression), or Extended (for both) and applies only to new
+      tuples. There is no effect on existing rows.
+      By default this parameter is set to allow at least 4 tuples per block,
+      which with the default block size will be 2040 bytes. Valid values are
+      between 128 bytes and the (block size - header), by default 8160 bytes.
+      Changing this value may not be useful for very short or very long rows.
+      Note that the default setting is often close to optimal, and
+      it is possible that setting this parameter could have negative
+      effects in some cases.
+      This parameter cannot be set for TOAST tables.
+     </p></dd><dt id="RELOPTION-PARALLEL-WORKERS"><span class="term"><code class="literal">parallel_workers</code> (<code class="type">integer</code>)
+     <a id="id-1.9.3.85.6.3.4.3.1.3" class="indexterm"></a>
+    </span></dt><dd><p>
+      This sets the number of workers that should be used to assist a parallel
+      scan of this table.  If not set, the system will determine a value based
+      on the relation size.  The actual number of workers chosen by the planner
+      or by utility statements that use parallel scans may be less, for example
+      due to the setting of <a class="xref" href="runtime-config-resource.html#GUC-MAX-WORKER-PROCESSES">max_worker_processes</a>.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-ENABLED"><span class="term"><code class="literal">autovacuum_enabled</code>, <code class="literal">toast.autovacuum_enabled</code> (<code class="type">boolean</code>)
+    <a id="id-1.9.3.85.6.3.4.4.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+     Enables or disables the autovacuum daemon for a particular table.
+     If true, the autovacuum daemon will perform automatic <code class="command">VACUUM</code>
+     and/or <code class="command">ANALYZE</code> operations on this table following the rules
+     discussed in <a class="xref" href="routine-vacuuming.html#AUTOVACUUM" title="25.1.6. The Autovacuum Daemon">Section 25.1.6</a>.
+     If false, this table will not be autovacuumed, except to prevent
+     transaction ID wraparound. See <a class="xref" href="routine-vacuuming.html#VACUUM-FOR-WRAPAROUND" title="25.1.5. Preventing Transaction ID Wraparound Failures">Section 25.1.5</a> for
+     more about wraparound prevention.
+     Note that the autovacuum daemon does not run at all (except to prevent
+     transaction ID wraparound) if the <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM">autovacuum</a>
+     parameter is false; setting individual tables' storage parameters does
+     not override that.  Therefore there is seldom much point in explicitly
+     setting this storage parameter to <code class="literal">true</code>, only
+     to <code class="literal">false</code>.
+     </p></dd><dt id="RELOPTION-VACUUM-INDEX-CLEANUP"><span class="term"><code class="literal">vacuum_index_cleanup</code>, <code class="literal">toast.vacuum_index_cleanup</code> (<code class="type">enum</code>)
+    <a id="id-1.9.3.85.6.3.4.5.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Forces or disables index cleanup when <code class="command">VACUUM</code>
+      is run on this table.  The default value is
+      <code class="literal">AUTO</code>.  With <code class="literal">OFF</code>, index
+      cleanup is disabled, with <code class="literal">ON</code> it is enabled,
+      and with <code class="literal">AUTO</code> a decision is made dynamically,
+      each time <code class="command">VACUUM</code> runs.  The dynamic behavior
+      allows <code class="command">VACUUM</code> to avoid needlessly scanning
+      indexes to remove very few dead tuples.  Forcibly disabling all
+      index cleanup can speed up <code class="command">VACUUM</code> very
+      significantly, but may also lead to severely bloated indexes if
+      table modifications are frequent.  The
+      <code class="literal">INDEX_CLEANUP</code> parameter of <a class="link" href="sql-vacuum.html" title="VACUUM"><code class="command">VACUUM</code></a>, if
+      specified, overrides the value of this option.
+     </p></dd><dt id="RELOPTION-VACUUM-TRUNCATE"><span class="term"><code class="literal">vacuum_truncate</code>, <code class="literal">toast.vacuum_truncate</code> (<code class="type">boolean</code>)
+    <a id="id-1.9.3.85.6.3.4.6.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Enables or disables vacuum to try to truncate off any empty pages
+      at the end of this table. The default value is <code class="literal">true</code>.
+      If <code class="literal">true</code>, <code class="command">VACUUM</code> and
+      autovacuum do the truncation and the disk space for
+      the truncated pages is returned to the operating system.
+      Note that the truncation requires <code class="literal">ACCESS EXCLUSIVE</code>
+      lock on the table. The <code class="literal">TRUNCATE</code> parameter
+      of <a class="link" href="sql-vacuum.html" title="VACUUM"><code class="command">VACUUM</code></a>, if specified, overrides the value
+      of this option.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-VACUUM-THRESHOLD"><span class="term"><code class="literal">autovacuum_vacuum_threshold</code>, <code class="literal">toast.autovacuum_vacuum_threshold</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.7.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-THRESHOLD">autovacuum_vacuum_threshold</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-VACUUM-SCALE-FACTOR"><span class="term"><code class="literal">autovacuum_vacuum_scale_factor</code>, <code class="literal">toast.autovacuum_vacuum_scale_factor</code> (<code class="type">floating point</code>)
+    <a id="id-1.9.3.85.6.3.4.8.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-SCALE-FACTOR">autovacuum_vacuum_scale_factor</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-VACUUM-INSERT-THRESHOLD"><span class="term"><code class="literal">autovacuum_vacuum_insert_threshold</code>, <code class="literal">toast.autovacuum_vacuum_insert_threshold</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.9.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-INSERT-THRESHOLD">autovacuum_vacuum_insert_threshold</a>
+      parameter.  The special value of -1 may be used to disable insert vacuums on the table.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-VACUUM-INSERT-SCALE-FACTOR"><span class="term"><code class="literal">autovacuum_vacuum_insert_scale_factor</code>, <code class="literal">toast.autovacuum_vacuum_insert_scale_factor</code> (<code class="type">floating point</code>)
+    <a id="id-1.9.3.85.6.3.4.10.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-INSERT-SCALE-FACTOR">autovacuum_vacuum_insert_scale_factor</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-ANALYZE-THRESHOLD"><span class="term"><code class="literal">autovacuum_analyze_threshold</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.11.1.3" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-ANALYZE-THRESHOLD">autovacuum_analyze_threshold</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-ANALYZE-SCALE-FACTOR"><span class="term"><code class="literal">autovacuum_analyze_scale_factor</code> (<code class="type">floating point</code>)
+    <a id="id-1.9.3.85.6.3.4.12.1.3" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-ANALYZE-SCALE-FACTOR">autovacuum_analyze_scale_factor</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-VACUUM-COST-DELAY"><span class="term"><code class="literal">autovacuum_vacuum_cost_delay</code>, <code class="literal">toast.autovacuum_vacuum_cost_delay</code> (<code class="type">floating point</code>)
+    <a id="id-1.9.3.85.6.3.4.13.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-COST-DELAY">autovacuum_vacuum_cost_delay</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-VACUUM-COST-LIMIT"><span class="term"><code class="literal">autovacuum_vacuum_cost_limit</code>, <code class="literal">toast.autovacuum_vacuum_cost_limit</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.14.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-VACUUM-COST-LIMIT">autovacuum_vacuum_cost_limit</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-FREEZE-MIN-AGE"><span class="term"><code class="literal">autovacuum_freeze_min_age</code>, <code class="literal">toast.autovacuum_freeze_min_age</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.15.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-client.html#GUC-VACUUM-FREEZE-MIN-AGE">vacuum_freeze_min_age</a>
+      parameter.  Note that autovacuum will ignore
+      per-table <code class="literal">autovacuum_freeze_min_age</code> parameters that are
+      larger than half the
+      system-wide <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-FREEZE-MAX-AGE">autovacuum_freeze_max_age</a> setting.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-FREEZE-MAX-AGE"><span class="term"><code class="literal">autovacuum_freeze_max_age</code>, <code class="literal">toast.autovacuum_freeze_max_age</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.16.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-FREEZE-MAX-AGE">autovacuum_freeze_max_age</a>
+      parameter.  Note that autovacuum will ignore
+      per-table <code class="literal">autovacuum_freeze_max_age</code> parameters that are
+      larger than the system-wide setting (it can only be set smaller).
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-FREEZE-TABLE-AGE"><span class="term"><code class="literal">autovacuum_freeze_table_age</code>, <code class="literal">toast.autovacuum_freeze_table_age</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.17.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-client.html#GUC-VACUUM-FREEZE-TABLE-AGE">vacuum_freeze_table_age</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-MULTIXACT-FREEZE-MIN-AGE"><span class="term"><code class="literal">autovacuum_multixact_freeze_min_age</code>, <code class="literal">toast.autovacuum_multixact_freeze_min_age</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.18.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-client.html#GUC-VACUUM-MULTIXACT-FREEZE-MIN-AGE">vacuum_multixact_freeze_min_age</a>
+      parameter.  Note that autovacuum will ignore
+      per-table <code class="literal">autovacuum_multixact_freeze_min_age</code> parameters
+      that are larger than half the
+      system-wide <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-MULTIXACT-FREEZE-MAX-AGE">autovacuum_multixact_freeze_max_age</a>
+      setting.
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-MULTIXACT-FREEZE-MAX-AGE"><span class="term"><code class="literal">autovacuum_multixact_freeze_max_age</code>, <code class="literal">toast.autovacuum_multixact_freeze_max_age</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.19.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value
+      for <a class="xref" href="runtime-config-autovacuum.html#GUC-AUTOVACUUM-MULTIXACT-FREEZE-MAX-AGE">autovacuum_multixact_freeze_max_age</a> parameter.
+      Note that autovacuum will ignore
+      per-table <code class="literal">autovacuum_multixact_freeze_max_age</code> parameters
+      that are larger than the system-wide setting (it can only be set
+      smaller).
+     </p></dd><dt id="RELOPTION-AUTOVACUUM-MULTIXACT-FREEZE-TABLE-AGE"><span class="term"><code class="literal">autovacuum_multixact_freeze_table_age</code>, <code class="literal">toast.autovacuum_multixact_freeze_table_age</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.20.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value
+      for <a class="xref" href="runtime-config-client.html#GUC-VACUUM-MULTIXACT-FREEZE-TABLE-AGE">vacuum_multixact_freeze_table_age</a> parameter.
+     </p></dd><dt id="RELOPTION-LOG-AUTOVACUUM-MIN-DURATION"><span class="term"><code class="literal">log_autovacuum_min_duration</code>, <code class="literal">toast.log_autovacuum_min_duration</code> (<code class="type">integer</code>)
+    <a id="id-1.9.3.85.6.3.4.21.1.4" class="indexterm"></a>
+    </span></dt><dd><p>
+      Per-table value for <a class="xref" href="runtime-config-logging.html#GUC-LOG-AUTOVACUUM-MIN-DURATION">log_autovacuum_min_duration</a>
+      parameter.
+     </p></dd><dt id="RELOPTION-USER-CATALOG-TABLE"><span class="term"><code class="literal">user_catalog_table</code> (<code class="type">boolean</code>)
+    <a id="id-1.9.3.85.6.3.4.22.1.3" class="indexterm"></a>
+    </span></dt><dd><p>
+      Declare the table as an additional catalog table for purposes of
+      logical replication. See
+      <a class="xref" href="logicaldecoding-output-plugin.html#LOGICALDECODING-CAPABILITIES" title="49.6.2. Capabilities">Section 49.6.2</a> for details.
+      This parameter cannot be set for TOAST tables.
+     </p></dd></dl></div></div></div><div class="refsect1" id="SQL-CREATETABLE-NOTES"><h2>Notes</h2><p>
+     <span class="productname">PostgreSQL</span> automatically creates an
+     index for each unique constraint and primary key constraint to
+     enforce uniqueness.  Thus, it is not necessary to create an
+     index explicitly for primary key columns.  (See <a class="xref" href="sql-createindex.html" title="CREATE INDEX"><span class="refentrytitle">CREATE INDEX</span></a> for more information.)
+    </p><p>
+     Unique constraints and primary keys are not inherited in the
+     current implementation.  This makes the combination of
+     inheritance and unique constraints rather dysfunctional.
+    </p><p>
+     A table cannot have more than 1600 columns.  (In practice, the
+     effective limit is usually lower because of tuple-length constraints.)
+    </p></div><div class="refsect1" id="SQL-CREATETABLE-EXAMPLES"><h2>Examples</h2><p>
+   Create table <code class="structname">films</code> and table
+   <code class="structname">distributors</code>:
+
+</p><pre class="programlisting">
+CREATE TABLE films (
+    code        char(5) CONSTRAINT firstkey PRIMARY KEY,
+    title       varchar(40) NOT NULL,
+    did         integer NOT NULL,
+    date_prod   date,
+    kind        varchar(10),
+    len         interval hour to minute
+);
+
+CREATE TABLE distributors (
+     did    integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+     name   varchar(40) NOT NULL CHECK (name &lt;&gt; '')
+);
+</pre><p>
+  </p><p>
+   Create a table with a 2-dimensional array:
+
+</p><pre class="programlisting">
+CREATE TABLE array_int (
+    vector  int[][]
+);
+</pre><p>
+  </p><p>
+   Define a unique table constraint for the table
+   <code class="literal">films</code>.  Unique table constraints can be defined
+   on one or more columns of the table:
+
+</p><pre class="programlisting">
+CREATE TABLE films (
+    code        char(5),
+    title       varchar(40),
+    did         integer,
+    date_prod   date,
+    kind        varchar(10),
+    len         interval hour to minute,
+    CONSTRAINT production UNIQUE(date_prod)
+);
+</pre><p>
+  </p><p>
+   Define a check column constraint:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    did     integer CHECK (did &gt; 100),
+    name    varchar(40)
+);
+</pre><p>
+  </p><p>
+   Define a check table constraint:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    CONSTRAINT con1 CHECK (did &gt; 100 AND name &lt;&gt; '')
+);
+</pre><p>
+  </p><p>
+   Define a primary key table constraint for the table
+   <code class="structname">films</code>:
+
+</p><pre class="programlisting">
+CREATE TABLE films (
+    code        char(5),
+    title       varchar(40),
+    did         integer,
+    date_prod   date,
+    kind        varchar(10),
+    len         interval hour to minute,
+    CONSTRAINT code_title PRIMARY KEY(code,title)
+);
+</pre><p>
+  </p><p>
+   Define a primary key constraint for table
+   <code class="structname">distributors</code>.  The following two examples are
+   equivalent, the first using the table constraint syntax, the second
+   the column constraint syntax:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    PRIMARY KEY(did)
+);
+
+CREATE TABLE distributors (
+    did     integer PRIMARY KEY,
+    name    varchar(40)
+);
+</pre><p>
+  </p><p>
+   Assign a literal constant default value for the column
+   <code class="literal">name</code>, arrange for the default value of column
+   <code class="literal">did</code> to be generated by selecting the next value
+   of a sequence object, and make the default value of
+   <code class="literal">modtime</code> be the time at which the row is
+   inserted:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    name      varchar(40) DEFAULT 'Luso Films',
+    did       integer DEFAULT nextval('distributors_serial'),
+    modtime   timestamp DEFAULT current_timestamp
+);
+</pre><p>
+  </p><p>
+   Define two <code class="literal">NOT NULL</code> column constraints on the table
+   <code class="classname">distributors</code>, one of which is explicitly
+   given a name:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    did     integer CONSTRAINT no_null NOT NULL,
+    name    varchar(40) NOT NULL
+);
+</pre><p>
+    </p><p>
+     Define a unique constraint for the <code class="literal">name</code> column:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40) UNIQUE
+);
+</pre><p>
+
+     The same, specified as a table constraint:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    UNIQUE(name)
+);
+</pre><p>
+  </p><p>
+   Create the same table, specifying 70% fill factor for both the table
+   and its unique index:
+
+</p><pre class="programlisting">
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    UNIQUE(name) WITH (fillfactor=70)
+)
+WITH (fillfactor=70);
+</pre><p>
+  </p><p>
+   Create table <code class="structname">circles</code> with an exclusion
+   constraint that prevents any two circles from overlapping:
+
+</p><pre class="programlisting">
+CREATE TABLE circles (
+    c circle,
+    EXCLUDE USING gist (c WITH &amp;&amp;)
+);
+</pre><p>
+  </p><p>
+   Create table <code class="structname">cinemas</code> in tablespace <code class="structname">diskvol1</code>:
+
+</p><pre class="programlisting">
+CREATE TABLE cinemas (
+        id serial,
+        name text,
+        location text
+) TABLESPACE diskvol1;
+</pre><p>
+  </p><p>
+   Create a composite type and a typed table:
+</p><pre class="programlisting">
+CREATE TYPE employee_type AS (name text, salary numeric);
+
+CREATE TABLE employees OF employee_type (
+    PRIMARY KEY (name),
+    salary WITH OPTIONS DEFAULT 1000
+);
+</pre><p>
+   Create a range partitioned table:
+</p><pre class="programlisting">
+CREATE TABLE measurement (
+    logdate         date not null,
+    peaktemp        int,
+    unitsales       int
+) PARTITION BY RANGE (logdate);
+</pre><p>
+   Create a range partitioned table with multiple columns in the partition key:
+</p><pre class="programlisting">
+CREATE TABLE measurement_year_month (
+    logdate         date not null,
+    peaktemp        int,
+    unitsales       int
+) PARTITION BY RANGE (EXTRACT(YEAR FROM logdate), EXTRACT(MONTH FROM logdate));
+</pre><p>
+   Create a list partitioned table:
+</p><pre class="programlisting">
+CREATE TABLE cities (
+    city_id      bigserial not null,
+    name         text not null,
+    population   bigint
+) PARTITION BY LIST (left(lower(name), 1));
+</pre><p>
+   Create a hash partitioned table:
+</p><pre class="programlisting">
+CREATE TABLE orders (
+    order_id     bigint not null,
+    cust_id      bigint not null,
+    status       text
+) PARTITION BY HASH (order_id);
+</pre><p>
+   Create partition of a range partitioned table:
+</p><pre class="programlisting">
+CREATE TABLE measurement_y2016m07
+    PARTITION OF measurement (
+    unitsales DEFAULT 0
+) FOR VALUES FROM ('2016-07-01') TO ('2016-08-01');
+</pre><p>
+   Create a few partitions of a range partitioned table with multiple
+   columns in the partition key:
+</p><pre class="programlisting">
+CREATE TABLE measurement_ym_older
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (MINVALUE, MINVALUE) TO (2016, 11);
+
+CREATE TABLE measurement_ym_y2016m11
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (2016, 11) TO (2016, 12);
+
+CREATE TABLE measurement_ym_y2016m12
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (2016, 12) TO (2017, 01);
+
+CREATE TABLE measurement_ym_y2017m01
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (2017, 01) TO (2017, 02);
+</pre><p>
+   Create partition of a list partitioned table:
+</p><pre class="programlisting">
+CREATE TABLE cities_ab
+    PARTITION OF cities (
+    CONSTRAINT city_id_nonzero CHECK (city_id != 0)
+) FOR VALUES IN ('a', 'b');
+</pre><p>
+   Create partition of a list partitioned table that is itself further
+   partitioned and then add a partition to it:
+</p><pre class="programlisting">
+CREATE TABLE cities_ab
+    PARTITION OF cities (
+    CONSTRAINT city_id_nonzero CHECK (city_id != 0)
+) FOR VALUES IN ('a', 'b') PARTITION BY RANGE (population);
+
+CREATE TABLE cities_ab_10000_to_100000
+    PARTITION OF cities_ab FOR VALUES FROM (10000) TO (100000);
+</pre><p>
+   Create partitions of a hash partitioned table:
+</p><pre class="programlisting">
+CREATE TABLE orders_p1 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+CREATE TABLE orders_p2 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+CREATE TABLE orders_p3 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+CREATE TABLE orders_p4 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 3);
+</pre><p>
+   Create a default partition:
+</p><pre class="programlisting">
+CREATE TABLE cities_partdef
+    PARTITION OF cities DEFAULT;
+</pre></div><div class="refsect1" id="SQL-CREATETABLE-COMPATIBILITY"><h2>Compatibility</h2><p>
+   The <code class="command">CREATE TABLE</code> command conforms to the
+   <acronym class="acronym">SQL</acronym> standard, with exceptions listed below.
+  </p><div class="refsect2" id="id-1.9.3.85.9.3"><h3>Temporary Tables</h3><p>
+    Although the syntax of <code class="literal">CREATE TEMPORARY TABLE</code>
+    resembles that of the SQL standard, the effect is not the same.  In the
+    standard,
+    temporary tables are defined just once and automatically exist (starting
+    with empty contents) in every session that needs them.
+    <span class="productname">PostgreSQL</span> instead
+    requires each session to issue its own <code class="literal">CREATE TEMPORARY
+    TABLE</code> command for each temporary table to be used.  This allows
+    different sessions to use the same temporary table name for different
+    purposes, whereas the standard's approach constrains all instances of a
+    given temporary table name to have the same table structure.
+   </p><p>
+    The standard's definition of the behavior of temporary tables is
+    widely ignored.  <span class="productname">PostgreSQL</span>'s behavior
+    on this point is similar to that of several other SQL databases.
+   </p><p>
+    The SQL standard also distinguishes between global and local temporary
+    tables, where a local temporary table has a separate set of contents for
+    each SQL module within each session, though its definition is still shared
+    across sessions.  Since <span class="productname">PostgreSQL</span> does not
+    support SQL modules, this distinction is not relevant in
+    <span class="productname">PostgreSQL</span>.
+   </p><p>
+    For compatibility's sake, <span class="productname">PostgreSQL</span> will
+    accept the <code class="literal">GLOBAL</code> and <code class="literal">LOCAL</code> keywords
+    in a temporary table declaration, but they currently have no effect.
+    Use of these keywords is discouraged, since future versions of
+    <span class="productname">PostgreSQL</span> might adopt a more
+    standard-compliant interpretation of their meaning.
+   </p><p>
+    The <code class="literal">ON COMMIT</code> clause for temporary tables
+    also resembles the SQL standard, but has some differences.
+    If the <code class="literal">ON COMMIT</code> clause is omitted, SQL specifies that the
+    default behavior is <code class="literal">ON COMMIT DELETE ROWS</code>.  However, the
+    default behavior in <span class="productname">PostgreSQL</span> is
+    <code class="literal">ON COMMIT PRESERVE ROWS</code>.  The <code class="literal">ON COMMIT
+    DROP</code> option does not exist in SQL.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.4"><h3>Non-Deferred Uniqueness Constraints</h3><p>
+    When a <code class="literal">UNIQUE</code> or <code class="literal">PRIMARY KEY</code> constraint is
+    not deferrable, <span class="productname">PostgreSQL</span> checks for
+    uniqueness immediately whenever a row is inserted or modified.
+    The SQL standard says that uniqueness should be enforced only at
+    the end of the statement; this makes a difference when, for example,
+    a single command updates multiple key values.  To obtain
+    standard-compliant behavior, declare the constraint as
+    <code class="literal">DEFERRABLE</code> but not deferred (i.e., <code class="literal">INITIALLY
+    IMMEDIATE</code>).  Be aware that this can be significantly slower than
+    immediate uniqueness checking.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.5"><h3>Column Check Constraints</h3><p>
+    The SQL standard says that <code class="literal">CHECK</code> column constraints
+    can only refer to the column they apply to; only <code class="literal">CHECK</code>
+    table constraints can refer to multiple columns.
+    <span class="productname">PostgreSQL</span> does not enforce this
+    restriction; it treats column and table check constraints alike.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.6"><h3><code class="literal">EXCLUDE</code> Constraint</h3><p>
+    The <code class="literal">EXCLUDE</code> constraint type is a
+    <span class="productname">PostgreSQL</span> extension.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.7"><h3>Foreign Key Constraints</h3><p>
+    It is a <span class="productname">PostgreSQL</span> extension that a
+    foreign key constraint may reference columns of a unique index instead of
+    columns of a primary key or unique constraint.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.8"><h3><code class="literal">NULL</code> <span class="quote">“<span class="quote">Constraint</span>”</span></h3><p>
+    The <code class="literal">NULL</code> <span class="quote">“<span class="quote">constraint</span>”</span> (actually a
+    non-constraint) is a <span class="productname">PostgreSQL</span>
+    extension to the SQL standard that is included for compatibility with some
+    other database systems (and for symmetry with the <code class="literal">NOT
+    NULL</code> constraint).  Since it is the default for any
+    column, its presence is simply noise.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.9"><h3>Constraint Naming</h3><p>
+    The SQL standard says that table and domain constraints must have names
+    that are unique across the schema containing the table or domain.
+    <span class="productname">PostgreSQL</span> is laxer: it only requires
+    constraint names to be unique across the constraints attached to a
+    particular table or domain.  However, this extra freedom does not exist
+    for index-based constraints (<code class="literal">UNIQUE</code>,
+    <code class="literal">PRIMARY KEY</code>, and <code class="literal">EXCLUDE</code>
+    constraints), because the associated index is named the same as the
+    constraint, and index names must be unique across all relations within
+    the same schema.
+   </p><p>
+    Currently, <span class="productname">PostgreSQL</span> does not record names
+    for <code class="literal">NOT NULL</code> constraints at all, so they are not
+    subject to the uniqueness restriction.  This might change in a future
+    release.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.10"><h3>Inheritance</h3><p>
+    Multiple inheritance via the <code class="literal">INHERITS</code> clause is
+    a <span class="productname">PostgreSQL</span> language extension.
+    SQL:1999 and later define single inheritance using a
+    different syntax and different semantics.  SQL:1999-style
+    inheritance is not yet supported by
+    <span class="productname">PostgreSQL</span>.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.11"><h3>Zero-Column Tables</h3><p>
+    <span class="productname">PostgreSQL</span> allows a table of no columns
+    to be created (for example, <code class="literal">CREATE TABLE foo();</code>).  This
+    is an extension from the SQL standard, which does not allow zero-column
+    tables.  Zero-column tables are not in themselves very useful, but
+    disallowing them creates odd special cases for <code class="command">ALTER TABLE
+    DROP COLUMN</code>, so it seems cleaner to ignore this spec restriction.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.12"><h3>Multiple Identity Columns</h3><p>
+    <span class="productname">PostgreSQL</span> allows a table to have more than one
+    identity column.  The standard specifies that a table can have at most one
+    identity column.  This is relaxed mainly to give more flexibility for
+    doing schema changes or migrations.  Note that
+    the <code class="command">INSERT</code> command supports only one override clause
+    that applies to the entire statement, so having multiple identity columns
+    with different behaviors is not well supported.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.13"><h3>Generated Columns</h3><p>
+    The option <code class="literal">STORED</code> is not standard but is also used by
+    other SQL implementations.  The SQL standard does not specify the storage
+    of generated columns.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.14"><h3><code class="literal">LIKE</code> Clause</h3><p>
+    While a <code class="literal">LIKE</code> clause exists in the SQL standard, many of the
+    options that <span class="productname">PostgreSQL</span> accepts for it are not
+    in the standard, and some of the standard's options are not implemented
+    by <span class="productname">PostgreSQL</span>.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.15"><h3><code class="literal">WITH</code> Clause</h3><p>
+    The <code class="literal">WITH</code> clause is a <span class="productname">PostgreSQL</span>
+    extension; storage parameters are not in the standard.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.16"><h3>Tablespaces</h3><p>
+    The <span class="productname">PostgreSQL</span> concept of tablespaces is not
+    part of the standard.  Hence, the clauses <code class="literal">TABLESPACE</code>
+    and <code class="literal">USING INDEX TABLESPACE</code> are extensions.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.17"><h3>Typed Tables</h3><p>
+    Typed tables implement a subset of the SQL standard.  According to
+    the standard, a typed table has columns corresponding to the
+    underlying composite type as well as one other column that is
+    the <span class="quote">“<span class="quote">self-referencing column</span>”</span>.
+    <span class="productname">PostgreSQL</span> does not support self-referencing
+    columns explicitly.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.18"><h3><code class="literal">PARTITION BY</code> Clause</h3><p>
+    The <code class="literal">PARTITION BY</code> clause is a
+    <span class="productname">PostgreSQL</span> extension.
+   </p></div><div class="refsect2" id="id-1.9.3.85.9.19"><h3><code class="literal">PARTITION OF</code> Clause</h3><p>
+    The <code class="literal">PARTITION OF</code> clause is a
+    <span class="productname">PostgreSQL</span> extension.
+   </p></div></div><div class="refsect1" id="id-1.9.3.85.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-altertable.html" title="ALTER TABLE"><span class="refentrytitle">ALTER TABLE</span></a>, <a class="xref" href="sql-droptable.html" title="DROP TABLE"><span class="refentrytitle">DROP TABLE</span></a>, <a class="xref" href="sql-createtableas.html" title="CREATE TABLE AS"><span class="refentrytitle">CREATE TABLE AS</span></a>, <a class="xref" href="sql-createtablespace.html" title="CREATE TABLESPACE"><span class="refentrytitle">CREATE TABLESPACE</span></a>, <a class="xref" href="sql-createtype.html" title="CREATE TYPE"><span class="refentrytitle">CREATE TYPE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-createsubscription.html" title="CREATE SUBSCRIPTION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-createtableas.html" title="CREATE TABLE AS">Next</a></td></tr><tr><td width="40%" align="left" valign="top">CREATE SUBSCRIPTION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> CREATE TABLE AS</td></tr></table></div></body></html>

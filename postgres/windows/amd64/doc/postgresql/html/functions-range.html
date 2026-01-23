@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9.20. Range/Multirange Functions and Operators</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="functions-array.html" title="9.19. Array Functions and Operators" /><link rel="next" href="functions-aggregate.html" title="9.21. Aggregate Functions" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">9.20. Range/Multirange Functions and Operators</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="functions-array.html" title="9.19. Array Functions and Operators">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><th width="60%" align="center">Chapter 9. Functions and Operators</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="functions-aggregate.html" title="9.21. Aggregate Functions">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="FUNCTIONS-RANGE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">9.20. Range/Multirange Functions and Operators</h2></div></div></div><p>
+   See <a class="xref" href="rangetypes.html" title="8.17. Range Types">Section 8.17</a> for an overview of range types.
+  </p><p>
+   <a class="xref" href="functions-range.html#RANGE-OPERATORS-TABLE" title="Table 9.53. Range Operators">Table 9.53</a> shows the specialized operators
+   available for range types.
+   <a class="xref" href="functions-range.html#MULTIRANGE-OPERATORS-TABLE" title="Table 9.54. Multirange Operators">Table 9.54</a> shows the specialized operators
+   available for multirange types.
+   In addition to those, the usual comparison operators shown in
+   <a class="xref" href="functions-comparison.html#FUNCTIONS-COMPARISON-OP-TABLE" title="Table 9.1. Comparison Operators">Table 9.1</a> are available for range
+   and multirange types.  The comparison operators order first by the range lower
+   bounds, and only if those are equal do they compare the upper bounds.  The
+   multirange operators compare each range until one is unequal. This
+   does not usually result in a useful overall ordering, but the operators are
+   provided to allow unique indexes to be constructed on ranges.
+  </p><div class="table" id="RANGE-OPERATORS-TABLE"><p class="title"><strong>Table 9.53. Range Operators</strong></p><div class="table-contents"><table class="table" summary="Range Operators" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Operator
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">@&gt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the first range contain the second?
+       </p>
+       <p>
+        <code class="literal">int4range(2,4) @&gt; int4range(2,3)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">@&gt;</code> <code class="type">anyelement</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the range contain the element?
+       </p>
+       <p>
+        <code class="literal">'[2011-01-01,2011-03-01)'::tsrange @&gt; '2011-01-10'::timestamp</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&lt;@</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the first range contained by the second?
+       </p>
+       <p>
+        <code class="literal">int4range(2,4) &lt;@ int4range(1,7)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyelement</code> <code class="literal">&lt;@</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the element contained in the range?
+       </p>
+       <p>
+        <code class="literal">42 &lt;@ int4range(1,7)</code>
+        → <code class="returnvalue">f</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&amp;&amp;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Do the ranges overlap, that is, have any elements in common?
+       </p>
+       <p>
+        <code class="literal">int8range(3,7) &amp;&amp; int8range(4,12)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&lt;&lt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the first range strictly left of the second?
+       </p>
+       <p>
+        <code class="literal">int8range(1,10) &lt;&lt; int8range(100,110)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&gt;&gt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the first range strictly right of the second?
+       </p>
+       <p>
+        <code class="literal">int8range(50,60) &gt;&gt; int8range(20,30)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&amp;&lt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the first range not extend to the right of the second?
+       </p>
+       <p>
+        <code class="literal">int8range(1,20) &amp;&lt; int8range(18,20)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&amp;&gt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the first range not extend to the left of the second?
+       </p>
+       <p>
+        <code class="literal">int8range(7,20) &amp;&gt; int8range(5,10)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">-|-</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Are the ranges adjacent?
+       </p>
+       <p>
+        <code class="literal">numrange(1.1,2.2) -|- numrange(2.2,3.3)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">+</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">anyrange</code>
+       </p>
+       <p>
+        Computes the union of the ranges.  The ranges must overlap or be
+        adjacent, so that the union is a single range (but
+        see <code class="function">range_merge()</code>).
+       </p>
+       <p>
+        <code class="literal">numrange(5,15) + numrange(10,20)</code>
+        → <code class="returnvalue">[5,20)</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">*</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">anyrange</code>
+       </p>
+       <p>
+        Computes the intersection of the ranges.
+       </p>
+       <p>
+        <code class="literal">int8range(5,15) * int8range(10,20)</code>
+        → <code class="returnvalue">[10,15)</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">-</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">anyrange</code>
+       </p>
+       <p>
+        Computes the difference of the ranges.  The second range must not be
+        contained in the first in such a way that the difference would not be
+        a single range.
+       </p>
+       <p>
+        <code class="literal">int8range(5,15) - int8range(10,20)</code>
+        → <code class="returnvalue">[5,10)</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><div class="table" id="MULTIRANGE-OPERATORS-TABLE"><p class="title"><strong>Table 9.54. Multirange Operators</strong></p><div class="table-contents"><table class="table" summary="Multirange Operators" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Operator
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">@&gt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the first multirange contain the second?
+       </p>
+       <p>
+        <code class="literal">'{[2,4)}'::int4multirange @&gt; '{[2,3)}'::int4multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">@&gt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the multirange contain the range?
+       </p>
+       <p>
+        <code class="literal">'{[2,4)}'::int4multirange @&gt; int4range(2,3)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">@&gt;</code> <code class="type">anyelement</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the multirange contain the element?
+       </p>
+       <p>
+        <code class="literal">'{[2011-01-01,2011-03-01)}'::tsmultirange @&gt; '2011-01-10'::timestamp</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">@&gt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the range contain the multirange?
+       </p>
+       <p>
+        <code class="literal">'[2,4)'::int4range @&gt; '{[2,3)}'::int4multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&lt;@</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the first multirange contained by the second?
+       </p>
+       <p>
+        <code class="literal">'{[2,4)}'::int4multirange &lt;@ '{[1,7)}'::int4multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&lt;@</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange contained by the range?
+       </p>
+       <p>
+        <code class="literal">'{[2,4)}'::int4multirange &lt;@ int4range(1,7)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&lt;@</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range contained by the multirange?
+       </p>
+       <p>
+        <code class="literal">int4range(2,4) &lt;@ '{[1,7)}'::int4multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyelement</code> <code class="literal">&lt;@</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the element contained by the multirange?
+       </p>
+       <p>
+        <code class="literal">4 &lt;@ '{[1,7)}'::int4multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&amp;&amp;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Do the multiranges overlap, that is, have any elements in common?
+       </p>
+       <p>
+        <code class="literal">'{[3,7)}'::int8multirange &amp;&amp; '{[4,12)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&amp;&amp;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the multirange overlap the range?
+       </p>
+       <p>
+        <code class="literal">'{[3,7)}'::int8multirange &amp;&amp; int8range(4,12)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&amp;&amp;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the range overlap the multirange?
+       </p>
+       <p>
+        <code class="literal">int8range(3,7) &amp;&amp; '{[4,12)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&lt;&lt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the first multirange strictly left of the second?
+       </p>
+       <p>
+        <code class="literal">'{[1,10)}'::int8multirange &lt;&lt; '{[100,110)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&lt;&lt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange strictly left of the range?
+       </p>
+       <p>
+        <code class="literal">'{[1,10)}'::int8multirange &lt;&lt; int8range(100,110)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&lt;&lt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range strictly left of the multirange?
+       </p>
+       <p>
+        <code class="literal">int8range(1,10) &lt;&lt; '{[100,110)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&gt;&gt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the first multirange strictly right of the second?
+       </p>
+       <p>
+        <code class="literal">'{[50,60)}'::int8multirange &gt;&gt; '{[20,30)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&gt;&gt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange strictly right of the range?
+       </p>
+       <p>
+        <code class="literal">'{[50,60)}'::int8multirange &gt;&gt; int8range(20,30)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&gt;&gt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range strictly right of the multirange?
+       </p>
+       <p>
+        <code class="literal">int8range(50,60) &gt;&gt; '{[20,30)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&amp;&lt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the first multirange not extend to the right of the second?
+       </p>
+       <p>
+        <code class="literal">'{[1,20)}'::int8multirange &amp;&lt; '{[18,20)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&amp;&lt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the multirange not extend to the right of the range?
+       </p>
+       <p>
+        <code class="literal">'{[1,20)}'::int8multirange &amp;&lt; int8range(18,20)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&amp;&lt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the range not extend to the right of the multirange?
+       </p>
+       <p>
+        <code class="literal">int8range(1,20) &amp;&lt; '{[18,20)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&amp;&gt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the first multirange not extend to the left of the second?
+       </p>
+       <p>
+        <code class="literal">'{[7,20)}'::int8multirange &amp;&gt; '{[5,10)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">&amp;&gt;</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the multirange not extend to the left of the range?
+       </p>
+       <p>
+        <code class="literal">'{[7,20)}'::int8multirange &amp;&gt; int8range(5,10)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">&amp;&gt;</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Does the range not extend to the left of the multirange?
+       </p>
+       <p>
+        <code class="literal">int8range(7,20) &amp;&gt; '{[5,10)}'::int8multirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">-|-</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Are the multiranges adjacent?
+       </p>
+       <p>
+        <code class="literal">'{[1.1,2.2)}'::nummultirange -|- '{[2.2,3.3)}'::nummultirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">-|-</code> <code class="type">anyrange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange adjacent to the range?
+       </p>
+       <p>
+        <code class="literal">'{[1.1,2.2)}'::nummultirange -|- numrange(2.2,3.3)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anyrange</code> <code class="literal">-|-</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range adjacent to the multirange?
+       </p>
+       <p>
+        <code class="literal">numrange(1.1,2.2) -|- '{[2.2,3.3)}'::nummultirange</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">+</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">anymultirange</code>
+       </p>
+       <p>
+        Computes the union of the multiranges.  The multiranges need not overlap
+        or be adjacent.
+       </p>
+       <p>
+        <code class="literal">'{[5,10)}'::nummultirange + '{[15,20)}'::nummultirange</code>
+        → <code class="returnvalue">{[5,10), [15,20)}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">*</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">anymultirange</code>
+       </p>
+       <p>
+        Computes the intersection of the multiranges.
+       </p>
+       <p>
+        <code class="literal">'{[5,15)}'::int8multirange * '{[10,20)}'::int8multirange</code>
+        → <code class="returnvalue">{[10,15)}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <code class="type">anymultirange</code> <code class="literal">-</code> <code class="type">anymultirange</code>
+        → <code class="returnvalue">anymultirange</code>
+       </p>
+       <p>
+        Computes the difference of the multiranges.
+       </p>
+       <p>
+        <code class="literal">'{[5,20)}'::int8multirange - '{[10,15)}'::int8multirange</code>
+        → <code class="returnvalue">{[5,10), [15,20)}</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   The left-of/right-of/adjacent operators always return false when an empty
+   range or multirange is involved; that is, an empty range is not considered to
+   be either before or after any other range.
+  </p><p>
+   Elsewhere empty ranges and multiranges are treated as the additive identity:
+   anything unioned with an empty value is itself. Anything minus an empty
+   value is itself. An empty multirange has exactly the same points as an empty
+   range. Every range contains the empty range. Every multirange contains as many
+   empty ranges as you like.
+  </p><p>
+   The range union and difference operators will fail if the resulting range would
+   need to contain two disjoint sub-ranges, as such a range cannot be
+   represented. There are separate operators for union and difference that take
+   multirange parameters and return a multirange, and they do not fail even if
+   their arguments are disjoint. So if you need a union or difference operation
+   for ranges that may be disjoint, you can avoid errors by first casting your
+   ranges to multiranges.
+  </p><p>
+   <a class="xref" href="functions-range.html#RANGE-FUNCTIONS-TABLE" title="Table 9.55. Range Functions">Table 9.55</a> shows the functions
+   available for use with range types.
+   <a class="xref" href="functions-range.html#MULTIRANGE-FUNCTIONS-TABLE" title="Table 9.56. Multirange Functions">Table 9.56</a> shows the functions
+   available for use with multirange types.
+  </p><div class="table" id="RANGE-FUNCTIONS-TABLE"><p class="title"><strong>Table 9.55. Range Functions</strong></p><div class="table-contents"><table class="table" summary="Range Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">lower</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">anyelement</code>
+       </p>
+       <p>
+        Extracts the lower bound of the range (<code class="literal">NULL</code> if the
+        range is empty or the lower bound is infinite).
+       </p>
+       <p>
+        <code class="literal">lower(numrange(1.1,2.2))</code>
+        → <code class="returnvalue">1.1</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">upper</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">anyelement</code>
+       </p>
+       <p>
+        Extracts the upper bound of the range (<code class="literal">NULL</code> if the
+        range is empty or the upper bound is infinite).
+       </p>
+       <p>
+        <code class="literal">upper(numrange(1.1,2.2))</code>
+        → <code class="returnvalue">2.2</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">isempty</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range empty?
+       </p>
+       <p>
+        <code class="literal">isempty(numrange(1.1,2.2))</code>
+        → <code class="returnvalue">f</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">lower_inc</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range's lower bound inclusive?
+       </p>
+       <p>
+        <code class="literal">lower_inc(numrange(1.1,2.2))</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.5.1.1.1" class="indexterm"></a>
+        <code class="function">upper_inc</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range's upper bound inclusive?
+       </p>
+       <p>
+        <code class="literal">upper_inc(numrange(1.1,2.2))</code>
+        → <code class="returnvalue">f</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.6.1.1.1" class="indexterm"></a>
+        <code class="function">lower_inf</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range's lower bound infinite?
+       </p>
+       <p>
+        <code class="literal">lower_inf('(,)'::daterange)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.7.1.1.1" class="indexterm"></a>
+        <code class="function">upper_inf</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the range's upper bound infinite?
+       </p>
+       <p>
+        <code class="literal">upper_inf('(,)'::daterange)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.10.2.2.8.1.1.1" class="indexterm"></a>
+        <code class="function">range_merge</code> ( <code class="type">anyrange</code>, <code class="type">anyrange</code> )
+        → <code class="returnvalue">anyrange</code>
+       </p>
+       <p>
+        Computes the smallest range that includes both of the given ranges.
+       </p>
+       <p>
+        <code class="literal">range_merge('[1,2)'::int4range, '[3,4)'::int4range)</code>
+        → <code class="returnvalue">[1,4)</code>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><div class="table" id="MULTIRANGE-FUNCTIONS-TABLE"><p class="title"><strong>Table 9.56. Multirange Functions</strong></p><div class="table-contents"><table class="table" summary="Multirange Functions" border="1"><colgroup><col /></colgroup><thead><tr><th class="func_table_entry"><p class="func_signature">
+        Function
+       </p>
+       <p>
+        Description
+       </p>
+       <p>
+        Example(s)
+       </p></th></tr></thead><tbody><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.1.1.1.1" class="indexterm"></a>
+        <code class="function">lower</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">anyelement</code>
+       </p>
+       <p>
+        Extracts the lower bound of the multirange (<code class="literal">NULL</code> if the
+        multirange is empty or the lower bound is infinite).
+       </p>
+       <p>
+        <code class="literal">lower('{[1.1,2.2)}'::nummultirange)</code>
+        → <code class="returnvalue">1.1</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.2.1.1.1" class="indexterm"></a>
+        <code class="function">upper</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">anyelement</code>
+       </p>
+       <p>
+        Extracts the upper bound of the multirange (<code class="literal">NULL</code> if the
+        multirange is empty or the upper bound is infinite).
+       </p>
+       <p>
+        <code class="literal">upper('{[1.1,2.2)}'::nummultirange)</code>
+        → <code class="returnvalue">2.2</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.3.1.1.1" class="indexterm"></a>
+        <code class="function">isempty</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange empty?
+       </p>
+       <p>
+        <code class="literal">isempty('{[1.1,2.2)}'::nummultirange)</code>
+        → <code class="returnvalue">f</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.4.1.1.1" class="indexterm"></a>
+        <code class="function">lower_inc</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange's lower bound inclusive?
+       </p>
+       <p>
+        <code class="literal">lower_inc('{[1.1,2.2)}'::nummultirange)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.5.1.1.1" class="indexterm"></a>
+        <code class="function">upper_inc</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange's upper bound inclusive?
+       </p>
+       <p>
+        <code class="literal">upper_inc('{[1.1,2.2)}'::nummultirange)</code>
+        → <code class="returnvalue">f</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.6.1.1.1" class="indexterm"></a>
+        <code class="function">lower_inf</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange's lower bound infinite?
+       </p>
+       <p>
+        <code class="literal">lower_inf('{(,)}'::datemultirange)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.7.1.1.1" class="indexterm"></a>
+        <code class="function">upper_inf</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">boolean</code>
+       </p>
+       <p>
+        Is the multirange's upper bound infinite?
+       </p>
+       <p>
+        <code class="literal">upper_inf('{(,)}'::datemultirange)</code>
+        → <code class="returnvalue">t</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.8.1.1.1" class="indexterm"></a>
+        <code class="function">range_merge</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">anyrange</code>
+       </p>
+       <p>
+        Computes the smallest range that includes the entire multirange.
+       </p>
+       <p>
+        <code class="literal">range_merge('{[1,2), [3,4)}'::int4multirange)</code>
+        → <code class="returnvalue">[1,4)</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.9.1.1.1" class="indexterm"></a>
+        <code class="function">multirange</code> ( <code class="type">anyrange</code> )
+        → <code class="returnvalue">anymultirange</code>
+       </p>
+       <p>
+        Returns a multirange containing just the given range.
+       </p>
+       <p>
+        <code class="literal">multirange('[1,2)'::int4range)</code>
+        → <code class="returnvalue">{[1,2)}</code>
+       </p></td></tr><tr><td class="func_table_entry"><p class="func_signature">
+        <a id="id-1.5.8.26.11.2.2.10.1.1.1" class="indexterm"></a>
+        <code class="function">unnest</code> ( <code class="type">anymultirange</code> )
+        → <code class="returnvalue">setof anyrange</code>
+       </p>
+       <p>
+        Expands a multirange into a set of ranges.
+        The ranges are read out in storage order (ascending).
+       </p>
+       <p>
+        <code class="literal">unnest('{[1,2), [3,4)}'::int4multirange)</code>
+        → <code class="returnvalue"></code>
+</p><pre class="programlisting">
+ [1,2)
+ [3,4)
+</pre><p>
+       </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   The <code class="function">lower_inc</code>, <code class="function">upper_inc</code>,
+   <code class="function">lower_inf</code>, and <code class="function">upper_inf</code>
+   functions all return false for an empty range or multirange.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="functions-array.html" title="9.19. Array Functions and Operators">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="functions.html" title="Chapter 9. Functions and Operators">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="functions-aggregate.html" title="9.21. Aggregate Functions">Next</a></td></tr><tr><td width="40%" align="left" valign="top">9.19. Array Functions and Operators </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 9.21. Aggregate Functions</td></tr></table></div></body></html>

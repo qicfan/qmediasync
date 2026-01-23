@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>37.7. character_sets</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="infoschema-attributes.html" title="37.6. attributes" /><link rel="next" href="infoschema-check-constraint-routine-usage.html" title="37.8. check_constraint_routine_usage" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">37.7. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">character_sets</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="infoschema-attributes.html" title="37.6. attributes">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><th width="60%" align="center">Chapter 37. The Information Schema</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="infoschema-check-constraint-routine-usage.html" title="37.8. check_constraint_routine_usage">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="INFOSCHEMA-CHARACTER-SETS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">37.7. <code class="literal">character_sets</code></h2></div></div></div><p>
+   The view <code class="literal">character_sets</code> identifies the character
+   sets available in the current database.  Since PostgreSQL does not
+   support multiple character sets within one database, this view only
+   shows one, which is the database encoding.
+  </p><p>
+   Take note of how the following terms are used in the SQL standard:
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">character repertoire</span></dt><dd><p>
+       An abstract collection of characters, for
+       example <code class="literal">UNICODE</code>, <code class="literal">UCS</code>, or
+       <code class="literal">LATIN1</code>.  Not exposed as an SQL object, but
+       visible in this view.
+      </p></dd><dt><span class="term">character encoding form</span></dt><dd><p>
+       An encoding of some character repertoire.  Most older character
+       repertoires only use one encoding form, and so there are no
+       separate names for them (e.g., <code class="literal">LATIN2</code> is an
+       encoding form applicable to the <code class="literal">LATIN2</code>
+       repertoire).  But for example Unicode has the encoding forms
+       <code class="literal">UTF8</code>, <code class="literal">UTF16</code>, etc. (not
+       all supported by PostgreSQL).  Encoding forms are not exposed
+       as an SQL object, but are visible in this view.
+      </p></dd><dt><span class="term">character set</span></dt><dd><p>
+       A named SQL object that identifies a character repertoire, a
+       character encoding, and a default collation.  A predefined
+       character set would typically have the same name as an encoding
+       form, but users could define other names.  For example, the
+       character set <code class="literal">UTF8</code> would typically identify
+       the character repertoire <code class="literal">UCS</code>, encoding
+       form <code class="literal">UTF8</code>, and some default collation.
+      </p></dd></dl></div><p>
+
+   You can think of an <span class="quote">“<span class="quote">encoding</span>”</span> in PostgreSQL either as
+   a character set or a character encoding form.  They will have the
+   same name, and there can only be one in one database.
+  </p><div class="table" id="id-1.7.6.11.4"><p class="title"><strong>Table 37.5. <code class="structname">character_sets</code> Columns</strong></p><div class="table-contents"><table class="table" summary="character_sets Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">character_set_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Character sets are currently not implemented as schema objects, so this column is null.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">character_set_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Character sets are currently not implemented as schema objects, so this column is null.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">character_set_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the character set, currently implemented as showing the name of the database encoding
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">character_repertoire</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Character repertoire, showing <code class="literal">UCS</code> if the encoding is <code class="literal">UTF8</code>, else just the encoding name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">form_of_use</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Character encoding form, same as the database encoding
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">default_collate_catalog</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the database containing the default collation (always the current database, if any collation is identified)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">default_collate_schema</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the schema containing the default collation
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">default_collate_name</code> <code class="type">sql_identifier</code>
+      </p>
+      <p>
+       Name of the default collation.  The default collation is
+       identified as the collation that matches
+       the <code class="literal">COLLATE</code> and <code class="literal">CTYPE</code>
+       settings of the current database.  If there is no such
+       collation, then this column and the associated schema and
+       catalog columns are null.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="infoschema-attributes.html" title="37.6. attributes">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="information-schema.html" title="Chapter 37. The Information Schema">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="infoschema-check-constraint-routine-usage.html" title="37.8. check_constraint_routine_usage">Next</a></td></tr><tr><td width="40%" align="left" valign="top">37.6. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">attributes</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 37.8. <code xmlns="http://www.w3.org/1999/xhtml" class="literal">check_constraint_routine_usage</code></td></tr></table></div></body></html>

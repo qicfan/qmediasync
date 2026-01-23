@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>33.5. Test Coverage Examination</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="regress-tap.html" title="33.4. TAP Tests" /><link rel="next" href="client-interfaces.html" title="Part IV. Client Interfaces" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">33.5. Test Coverage Examination</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="regress-tap.html" title="33.4. TAP Tests">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="regress.html" title="Chapter 33. Regression Tests">Up</a></td><th width="60%" align="center">Chapter 33. Regression Tests</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="client-interfaces.html" title="Part IV. Client Interfaces">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="REGRESS-COVERAGE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">33.5. Test Coverage Examination</h2></div></div></div><p>
+    The PostgreSQL source code can be compiled with coverage testing
+    instrumentation, so that it becomes possible to examine which
+    parts of the code are covered by the regression tests or any other
+    test suite that is run with the code.  This is currently supported
+    when compiling with GCC, and it requires the <code class="command">gcov</code>
+    and <code class="command">lcov</code> programs.
+   </p><p>
+    A typical workflow looks like this:
+</p><pre class="screen">
+./configure --enable-coverage ... OTHER OPTIONS ...
+make
+make check # or other test suite
+make coverage-html
+</pre><p>
+    Then point your HTML browser
+    to <code class="filename">coverage/index.html</code>.
+   </p><p>
+    If you don't have <code class="command">lcov</code> or prefer text output over an
+    HTML report, you can run
+</p><pre class="screen">
+make coverage
+</pre><p>
+    instead of <code class="literal">make coverage-html</code>, which will
+    produce <code class="filename">.gcov</code> output files for each source file
+    relevant to the test.  (<code class="literal">make coverage</code> and <code class="literal">make
+    coverage-html</code> will overwrite each other's files, so mixing them
+    might be confusing.)
+   </p><p>
+    You can run several different tests before making the coverage report;
+    the execution counts will accumulate.  If you want
+    to reset the execution counts between test runs, run:
+</p><pre class="screen">
+make coverage-clean
+</pre><p>
+   </p><p>
+    You can run the <code class="literal">make coverage-html</code> or <code class="literal">make
+    coverage</code> command in a subdirectory if you want a coverage
+    report for only a portion of the code tree.
+   </p><p>
+    Use <code class="literal">make distclean</code> to clean up when done.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="regress-tap.html" title="33.4. TAP Tests">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="regress.html" title="Chapter 33. Regression Tests">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="client-interfaces.html" title="Part IV. Client Interfaces">Next</a></td></tr><tr><td width="40%" align="left" valign="top">33.4. TAP Tests </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Part IV. Client Interfaces</td></tr></table></div></body></html>

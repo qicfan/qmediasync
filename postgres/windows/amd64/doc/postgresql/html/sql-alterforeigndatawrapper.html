@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER FOREIGN DATA WRAPPER</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-alterextension.html" title="ALTER EXTENSION" /><link rel="next" href="sql-alterforeigntable.html" title="ALTER FOREIGN TABLE" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER FOREIGN DATA WRAPPER</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-alterextension.html" title="ALTER EXTENSION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-alterforeigntable.html" title="ALTER FOREIGN TABLE">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERFOREIGNDATAWRAPPER"><div class="titlepage"></div><a id="id-1.9.3.12.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER FOREIGN DATA WRAPPER</span></h2><p>ALTER FOREIGN DATA WRAPPER — change the definition of a foreign-data wrapper</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER FOREIGN DATA WRAPPER <em class="replaceable"><code>name</code></em>
+    [ HANDLER <em class="replaceable"><code>handler_function</code></em> | NO HANDLER ]
+    [ VALIDATOR <em class="replaceable"><code>validator_function</code></em> | NO VALIDATOR ]
+    [ OPTIONS ( [ ADD | SET | DROP ] <em class="replaceable"><code>option</code></em> ['<em class="replaceable"><code>value</code></em>'] [, ... ]) ]
+ALTER FOREIGN DATA WRAPPER <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER FOREIGN DATA WRAPPER <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.12.5"><h2>Description</h2><p>
+   <code class="command">ALTER FOREIGN DATA WRAPPER</code> changes the
+   definition of a foreign-data wrapper.  The first form of the
+   command changes the support functions or the generic options of the
+   foreign-data wrapper (at least one clause is required).  The second
+   form changes the owner of the foreign-data wrapper.
+  </p><p>
+   Only superusers can alter foreign-data wrappers.  Additionally,
+   only superusers can own foreign-data wrappers.
+  </p></div><div class="refsect1" id="id-1.9.3.12.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of an existing foreign-data wrapper.
+     </p></dd><dt><span class="term"><code class="literal">HANDLER <em class="replaceable"><code>handler_function</code></em></code></span></dt><dd><p>
+      Specifies a new handler function for the foreign-data wrapper.
+     </p></dd><dt><span class="term"><code class="literal">NO HANDLER</code></span></dt><dd><p>
+      This is used to specify that the foreign-data wrapper should no
+      longer have a handler function.
+     </p><p>
+      Note that foreign tables that use a foreign-data wrapper with no
+      handler cannot be accessed.
+     </p></dd><dt><span class="term"><code class="literal">VALIDATOR <em class="replaceable"><code>validator_function</code></em></code></span></dt><dd><p>
+      Specifies a new validator function for the foreign-data wrapper.
+     </p><p>
+      Note that it is possible that pre-existing options of the foreign-data
+      wrapper, or of dependent servers, user mappings, or foreign tables, are
+      invalid according to the new validator.  <span class="productname">PostgreSQL</span> does
+      not check for this.  It is up to the user to make sure that these
+      options are correct before using the modified foreign-data wrapper.
+      However, any options specified in this <code class="command">ALTER FOREIGN DATA
+      WRAPPER</code> command will be checked using the new validator.
+     </p></dd><dt><span class="term"><code class="literal">NO VALIDATOR</code></span></dt><dd><p>
+      This is used to specify that the foreign-data wrapper should no
+      longer have a validator function.
+     </p></dd><dt><span class="term"><code class="literal">OPTIONS ( [ ADD | SET | DROP ] <em class="replaceable"><code>option</code></em> ['<em class="replaceable"><code>value</code></em>'] [, ... ] )</code></span></dt><dd><p>
+      Change options for the foreign-data
+      wrapper.  <code class="literal">ADD</code>, <code class="literal">SET</code>, and <code class="literal">DROP</code>
+      specify the action to be performed.  <code class="literal">ADD</code> is assumed
+      if no operation is explicitly specified.  Option names must be
+      unique; names and values are also validated using the foreign
+      data wrapper's validator function, if any.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The user name of the new owner of the foreign-data wrapper.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name for the foreign-data wrapper.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.12.7"><h2>Examples</h2><p>
+   Change a foreign-data wrapper <code class="literal">dbi</code>, add
+   option <code class="literal">foo</code>, drop <code class="literal">bar</code>:
+</p><pre class="programlisting">
+ALTER FOREIGN DATA WRAPPER dbi OPTIONS (ADD foo '1', DROP bar);
+</pre><p>
+  </p><p>
+   Change the foreign-data wrapper <code class="literal">dbi</code> validator
+   to <code class="literal">bob.myvalidator</code>:
+</p><pre class="programlisting">
+ALTER FOREIGN DATA WRAPPER dbi VALIDATOR bob.myvalidator;
+</pre></div><div class="refsect1" id="id-1.9.3.12.8"><h2>Compatibility</h2><p>
+   <code class="command">ALTER FOREIGN DATA WRAPPER</code> conforms to ISO/IEC
+   9075-9 (SQL/MED), except that the <code class="literal">HANDLER</code>,
+   <code class="literal">VALIDATOR</code>, <code class="literal">OWNER TO</code>, and <code class="literal">RENAME</code>
+   clauses are extensions.
+  </p></div><div class="refsect1" id="id-1.9.3.12.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createforeigndatawrapper.html" title="CREATE FOREIGN DATA WRAPPER"><span class="refentrytitle">CREATE FOREIGN DATA WRAPPER</span></a>, <a class="xref" href="sql-dropforeigndatawrapper.html" title="DROP FOREIGN DATA WRAPPER"><span class="refentrytitle">DROP FOREIGN DATA WRAPPER</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-alterextension.html" title="ALTER EXTENSION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-alterforeigntable.html" title="ALTER FOREIGN TABLE">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER EXTENSION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER FOREIGN TABLE</td></tr></table></div></body></html>

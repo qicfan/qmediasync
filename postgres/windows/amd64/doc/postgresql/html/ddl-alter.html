@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5.6. Modifying Tables</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ddl-system-columns.html" title="5.5. System Columns" /><link rel="next" href="ddl-priv.html" title="5.7. Privileges" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">5.6. Modifying Tables</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ddl-system-columns.html" title="5.5. System Columns">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><th width="60%" align="center">Chapter 5. Data Definition</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ddl-priv.html" title="5.7. Privileges">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DDL-ALTER"><div class="titlepage"><div><div><h2 class="title" style="clear: both">5.6. Modifying Tables</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="ddl-alter.html#DDL-ALTER-ADDING-A-COLUMN">5.6.1. Adding a Column</a></span></dt><dt><span class="sect2"><a href="ddl-alter.html#DDL-ALTER-REMOVING-A-COLUMN">5.6.2. Removing a Column</a></span></dt><dt><span class="sect2"><a href="ddl-alter.html#DDL-ALTER-ADDING-A-CONSTRAINT">5.6.3. Adding a Constraint</a></span></dt><dt><span class="sect2"><a href="ddl-alter.html#DDL-ALTER-REMOVING-A-CONSTRAINT">5.6.4. Removing a Constraint</a></span></dt><dt><span class="sect2"><a href="ddl-alter.html#id-1.5.4.8.9">5.6.5. Changing a Column's Default Value</a></span></dt><dt><span class="sect2"><a href="ddl-alter.html#id-1.5.4.8.10">5.6.6. Changing a Column's Data Type</a></span></dt><dt><span class="sect2"><a href="ddl-alter.html#id-1.5.4.8.11">5.6.7. Renaming a Column</a></span></dt><dt><span class="sect2"><a href="ddl-alter.html#id-1.5.4.8.12">5.6.8. Renaming a Table</a></span></dt></dl></div><a id="id-1.5.4.8.2" class="indexterm"></a><p>
+   When you create a table and you realize that you made a mistake, or
+   the requirements of the application change, you can drop the
+   table and create it again.  But this is not a convenient option if
+   the table is already filled with data, or if the table is
+   referenced by other database objects (for instance a foreign key
+   constraint).  Therefore <span class="productname">PostgreSQL</span>
+   provides a family of commands to make modifications to existing
+   tables.  Note that this is conceptually distinct from altering
+   the data contained in the table: here we are interested in altering
+   the definition, or structure, of the table.
+  </p><p>
+   You can:
+   </p><div class="itemizedlist"><ul class="itemizedlist compact" style="list-style-type: disc; "><li class="listitem"><p>Add columns</p></li><li class="listitem"><p>Remove columns</p></li><li class="listitem"><p>Add constraints</p></li><li class="listitem"><p>Remove constraints</p></li><li class="listitem"><p>Change default values</p></li><li class="listitem"><p>Change column data types</p></li><li class="listitem"><p>Rename columns</p></li><li class="listitem"><p>Rename tables</p></li></ul></div><p>
+
+   All these actions are performed using the
+   <a class="xref" href="sql-altertable.html" title="ALTER TABLE"><span class="refentrytitle">ALTER TABLE</span></a>
+   command, whose reference page contains details beyond those given
+   here.
+  </p><div class="sect2" id="DDL-ALTER-ADDING-A-COLUMN"><div class="titlepage"><div><div><h3 class="title">5.6.1. Adding a Column</h3></div></div></div><a id="id-1.5.4.8.5.2" class="indexterm"></a><p>
+    To add a column, use a command like:
+</p><pre class="programlisting">
+ALTER TABLE products ADD COLUMN description text;
+</pre><p>
+    The new column is initially filled with whatever default
+    value is given (null if you don't specify a <code class="literal">DEFAULT</code> clause).
+   </p><div class="tip"><h3 class="title">Tip</h3><p>
+     From <span class="productname">PostgreSQL</span> 11, adding a column with
+     a constant default value no longer means that each row of the table
+     needs to be updated when the <code class="command">ALTER TABLE</code> statement
+     is executed. Instead, the default value will be returned the next time
+     the row is accessed, and applied when the table is rewritten, making
+     the <code class="command">ALTER TABLE</code> very fast even on large tables.
+    </p><p>
+     However, if the default value is volatile (e.g.,
+     <code class="function">clock_timestamp()</code>)
+     each row will need to be updated with the value calculated at the time
+     <code class="command">ALTER TABLE</code> is executed. To avoid a potentially
+     lengthy update operation, particularly if you intend to fill the column
+     with mostly nondefault values anyway, it may be preferable to add the
+     column with no default, insert the correct values using
+     <code class="command">UPDATE</code>, and then add any desired default as described
+     below.
+    </p></div><p>
+    You can also define constraints on the column at the same time,
+    using the usual syntax:
+</p><pre class="programlisting">
+ALTER TABLE products ADD COLUMN description text CHECK (description &lt;&gt; '');
+</pre><p>
+    In fact all the options that can be applied to a column description
+    in <code class="command">CREATE TABLE</code> can be used here.  Keep in mind however
+    that the default value must satisfy the given constraints, or the
+    <code class="literal">ADD</code> will fail.  Alternatively, you can add
+    constraints later (see below) after you've filled in the new column
+    correctly.
+   </p></div><div class="sect2" id="DDL-ALTER-REMOVING-A-COLUMN"><div class="titlepage"><div><div><h3 class="title">5.6.2. Removing a Column</h3></div></div></div><a id="id-1.5.4.8.6.2" class="indexterm"></a><p>
+    To remove a column, use a command like:
+</p><pre class="programlisting">
+ALTER TABLE products DROP COLUMN description;
+</pre><p>
+    Whatever data was in the column disappears.  Table constraints involving
+    the column are dropped, too.  However, if the column is referenced by a
+    foreign key constraint of another table,
+    <span class="productname">PostgreSQL</span> will not silently drop that
+    constraint.  You can authorize dropping everything that depends on
+    the column by adding <code class="literal">CASCADE</code>:
+</p><pre class="programlisting">
+ALTER TABLE products DROP COLUMN description CASCADE;
+</pre><p>
+    See <a class="xref" href="ddl-depend.html" title="5.14. Dependency Tracking">Section 5.14</a> for a description of the general
+    mechanism behind this.
+   </p></div><div class="sect2" id="DDL-ALTER-ADDING-A-CONSTRAINT"><div class="titlepage"><div><div><h3 class="title">5.6.3. Adding a Constraint</h3></div></div></div><a id="id-1.5.4.8.7.2" class="indexterm"></a><p>
+    To add a constraint, the table constraint syntax is used.  For example:
+</p><pre class="programlisting">
+ALTER TABLE products ADD CHECK (name &lt;&gt; '');
+ALTER TABLE products ADD CONSTRAINT some_name UNIQUE (product_no);
+ALTER TABLE products ADD FOREIGN KEY (product_group_id) REFERENCES product_groups;
+</pre><p>
+    To add a not-null constraint, which cannot be written as a table
+    constraint, use this syntax:
+</p><pre class="programlisting">
+ALTER TABLE products ALTER COLUMN product_no SET NOT NULL;
+</pre><p>
+   </p><p>
+    The constraint will be checked immediately, so the table data must
+    satisfy the constraint before it can be added.
+   </p></div><div class="sect2" id="DDL-ALTER-REMOVING-A-CONSTRAINT"><div class="titlepage"><div><div><h3 class="title">5.6.4. Removing a Constraint</h3></div></div></div><a id="id-1.5.4.8.8.2" class="indexterm"></a><p>
+    To remove a constraint you need to know its name.  If you gave it
+    a name then that's easy.  Otherwise the system assigned a
+    generated name, which you need to find out.  The
+    <span class="application">psql</span> command <code class="literal">\d
+    <em class="replaceable"><code>tablename</code></em></code> can be helpful
+    here; other interfaces might also provide a way to inspect table
+    details.  Then the command is:
+</p><pre class="programlisting">
+ALTER TABLE products DROP CONSTRAINT some_name;
+</pre><p>
+    (If you are dealing with a generated constraint name like <code class="literal">$2</code>,
+    don't forget that you'll need to double-quote it to make it a valid
+    identifier.)
+   </p><p>
+    As with dropping a column, you need to add <code class="literal">CASCADE</code> if you
+    want to drop a constraint that something else depends on.  An example
+    is that a foreign key constraint depends on a unique or primary key
+    constraint on the referenced column(s).
+   </p><p>
+    This works the same for all constraint types except not-null
+    constraints. To drop a not null constraint use:
+</p><pre class="programlisting">
+ALTER TABLE products ALTER COLUMN product_no DROP NOT NULL;
+</pre><p>
+    (Recall that not-null constraints do not have names.)
+   </p></div><div class="sect2" id="id-1.5.4.8.9"><div class="titlepage"><div><div><h3 class="title">5.6.5. Changing a Column's Default Value</h3></div></div></div><a id="id-1.5.4.8.9.2" class="indexterm"></a><p>
+    To set a new default for a column, use a command like:
+</p><pre class="programlisting">
+ALTER TABLE products ALTER COLUMN price SET DEFAULT 7.77;
+</pre><p>
+    Note that this doesn't affect any existing rows in the table, it
+    just changes the default for future <code class="command">INSERT</code> commands.
+   </p><p>
+    To remove any default value, use:
+</p><pre class="programlisting">
+ALTER TABLE products ALTER COLUMN price DROP DEFAULT;
+</pre><p>
+    This is effectively the same as setting the default to null.
+    As a consequence, it is not an error
+    to drop a default where one hadn't been defined, because the
+    default is implicitly the null value.
+   </p></div><div class="sect2" id="id-1.5.4.8.10"><div class="titlepage"><div><div><h3 class="title">5.6.6. Changing a Column's Data Type</h3></div></div></div><a id="id-1.5.4.8.10.2" class="indexterm"></a><p>
+    To convert a column to a different data type, use a command like:
+</p><pre class="programlisting">
+ALTER TABLE products ALTER COLUMN price TYPE numeric(10,2);
+</pre><p>
+    This will succeed only if each existing entry in the column can be
+    converted to the new type by an implicit cast.  If a more complex
+    conversion is needed, you can add a <code class="literal">USING</code> clause that
+    specifies how to compute the new values from the old.
+   </p><p>
+    <span class="productname">PostgreSQL</span> will attempt to convert the column's
+    default value (if any) to the new type, as well as any constraints
+    that involve the column.  But these conversions might fail, or might
+    produce surprising results.  It's often best to drop any constraints
+    on the column before altering its type, and then add back suitably
+    modified constraints afterwards.
+   </p></div><div class="sect2" id="id-1.5.4.8.11"><div class="titlepage"><div><div><h3 class="title">5.6.7. Renaming a Column</h3></div></div></div><a id="id-1.5.4.8.11.2" class="indexterm"></a><p>
+    To rename a column:
+</p><pre class="programlisting">
+ALTER TABLE products RENAME COLUMN product_no TO product_number;
+</pre><p>
+   </p></div><div class="sect2" id="id-1.5.4.8.12"><div class="titlepage"><div><div><h3 class="title">5.6.8. Renaming a Table</h3></div></div></div><a id="id-1.5.4.8.12.2" class="indexterm"></a><p>
+    To rename a table:
+</p><pre class="programlisting">
+ALTER TABLE products RENAME TO items;
+</pre><p>
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ddl-system-columns.html" title="5.5. System Columns">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ddl.html" title="Chapter 5. Data Definition">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ddl-priv.html" title="5.7. Privileges">Next</a></td></tr><tr><td width="40%" align="left" valign="top">5.5. System Columns </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 5.7. Privileges</td></tr></table></div></body></html>

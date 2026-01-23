@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>20.2. File Locations</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="config-setting.html" title="20.1. Setting Parameters" /><link rel="next" href="runtime-config-connection.html" title="20.3. Connections and Authentication" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">20.2. File Locations</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="config-setting.html" title="20.1. Setting Parameters">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime-config.html" title="Chapter 20. Server Configuration">Up</a></td><th width="60%" align="center">Chapter 20. Server Configuration</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="runtime-config-connection.html" title="20.3. Connections and Authentication">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RUNTIME-CONFIG-FILE-LOCATIONS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">20.2. File Locations</h2></div></div></div><p>
+      In addition to the <code class="filename">postgresql.conf</code> file
+      already mentioned, <span class="productname">PostgreSQL</span> uses
+      two other manually-edited configuration files, which control
+      client authentication (their use is discussed in <a class="xref" href="client-authentication.html" title="Chapter 21. Client Authentication">Chapter 21</a>).  By default, all three
+      configuration files are stored in the database cluster's data
+      directory.  The parameters described in this section allow the
+      configuration files to be placed elsewhere.  (Doing so can ease
+      administration.  In particular it is often easier to ensure that
+      the configuration files are properly backed-up when they are
+      kept separate.)
+     </p><div class="variablelist"><dl class="variablelist"><dt id="GUC-DATA-DIRECTORY"><span class="term"><code class="varname">data_directory</code> (<code class="type">string</code>)
+      <a id="id-1.6.7.5.3.1.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+         Specifies the directory to use for data storage.
+         This parameter can only be set at server start.
+       </p></dd><dt id="GUC-CONFIG-FILE"><span class="term"><code class="varname">config_file</code> (<code class="type">string</code>)
+      <a id="id-1.6.7.5.3.2.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+         Specifies the main server configuration file
+         (customarily called <code class="filename">postgresql.conf</code>).
+         This parameter can only be set on the <code class="command">postgres</code> command line.
+       </p></dd><dt id="GUC-HBA-FILE"><span class="term"><code class="varname">hba_file</code> (<code class="type">string</code>)
+      <a id="id-1.6.7.5.3.3.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+         Specifies the configuration file for host-based authentication
+         (customarily called <code class="filename">pg_hba.conf</code>).
+         This parameter can only be set at server start.
+       </p></dd><dt id="GUC-IDENT-FILE"><span class="term"><code class="varname">ident_file</code> (<code class="type">string</code>)
+      <a id="id-1.6.7.5.3.4.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+         Specifies the configuration file for user name mapping
+         (customarily called <code class="filename">pg_ident.conf</code>).
+         This parameter can only be set at server start.
+         See also <a class="xref" href="auth-username-maps.html" title="21.2. User Name Maps">Section 21.2</a>.
+       </p></dd><dt id="GUC-EXTERNAL-PID-FILE"><span class="term"><code class="varname">external_pid_file</code> (<code class="type">string</code>)
+      <a id="id-1.6.7.5.3.5.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        Specifies the name of an additional process-ID (PID) file that the
+        server should create for use by server administration programs.
+        This parameter can only be set at server start.
+       </p></dd></dl></div><p>
+      In a default installation, none of the above parameters are set
+      explicitly.  Instead, the
+      data directory is specified by the <code class="option">-D</code> command-line
+      option or the <code class="envar">PGDATA</code> environment variable, and the
+      configuration files are all found within the data directory.
+     </p><p>
+      If you wish to keep the configuration files elsewhere than the
+      data directory, the <code class="command">postgres</code> <code class="option">-D</code>
+      command-line option or <code class="envar">PGDATA</code> environment variable
+      must point to the directory containing the configuration files,
+      and the <code class="varname">data_directory</code> parameter must be set in
+      <code class="filename">postgresql.conf</code> (or on the command line) to show
+      where the data directory is actually located.  Notice that
+      <code class="varname">data_directory</code> overrides <code class="option">-D</code> and
+      <code class="envar">PGDATA</code> for the location
+      of the data directory, but not for the location of the configuration
+      files.
+     </p><p>
+      If you wish, you can specify the configuration file names and locations
+      individually using the parameters <code class="varname">config_file</code>,
+      <code class="varname">hba_file</code> and/or <code class="varname">ident_file</code>.
+      <code class="varname">config_file</code> can only be specified on the
+      <code class="command">postgres</code> command line, but the others can be
+      set within the main configuration file.  If all three parameters plus
+      <code class="varname">data_directory</code> are explicitly set, then it is not necessary
+      to specify <code class="option">-D</code> or <code class="envar">PGDATA</code>.
+     </p><p>
+      When setting any of these parameters, a relative path will be interpreted
+      with respect to the directory in which <code class="command">postgres</code>
+      is started.
+     </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="config-setting.html" title="20.1. Setting Parameters">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime-config.html" title="Chapter 20. Server Configuration">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="runtime-config-connection.html" title="20.3. Connections and Authentication">Next</a></td></tr><tr><td width="40%" align="left" valign="top">20.1. Setting Parameters </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 20.3. Connections and Authentication</td></tr></table></div></body></html>

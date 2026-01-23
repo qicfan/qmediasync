@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.54. pg_tablespace</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-subscription-rel.html" title="52.53. pg_subscription_rel" /><link rel="next" href="catalog-pg-transform.html" title="52.55. pg_transform" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.54. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_tablespace</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-subscription-rel.html" title="52.53. pg_subscription_rel">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-transform.html" title="52.55. pg_transform">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-TABLESPACE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.54. <code class="structname">pg_tablespace</code></h2></div></div></div><a id="id-1.10.4.56.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_tablespace</code> stores information
+   about the available tablespaces.  Tables can be placed in particular
+   tablespaces to aid administration of disk layout.
+  </p><p>
+   Unlike most system catalogs, <code class="structname">pg_tablespace</code>
+   is shared across all databases of a cluster: there is only one
+   copy of <code class="structname">pg_tablespace</code> per cluster, not
+   one per database.
+  </p><div class="table" id="id-1.10.4.56.5"><p class="title"><strong>Table 52.54. <code class="structname">pg_tablespace</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_tablespace Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">oid</code> <code class="type">oid</code>
+      </p>
+      <p>
+       Row identifier
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">spcname</code> <code class="type">name</code>
+      </p>
+      <p>
+       Tablespace name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">spcowner</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-authid.html" title="52.8. pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       Owner of the tablespace, usually the user who created it
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">spcacl</code> <code class="type">aclitem[]</code>
+      </p>
+      <p>
+       Access privileges; see <a class="xref" href="ddl-priv.html" title="5.7. Privileges">Section 5.7</a> for details
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">spcoptions</code> <code class="type">text[]</code>
+      </p>
+      <p>
+       Tablespace-level options, as <span class="quote">“<span class="quote">keyword=value</span>”</span> strings
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-subscription-rel.html" title="52.53. pg_subscription_rel">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-transform.html" title="52.55. pg_transform">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.53. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_subscription_rel</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.55. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_transform</code></td></tr></table></div></body></html>

@@ -294,6 +294,13 @@ func (c *Client) GetUsersWithAllLibrariesAccess() ([]UserDto, error) {
 	return usersWithAllAccess, nil
 }
 
+// // 获取媒体详情
+// func (c *Client) GetMediaItemDetails(userId, itemID string) (*BaseItemDtoV2, error) {
+// 	// Construct the request URL
+// 	url := fmt.Sprintf("%s/emby/Users/%s/Items/%s?api_key=%s&Fields=MediaStreams", c.embyURL, userId, itemID, c.apiKey)
+
+// }
+
 // 刷新所有媒体库媒体流数据
 func ProcessLibraries(embyURL, apiKey string, excludeIds []string) []map[string]string {
 	// 创建一个新的 Emby 客户端

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>25.2. Routine Reindexing</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="routine-vacuuming.html" title="25.1. Routine Vacuuming" /><link rel="next" href="logfile-maintenance.html" title="25.3. Log File Maintenance" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">25.2. Routine Reindexing</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="routine-vacuuming.html" title="25.1. Routine Vacuuming">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Up</a></td><th width="60%" align="center">Chapter 25. Routine Database Maintenance Tasks</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="logfile-maintenance.html" title="25.3. Log File Maintenance">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ROUTINE-REINDEX"><div class="titlepage"><div><div><h2 class="title" style="clear: both">25.2. Routine Reindexing</h2></div></div></div><a id="id-1.6.12.11.2" class="indexterm"></a><p>
+   In some situations it is worthwhile to rebuild indexes periodically
+   with the <a class="xref" href="sql-reindex.html" title="REINDEX"><span class="refentrytitle">REINDEX</span></a> command or a series of individual
+   rebuilding steps.
+
+  </p><p>
+   B-tree index pages that have become completely empty are reclaimed for
+   re-use.  However, there is still a possibility
+   of inefficient use of space: if all but a few index keys on a page have
+   been deleted, the page remains allocated.  Therefore, a usage
+   pattern in which most, but not all, keys in each range are eventually
+   deleted will see poor use of space.  For such usage patterns,
+   periodic reindexing is recommended.
+  </p><p>
+   The potential for bloat in non-B-tree indexes has not been well
+   researched.  It is a good idea to periodically monitor the index's physical
+   size when using any non-B-tree index type.
+  </p><p>
+   Also, for B-tree indexes, a freshly-constructed index is slightly faster to
+   access than one that has been updated many times because logically
+   adjacent pages are usually also physically adjacent in a newly built index.
+   (This consideration does not apply to non-B-tree indexes.)  It
+   might be worthwhile to reindex periodically just to improve access speed.
+  </p><p>
+   <a class="xref" href="sql-reindex.html" title="REINDEX"><span class="refentrytitle">REINDEX</span></a> can be used safely and easily in all cases.
+   This command requires an <code class="literal">ACCESS EXCLUSIVE</code> lock by
+   default, hence it is often preferable to execute it with its
+   <code class="literal">CONCURRENTLY</code> option, which requires only a
+   <code class="literal">SHARE UPDATE EXCLUSIVE</code> lock.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="routine-vacuuming.html" title="25.1. Routine Vacuuming">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="maintenance.html" title="Chapter 25. Routine Database Maintenance Tasks">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="logfile-maintenance.html" title="25.3. Log File Maintenance">Next</a></td></tr><tr><td width="40%" align="left" valign="top">25.1. Routine Vacuuming </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 25.3. Log File Maintenance</td></tr></table></div></body></html>

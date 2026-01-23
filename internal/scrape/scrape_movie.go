@@ -4,6 +4,7 @@ import (
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
+	"Q115-STRM/internal/notificationmanager"
 	"Q115-STRM/internal/openlist"
 	"Q115-STRM/internal/tmdb"
 	"Q115-STRM/internal/v115open"
@@ -427,7 +428,20 @@ func (m *movieScrapeImpl) FinishMovie(mediaFile *models.ScrapeMediaFile) {
 	}
 	// 发送通知
 	if mediaFile.Media != nil {
-		helpers.GlobalNotificationManager.SendRenamedNotification(mediaFile.Media.PosterPath, mediaFile.Name, mediaFile.CategoryName, "电影", mediaFile.Resolution, "")
+		ctx := context.Background()
+		notif := &models.Notification{
+			Type:      models.ScrapeFinished,
+			Title:     fmt.Sprintf("✅ %s 刮削整理完成", mediaFile.Name),
+			Content:   fmt.Sprintf("📊 类型: 电影, 类别: %s, 分辨率: %s\n⏰ 时间: %s", mediaFile.CategoryName, mediaFile.Resolution, time.Now().Format("2006-01-02 15:04:05")),
+			Image:     mediaFile.Media.PosterPath,
+			Timestamp: time.Now(),
+			Priority:  models.NormalPriority,
+		}
+		if notificationmanager.GlobalEnhancedNotificationManager != nil {
+			if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(ctx, notif); err != nil {
+				helpers.AppLogger.Errorf("发送电影刮削完成通知失败: %v", err)
+			}
+		}
 	}
 	if mediaFile.ScrapeType == models.ScrapeTypeOnly || mediaFile.RenameType != models.RenameTypeMove {
 		// 如果仅刮削，跳过
@@ -549,10 +563,18 @@ func (sm *movieScrapeImpl) GenerateMovieNfo(mediaFile *models.ScrapeMediaFile, l
 		Aspect: "backdrop",
 		Link:   backdrop,
 	})
+	// 包含中文的情况
+	has, result := helpers.ChineseToPinyin(mediaFile.Media.Name)
+	originalTitle := mediaFile.Media.OriginalName
+	SortTitle := mediaFile.Media.Name
+	if has {
+		originalTitle = fmt.Sprintf("%s #(%s)", mediaFile.Media.Name, result)
+		SortTitle = fmt.Sprintf("%s #(%s)", result, mediaFile.Media.Name)
+	}
 	m := &helpers.Movie{
 		Title:         mediaFile.Media.Name,
-		OriginalTitle: mediaFile.Media.OriginalName,
-		SortTitle:     mediaFile.Media.Name,
+		OriginalTitle: originalTitle,
+		SortTitle:     SortTitle,
 		Ratings: struct {
 			Rating []helpers.Rating `xml:"rating,omitempty"`
 		}{

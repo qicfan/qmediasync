@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>vacuumlo</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="oid2name.html" title="oid2name" /><link rel="next" href="contrib-prog-server.html" title="G.2. Server Applications" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">vacuumlo</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="oid2name.html" title="oid2name">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib-prog-client.html" title="G.1. Client Applications">Up</a></td><th width="60%" align="center">G.1. Client Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="contrib-prog-server.html" title="G.2. Server Applications">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="VACUUMLO"><div class="titlepage"></div><a id="id-1.11.8.4.4.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">vacuumlo</span></span></h2><p>vacuumlo — remove orphaned large objects from a <span class="productname">PostgreSQL</span> database</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.11.8.4.4.4.1"><code class="command">vacuumlo</code> [<em class="replaceable"><code>option</code></em>...]  <em class="replaceable"><code>dbname</code></em>... </p></div></div><div class="refsect1" id="id-1.11.8.4.4.5"><h2>Description</h2><p>
+  <span class="application">vacuumlo</span> is a simple utility program that will remove any
+  <span class="quote">“<span class="quote">orphaned</span>”</span> large objects from a
+  <span class="productname">PostgreSQL</span> database.  An orphaned large object (LO) is
+  considered to be any LO whose OID does not appear in any <code class="type">oid</code> or
+  <code class="type">lo</code> data column of the database.
+ </p><p>
+  If you use this, you may also be interested in the <code class="function">lo_manage</code>
+  trigger in the <a class="xref" href="lo.html" title="F.20. lo">lo</a> module.
+  <code class="function">lo_manage</code> is useful to try
+  to avoid creating orphaned LOs in the first place.
+ </p><p>
+   All databases named on the command line are processed.
+  </p></div><div class="refsect1" id="id-1.11.8.4.4.6"><h2>Options</h2><p>
+   <span class="application">vacuumlo</span> accepts the following command-line arguments:
+
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-l <em class="replaceable"><code>limit</code></em></code><br /></span><span class="term"><code class="option">--limit=<em class="replaceable"><code>limit</code></em></code></span></dt><dd><p>
+      Remove no more than <em class="replaceable"><code>limit</code></em> large objects per
+      transaction (default 1000).  Since the server acquires a lock per LO
+      removed, removing too many LOs in one transaction risks exceeding
+      <a class="xref" href="runtime-config-locks.html#GUC-MAX-LOCKS-PER-TRANSACTION">max_locks_per_transaction</a>.  Set the limit to
+      zero if you want all removals done in a single transaction.
+     </p></dd><dt><span class="term"><code class="option">-n</code><br /></span><span class="term"><code class="option">--dry-run</code></span></dt><dd><p>Don't remove anything, just show what would be done.</p></dd><dt><span class="term"><code class="option">-v</code><br /></span><span class="term"><code class="option">--verbose</code></span></dt><dd><p>Write a lot of progress messages.</p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+      Print the <span class="application">vacuumlo</span> version and exit.
+     </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+      Show help about <span class="application">vacuumlo</span> command line
+      arguments, and exit.
+     </p></dd></dl></div><p>
+  </p><p>
+   <span class="application">vacuumlo</span> also accepts the following command-line
+   arguments for connection parameters:
+
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-h <em class="replaceable"><code>host</code></em></code><br /></span><span class="term"><code class="option">--host=<em class="replaceable"><code>host</code></em></code></span></dt><dd><p>Database server's host.</p></dd><dt><span class="term"><code class="option">-p <em class="replaceable"><code>port</code></em></code><br /></span><span class="term"><code class="option">--port=<em class="replaceable"><code>port</code></em></code></span></dt><dd><p>Database server's port.</p></dd><dt><span class="term"><code class="option">-U <em class="replaceable"><code>username</code></em></code><br /></span><span class="term"><code class="option">--username=<em class="replaceable"><code>username</code></em></code></span></dt><dd><p>User name to connect as.</p></dd><dt><span class="term"><code class="option">-w</code><br /></span><span class="term"><code class="option">--no-password</code></span></dt><dd><p>
+      Never issue a password prompt.  If the server requires password
+      authentication and a password is not available by other means
+      such as a <code class="filename">.pgpass</code> file, the connection
+      attempt will fail.  This option can be useful in batch jobs and
+      scripts where no user is present to enter a password.
+     </p></dd><dt><span class="term"><code class="option">-W</code><br /></span><span class="term"><code class="option">--password</code></span></dt><dd><p>
+      Force <span class="application">vacuumlo</span> to prompt for a
+      password before connecting to a database.
+     </p><p>
+      This option is never essential, since
+      <span class="application">vacuumlo</span> will automatically prompt
+      for a password if the server demands password authentication.
+      However, <span class="application">vacuumlo</span> will waste a
+      connection attempt finding out that the server wants a password.
+      In some cases it is worth typing <code class="option">-W</code> to avoid the extra
+      connection attempt.
+     </p></dd></dl></div><p>
+  </p></div><div class="refsect1" id="id-1.11.8.4.4.7"><h2>Environment</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="envar">PGHOST</code><br /></span><span class="term"><code class="envar">PGPORT</code><br /></span><span class="term"><code class="envar">PGUSER</code></span></dt><dd><p>
+      Default connection parameters.
+     </p></dd></dl></div><p>
+   This utility, like most other <span class="productname">PostgreSQL</span> utilities,
+   also uses the environment variables supported by <span class="application">libpq</span>
+   (see <a class="xref" href="libpq-envars.html" title="34.15. Environment Variables">Section 34.15</a>).
+  </p><p>
+   The environment variable <code class="envar">PG_COLOR</code> specifies whether to use
+   color in diagnostic messages. Possible values are
+   <code class="literal">always</code>, <code class="literal">auto</code> and
+   <code class="literal">never</code>.
+  </p></div><div class="refsect1" id="id-1.11.8.4.4.8"><h2>Notes</h2><p>
+   <span class="application">vacuumlo</span> works by the following method:
+   First, <span class="application">vacuumlo</span> builds a temporary table which contains all
+   of the OIDs of the large objects in the selected database.  It then scans
+   through all columns in the database that are of type
+   <code class="type">oid</code> or <code class="type">lo</code>, and removes matching entries from the temporary
+   table.  (Note: Only types with these names are considered; in particular,
+   domains over them are not considered.)  The remaining entries in the
+   temporary table identify orphaned LOs.  These are removed.
+  </p></div><div class="refsect1" id="id-1.11.8.4.4.9"><h2>Author</h2><p>
+   Peter Mount <code class="email">&lt;<a class="email" href="mailto:peter@retep.org.uk">peter@retep.org.uk</a>&gt;</code>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="oid2name.html" title="oid2name">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib-prog-client.html" title="G.1. Client Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="contrib-prog-server.html" title="G.2. Server Applications">Next</a></td></tr><tr><td width="40%" align="left" valign="top">oid2name </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> G.2. Server Applications</td></tr></table></div></body></html>

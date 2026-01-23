@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>PREPARE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-sql-open.html" title="OPEN" /><link rel="next" href="ecpg-sql-set-autocommit.html" title="SET AUTOCOMMIT" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">PREPARE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-sql-open.html" title="OPEN">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><th width="60%" align="center">36.14. Embedded SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-sql-set-autocommit.html" title="SET AUTOCOMMIT">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="ECPG-SQL-PREPARE"><div class="titlepage"></div><div class="refnamediv"><h2>PREPARE</h2><p>PREPARE — prepare a statement for execution</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+PREPARE <em class="replaceable"><code>prepared_name</code></em> FROM <em class="replaceable"><code>string</code></em>
+</pre></div><div class="refsect1" id="id-1.7.5.20.13.3"><h2>Description</h2><p>
+     <code class="command">PREPARE</code> prepares a statement dynamically
+     specified as a string for execution.  This is different from the
+     direct SQL statement <a class="xref" href="sql-prepare.html" title="PREPARE"><span class="refentrytitle">PREPARE</span></a>, which can also
+     be used in embedded programs.  The <a class="xref" href="sql-execute.html" title="EXECUTE"><span class="refentrytitle">EXECUTE</span></a>
+     command is used to execute either kind of prepared statement.
+    </p></div><div class="refsect1" id="id-1.7.5.20.13.4"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>prepared_name</code></em></span></dt><dd><p>
+        An identifier for the prepared query.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>string</code></em></span></dt><dd><p>
+        A literal string or a host variable containing a preparable
+        SQL statement, one of SELECT, INSERT, UPDATE, or DELETE.
+        Use question marks (<code class="literal">?</code>) for parameter values
+        to be supplied at execution.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.7.5.20.13.5"><h2>Notes</h2><p>
+     In typical usage, the <em class="replaceable"><code>string</code></em> is a host
+     variable reference to a string containing a dynamically-constructed
+     SQL statement.  The case of a literal string is not very useful;
+     you might as well just write a direct SQL <code class="command">PREPARE</code>
+     statement.
+    </p><p>
+     If you do use a literal string, keep in mind that any double quotes
+     you might wish to include in the SQL statement must be written as
+     octal escapes (<code class="literal">\042</code>) not the usual C
+     idiom <code class="literal">\"</code>.  This is because the string is inside
+     an <code class="literal">EXEC SQL</code> section, so the ECPG lexer parses it
+     according to SQL rules not C rules.  Any embedded backslashes will
+     later be handled according to C rules; but <code class="literal">\"</code>
+     causes an immediate syntax error because it is seen as ending the
+     literal.
+    </p></div><div class="refsect1" id="id-1.7.5.20.13.6"><h2>Examples</h2><pre class="programlisting">
+char *stmt = "SELECT * FROM test1 WHERE a = ? AND b = ?";
+
+EXEC SQL ALLOCATE DESCRIPTOR outdesc;
+EXEC SQL PREPARE foo FROM :stmt;
+
+EXEC SQL EXECUTE foo USING SQL DESCRIPTOR indesc INTO SQL DESCRIPTOR outdesc;
+</pre></div><div class="refsect1" id="id-1.7.5.20.13.7"><h2>Compatibility</h2><p>
+     <code class="command">PREPARE</code> is specified in the SQL standard.
+    </p></div><div class="refsect1" id="id-1.7.5.20.13.8"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-execute.html" title="EXECUTE"><span class="refentrytitle">EXECUTE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-sql-open.html" title="OPEN">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-sql-set-autocommit.html" title="SET AUTOCOMMIT">Next</a></td></tr><tr><td width="40%" align="left" valign="top">OPEN </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> SET AUTOCOMMIT</td></tr></table></div></body></html>

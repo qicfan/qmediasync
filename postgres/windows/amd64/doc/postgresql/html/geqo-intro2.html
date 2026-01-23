@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>60.2. Genetic Algorithms</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="geqo-intro.html" title="60.1. Query Handling as a Complex Optimization Problem" /><link rel="next" href="geqo-pg-intro.html" title="60.3. Genetic Query Optimization (GEQO) in PostgreSQL" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">60.2. Genetic Algorithms</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="geqo-intro.html" title="60.1. Query Handling as a Complex Optimization Problem">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="geqo.html" title="Chapter 60. Genetic Query Optimizer">Up</a></td><th width="60%" align="center">Chapter 60. Genetic Query Optimizer</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="geqo-pg-intro.html" title="60.3. Genetic Query Optimization (GEQO) in PostgreSQL">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="GEQO-INTRO2"><div class="titlepage"><div><div><h2 class="title" style="clear: both">60.2. Genetic Algorithms</h2></div></div></div><p>
+    The genetic algorithm (<acronym class="acronym">GA</acronym>) is a heuristic optimization method which
+    operates through randomized search. The set of possible solutions for the
+    optimization problem is considered as a
+    <em class="firstterm">population</em> of <em class="firstterm">individuals</em>.
+    The degree of adaptation of an individual to its environment is specified
+    by its <em class="firstterm">fitness</em>.
+   </p><p>
+    The coordinates of an individual in the search space are represented
+    by <em class="firstterm">chromosomes</em>, in essence a set of character
+    strings. A <em class="firstterm">gene</em> is a
+    subsection of a chromosome which encodes the value of a single parameter
+    being optimized. Typical encodings for a gene could be <em class="firstterm">binary</em> or
+    <em class="firstterm">integer</em>.
+   </p><p>
+    Through simulation of the evolutionary operations <em class="firstterm">recombination</em>,
+    <em class="firstterm">mutation</em>, and
+    <em class="firstterm">selection</em> new generations of search points are found
+    that show a higher average fitness than their ancestors. <a class="xref" href="geqo-intro2.html#GEQO-FIGURE" title="Figure 60.1. Structure of a Genetic Algorithm">Figure 60.1</a>
+    illustrates these steps.
+   </p><div class="figure" id="GEQO-FIGURE"><p class="title"><strong>Figure 60.1. Structure of a Genetic Algorithm</strong></p><div class="figure-contents"><div class="mediaobject"><object type="image/svg+xml" data="genetic-algorithm.svg" width="100%"></object></div></div></div><br class="figure-break" /><p>
+    According to the <span class="systemitem">comp.ai.genetic</span> <acronym class="acronym">FAQ</acronym> it cannot be stressed too
+    strongly that a <acronym class="acronym">GA</acronym> is not a pure random search for a solution to a
+    problem. A <acronym class="acronym">GA</acronym> uses stochastic processes, but the result is distinctly
+    non-random (better than random).
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="geqo-intro.html" title="60.1. Query Handling as a Complex Optimization Problem">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="geqo.html" title="Chapter 60. Genetic Query Optimizer">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="geqo-pg-intro.html" title="60.3. Genetic Query Optimization (GEQO) in PostgreSQL">Next</a></td></tr><tr><td width="40%" align="left" valign="top">60.1. Query Handling as a Complex Optimization Problem </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 60.3. Genetic Query Optimization (<acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">GEQO</acronym>) in PostgreSQL</td></tr></table></div></body></html>

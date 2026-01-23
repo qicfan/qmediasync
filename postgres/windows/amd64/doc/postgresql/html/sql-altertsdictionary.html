@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER TEXT SEARCH DICTIONARY</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altertsconfig.html" title="ALTER TEXT SEARCH CONFIGURATION" /><link rel="next" href="sql-altertsparser.html" title="ALTER TEXT SEARCH PARSER" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER TEXT SEARCH DICTIONARY</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altertsconfig.html" title="ALTER TEXT SEARCH CONFIGURATION">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-altertsparser.html" title="ALTER TEXT SEARCH PARSER">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERTSDICTIONARY"><div class="titlepage"></div><a id="id-1.9.3.38.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER TEXT SEARCH DICTIONARY</span></h2><p>ALTER TEXT SEARCH DICTIONARY — change the definition of a text search dictionary</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER TEXT SEARCH DICTIONARY <em class="replaceable"><code>name</code></em> (
+    <em class="replaceable"><code>option</code></em> [ = <em class="replaceable"><code>value</code></em> ] [, ... ]
+)
+ALTER TEXT SEARCH DICTIONARY <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER TEXT SEARCH DICTIONARY <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TEXT SEARCH DICTIONARY <em class="replaceable"><code>name</code></em> SET SCHEMA <em class="replaceable"><code>new_schema</code></em>
+</pre></div><div class="refsect1" id="id-1.9.3.38.5"><h2>Description</h2><p>
+   <code class="command">ALTER TEXT SEARCH DICTIONARY</code> changes the definition of
+   a text search dictionary.  You can change the dictionary's
+   template-specific options, or change the dictionary's name or owner.
+  </p><p>
+   You must be the owner of the dictionary to use
+   <code class="command">ALTER TEXT SEARCH DICTIONARY</code>.
+  </p></div><div class="refsect1" id="id-1.9.3.38.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name (optionally schema-qualified) of an existing text search
+      dictionary.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>option</code></em></span></dt><dd><p>
+      The name of a template-specific option to be set for this dictionary.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>value</code></em></span></dt><dd><p>
+      The new value to use for a template-specific option.
+      If the equal sign and value are omitted, then any previous
+      setting for the option is removed from the dictionary,
+      allowing the default to be used.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+      The new name of the text search dictionary.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+      The new owner of the text search dictionary.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_schema</code></em></span></dt><dd><p>
+      The new schema for the text search dictionary.
+     </p></dd></dl></div><p>
+   Template-specific options can appear in any order.
+  </p></div><div class="refsect1" id="id-1.9.3.38.7"><h2>Examples</h2><p>
+   The following example command changes the stopword list
+   for a Snowball-based dictionary.  Other parameters remain unchanged.
+  </p><pre class="programlisting">
+ALTER TEXT SEARCH DICTIONARY my_dict ( StopWords = newrussian );
+</pre><p>
+   The following example command changes the language option to <code class="literal">dutch</code>,
+   and removes the stopword option entirely.
+  </p><pre class="programlisting">
+ALTER TEXT SEARCH DICTIONARY my_dict ( language = dutch, StopWords );
+</pre><p>
+   The following example command <span class="quote">“<span class="quote">updates</span>”</span> the dictionary's
+   definition without actually changing anything.
+
+</p><pre class="programlisting">
+ALTER TEXT SEARCH DICTIONARY my_dict ( dummy );
+</pre><p>
+
+   (The reason this works is that the option removal code doesn't complain
+   if there is no such option.)  This trick is useful when changing
+   configuration files for the dictionary: the <code class="command">ALTER</code> will
+   force existing database sessions to re-read the configuration files,
+   which otherwise they would never do if they had read them earlier.
+  </p></div><div class="refsect1" id="id-1.9.3.38.8"><h2>Compatibility</h2><p>
+   There is no <code class="command">ALTER TEXT SEARCH DICTIONARY</code> statement in
+   the SQL standard.
+  </p></div><div class="refsect1" id="id-1.9.3.38.9"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createtsdictionary.html" title="CREATE TEXT SEARCH DICTIONARY"><span class="refentrytitle">CREATE TEXT SEARCH DICTIONARY</span></a>, <a class="xref" href="sql-droptsdictionary.html" title="DROP TEXT SEARCH DICTIONARY"><span class="refentrytitle">DROP TEXT SEARCH DICTIONARY</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altertsconfig.html" title="ALTER TEXT SEARCH CONFIGURATION">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-altertsparser.html" title="ALTER TEXT SEARCH PARSER">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER TEXT SEARCH CONFIGURATION </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER TEXT SEARCH PARSER</td></tr></table></div></body></html>

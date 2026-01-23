@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>3.2. Views</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="tutorial-advanced-intro.html" title="3.1. Introduction" /><link rel="next" href="tutorial-fk.html" title="3.3. Foreign Keys" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">3.2. Views</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="tutorial-advanced-intro.html" title="3.1. Introduction">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="tutorial-advanced.html" title="Chapter 3. Advanced Features">Up</a></td><th width="60%" align="center">Chapter 3. Advanced Features</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="tutorial-fk.html" title="3.3. Foreign Keys">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TUTORIAL-VIEWS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">3.2. Views</h2></div></div></div><a id="id-1.4.5.3.2" class="indexterm"></a><p>
+    Refer back to the queries in <a class="xref" href="tutorial-join.html" title="2.6. Joins Between Tables">Section 2.6</a>.
+    Suppose the combined listing of weather records and city location
+    is of particular interest to your application, but you do not want
+    to type the query each time you need it.  You can create a
+    <em class="firstterm">view</em> over the query, which gives a name to
+    the query that you can refer to like an ordinary table:
+
+</p><pre class="programlisting">
+CREATE VIEW myview AS
+    SELECT name, temp_lo, temp_hi, prcp, date, location
+        FROM weather, cities
+        WHERE city = name;
+
+SELECT * FROM myview;
+</pre><p>
+   </p><p>
+    Making liberal use of views is a key aspect of good SQL database
+    design.  Views allow you to encapsulate the details of the
+    structure of your tables, which might change as your application
+    evolves, behind consistent interfaces.
+   </p><p>
+    Views can be used in almost any place a real table can be used.
+    Building views upon other views is not uncommon.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="tutorial-advanced-intro.html" title="3.1. Introduction">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="tutorial-advanced.html" title="Chapter 3. Advanced Features">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="tutorial-fk.html" title="3.3. Foreign Keys">Next</a></td></tr><tr><td width="40%" align="left" valign="top">3.1. Introduction </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 3.3. Foreign Keys</td></tr></table></div></body></html>

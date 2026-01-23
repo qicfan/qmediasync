@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.20. lo</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="isn.html" title="F.19. isn" /><link rel="next" href="ltree.html" title="F.21. ltree" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.20. lo</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="isn.html" title="F.19. isn">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ltree.html" title="F.21. ltree">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LO"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.20. lo</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="lo.html#id-1.11.7.29.5">F.20.1. Rationale</a></span></dt><dt><span class="sect2"><a href="lo.html#id-1.11.7.29.6">F.20.2. How to Use It</a></span></dt><dt><span class="sect2"><a href="lo.html#id-1.11.7.29.7">F.20.3. Limitations</a></span></dt><dt><span class="sect2"><a href="lo.html#id-1.11.7.29.8">F.20.4. Author</a></span></dt></dl></div><a id="id-1.11.7.29.2" class="indexterm"></a><p>
+  The <code class="filename">lo</code> module provides support for managing Large Objects
+  (also called LOs or BLOBs).  This includes a data type <code class="type">lo</code>
+  and a trigger <code class="function">lo_manage</code>.
+ </p><p>
+  This module is considered <span class="quote">“<span class="quote">trusted</span>”</span>, that is, it can be
+  installed by non-superusers who have <code class="literal">CREATE</code> privilege
+  on the current database.
+ </p><div class="sect2" id="id-1.11.7.29.5"><div class="titlepage"><div><div><h3 class="title">F.20.1. Rationale</h3></div></div></div><p>
+   One of the problems with the JDBC driver (and this affects the ODBC driver
+   also), is that the specification assumes that references to BLOBs (Binary
+   Large OBjects) are stored within a table, and if that entry is changed, the
+   associated BLOB is deleted from the database.
+  </p><p>
+   As <span class="productname">PostgreSQL</span> stands, this doesn't occur.  Large objects
+   are treated as objects in their own right; a table entry can reference a
+   large object by OID, but there can be multiple table entries referencing
+   the same large object OID, so the system doesn't delete the large object
+   just because you change or remove one such entry.
+  </p><p>
+   Now this is fine for <span class="productname">PostgreSQL</span>-specific applications, but
+   standard code using JDBC or ODBC won't delete the objects, resulting in
+   orphan objects — objects that are not referenced by anything, and
+   simply occupy disk space.
+  </p><p>
+   The <code class="filename">lo</code> module allows fixing this by attaching a trigger
+   to tables that contain LO reference columns.  The trigger essentially just
+   does a <code class="function">lo_unlink</code> whenever you delete or modify a value
+   referencing a large object.  When you use this trigger, you are assuming
+   that there is only one database reference to any large object that is
+   referenced in a trigger-controlled column!
+  </p><p>
+   The module also provides a data type <code class="type">lo</code>, which is really just
+   a domain of the <code class="type">oid</code> type.  This is useful for differentiating
+   database columns that hold large object references from those that are
+   OIDs of other things.  You don't have to use the <code class="type">lo</code> type to
+   use the trigger, but it may be convenient to use it to keep track of which
+   columns in your database represent large objects that you are managing with
+   the trigger.  It is also rumored that the ODBC driver gets confused if you
+   don't use <code class="type">lo</code> for BLOB columns.
+  </p></div><div class="sect2" id="id-1.11.7.29.6"><div class="titlepage"><div><div><h3 class="title">F.20.2. How to Use It</h3></div></div></div><p>
+   Here's a simple example of usage:
+  </p><pre class="programlisting">
+CREATE TABLE image (title text, raster lo);
+
+CREATE TRIGGER t_raster BEFORE UPDATE OR DELETE ON image
+    FOR EACH ROW EXECUTE FUNCTION lo_manage(raster);
+</pre><p>
+   For each column that will contain unique references to large objects,
+   create a <code class="literal">BEFORE UPDATE OR DELETE</code> trigger, and give the column
+   name as the sole trigger argument.  You can also restrict the trigger
+   to only execute on updates to the column by using <code class="literal">BEFORE UPDATE
+   OF</code> <em class="replaceable"><code>column_name</code></em>.
+   If you need multiple <code class="type">lo</code>
+   columns in the same table, create a separate trigger for each one,
+   remembering to give a different name to each trigger on the same table.
+  </p></div><div class="sect2" id="id-1.11.7.29.7"><div class="titlepage"><div><div><h3 class="title">F.20.3. Limitations</h3></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     Dropping a table will still orphan any objects it contains, as the trigger
+     is not executed.  You can avoid this by preceding the <code class="command">DROP
+     TABLE</code> with <code class="command">DELETE FROM <em class="replaceable"><code>table</code></em></code>.
+    </p><p>
+     <code class="command">TRUNCATE</code> has the same hazard.
+    </p><p>
+     If you already have, or suspect you have, orphaned large objects, see the
+     <a class="xref" href="vacuumlo.html" title="vacuumlo"><span class="refentrytitle"><span class="application">vacuumlo</span></span></a> module to help
+     you clean them up.  It's a good idea to run <span class="application">vacuumlo</span>
+     occasionally as a back-stop to the <code class="function">lo_manage</code> trigger.
+    </p></li><li class="listitem"><p>
+     Some frontends may create their own tables, and will not create the
+     associated trigger(s).  Also, users may not remember (or know) to create
+     the triggers.
+    </p></li></ul></div></div><div class="sect2" id="id-1.11.7.29.8"><div class="titlepage"><div><div><h3 class="title">F.20.4. Author</h3></div></div></div><p>
+   Peter Mount <code class="email">&lt;<a class="email" href="mailto:peter@retep.org.uk">peter@retep.org.uk</a>&gt;</code>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="isn.html" title="F.19. isn">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ltree.html" title="F.21. ltree">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.19. isn </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.21. ltree</td></tr></table></div></body></html>

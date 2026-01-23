@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>33.1. Running the Tests</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="regress.html" title="Chapter 33. Regression Tests" /><link rel="next" href="regress-evaluation.html" title="33.2. Test Evaluation" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">33.1. Running the Tests</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="regress.html" title="Chapter 33. Regression Tests">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="regress.html" title="Chapter 33. Regression Tests">Up</a></td><th width="60%" align="center">Chapter 33. Regression Tests</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="regress-evaluation.html" title="33.2. Test Evaluation">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="REGRESS-RUN"><div class="titlepage"><div><div><h2 class="title" style="clear: both">33.1. Running the Tests</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="regress-run.html#id-1.6.20.5.3">33.1.1. Running the Tests Against a Temporary Installation</a></span></dt><dt><span class="sect2"><a href="regress-run.html#id-1.6.20.5.4">33.1.2. Running the Tests Against an Existing Installation</a></span></dt><dt><span class="sect2"><a href="regress-run.html#id-1.6.20.5.5">33.1.3. Additional Test Suites</a></span></dt><dt><span class="sect2"><a href="regress-run.html#id-1.6.20.5.6">33.1.4. Locale and Encoding</a></span></dt><dt><span class="sect2"><a href="regress-run.html#id-1.6.20.5.7">33.1.5. Custom Server Settings</a></span></dt><dt><span class="sect2"><a href="regress-run.html#id-1.6.20.5.8">33.1.6. Extra Tests</a></span></dt><dt><span class="sect2"><a href="regress-run.html#id-1.6.20.5.9">33.1.7. Testing Hot Standby</a></span></dt></dl></div><p>
+   The regression tests can be run against an already installed and
+   running server, or using a temporary installation within the build
+   tree.  Furthermore, there is a <span class="quote">“<span class="quote">parallel</span>”</span> and a
+   <span class="quote">“<span class="quote">sequential</span>”</span> mode for running the tests.  The
+   sequential method runs each test script alone, while the
+   parallel method starts up multiple server processes to run groups
+   of tests in parallel.  Parallel testing adds confidence that
+   interprocess communication and locking are working correctly.
+  </p><div class="sect2" id="id-1.6.20.5.3"><div class="titlepage"><div><div><h3 class="title">33.1.1. Running the Tests Against a Temporary Installation</h3></div></div></div><p>
+   To run the parallel regression tests after building but before installation,
+   type:
+</p><pre class="screen">
+make check
+</pre><p>
+   in the top-level directory.  (Or you can change to
+   <code class="filename">src/test/regress</code> and run the command there.)
+   At the end you should see something like:
+</p><pre class="screen">
+<code class="computeroutput">
+=======================
+ All 193 tests passed.
+=======================
+</code>
+</pre><p>
+   or otherwise a note about which tests failed.  See <a class="xref" href="regress-evaluation.html" title="33.2. Test Evaluation">Section 33.2</a> below before assuming that a
+   <span class="quote">“<span class="quote">failure</span>”</span> represents a serious problem.
+  </p><p>
+    Because this test method runs a temporary server, it will not work
+    if you did the build as the root user, since the server will not start as
+    root.  Recommended procedure is not to do the build as root, or else to
+    perform testing after completing the installation.
+   </p><p>
+    If you have configured <span class="productname">PostgreSQL</span> to install
+    into a location where an older <span class="productname">PostgreSQL</span>
+    installation already exists, and you perform <code class="literal">make check</code>
+    before installing the new version, you might find that the tests fail
+    because the new programs try to use the already-installed shared
+    libraries.  (Typical symptoms are complaints about undefined symbols.)
+    If you wish to run the tests before overwriting the old installation,
+    you'll need to build with <code class="literal">configure --disable-rpath</code>.
+    It is not recommended that you use this option for the final installation,
+    however.
+   </p><p>
+    The parallel regression test starts quite a few processes under your
+    user ID.  Presently, the maximum concurrency is twenty parallel test
+    scripts, which means forty processes: there's a server process and a
+    <span class="application">psql</span> process for each test script.
+    So if your system enforces a per-user limit on the number of processes,
+    make sure this limit is at least fifty or so, else you might get
+    random-seeming failures in the parallel test.  If you are not in
+    a position to raise the limit, you can cut down the degree of parallelism
+    by setting the <code class="literal">MAX_CONNECTIONS</code> parameter.  For example:
+</p><pre class="screen">
+make MAX_CONNECTIONS=10 check
+</pre><p>
+    runs no more than ten tests concurrently.
+   </p></div><div class="sect2" id="id-1.6.20.5.4"><div class="titlepage"><div><div><h3 class="title">33.1.2. Running the Tests Against an Existing Installation</h3></div></div></div><p>
+   To run the tests after installation (see <a class="xref" href="installation.html" title="Chapter 17. Installation from Source Code">Chapter 17</a>),
+   initialize a data directory and start the
+   server as explained in <a class="xref" href="runtime.html" title="Chapter 19. Server Setup and Operation">Chapter 19</a>, then type:
+</p><pre class="screen">
+make installcheck
+</pre><p>
+or for a parallel test:
+</p><pre class="screen">
+make installcheck-parallel
+</pre><p>
+   The tests will expect to contact the server at the local host and the
+   default port number, unless directed otherwise by <code class="envar">PGHOST</code> and
+   <code class="envar">PGPORT</code> environment variables.  The tests will be run in a
+   database named <code class="literal">regression</code>; any existing database by this name
+   will be dropped.
+  </p><p>
+   The tests will also transiently create some cluster-wide objects, such as
+   roles, tablespaces, and subscriptions.  These objects will have names
+   beginning with <code class="literal">regress_</code>.  Beware of
+   using <code class="literal">installcheck</code> mode with an installation that has
+   any actual global objects named that way.
+  </p></div><div class="sect2" id="id-1.6.20.5.5"><div class="titlepage"><div><div><h3 class="title">33.1.3. Additional Test Suites</h3></div></div></div><p>
+   The <code class="literal">make check</code> and <code class="literal">make installcheck</code> commands
+   run only the <span class="quote">“<span class="quote">core</span>”</span> regression tests, which test built-in
+   functionality of the <span class="productname">PostgreSQL</span> server.  The source
+   distribution contains many additional test suites, most of them having
+   to do with add-on functionality such as optional procedural languages.
+  </p><p>
+   To run all test suites applicable to the modules that have been selected
+   to be built, including the core tests, type one of these commands at the
+   top of the build tree:
+</p><pre class="screen">
+make check-world
+make installcheck-world
+</pre><p>
+   These commands run the tests using temporary servers or an
+   already-installed server, respectively, just as previously explained
+   for <code class="literal">make check</code> and <code class="literal">make installcheck</code>.  Other
+   considerations are the same as previously explained for each method.
+   Note that <code class="literal">make check-world</code> builds a separate instance
+   (temporary data directory) for each tested module, so it requires more
+   time and disk space than <code class="literal">make installcheck-world</code>.
+  </p><p>
+   On a modern machine with multiple CPU cores and no tight operating-system
+   limits, you can make things go substantially faster with parallelism.
+   The recipe that most PostgreSQL developers actually use for running all
+   tests is something like
+</p><pre class="screen">
+make check-world -j8 &gt;/dev/null
+</pre><p>
+   with a <code class="option">-j</code> limit near to or a bit more than the number
+   of available cores.  Discarding <span class="systemitem">stdout</span>
+   eliminates chatter that's not interesting when you just want to verify
+   success.  (In case of failure, the <span class="systemitem">stderr</span>
+   messages are usually enough to determine where to look closer.)
+  </p><p>
+   Alternatively, you can run individual test suites by typing
+   <code class="literal">make check</code> or <code class="literal">make installcheck</code> in the appropriate
+   subdirectory of the build tree.  Keep in mind that <code class="literal">make
+   installcheck</code> assumes you've installed the relevant module(s), not
+   only the core server.
+  </p><p>
+   The additional tests that can be invoked this way include:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     Regression tests for optional procedural languages.
+     These are located under <code class="filename">src/pl</code>.
+    </p></li><li class="listitem"><p>
+     Regression tests for <code class="filename">contrib</code> modules,
+     located under <code class="filename">contrib</code>.
+     Not all <code class="filename">contrib</code> modules have tests.
+    </p></li><li class="listitem"><p>
+     Regression tests for the interface libraries,
+     located in <code class="filename">src/interfaces/libpq/test</code> and
+     <code class="filename">src/interfaces/ecpg/test</code>.
+    </p></li><li class="listitem"><p>
+     Tests for core-supported authentication methods,
+     located in <code class="filename">src/test/authentication</code>.
+     (See below for additional authentication-related tests.)
+    </p></li><li class="listitem"><p>
+     Tests stressing behavior of concurrent sessions,
+     located in <code class="filename">src/test/isolation</code>.
+    </p></li><li class="listitem"><p>
+     Tests for crash recovery and physical replication,
+     located in <code class="filename">src/test/recovery</code>.
+    </p></li><li class="listitem"><p>
+     Tests for logical replication,
+     located in <code class="filename">src/test/subscription</code>.
+    </p></li><li class="listitem"><p>
+     Tests of client programs, located under <code class="filename">src/bin</code>.
+    </p></li></ul></div><p>
+   When using <code class="literal">installcheck</code> mode, these tests will create
+   and destroy test databases whose names
+   include <code class="literal">regression</code>, for
+   example <code class="literal">pl_regression</code>
+   or <code class="literal">contrib_regression</code>.  Beware of
+   using <code class="literal">installcheck</code> mode with an installation that has
+   any non-test databases named that way.
+  </p><p>
+   Some of these auxiliary test suites use the TAP infrastructure explained
+   in <a class="xref" href="regress-tap.html" title="33.4. TAP Tests">Section 33.4</a>.
+   The TAP-based tests are run only when PostgreSQL was configured with the
+   option <code class="option">--enable-tap-tests</code>.  This is recommended for
+   development, but can be omitted if there is no suitable Perl installation.
+  </p><p>
+   Some test suites are not run by default, either because they are not secure
+   to run on a multiuser system or because they require special software.  You
+   can decide which test suites to run additionally by setting the
+   <code class="command">make</code> or environment variable
+   <code class="varname">PG_TEST_EXTRA</code> to a whitespace-separated list, for
+   example:
+</p><pre class="programlisting">
+make check-world PG_TEST_EXTRA='kerberos ldap ssl'
+</pre><p>
+   The following values are currently supported:
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">kerberos</code></span></dt><dd><p>
+       Runs the test suite under <code class="filename">src/test/kerberos</code>.  This
+       requires an MIT Kerberos installation and opens TCP/IP listen sockets.
+      </p></dd><dt><span class="term"><code class="literal">ldap</code></span></dt><dd><p>
+       Runs the test suite under <code class="filename">src/test/ldap</code>.  This
+       requires an <span class="productname">OpenLDAP</span> installation and opens
+       TCP/IP listen sockets.
+      </p></dd><dt><span class="term"><code class="literal">ssl</code></span></dt><dd><p>
+       Runs the test suite under <code class="filename">src/test/ssl</code>.  This opens TCP/IP listen sockets.
+      </p></dd></dl></div><p>
+
+   Tests for features that are not supported by the current build
+   configuration are not run even if they are mentioned in
+   <code class="varname">PG_TEST_EXTRA</code>.
+  </p><p>
+   In addition, there are tests in <code class="filename">src/test/modules</code>
+   which will be run by <code class="literal">make check-world</code> but not
+   by <code class="literal">make installcheck-world</code>.  This is because they
+   install non-production extensions or have other side-effects that are
+   considered undesirable for a production installation.  You can
+   use <code class="literal">make install</code> and <code class="literal">make
+   installcheck</code> in one of those subdirectories if you wish,
+   but it's not recommended to do so with a non-test server.
+  </p></div><div class="sect2" id="id-1.6.20.5.6"><div class="titlepage"><div><div><h3 class="title">33.1.4. Locale and Encoding</h3></div></div></div><p>
+    By default, tests using a temporary installation use the
+    locale defined in the current environment and the corresponding
+    database encoding as determined by <code class="command">initdb</code>.  It
+    can be useful to test different locales by setting the appropriate
+    environment variables, for example:
+</p><pre class="screen">
+make check LANG=C
+make check LC_COLLATE=en_US.utf8 LC_CTYPE=fr_CA.utf8
+</pre><p>
+    For implementation reasons, setting <code class="envar">LC_ALL</code> does not
+    work for this purpose; all the other locale-related environment
+    variables do work.
+   </p><p>
+    When testing against an existing installation, the locale is
+    determined by the existing database cluster and cannot be set
+    separately for the test run.
+   </p><p>
+    You can also choose the database encoding explicitly by setting
+    the variable <code class="envar">ENCODING</code>, for example:
+</p><pre class="screen">
+make check LANG=C ENCODING=EUC_JP
+</pre><p>
+    Setting the database encoding this way typically only makes sense
+    if the locale is C; otherwise the encoding is chosen automatically
+    from the locale, and specifying an encoding that does not match
+    the locale will result in an error.
+   </p><p>
+    The database encoding can be set for tests against either a temporary or
+    an existing installation, though in the latter case it must be
+    compatible with the installation's locale.
+   </p></div><div class="sect2" id="id-1.6.20.5.7"><div class="titlepage"><div><div><h3 class="title">33.1.5. Custom Server Settings</h3></div></div></div><p>
+    Custom server settings to use when running a regression test suite can be
+    set in the <code class="varname">PGOPTIONS</code> environment variable (for settings
+    that allow this):
+</p><pre class="screen">
+make check PGOPTIONS="-c force_parallel_mode=regress -c work_mem=50MB"
+</pre><p>
+    When running against a temporary installation, custom settings can also be
+    set by supplying a pre-written <code class="filename">postgresql.conf</code>:
+</p><pre class="screen">
+echo 'log_checkpoints = on' &gt; test_postgresql.conf
+echo 'work_mem = 50MB' &gt;&gt; test_postgresql.conf
+make check EXTRA_REGRESS_OPTS="--temp-config=test_postgresql.conf"
+</pre><p>
+   </p><p>
+    This can be useful to enable additional logging, adjust resource limits,
+    or enable extra run-time checks such as <a class="xref" href="runtime-config-developer.html#GUC-DEBUG-DISCARD-CACHES">debug_discard_caches</a>.
+   </p></div><div class="sect2" id="id-1.6.20.5.8"><div class="titlepage"><div><div><h3 class="title">33.1.6. Extra Tests</h3></div></div></div><p>
+    The core regression test suite contains a few test files that are not
+    run by default, because they might be platform-dependent or take a
+    very long time to run.  You can run these or other extra test
+    files by setting the variable <code class="envar">EXTRA_TESTS</code>.  For
+    example, to run the <code class="literal">numeric_big</code> test:
+</p><pre class="screen">
+make check EXTRA_TESTS=numeric_big
+</pre><p>
+   </p></div><div class="sect2" id="id-1.6.20.5.9"><div class="titlepage"><div><div><h3 class="title">33.1.7. Testing Hot Standby</h3></div></div></div><p>
+   The source distribution also contains regression tests for the static
+   behavior of Hot Standby. These tests require a running primary server
+   and a running standby server that is accepting new WAL changes from the
+   primary (using either file-based log shipping or streaming replication).
+   Those servers are not automatically created for you, nor is replication
+   setup documented here. Please check the various sections of the
+   documentation devoted to the required commands and related issues.
+  </p><p>
+   To run the Hot Standby tests, first create a database
+   called <code class="literal">regression</code> on the primary:
+</p><pre class="screen">
+psql -h primary -c "CREATE DATABASE regression"
+</pre><p>
+   Next, run the preparatory script
+   <code class="filename">src/test/regress/sql/hs_primary_setup.sql</code>
+   on the primary in the regression database, for example:
+</p><pre class="screen">
+psql -h primary -f src/test/regress/sql/hs_primary_setup.sql regression
+</pre><p>
+   Allow these changes to propagate to the standby.
+  </p><p>
+   Now arrange for the default database connection to be to the standby
+   server under test (for example, by setting the <code class="envar">PGHOST</code> and
+   <code class="envar">PGPORT</code> environment variables).
+   Finally, run <code class="literal">make standbycheck</code> in the regression directory:
+</p><pre class="screen">
+cd src/test/regress
+make standbycheck
+</pre><p>
+  </p><p>
+   Some extreme behaviors can also be generated on the primary using the
+   script <code class="filename">src/test/regress/sql/hs_primary_extremes.sql</code>
+   to allow the behavior of the standby to be tested.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="regress.html" title="Chapter 33. Regression Tests">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="regress.html" title="Chapter 33. Regression Tests">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="regress-evaluation.html" title="33.2. Test Evaluation">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 33. Regression Tests </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 33.2. Test Evaluation</td></tr></table></div></body></html>

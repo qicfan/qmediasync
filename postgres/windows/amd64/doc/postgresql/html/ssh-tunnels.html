@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>19.11. Secure TCP/IP Connections with SSH Tunnels</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="gssapi-enc.html" title="19.10. Secure TCP/IP Connections with GSSAPI Encryption" /><link rel="next" href="event-log-registration.html" title="19.12. Registering Event Log on Windows" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">19.11. Secure TCP/IP Connections with <span xmlns="http://www.w3.org/1999/xhtml" class="application">SSH</span> Tunnels</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="gssapi-enc.html" title="19.10. Secure TCP/IP Connections with GSSAPI Encryption">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><th width="60%" align="center">Chapter 19. Server Setup and Operation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="event-log-registration.html" title="19.12. Registering Event Log on Windows">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="SSH-TUNNELS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">19.11. Secure TCP/IP Connections with <span class="application">SSH</span> Tunnels</h2></div></div></div><a id="id-1.6.6.14.2" class="indexterm"></a><p>
+   It is possible to use <span class="application">SSH</span> to encrypt the network
+   connection between clients and a
+   <span class="productname">PostgreSQL</span> server. Done properly, this
+   provides an adequately secure network connection, even for non-SSL-capable
+   clients.
+  </p><p>
+   First make sure that an <span class="application">SSH</span> server is
+   running properly on the same machine as the
+   <span class="productname">PostgreSQL</span> server and that you can log in using
+   <code class="command">ssh</code> as some user;  you then can establish a
+   secure tunnel to the remote server.  A secure tunnel listens on a
+   local port and forwards all traffic to a port on the remote machine.
+   Traffic sent to the remote port can arrive on its
+   <code class="literal">localhost</code> address, or different bind
+   address if desired;  it does not appear as coming from your
+   local machine.  This command creates a secure tunnel from the client
+   machine to the remote machine <code class="literal">foo.com</code>:
+</p><pre class="programlisting">
+ssh -L 63333:localhost:5432 joe@foo.com
+</pre><p>
+   The first number in the <code class="option">-L</code> argument, 63333, is the
+   local port number of the tunnel; it can be any unused port.  (IANA
+   reserves ports 49152 through 65535 for private use.)  The name or IP
+   address after this is the remote bind address you are connecting to,
+   i.e., <code class="literal">localhost</code>, which is the default.  The second
+   number, 5432, is the remote end of the tunnel, e.g., the port number
+   your database server is using.  In order to connect to the database
+   server using this tunnel, you connect to port 63333 on the local
+   machine:
+</p><pre class="programlisting">
+psql -h localhost -p 63333 postgres
+</pre><p>
+   To the database server it will then look as though you are
+   user <code class="literal">joe</code> on host <code class="literal">foo.com</code>
+   connecting to the <code class="literal">localhost</code> bind address, and it
+   will use whatever authentication procedure was configured for
+   connections by that user to that bind address.  Note that the server will not
+   think the connection is SSL-encrypted, since in fact it is not
+   encrypted between the
+   <span class="application">SSH</span> server and the
+   <span class="productname">PostgreSQL</span> server.  This should not pose any
+   extra security risk because they are on the same machine.
+  </p><p>
+   In order for the
+   tunnel setup to succeed you must be allowed to connect via
+   <code class="command">ssh</code> as <code class="literal">joe@foo.com</code>, just
+   as if you had attempted to use <code class="command">ssh</code> to create a
+   terminal session.
+  </p><p>
+   You could also have set up port forwarding as
+</p><pre class="programlisting">
+ssh -L 63333:foo.com:5432 joe@foo.com
+</pre><p>
+   but then the database server will see the connection as coming in
+   on its <code class="literal">foo.com</code> bind address, which is not opened by
+   the default setting <code class="literal">listen_addresses =
+   'localhost'</code>.  This is usually not what you want.
+  </p><p>
+   If you have to <span class="quote">“<span class="quote">hop</span>”</span> to the database server via some
+   login host, one possible setup could look like this:
+</p><pre class="programlisting">
+ssh -L 63333:db.foo.com:5432 joe@shell.foo.com
+</pre><p>
+   Note that this way the connection
+   from <code class="literal">shell.foo.com</code>
+   to <code class="literal">db.foo.com</code> will not be encrypted by the SSH
+   tunnel.
+   SSH offers quite a few configuration possibilities when the network
+   is restricted in various ways.  Please refer to the SSH
+   documentation for details.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+    Several other applications exist that can provide secure tunnels using
+    a procedure similar in concept to the one just described.
+   </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="gssapi-enc.html" title="19.10. Secure TCP/IP Connections with GSSAPI Encryption">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime.html" title="Chapter 19. Server Setup and Operation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="event-log-registration.html" title="19.12. Registering Event Log on Windows">Next</a></td></tr><tr><td width="40%" align="left" valign="top">19.10. Secure TCP/IP Connections with GSSAPI Encryption </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 19.12. Registering <span xmlns="http://www.w3.org/1999/xhtml" class="application">Event Log</span> on <span xmlns="http://www.w3.org/1999/xhtml" class="systemitem">Windows</span></td></tr></table></div></body></html>

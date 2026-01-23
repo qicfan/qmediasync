@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>E.4. Release 14.9</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="release-14-10.html" title="E.3. Release 14.10" /><link rel="next" href="release-14-8.html" title="E.5. Release 14.8" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">E.4. Release 14.9</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="release-14-10.html" title="E.3. Release 14.10">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><th width="60%" align="center">Appendix E. Release Notes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="release-14-8.html" title="E.5. Release 14.8">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RELEASE-14-9"><div class="titlepage"><div><div><h2 class="title" style="clear: both">E.4. Release 14.9</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="release-14-9.html#id-1.11.6.8.4">E.4.1. Migration to Version 14.9</a></span></dt><dt><span class="sect2"><a href="release-14-9.html#id-1.11.6.8.5">E.4.2. Changes</a></span></dt></dl></div><p><strong>Release date: </strong>2023-08-10</p><p>
+   This release contains a variety of fixes from 14.8.
+   For information about new features in major release 14, see
+   <a class="xref" href="release-14.html" title="E.13. Release 14">Section E.13</a>.
+  </p><div class="sect2" id="id-1.11.6.8.4"><div class="titlepage"><div><div><h3 class="title">E.4.1. Migration to Version 14.9</h3></div></div></div><p>
+    A dump/restore is not required for those running 14.X.
+   </p><p>
+    However, if you use BRIN indexes, it may be advisable to reindex them;
+    see the second changelog entry below.
+   </p><p>
+    Also, if you are upgrading from a version earlier than 14.4,
+    see <a class="xref" href="release-14-4.html" title="E.9. Release 14.4">Section E.9</a>.
+   </p></div><div class="sect2" id="id-1.11.6.8.5"><div class="titlepage"><div><div><h3 class="title">E.4.2. Changes</h3></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Disallow substituting a schema or owner name into an extension script
+      if the name contains a quote, backslash, or dollar sign (Noah Misch)
+     </p><p>
+      This restriction guards against SQL-injection hazards for trusted
+      extensions.
+     </p><p>
+      The <span class="productname">PostgreSQL</span> Project thanks Micah Gates,
+      Valerie Woolard, Tim Carey-Smith, and Christoph Berg for reporting
+      this problem.
+      (CVE-2023-39417)
+     </p></li><li class="listitem"><p>
+      Fix confusion between empty (no rows) ranges and all-NULL ranges in
+      BRIN indexes, as well as incorrect merging of all-NULL summaries
+      (Tomas Vondra)
+     </p><p>
+      Each of these oversights could result in forgetting that a BRIN
+      index range contains any NULL values, potentially allowing
+      subsequent queries that should return NULL values to miss doing so.
+     </p><p>
+      This fix will not in itself correct faulty BRIN entries.
+      It's recommended to <code class="command">REINDEX</code> any BRIN indexes that
+      may be used to search for nulls.
+     </p></li><li class="listitem"><p>
+      Avoid leaving a corrupted database behind when <code class="command">DROP
+      DATABASE</code> is interrupted (Andres Freund)
+     </p><p>
+      If <code class="command">DROP DATABASE</code> was interrupted after it had
+      already begun taking irreversible steps, the target database
+      remained accessible (because the removal of
+      its <code class="structname">pg_database</code> row would roll back),
+      but it would have corrupt contents.  Fix by marking the database
+      as inaccessible before we begin to perform irreversible operations.
+      A failure after that will leave the database still partially
+      present, but nothing can be done with it except to issue
+      another <code class="command">DROP DATABASE</code>.
+     </p></li><li class="listitem"><p>
+      Ensure that partitioned indexes are correctly marked as valid or not
+      at creation (Michael Paquier)
+     </p><p>
+      If a new partitioned index matches an existing but invalid index on
+      one of the partitions, the partitioned index could end up being
+      marked valid prematurely.  This could lead to misbehavior or
+      assertion failures in subsequent queries on the partitioned table.
+     </p></li><li class="listitem"><p>
+      Ignore invalid child indexes when matching partitioned indexes to
+      child indexes during <code class="command">ALTER TABLE ATTACH PARTITION</code>
+      (Michael Paquier)
+     </p><p>
+      Such an index will now be ignored, and a new child index created
+      instead.
+     </p></li><li class="listitem"><p>
+      Fix possible failure when marking a partitioned index valid after
+      all of its partitions have been attached (Michael Paquier)
+     </p><p>
+      The update of the index's <code class="structname">pg_index</code> entry
+      could use stale data for other columns.  One reported symptom is
+      an <span class="quote">“<span class="quote">attempted to update invisible tuple</span>”</span> error.
+     </p></li><li class="listitem"><p>
+      Fix <code class="command">ALTER EXTENSION SET SCHEMA</code> to complain if the
+      extension contains any objects outside the extension's schema
+      (Michael Paquier, Heikki Linnakangas)
+     </p><p>
+      Erroring out if the extension contains objects in multiple schemas
+      was always intended; but the check was mis-coded so that it would
+      fail to detect some cases, leading to surprising behavior.
+     </p></li><li class="listitem"><p>
+      Don't use partial unique indexes for uniqueness proofs in the
+      planner (David Rowley)
+     </p><p>
+      This could give rise to incorrect plans, since the presumed
+      uniqueness of rows read from a table might not hold if the index in
+      question isn't used to scan the table.
+     </p></li><li class="listitem"><p>
+      Don't Memoize lateral joins with volatile join conditions
+      (Richard Guo)
+     </p><p>
+      Applying Memoize to a sub-plan that contains volatile filter
+      conditions is likely to lead to wrong answers.  The check to avoid
+      doing this missed some cases that can arise when
+      using <code class="literal">LATERAL</code>.
+     </p></li><li class="listitem"><p>
+      Avoid producing incorrect plans for foreign joins with
+      pseudoconstant join clauses (Etsuro Fujita)
+     </p><p>
+      The planner currently lacks support for attaching pseudoconstant
+      join clauses to a pushed-down remote join, so disable generation
+      of remote joins in such cases.  (A better solution will require
+      ABI-breaking changes of planner data structures, so it will have to
+      wait for a future major release.)
+     </p></li><li class="listitem"><p>
+      Correctly handle sub-SELECTs in RLS policy expressions and
+      security-barrier views when expanding rule actions (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix race conditions in conflict detection
+      for <code class="literal">SERIALIZABLE</code> isolation mode
+      (Thomas Munro)
+     </p><p>
+      Conflicts could be missed when using bitmap heap scans, when using
+      GIN indexes, and when examining an initially-empty btree index.
+      All these cases could lead to serializability failures due to
+      improperly allowing conflicting transactions to commit.
+     </p></li><li class="listitem"><p>
+      Fix misbehavior of EvalPlanQual checks with inherited or partitioned
+      target tables (Tom Lane)
+     </p><p>
+      This oversight could lead to update or delete actions
+      in <code class="literal">READ COMMITTED</code> isolation mode getting
+      performed when they should have been skipped because of a
+      conflicting concurrent update.
+     </p></li><li class="listitem"><p>
+      Fix hash join with an inner-side hash key that contains Params
+      coming from an outer nested loop (Tom Lane)
+     </p><p>
+      When rescanning the join after the values of such Params have
+      changed, we must rebuild the hash table, but neglected to do so.
+      This could result in missing join output rows.
+     </p></li><li class="listitem"><p>
+      Fix intermittent failures when trying to update a field of a
+      composite column (Tom Lane)
+     </p><p>
+      If the overall value of the composite column is wide enough to
+      require out-of-line toasting, then an unluckily-timed cache flush
+      could cause errors or server crashes.
+     </p></li><li class="listitem"><p>
+      Prevent query-lifespan memory leaks in some <code class="command">UPDATE</code>
+      queries with triggers (Tomas Vondra)
+     </p></li><li class="listitem"><p>
+      Prevent query-lifespan memory leaks when an Incremental Sort plan
+      node is rescanned (James Coleman, Laurenz Albe, Tom Lane)
+     </p></li><li class="listitem"><p>
+      Accept fractional seconds in the input to <code class="type">jsonpath</code>'s
+      <code class="function">datetime()</code> method (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Prevent stack-overflow crashes with very complex text search
+      patterns (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Allow tokens up to 10240 bytes long
+      in <code class="filename">pg_hba.conf</code>
+      and <code class="filename">pg_ident.conf</code> (Tom Lane)
+     </p><p>
+      The previous limit of 256 bytes has been found insufficient for some
+      use-cases.
+     </p></li><li class="listitem"><p>
+      Fix mishandling of C++ out-of-memory conditions (Heikki Linnakangas)
+     </p><p>
+      If JIT is in use, running out of memory in a
+      C++ <code class="function">new</code> call would lead to
+      a <span class="productname">PostgreSQL</span> FATAL error, instead of the
+      expected C++ exception.
+     </p></li><li class="listitem"><p>
+      Fix rare null-pointer crash in <code class="filename">plancache.c</code>
+      (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Avoid losing track of possibly-useful shared memory segments when a
+      page free results in coalescing ranges of free space (Dongming Liu)
+     </p><p>
+      Ensure that the segment is moved into the
+      appropriate <span class="quote">“<span class="quote">bin</span>”</span> for its new amount of free space, so
+      that it will be found by subsequent searches.
+     </p></li><li class="listitem"><p>
+      Allow <code class="command">VACUUM</code> to continue after detecting certain
+      types of b-tree index corruption (Peter Geoghegan)
+     </p><p>
+      If an invalid sibling-page link is detected, log the issue and press
+      on, rather than throwing an error as before.  Nothing short
+      of <code class="command">REINDEX</code> will fix the broken index, but
+      preventing <code class="command">VACUUM</code> from completing until that is
+      done risks making matters far worse.
+     </p></li><li class="listitem"><p>
+      Ensure that <code class="varname">WrapLimitsVacuumLock</code> is released
+      after <code class="command">VACUUM</code> detects invalid data
+      in <code class="structname">pg_database</code>.<code class="structfield">datfrozenxid</code>
+      or <code class="structname">pg_database</code>.<code class="structfield">datminmxid</code>
+      (Andres Freund)
+     </p><p>
+      Failure to release this lock could lead to a deadlock later,
+      although the lock would be cleaned up if the session exits or
+      encounters some other error.
+     </p></li><li class="listitem"><p>
+      Avoid double replay of prepared transactions during crash
+      recovery (suyu.cmj, Michael Paquier)
+     </p><p>
+      After a crash partway through a checkpoint with some two-phase
+      transaction state data already flushed to disk by this checkpoint,
+      crash recovery could attempt to replay the prepared transaction(s)
+      twice, leading to a fatal error such as <span class="quote">“<span class="quote">lock is already
+      held</span>”</span> in the startup process.
+     </p></li><li class="listitem"><p>
+      Fix possible failure while promoting a standby server, if archiving
+      is enabled and two-phase transactions need to be recovered (Julian
+      Markwort)
+     </p><p>
+      If any required two-phase transactions were logged in the most
+      recent (partial) log segment, promotion would fail with an incorrect
+      complaint about <span class="quote">“<span class="quote">requested WAL segment has already been
+      removed</span>”</span>.
+     </p></li><li class="listitem"><p>
+      Ensure that a newly created, but still empty table
+      is <code class="function">fsync</code>'ed at the next checkpoint (Heikki
+      Linnakangas)
+     </p><p>
+      Without this, if there is an operating system crash causing the
+      empty file to disappear, subsequent operations on the table might
+      fail with <span class="quote">“<span class="quote">could not open file</span>”</span> errors.
+     </p></li><li class="listitem"><p>
+      Ensure that creation of the init fork of an unlogged index is
+      WAL-logged (Heikki Linnakangas)
+     </p><p>
+      While an unlogged index's main data fork is not WAL-logged, its init
+      fork should be, to ensure that we have a consistent state to restore
+      the index to after a crash.  This step was missed if the init fork
+      contains no data, which is a case not used by any standard index AM;
+      but perhaps some extension behaves that way.
+     </p></li><li class="listitem"><p>
+      Fix missing reinitializations of delay-checkpoint-end flags
+      (suyu.cmj)
+     </p><p>
+      This could result in unnecessary delays of checkpoints, or in
+      assertion failures in assert-enabled builds.
+     </p></li><li class="listitem"><p>
+      Fix overly strict assertion in <code class="type">jsonpath</code> code
+      (David Rowley)
+     </p><p>
+      This assertion failed if a query applied
+      the <code class="literal">.type()</code> operator to
+      a <code class="literal">like_regex</code> result.
+      There was no bug in non-assert builds.
+     </p></li><li class="listitem"><p>
+      Avoid assertion failure when processing an empty statement via the
+      extended query protocol in an already-aborted transaction (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix <code class="filename">contrib/fuzzystrmatch</code>'s
+      Soundex <code class="function">difference()</code> function to handle empty
+      input sanely (Alexander Lakhin, Tom Lane)
+     </p><p>
+      An input string containing no alphabetic characters resulted in
+      unpredictable output.
+     </p></li><li class="listitem"><p>
+      Tighten whitespace checks in <code class="filename">contrib/hstore</code>
+      input (Evan Jones)
+     </p><p>
+      In some cases, characters would be falsely recognized as whitespace
+      and hence discarded.
+     </p></li><li class="listitem"><p>
+      Disallow oversize input arrays
+      with <code class="filename">contrib/intarray</code>'s
+      <code class="literal">gist__int_ops</code> index opclass (Ankit Kumar Pandey,
+      Alexander Lakhin)
+     </p><p>
+      Previously this code would report a <code class="literal">NOTICE</code> but
+      press on anyway, creating an invalid index entry that presents a
+      risk of crashes when the index is read.
+     </p></li><li class="listitem"><p>
+      Avoid useless double decompression of GiST index entries
+      in <code class="filename">contrib/intarray</code> (Konstantin Knizhnik,
+      Matthias van de Meent, Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix <code class="filename">contrib/pageinspect</code>'s
+      <code class="function">gist_page_items()</code> function to work when there
+      are included index columns (Alexander Lakhin, Michael Paquier)
+     </p><p>
+      Previously, if the index has included
+      columns, <code class="function">gist_page_items()</code> would fail to
+      display those values on index leaf pages, or crash outright on
+      non-leaf pages.
+     </p></li><li class="listitem"><p>
+      Fix <span class="application">pg_dump</span> to correctly handle new-style
+      SQL-language functions whose bodies require parse-time dependencies
+      on unique indexes (Tom Lane)
+     </p><p>
+      Such cases can arise from <code class="literal">GROUP BY</code>
+      and <code class="literal">ON CONFLICT</code> clauses, for example.  The
+      function must then be postponed until after the unique index in the
+      dump output, but <span class="application">pg_dump</span> did not do that
+      and instead printed a warning about <span class="quote">“<span class="quote">could not resolve
+      dependency loop</span>”</span>.
+     </p></li><li class="listitem"><p>
+      Ensure
+      that <code class="structname">pg_index</code>.<code class="structfield">indisreplident</code>
+      is kept up-to-date in relation cache entries (Shruthi Gowda)
+     </p><p>
+      This value could be stale in some cases.  There is no core code that
+      relies on the relation cache's copy, so this is only a latent bug as
+      far as Postgres itself is concerned; but there may be extensions for
+      which it is a live bug.
+     </p></li></ul></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="release-14-10.html" title="E.3. Release 14.10">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="release-14-8.html" title="E.5. Release 14.8">Next</a></td></tr><tr><td width="40%" align="left" valign="top">E.3. Release 14.10 </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> E.5. Release 14.8</td></tr></table></div></body></html>

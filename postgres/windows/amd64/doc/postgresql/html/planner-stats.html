@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>14.2. Statistics Used by the Planner</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="using-explain.html" title="14.1. Using EXPLAIN" /><link rel="next" href="explicit-joins.html" title="14.3. Controlling the Planner with Explicit JOIN Clauses" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">14.2. Statistics Used by the Planner</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="using-explain.html" title="14.1. Using EXPLAIN">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="performance-tips.html" title="Chapter 14. Performance Tips">Up</a></td><th width="60%" align="center">Chapter 14. Performance Tips</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="explicit-joins.html" title="14.3. Controlling the Planner with Explicit JOIN Clauses">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLANNER-STATS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">14.2. Statistics Used by the Planner</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="planner-stats.html#id-1.5.13.5.3">14.2.1. Single-Column Statistics</a></span></dt><dt><span class="sect2"><a href="planner-stats.html#PLANNER-STATS-EXTENDED">14.2.2. Extended Statistics</a></span></dt></dl></div><a id="id-1.5.13.5.2" class="indexterm"></a><div class="sect2" id="id-1.5.13.5.3"><div class="titlepage"><div><div><h3 class="title">14.2.1. Single-Column Statistics</h3></div></div></div><p>
+   As we saw in the previous section, the query planner needs to estimate
+   the number of rows retrieved by a query in order to make good choices
+   of query plans.  This section provides a quick look at the statistics
+   that the system uses for these estimates.
+  </p><p>
+   One component of the statistics is the total number of entries in
+   each table and index, as well as the number of disk blocks occupied
+   by each table and index.  This information is kept in the table
+   <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>,
+   in the columns <code class="structfield">reltuples</code> and
+   <code class="structfield">relpages</code>.  We can look at it with
+   queries similar to this one:
+
+</p><pre class="screen">
+SELECT relname, relkind, reltuples, relpages
+FROM pg_class
+WHERE relname LIKE 'tenk1%';
+
+       relname        | relkind | reltuples | relpages
+----------------------+---------+-----------+----------
+ tenk1                | r       |     10000 |      358
+ tenk1_hundred        | i       |     10000 |       30
+ tenk1_thous_tenthous | i       |     10000 |       30
+ tenk1_unique1        | i       |     10000 |       30
+ tenk1_unique2        | i       |     10000 |       30
+(5 rows)
+</pre><p>
+
+   Here we can see that <code class="structname">tenk1</code> contains 10000
+   rows, as do its indexes, but the indexes are (unsurprisingly) much
+   smaller than the table.
+  </p><p>
+   For efficiency reasons, <code class="structfield">reltuples</code>
+   and <code class="structfield">relpages</code> are not updated on-the-fly,
+   and so they usually contain somewhat out-of-date values.
+   They are updated by <code class="command">VACUUM</code>, <code class="command">ANALYZE</code>, and a
+   few DDL commands such as <code class="command">CREATE INDEX</code>.  A <code class="command">VACUUM</code>
+   or <code class="command">ANALYZE</code> operation that does not scan the entire table
+   (which is commonly the case) will incrementally update the
+   <code class="structfield">reltuples</code> count on the basis of the part
+   of the table it did scan, resulting in an approximate value.
+   In any case, the planner
+   will scale the values it finds in <code class="structname">pg_class</code>
+   to match the current physical table size, thus obtaining a closer
+   approximation.
+  </p><a id="id-1.5.13.5.3.5" class="indexterm"></a><p>
+   Most queries retrieve only a fraction of the rows in a table, due
+   to <code class="literal">WHERE</code> clauses that restrict the rows to be
+   examined.  The planner thus needs to make an estimate of the
+   <em class="firstterm">selectivity</em> of <code class="literal">WHERE</code> clauses, that is,
+   the fraction of rows that match each condition in the
+   <code class="literal">WHERE</code> clause.  The information used for this task is
+   stored in the
+   <a class="link" href="catalog-pg-statistic.html" title="52.49. pg_statistic"><code class="structname">pg_statistic</code></a>
+   system catalog.  Entries in <code class="structname">pg_statistic</code>
+   are updated by the <code class="command">ANALYZE</code> and <code class="command">VACUUM
+   ANALYZE</code> commands, and are always approximate even when freshly
+   updated.
+  </p><a id="id-1.5.13.5.3.7" class="indexterm"></a><p>
+   Rather than look at <code class="structname">pg_statistic</code> directly,
+   it's better to look at its view
+   <a class="link" href="view-pg-stats.html" title="52.89. pg_stats"><code class="structname">pg_stats</code></a>
+   when examining the statistics manually.  <code class="structname">pg_stats</code>
+   is designed to be more easily readable.  Furthermore,
+   <code class="structname">pg_stats</code> is readable by all, whereas
+   <code class="structname">pg_statistic</code> is only readable by a superuser.
+   (This prevents unprivileged users from learning something about
+   the contents of other people's tables from the statistics.  The
+   <code class="structname">pg_stats</code> view is restricted to show only
+   rows about tables that the current user can read.)
+   For example, we might do:
+
+</p><pre class="screen">
+SELECT attname, inherited, n_distinct,
+       array_to_string(most_common_vals, E'\n') as most_common_vals
+FROM pg_stats
+WHERE tablename = 'road';
+
+ attname | inherited | n_distinct |          most_common_vals
+---------+-----------+------------+------------------------------------
+ name    | f         |  -0.363388 | I- 580                        Ramp+
+         |           |            | I- 880                        Ramp+
+         |           |            | Sp Railroad                       +
+         |           |            | I- 580                            +
+         |           |            | I- 680                        Ramp
+ name    | t         |  -0.284859 | I- 880                        Ramp+
+         |           |            | I- 580                        Ramp+
+         |           |            | I- 680                        Ramp+
+         |           |            | I- 580                            +
+         |           |            | State Hwy 13                  Ramp
+(2 rows)
+</pre><p>
+
+   Note that two rows are displayed for the same column, one corresponding
+   to the complete inheritance hierarchy starting at the
+   <code class="literal">road</code> table (<code class="literal">inherited</code>=<code class="literal">t</code>),
+   and another one including only the <code class="literal">road</code> table itself
+   (<code class="literal">inherited</code>=<code class="literal">f</code>).
+  </p><p>
+   The amount of information stored in <code class="structname">pg_statistic</code>
+   by <code class="command">ANALYZE</code>, in particular the maximum number of entries in the
+   <code class="structfield">most_common_vals</code> and <code class="structfield">histogram_bounds</code>
+   arrays for each column, can be set on a
+   column-by-column basis using the <code class="command">ALTER TABLE SET STATISTICS</code>
+   command, or globally by setting the
+   <a class="xref" href="runtime-config-query.html#GUC-DEFAULT-STATISTICS-TARGET">default_statistics_target</a> configuration variable.
+   The default limit is presently 100 entries.  Raising the limit
+   might allow more accurate planner estimates to be made, particularly for
+   columns with irregular data distributions, at the price of consuming
+   more space in <code class="structname">pg_statistic</code> and slightly more
+   time to compute the estimates.  Conversely, a lower limit might be
+   sufficient for columns with simple data distributions.
+  </p><p>
+   Further details about the planner's use of statistics can be found in
+   <a class="xref" href="planner-stats-details.html" title="Chapter 72. How the Planner Uses Statistics">Chapter 72</a>.
+  </p></div><div class="sect2" id="PLANNER-STATS-EXTENDED"><div class="titlepage"><div><div><h3 class="title">14.2.2. Extended Statistics</h3></div></div></div><a id="id-1.5.13.5.4.2" class="indexterm"></a><a id="id-1.5.13.5.4.3" class="indexterm"></a><a id="id-1.5.13.5.4.4" class="indexterm"></a><a id="id-1.5.13.5.4.5" class="indexterm"></a><p>
+    It is common to see slow queries running bad execution plans because
+    multiple columns used in the query clauses are correlated.
+    The planner normally assumes that multiple conditions
+    are independent of each other,
+    an assumption that does not hold when column values are correlated.
+    Regular statistics, because of their per-individual-column nature,
+    cannot capture any knowledge about cross-column correlation.
+    However, <span class="productname">PostgreSQL</span> has the ability to compute
+    <em class="firstterm">multivariate statistics</em>, which can capture
+    such information.
+   </p><p>
+    Because the number of possible column combinations is very large,
+    it's impractical to compute multivariate statistics automatically.
+    Instead, <em class="firstterm">extended statistics objects</em>, more often
+    called just <em class="firstterm">statistics objects</em>, can be created to instruct
+    the server to obtain statistics across interesting sets of columns.
+   </p><p>
+    Statistics objects are created using the
+    <a class="link" href="sql-createstatistics.html" title="CREATE STATISTICS"><code class="command">CREATE STATISTICS</code></a> command.
+    Creation of such an object merely creates a catalog entry expressing
+    interest in the statistics.  Actual data collection is performed
+    by <code class="command">ANALYZE</code> (either a manual command, or background
+    auto-analyze).  The collected values can be examined in the
+    <a class="link" href="catalog-pg-statistic-ext-data.html" title="52.51. pg_statistic_ext_data"><code class="structname">pg_statistic_ext_data</code></a>
+    catalog.
+   </p><p>
+    <code class="command">ANALYZE</code> computes extended statistics based on the same
+    sample of table rows that it takes for computing regular single-column
+    statistics.  Since the sample size is increased by increasing the
+    statistics target for the table or any of its columns (as described in
+    the previous section), a larger statistics target will normally result in
+    more accurate extended statistics, as well as more time spent calculating
+    them.
+   </p><p>
+    The following subsections describe the kinds of extended statistics
+    that are currently supported.
+   </p><div class="sect3" id="id-1.5.13.5.4.11"><div class="titlepage"><div><div><h4 class="title">14.2.2.1. Functional Dependencies</h4></div></div></div><p>
+     The simplest kind of extended statistics tracks <em class="firstterm">functional
+     dependencies</em>, a concept used in definitions of database normal forms.
+     We say that column <code class="structfield">b</code> is functionally dependent on
+     column <code class="structfield">a</code> if knowledge of the value of
+     <code class="structfield">a</code> is sufficient to determine the value
+     of <code class="structfield">b</code>, that is there are no two rows having the same value
+     of <code class="structfield">a</code> but different values of <code class="structfield">b</code>.
+     In a fully normalized database, functional dependencies should exist
+     only on primary keys and superkeys. However, in practice many data sets
+     are not fully normalized for various reasons; intentional
+     denormalization for performance reasons is a common example.
+     Even in a fully normalized database, there may be partial correlation
+     between some columns, which can be expressed as partial functional
+     dependency.
+    </p><p>
+     The existence of functional dependencies directly affects the accuracy
+     of estimates in certain queries.  If a query contains conditions on
+     both the independent and the dependent column(s), the
+     conditions on the dependent columns do not further reduce the result
+     size; but without knowledge of the functional dependency, the query
+     planner will assume that the conditions are independent, resulting
+     in underestimating the result size.
+    </p><p>
+     To inform the planner about functional dependencies, <code class="command">ANALYZE</code>
+     can collect measurements of cross-column dependency. Assessing the
+     degree of dependency between all sets of columns would be prohibitively
+     expensive, so data collection is limited to those groups of columns
+     appearing together in a statistics object defined with
+     the <code class="literal">dependencies</code> option.  It is advisable to create
+     <code class="literal">dependencies</code> statistics only for column groups that are
+     strongly correlated, to avoid unnecessary overhead in both
+     <code class="command">ANALYZE</code> and later query planning.
+    </p><p>
+     Here is an example of collecting functional-dependency statistics:
+</p><pre class="programlisting">
+CREATE STATISTICS stts (dependencies) ON city, zip FROM zipcodes;
+
+ANALYZE zipcodes;
+
+SELECT stxname, stxkeys, stxddependencies
+  FROM pg_statistic_ext join pg_statistic_ext_data on (oid = stxoid)
+  WHERE stxname = 'stts';
+ stxname | stxkeys |             stxddependencies             
+---------+---------+------------------------------------------
+ stts    | 1 5     | {"1 =&gt; 5": 1.000000, "5 =&gt; 1": 0.423130}
+(1 row)
+</pre><p>
+     Here it can be seen that column 1 (zip code) fully determines column
+     5 (city) so the coefficient is 1.0, while city only determines zip code
+     about 42% of the time, meaning that there are many cities (58%) that are
+     represented by more than a single ZIP code.
+    </p><p>
+     When computing the selectivity for a query involving functionally
+     dependent columns, the planner adjusts the per-condition selectivity
+     estimates using the dependency coefficients so as not to produce
+     an underestimate.
+    </p><div class="sect4" id="id-1.5.13.5.4.11.7"><div class="titlepage"><div><div><h5 class="title">14.2.2.1.1. Limitations of Functional Dependencies</h5></div></div></div><p>
+      Functional dependencies are currently only applied when considering
+      simple equality conditions that compare columns to constant values,
+      and <code class="literal">IN</code> clauses with constant values.
+      They are not used to improve estimates for equality conditions
+      comparing two columns or comparing a column to an expression, nor for
+      range clauses, <code class="literal">LIKE</code> or any other type of condition.
+     </p><p>
+      When estimating with functional dependencies, the planner assumes that
+      conditions on the involved columns are compatible and hence redundant.
+      If they are incompatible, the correct estimate would be zero rows, but
+      that possibility is not considered.  For example, given a query like
+</p><pre class="programlisting">
+SELECT * FROM zipcodes WHERE city = 'San Francisco' AND zip = '94105';
+</pre><p>
+      the planner will disregard the <code class="structfield">city</code> clause as not
+      changing the selectivity, which is correct.  However, it will make
+      the same assumption about
+</p><pre class="programlisting">
+SELECT * FROM zipcodes WHERE city = 'San Francisco' AND zip = '90210';
+</pre><p>
+      even though there will really be zero rows satisfying this query.
+      Functional dependency statistics do not provide enough information
+      to conclude that, however.
+     </p><p>
+      In many practical situations, this assumption is usually satisfied;
+      for example, there might be a GUI in the application that only allows
+      selecting compatible city and ZIP code values to use in a query.
+      But if that's not the case, functional dependencies may not be a viable
+      option.
+     </p></div></div><div class="sect3" id="id-1.5.13.5.4.12"><div class="titlepage"><div><div><h4 class="title">14.2.2.2. Multivariate N-Distinct Counts</h4></div></div></div><p>
+     Single-column statistics store the number of distinct values in each
+     column.  Estimates of the number of distinct values when combining more
+     than one column (for example, for <code class="literal">GROUP BY a, b</code>) are
+     frequently wrong when the planner only has single-column statistical
+     data, causing it to select bad plans.
+    </p><p>
+     To improve such estimates, <code class="command">ANALYZE</code> can collect n-distinct
+     statistics for groups of columns.  As before, it's impractical to do
+     this for every possible column grouping, so data is collected only for
+     those groups of columns appearing together in a statistics object
+     defined with the <code class="literal">ndistinct</code> option.  Data will be collected
+     for each possible combination of two or more columns from the set of
+     listed columns.
+    </p><p>
+     Continuing the previous example, the n-distinct counts in a
+     table of ZIP codes might look like the following:
+</p><pre class="programlisting">
+CREATE STATISTICS stts2 (ndistinct) ON city, state, zip FROM zipcodes;
+
+ANALYZE zipcodes;
+
+SELECT stxkeys AS k, stxdndistinct AS nd
+  FROM pg_statistic_ext join pg_statistic_ext_data on (oid = stxoid)
+  WHERE stxname = 'stts2';
+-[ RECORD 1 ]------------------------------------------------------​--
+k  | 1 2 5
+nd | {"1, 2": 33178, "1, 5": 33178, "2, 5": 27435, "1, 2, 5": 33178}
+(1 row)
+</pre><p>
+     This indicates that there are three combinations of columns that
+     have 33178 distinct values: ZIP code and state; ZIP code and city;
+     and ZIP code, city and state (the fact that they are all equal is
+     expected given that ZIP code alone is unique in this table).  On the
+     other hand, the combination of city and state has only 27435 distinct
+     values.
+    </p><p>
+     It's advisable to create <code class="literal">ndistinct</code> statistics objects only
+     on combinations of columns that are actually used for grouping, and
+     for which misestimation of the number of groups is resulting in bad
+     plans.  Otherwise, the <code class="command">ANALYZE</code> cycles are just wasted.
+    </p></div><div class="sect3" id="id-1.5.13.5.4.13"><div class="titlepage"><div><div><h4 class="title">14.2.2.3. Multivariate MCV Lists</h4></div></div></div><p>
+     Another type of statistic stored for each column are most-common value
+     lists.  This allows very accurate estimates for individual columns, but
+     may result in significant misestimates for queries with conditions on
+     multiple columns.
+    </p><p>
+     To improve such estimates, <code class="command">ANALYZE</code> can collect MCV
+     lists on combinations of columns.  Similarly to functional dependencies
+     and n-distinct coefficients, it's impractical to do this for every
+     possible column grouping.  Even more so in this case, as the MCV list
+     (unlike functional dependencies and n-distinct coefficients) does store
+     the common column values.  So data is collected only for those groups
+     of columns appearing together in a statistics object defined with the
+     <code class="literal">mcv</code> option.
+    </p><p>
+     Continuing the previous example, the MCV list for a table of ZIP codes
+     might look like the following (unlike for simpler types of statistics,
+     a function is required for inspection of MCV contents):
+
+</p><pre class="programlisting">
+CREATE STATISTICS stts3 (mcv) ON city, state FROM zipcodes;
+
+ANALYZE zipcodes;
+
+SELECT m.* FROM pg_statistic_ext join pg_statistic_ext_data on (oid = stxoid),
+                pg_mcv_list_items(stxdmcv) m WHERE stxname = 'stts3';
+
+ index |         values         | nulls | frequency | base_frequency 
+-------+------------------------+-------+-----------+----------------
+     0 | {Washington, DC}       | {f,f} |  0.003467 |        2.7e-05
+     1 | {Apo, AE}              | {f,f} |  0.003067 |        1.9e-05
+     2 | {Houston, TX}          | {f,f} |  0.002167 |       0.000133
+     3 | {El Paso, TX}          | {f,f} |     0.002 |       0.000113
+     4 | {New York, NY}         | {f,f} |  0.001967 |       0.000114
+     5 | {Atlanta, GA}          | {f,f} |  0.001633 |        3.3e-05
+     6 | {Sacramento, CA}       | {f,f} |  0.001433 |        7.8e-05
+     7 | {Miami, FL}            | {f,f} |    0.0014 |          6e-05
+     8 | {Dallas, TX}           | {f,f} |  0.001367 |        8.8e-05
+     9 | {Chicago, IL}          | {f,f} |  0.001333 |        5.1e-05
+   ...
+(99 rows)
+</pre><p>
+     This indicates that the most common combination of city and state is
+     Washington in DC, with actual frequency (in the sample) about 0.35%.
+     The base frequency of the combination (as computed from the simple
+     per-column frequencies) is only 0.0027%, resulting in two orders of
+     magnitude under-estimates.
+    </p><p>
+     It's advisable to create <acronym class="acronym">MCV</acronym> statistics objects only
+     on combinations of columns that are actually used in conditions together,
+     and for which misestimation of the number of groups is resulting in bad
+     plans.  Otherwise, the <code class="command">ANALYZE</code> and planning cycles
+     are just wasted.
+    </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="using-explain.html" title="14.1. Using EXPLAIN">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="performance-tips.html" title="Chapter 14. Performance Tips">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="explicit-joins.html" title="14.3. Controlling the Planner with Explicit JOIN Clauses">Next</a></td></tr><tr><td width="40%" align="left" valign="top">14.1. Using <code xmlns="http://www.w3.org/1999/xhtml" class="command">EXPLAIN</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 14.3. Controlling the Planner with Explicit <code xmlns="http://www.w3.org/1999/xhtml" class="literal">JOIN</code> Clauses</td></tr></table></div></body></html>

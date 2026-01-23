@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Chapter 21. Client Authentication</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="runtime-config-short.html" title="20.18. Short Options" /><link rel="next" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">Chapter 21. Client Authentication</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="runtime-config-short.html" title="20.18. Short Options">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="admin.html" title="Part III. Server Administration">Up</a></td><th width="60%" align="center">Part III. Server Administration</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File">Next</a></td></tr></table><hr></hr></div><div class="chapter" id="CLIENT-AUTHENTICATION"><div class="titlepage"><div><div><h2 class="title">Chapter 21. Client Authentication</h2></div></div></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="sect1"><a href="auth-pg-hba-conf.html">21.1. The <code class="filename">pg_hba.conf</code> File</a></span></dt><dt><span class="sect1"><a href="auth-username-maps.html">21.2. User Name Maps</a></span></dt><dt><span class="sect1"><a href="auth-methods.html">21.3. Authentication Methods</a></span></dt><dt><span class="sect1"><a href="auth-trust.html">21.4. Trust Authentication</a></span></dt><dt><span class="sect1"><a href="auth-password.html">21.5. Password Authentication</a></span></dt><dt><span class="sect1"><a href="gssapi-auth.html">21.6. GSSAPI Authentication</a></span></dt><dt><span class="sect1"><a href="sspi-auth.html">21.7. SSPI Authentication</a></span></dt><dt><span class="sect1"><a href="auth-ident.html">21.8. Ident Authentication</a></span></dt><dt><span class="sect1"><a href="auth-peer.html">21.9. Peer Authentication</a></span></dt><dt><span class="sect1"><a href="auth-ldap.html">21.10. LDAP Authentication</a></span></dt><dt><span class="sect1"><a href="auth-radius.html">21.11. RADIUS Authentication</a></span></dt><dt><span class="sect1"><a href="auth-cert.html">21.12. Certificate Authentication</a></span></dt><dt><span class="sect1"><a href="auth-pam.html">21.13. PAM Authentication</a></span></dt><dt><span class="sect1"><a href="auth-bsd.html">21.14. BSD Authentication</a></span></dt><dt><span class="sect1"><a href="client-authentication-problems.html">21.15. Authentication Problems</a></span></dt></dl></div><a id="id-1.6.8.2" class="indexterm"></a><p>
+  When a client application connects to the database server, it
+  specifies which <span class="productname">PostgreSQL</span> database user name it
+  wants to connect as, much the same way one logs into a Unix computer
+  as a particular user. Within the SQL environment the active database
+  user name determines access privileges to database objects — see
+  <a class="xref" href="user-manag.html" title="Chapter 22. Database Roles">Chapter 22</a> for more information. Therefore, it is
+  essential to restrict which database users can connect.
+ </p><div class="note"><h3 class="title">Note</h3><p>
+   As explained in <a class="xref" href="user-manag.html" title="Chapter 22. Database Roles">Chapter 22</a>,
+   <span class="productname">PostgreSQL</span> actually does privilege
+   management in terms of <span class="quote">“<span class="quote">roles</span>”</span>.  In this chapter, we
+   consistently use <em class="firstterm">database user</em> to mean <span class="quote">“<span class="quote">role with the
+   <code class="literal">LOGIN</code> privilege</span>”</span>.
+  </p></div><p>
+  <em class="firstterm">Authentication</em> is the process by which the
+  database server establishes the identity of the client, and by
+  extension determines whether the client application (or the user
+  who runs the client application) is permitted to connect with the
+  database user name that was requested.
+ </p><p>
+  <span class="productname">PostgreSQL</span> offers a number of different
+  client authentication methods. The method used to authenticate a
+  particular client connection can be selected on the basis of
+  (client) host address, database, and user.
+ </p><p>
+  <span class="productname">PostgreSQL</span> database user names are logically
+  separate from user names of the operating system in which the server
+  runs. If all the users of a particular server also have accounts on
+  the server's machine, it makes sense to assign database user names
+  that match their operating system user names. However, a server that
+  accepts remote connections might have many database users who have no local
+  operating system
+  account, and in such cases there need be no connection between
+  database user names and OS user names.
+ </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="runtime-config-short.html" title="20.18. Short Options">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="admin.html" title="Part III. Server Administration">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="auth-pg-hba-conf.html" title="21.1. The pg_hba.conf File">Next</a></td></tr><tr><td width="40%" align="left" valign="top">20.18. Short Options </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.1. The <code xmlns="http://www.w3.org/1999/xhtml" class="filename">pg_hba.conf</code> File</td></tr></table></div></body></html>

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>12.10. psql Support</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="textsearch-indexes.html" title="12.9. Preferred Index Types for Text Search" /><link rel="next" href="textsearch-limitations.html" title="12.11. Limitations" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">12.10. <span xmlns="http://www.w3.org/1999/xhtml" class="application">psql</span> Support</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="textsearch-indexes.html" title="12.9. Preferred Index Types for Text Search">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="textsearch.html" title="Chapter 12. Full Text Search">Up</a></td><th width="60%" align="center">Chapter 12. Full Text Search</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="textsearch-limitations.html" title="12.11. Limitations">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TEXTSEARCH-PSQL"><div class="titlepage"><div><div><h2 class="title" style="clear: both">12.10. <span class="application">psql</span> Support</h2></div></div></div><p>
+   Information about text search configuration objects can be obtained
+   in <span class="application">psql</span> using a set of commands:
+</p><pre class="synopsis">
+\dF{d,p,t}[<span class="optional">+</span>] [<span class="optional">PATTERN</span>]
+</pre><p>
+   An optional <code class="literal">+</code> produces more details.
+  </p><p>
+   The optional parameter <em class="replaceable"><code>PATTERN</code></em> can be the name of
+   a text search object, optionally schema-qualified.  If
+   <em class="replaceable"><code>PATTERN</code></em> is omitted then information about all
+   visible objects will be displayed.  <em class="replaceable"><code>PATTERN</code></em> can be a
+   regular expression and can provide <span class="emphasis"><em>separate</em></span> patterns
+   for the schema and object names.  The following examples illustrate this:
+
+</p><pre class="screen">
+=&gt; \dF *fulltext*
+       List of text search configurations
+ Schema |  Name        | Description
+--------+--------------+-------------
+ public | fulltext_cfg |
+</pre><p>
+
+</p><pre class="screen">
+=&gt; \dF *.fulltext*
+       List of text search configurations
+ Schema   |  Name        | Description
+----------+----------------------------
+ fulltext | fulltext_cfg |
+ public   | fulltext_cfg |
+</pre><p>
+
+   The available commands are:
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">\dF[<span class="optional">+</span>] [<span class="optional">PATTERN</span>]</code></span></dt><dd><p>
+      List text search configurations (add <code class="literal">+</code> for more detail).
+</p><pre class="screen">
+=&gt; \dF russian
+            List of text search configurations
+   Schema   |  Name   |            Description             
+------------+---------+------------------------------------
+ pg_catalog | russian | configuration for russian language
+
+=&gt; \dF+ russian
+Text search configuration "pg_catalog.russian"
+Parser: "pg_catalog.default"
+      Token      | Dictionaries 
+-----------------+--------------
+ asciihword      | english_stem
+ asciiword       | english_stem
+ email           | simple
+ file            | simple
+ float           | simple
+ host            | simple
+ hword           | russian_stem
+ hword_asciipart | english_stem
+ hword_numpart   | simple
+ hword_part      | russian_stem
+ int             | simple
+ numhword        | simple
+ numword         | simple
+ sfloat          | simple
+ uint            | simple
+ url             | simple
+ url_path        | simple
+ version         | simple
+ word            | russian_stem
+</pre><p>
+     </p></dd><dt><span class="term"><code class="literal">\dFd[<span class="optional">+</span>] [<span class="optional">PATTERN</span>]</code></span></dt><dd><p>
+      List text search dictionaries (add <code class="literal">+</code> for more detail).
+</p><pre class="screen">
+=&gt; \dFd
+                             List of text search dictionaries
+   Schema   |      Name       |                        Description
+------------+-----------------+-----------------------------------------------------------
+ pg_catalog | arabic_stem     | snowball stemmer for arabic language
+ pg_catalog | armenian_stem   | snowball stemmer for armenian language
+ pg_catalog | basque_stem     | snowball stemmer for basque language
+ pg_catalog | catalan_stem    | snowball stemmer for catalan language
+ pg_catalog | danish_stem     | snowball stemmer for danish language
+ pg_catalog | dutch_stem      | snowball stemmer for dutch language
+ pg_catalog | english_stem    | snowball stemmer for english language
+ pg_catalog | finnish_stem    | snowball stemmer for finnish language
+ pg_catalog | french_stem     | snowball stemmer for french language
+ pg_catalog | german_stem     | snowball stemmer for german language
+ pg_catalog | greek_stem      | snowball stemmer for greek language
+ pg_catalog | hindi_stem      | snowball stemmer for hindi language
+ pg_catalog | hungarian_stem  | snowball stemmer for hungarian language
+ pg_catalog | indonesian_stem | snowball stemmer for indonesian language
+ pg_catalog | irish_stem      | snowball stemmer for irish language
+ pg_catalog | italian_stem    | snowball stemmer for italian language
+ pg_catalog | lithuanian_stem | snowball stemmer for lithuanian language
+ pg_catalog | nepali_stem     | snowball stemmer for nepali language
+ pg_catalog | norwegian_stem  | snowball stemmer for norwegian language
+ pg_catalog | portuguese_stem | snowball stemmer for portuguese language
+ pg_catalog | romanian_stem   | snowball stemmer for romanian language
+ pg_catalog | russian_stem    | snowball stemmer for russian language
+ pg_catalog | serbian_stem    | snowball stemmer for serbian language
+ pg_catalog | simple          | simple dictionary: just lower case and check for stopword
+ pg_catalog | spanish_stem    | snowball stemmer for spanish language
+ pg_catalog | swedish_stem    | snowball stemmer for swedish language
+ pg_catalog | tamil_stem      | snowball stemmer for tamil language
+ pg_catalog | turkish_stem    | snowball stemmer for turkish language
+ pg_catalog | yiddish_stem    | snowball stemmer for yiddish language
+</pre><p>
+     </p></dd><dt><span class="term"><code class="literal">\dFp[<span class="optional">+</span>] [<span class="optional">PATTERN</span>]</code></span></dt><dd><p>
+      List text search parsers (add <code class="literal">+</code> for more detail).
+</p><pre class="screen">
+=&gt; \dFp
+        List of text search parsers
+   Schema   |  Name   |     Description     
+------------+---------+---------------------
+ pg_catalog | default | default word parser
+=&gt; \dFp+
+    Text search parser "pg_catalog.default"
+     Method      |    Function    | Description 
+-----------------+----------------+-------------
+ Start parse     | prsd_start     | 
+ Get next token  | prsd_nexttoken | 
+ End parse       | prsd_end       | 
+ Get headline    | prsd_headline  | 
+ Get token types | prsd_lextype   | 
+
+        Token types for parser "pg_catalog.default"
+   Token name    |               Description                
+-----------------+------------------------------------------
+ asciihword      | Hyphenated word, all ASCII
+ asciiword       | Word, all ASCII
+ blank           | Space symbols
+ email           | Email address
+ entity          | XML entity
+ file            | File or path name
+ float           | Decimal notation
+ host            | Host
+ hword           | Hyphenated word, all letters
+ hword_asciipart | Hyphenated word part, all ASCII
+ hword_numpart   | Hyphenated word part, letters and digits
+ hword_part      | Hyphenated word part, all letters
+ int             | Signed integer
+ numhword        | Hyphenated word, letters and digits
+ numword         | Word, letters and digits
+ protocol        | Protocol head
+ sfloat          | Scientific notation
+ tag             | XML tag
+ uint            | Unsigned integer
+ url             | URL
+ url_path        | URL path
+ version         | Version number
+ word            | Word, all letters
+(23 rows)
+</pre><p>
+     </p></dd><dt><span class="term"><code class="literal">\dFt[<span class="optional">+</span>] [<span class="optional">PATTERN</span>]</code></span></dt><dd><p>
+      List text search templates (add <code class="literal">+</code> for more detail).
+</p><pre class="screen">
+=&gt; \dFt
+                           List of text search templates
+   Schema   |   Name    |                        Description                        
+------------+-----------+-----------------------------------------------------------
+ pg_catalog | ispell    | ispell dictionary
+ pg_catalog | simple    | simple dictionary: just lower case and check for stopword
+ pg_catalog | snowball  | snowball stemmer
+ pg_catalog | synonym   | synonym dictionary: replace word by its synonym
+ pg_catalog | thesaurus | thesaurus dictionary: phrase by phrase substitution
+</pre><p>
+     </p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="textsearch-indexes.html" title="12.9. Preferred Index Types for Text Search">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="textsearch.html" title="Chapter 12. Full Text Search">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="textsearch-limitations.html" title="12.11. Limitations">Next</a></td></tr><tr><td width="40%" align="left" valign="top">12.9. Preferred Index Types for Text Search </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 12.11. Limitations</td></tr></table></div></body></html>

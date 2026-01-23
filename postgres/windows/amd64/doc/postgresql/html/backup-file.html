@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>26.2. File System Level Backup</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="backup-dump.html" title="26.1. SQL Dump" /><link rel="next" href="continuous-archiving.html" title="26.3. Continuous Archiving and Point-in-Time Recovery (PITR)" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">26.2. File System Level Backup</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="backup-dump.html" title="26.1. SQL Dump">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="backup.html" title="Chapter 26. Backup and Restore">Up</a></td><th width="60%" align="center">Chapter 26. Backup and Restore</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="continuous-archiving.html" title="26.3. Continuous Archiving and Point-in-Time Recovery (PITR)">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="BACKUP-FILE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">26.2. File System Level Backup</h2></div></div></div><p>
+   An alternative backup strategy is to directly copy the files that
+   <span class="productname">PostgreSQL</span> uses to store the data in the database;
+   <a class="xref" href="creating-cluster.html" title="19.2. Creating a Database Cluster">Section 19.2</a> explains where these files
+   are located.  You can use whatever method you prefer
+   for doing file system backups; for example:
+
+</p><pre class="programlisting">
+tar -cf backup.tar /usr/local/pgsql/data
+</pre><p>
+  </p><p>
+   There are two restrictions, however, which make this method
+   impractical, or at least inferior to the <span class="application">pg_dump</span>
+   method:
+
+   </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>
+      The database server <span class="emphasis"><em>must</em></span> be shut down in order to
+      get a usable backup. Half-way measures such as disallowing all
+      connections will <span class="emphasis"><em>not</em></span> work
+      (in part because <code class="command">tar</code> and similar tools do not take
+      an atomic snapshot of the state of the file system,
+      but also because of internal buffering within the server).
+      Information about stopping the server can be found in
+      <a class="xref" href="server-shutdown.html" title="19.5. Shutting Down the Server">Section 19.5</a>.  Needless to say, you
+      also need to shut down the server before restoring the data.
+     </p></li><li class="listitem"><p>
+      If you have dug into the details of the file system layout of the
+      database, you might be tempted to try to back up or restore only certain
+      individual tables or databases from their respective files or
+      directories. This will <span class="emphasis"><em>not</em></span> work because the
+      information contained in these files is not usable without
+      the commit log files,
+      <code class="filename">pg_xact/*</code>, which contain the commit status of
+      all transactions. A table file is only usable with this
+      information. Of course it is also impossible to restore only a
+      table and the associated <code class="filename">pg_xact</code> data
+      because that would render all other tables in the database
+      cluster useless.  So file system backups only work for complete
+      backup and restoration of an entire database cluster.
+     </p></li></ol></div><p>
+  </p><p>
+   An alternative file-system backup approach is to make a
+   <span class="quote">“<span class="quote">consistent snapshot</span>”</span> of the data directory, if the
+   file system supports that functionality (and you are willing to
+   trust that it is implemented correctly).  The typical procedure is
+   to make a <span class="quote">“<span class="quote">frozen snapshot</span>”</span> of the volume containing the
+   database, then copy the whole data directory (not just parts, see
+   above) from the snapshot to a backup device, then release the frozen
+   snapshot.  This will work even while the database server is running.
+   However, a backup created in this way saves
+   the database files in a state as if the database server was not
+   properly shut down; therefore, when you start the database server
+   on the backed-up data, it will think the previous server instance
+   crashed and will replay the WAL log.  This is not a problem; just
+   be aware of it (and be sure to include the WAL files in your backup).
+   You can perform a <code class="command">CHECKPOINT</code> before taking the
+   snapshot to reduce recovery time.
+  </p><p>
+   If your database is spread across multiple file systems, there might not
+   be any way to obtain exactly-simultaneous frozen snapshots of all
+   the volumes.  For example, if your data files and WAL log are on different
+   disks, or if tablespaces are on different file systems, it might
+   not be possible to use snapshot backup because the snapshots
+   <span class="emphasis"><em>must</em></span> be simultaneous.
+   Read your file system documentation very carefully before trusting
+   the consistent-snapshot technique in such situations.
+  </p><p>
+   If simultaneous snapshots are not possible, one option is to shut down
+   the database server long enough to establish all the frozen snapshots.
+   Another option is to perform a continuous archiving base backup (<a class="xref" href="continuous-archiving.html#BACKUP-BASE-BACKUP" title="26.3.2. Making a Base Backup">Section 26.3.2</a>) because such backups are immune to file
+   system changes during the backup.  This requires enabling continuous
+   archiving just during the backup process; restore is done using
+   continuous archive recovery (<a class="xref" href="continuous-archiving.html#BACKUP-PITR-RECOVERY" title="26.3.4. Recovering Using a Continuous Archive Backup">Section 26.3.4</a>).
+  </p><p>
+   Another option is to use <span class="application">rsync</span> to perform a file
+   system backup.  This is done by first running <span class="application">rsync</span>
+   while the database server is running, then shutting down the database
+   server long enough to do an <code class="command">rsync --checksum</code>.
+   (<code class="option">--checksum</code> is necessary because <code class="command">rsync</code> only
+   has file modification-time granularity of one second.)  The
+   second <span class="application">rsync</span> will be quicker than the first,
+   because it has relatively little data to transfer, and the end result
+   will be consistent because the server was down.  This method
+   allows a file system backup to be performed with minimal downtime.
+  </p><p>
+   Note that a file system backup will typically be larger
+   than an SQL dump. (<span class="application">pg_dump</span> does not need to dump
+   the contents of indexes for example, just the commands to recreate
+   them.)  However, taking a file system backup might be faster.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="backup-dump.html" title="26.1. SQL Dump">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="backup.html" title="Chapter 26. Backup and Restore">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="continuous-archiving.html" title="26.3. Continuous Archiving and Point-in-Time Recovery (PITR)">Next</a></td></tr><tr><td width="40%" align="left" valign="top">26.1. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> Dump </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 26.3. Continuous Archiving and Point-in-Time Recovery (PITR)</td></tr></table></div></body></html>

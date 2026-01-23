@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>TYPE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-sql-set-descriptor.html" title="SET DESCRIPTOR" /><link rel="next" href="ecpg-sql-var.html" title="VAR" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">TYPE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-sql-set-descriptor.html" title="SET DESCRIPTOR">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><th width="60%" align="center">36.14. Embedded SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-sql-var.html" title="VAR">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="ECPG-SQL-TYPE"><div class="titlepage"></div><div class="refnamediv"><h2>TYPE</h2><p>TYPE — define a new data type</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+TYPE <em class="replaceable"><code>type_name</code></em> IS <em class="replaceable"><code>ctype</code></em>
+</pre></div><div class="refsect1" id="id-1.7.5.20.17.3"><h2>Description</h2><p>
+     The <code class="command">TYPE</code> command defines a new C type.  It is
+     equivalent to putting a <code class="literal">typedef</code> into a declare
+     section.
+    </p><p>
+     This command is only recognized when <code class="command">ecpg</code> is
+     run with the <code class="option">-c</code> option.
+    </p></div><div class="refsect1" id="id-1.7.5.20.17.4"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>type_name</code></em></span></dt><dd><p>
+        The name for the new type.  It must be a valid C type name.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>ctype</code></em></span></dt><dd><p>
+        A C type specification.
+       </p></dd></dl></div></div><div class="refsect1" id="id-1.7.5.20.17.5"><h2>Examples</h2><pre class="programlisting">
+EXEC SQL TYPE customer IS
+    struct
+    {
+        varchar name[50];
+        int     phone;
+    };
+
+EXEC SQL TYPE cust_ind IS
+    struct ind
+    {
+        short   name_ind;
+        short   phone_ind;
+    };
+
+EXEC SQL TYPE c IS char reference;
+EXEC SQL TYPE ind IS union { int integer; short smallint; };
+EXEC SQL TYPE intarray IS int[AMOUNT];
+EXEC SQL TYPE str IS varchar[BUFFERSIZ];
+EXEC SQL TYPE string IS char[11];
+</pre><p>
+     Here is an example program that uses <code class="command">EXEC SQL
+     TYPE</code>:
+</p><pre class="programlisting">
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+
+EXEC SQL TYPE tt IS
+    struct
+    {
+        varchar v[256];
+        int     i;
+    };
+
+EXEC SQL TYPE tt_ind IS
+    struct ind {
+        short   v_ind;
+        short   i_ind;
+    };
+
+int
+main(void)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+    tt t;
+    tt_ind t_ind;
+EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL CONNECT TO testdb AS con1;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+
+    EXEC SQL SELECT current_database(), 256 INTO :t:t_ind LIMIT 1;
+
+    printf("t.v = %s\n", t.v.arr);
+    printf("t.i = %d\n", t.i);
+
+    printf("t_ind.v_ind = %d\n", t_ind.v_ind);
+    printf("t_ind.i_ind = %d\n", t_ind.i_ind);
+
+    EXEC SQL DISCONNECT con1;
+
+    return 0;
+}
+</pre><p>
+
+     The output from this program looks like this:
+</p><pre class="screen">
+t.v = testdb
+t.i = 256
+t_ind.v_ind = 0
+t_ind.i_ind = 0
+</pre><p>
+    </p></div><div class="refsect1" id="id-1.7.5.20.17.6"><h2>Compatibility</h2><p>
+     The <code class="command">TYPE</code> command is a PostgreSQL extension.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-sql-set-descriptor.html" title="SET DESCRIPTOR">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg-sql-commands.html" title="36.14. Embedded SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-sql-var.html" title="VAR">Next</a></td></tr><tr><td width="40%" align="left" valign="top">SET DESCRIPTOR </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> VAR</td></tr></table></div></body></html>

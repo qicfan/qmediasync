@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>39.1. Overview of Trigger Behavior</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="triggers.html" title="Chapter 39. Triggers" /><link rel="next" href="trigger-datachanges.html" title="39.2. Visibility of Data Changes" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">39.1. Overview of Trigger Behavior</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="triggers.html" title="Chapter 39. Triggers">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="triggers.html" title="Chapter 39. Triggers">Up</a></td><th width="60%" align="center">Chapter 39. Triggers</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="trigger-datachanges.html" title="39.2. Visibility of Data Changes">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="TRIGGER-DEFINITION"><div class="titlepage"><div><div><h2 class="title" style="clear: both">39.1. Overview of Trigger Behavior</h2></div></div></div><p>
+    A trigger is a specification that the database should automatically
+    execute a particular function whenever a certain type of operation is
+    performed.  Triggers can be attached to tables (partitioned or not),
+    views, and foreign tables.
+  </p><p>
+    On tables and foreign tables, triggers can be defined to execute either
+    before or after any <code class="command">INSERT</code>, <code class="command">UPDATE</code>,
+    or <code class="command">DELETE</code> operation, either once per modified row,
+    or once per <acronym class="acronym">SQL</acronym> statement.
+    <code class="command">UPDATE</code> triggers can moreover be set to fire only if
+    certain columns are mentioned in the <code class="literal">SET</code> clause of
+    the <code class="command">UPDATE</code> statement.  Triggers can also fire
+    for <code class="command">TRUNCATE</code> statements.  If a trigger event occurs,
+    the trigger's function is called at the appropriate time to handle the
+    event.
+   </p><p>
+    On views, triggers can be defined to execute instead of
+    <code class="command">INSERT</code>, <code class="command">UPDATE</code>, or
+    <code class="command">DELETE</code> operations.
+    Such <code class="literal">INSTEAD OF</code> triggers
+    are fired once for each row that needs to be modified in the view.
+    It is the responsibility of the
+    trigger's function to perform the necessary modifications to the view's
+    underlying base table(s) and, where appropriate, return the modified
+    row as it will appear in the view.  Triggers on views can also be defined
+    to execute once per <acronym class="acronym">SQL</acronym> statement, before or after
+    <code class="command">INSERT</code>, <code class="command">UPDATE</code>, or
+    <code class="command">DELETE</code> operations.
+    However, such triggers are fired only if there is also
+    an <code class="literal">INSTEAD OF</code> trigger on the view.  Otherwise,
+    any statement targeting the view must be rewritten into a statement
+    affecting its underlying base table(s), and then the triggers
+    that will be fired are the ones attached to the base table(s).
+   </p><p>
+    The trigger function must be defined before the trigger itself can be
+    created.  The trigger function must be declared as a
+    function taking no arguments and returning type <code class="literal">trigger</code>.
+    (The trigger function receives its input through a specially-passed
+    <code class="structname">TriggerData</code> structure, not in the form of ordinary function
+    arguments.)
+   </p><p>
+    Once a suitable trigger function has been created, the trigger is
+    established with
+    <a class="xref" href="sql-createtrigger.html" title="CREATE TRIGGER"><span class="refentrytitle">CREATE TRIGGER</span></a>.
+    The same trigger function can be used for multiple triggers.
+   </p><p>
+    <span class="productname">PostgreSQL</span> offers both <em class="firstterm">per-row</em>
+    triggers and <em class="firstterm">per-statement</em> triggers.  With a per-row
+    trigger, the trigger function
+    is invoked once for each row that is affected by the statement
+    that fired the trigger. In contrast, a per-statement trigger is
+    invoked only once when an appropriate statement is executed,
+    regardless of the number of rows affected by that statement. In
+    particular, a statement that affects zero rows will still result
+    in the execution of any applicable per-statement triggers. These
+    two types of triggers are sometimes called <em class="firstterm">row-level</em>
+    triggers and <em class="firstterm">statement-level</em> triggers,
+    respectively. Triggers on <code class="command">TRUNCATE</code> may only be
+    defined at statement level, not per-row.
+   </p><p>
+    Triggers are also classified according to whether they fire
+    <em class="firstterm">before</em>, <em class="firstterm">after</em>, or
+    <em class="firstterm">instead of</em> the operation. These are referred to
+    as <code class="literal">BEFORE</code> triggers, <code class="literal">AFTER</code> triggers, and
+    <code class="literal">INSTEAD OF</code> triggers respectively.
+    Statement-level <code class="literal">BEFORE</code> triggers naturally fire before the
+    statement starts to do anything, while statement-level <code class="literal">AFTER</code>
+    triggers fire at the very end of the statement.  These types of
+    triggers may be defined on tables, views, or foreign tables.  Row-level
+    <code class="literal">BEFORE</code> triggers fire immediately before a particular row is
+    operated on, while row-level <code class="literal">AFTER</code> triggers fire at the end of
+    the statement (but before any statement-level <code class="literal">AFTER</code> triggers).
+    These types of triggers may only be defined on tables and
+    foreign tables, not views.
+    <code class="literal">INSTEAD OF</code> triggers may only be
+    defined on views, and only at row level; they fire immediately as each
+    row in the view is identified as needing to be operated on.
+   </p><p>
+    The execution of an <code class="literal">AFTER</code> trigger can be deferred
+    to the end of the transaction, rather than the end of the statement,
+    if it was defined as a <em class="firstterm">constraint trigger</em>.
+    In all cases, a trigger is executed as part of the same transaction as
+    the statement that triggered it, so if either the statement or the
+    trigger causes an error, the effects of both will be rolled back.
+   </p><p>
+    A statement that targets a parent table in an inheritance or partitioning
+    hierarchy does not cause the statement-level triggers of affected child
+    tables to be fired; only the parent table's statement-level triggers are
+    fired.  However, row-level triggers of any affected child tables will be
+    fired.
+   </p><p>
+    If an <code class="command">INSERT</code> contains an <code class="literal">ON CONFLICT
+    DO UPDATE</code> clause, it is possible that the effects of
+    row-level <code class="literal">BEFORE</code> <code class="command">INSERT</code> triggers and
+    row-level <code class="literal">BEFORE</code> <code class="command">UPDATE</code> triggers can
+    both be applied in a way that is apparent from the final state of
+    the updated row, if an <code class="varname">EXCLUDED</code> column is referenced.
+    There need not be an <code class="varname">EXCLUDED</code> column reference for
+    both sets of row-level <code class="literal">BEFORE</code> triggers to execute,
+    though.  The
+    possibility of surprising outcomes should be considered when there
+    are both <code class="literal">BEFORE</code> <code class="command">INSERT</code> and
+    <code class="literal">BEFORE</code> <code class="command">UPDATE</code> row-level triggers
+    that change a row being inserted/updated (this can be
+    problematic even if the modifications are more or less equivalent, if
+    they're not also idempotent).  Note that statement-level
+    <code class="command">UPDATE</code> triggers are executed when <code class="literal">ON
+    CONFLICT DO UPDATE</code> is specified, regardless of whether or not
+    any rows were affected by the <code class="command">UPDATE</code> (and
+    regardless of whether the alternative <code class="command">UPDATE</code>
+    path was ever taken).  An <code class="command">INSERT</code> with an
+    <code class="literal">ON CONFLICT DO UPDATE</code> clause will execute
+    statement-level <code class="literal">BEFORE</code> <code class="command">INSERT</code>
+    triggers first, then statement-level <code class="literal">BEFORE</code>
+    <code class="command">UPDATE</code> triggers, followed by statement-level
+    <code class="literal">AFTER</code> <code class="command">UPDATE</code> triggers and finally
+    statement-level <code class="literal">AFTER</code> <code class="command">INSERT</code>
+    triggers.
+   </p><p>
+    If an <code class="command">UPDATE</code> on a partitioned table causes a row to move
+    to another partition, it will be performed as a <code class="command">DELETE</code>
+    from the original partition followed by an <code class="command">INSERT</code> into
+    the new partition. In this case, all row-level <code class="literal">BEFORE</code>
+    <code class="command">UPDATE</code> triggers and all row-level
+    <code class="literal">BEFORE</code> <code class="command">DELETE</code> triggers are fired on
+    the original partition. Then all row-level <code class="literal">BEFORE</code>
+    <code class="command">INSERT</code> triggers are fired on the destination partition.
+    The possibility of surprising outcomes should be considered when all these
+    triggers affect the row being moved. As far as <code class="literal">AFTER ROW</code>
+    triggers are concerned, <code class="literal">AFTER</code> <code class="command">DELETE</code>
+    and <code class="literal">AFTER</code> <code class="command">INSERT</code> triggers are
+    applied; but <code class="literal">AFTER</code> <code class="command">UPDATE</code> triggers
+    are not applied because the <code class="command">UPDATE</code> has been converted to
+    a <code class="command">DELETE</code> and an <code class="command">INSERT</code>. As far as
+    statement-level triggers are concerned, none of the
+    <code class="command">DELETE</code> or <code class="command">INSERT</code> triggers are fired,
+    even if row movement occurs; only the <code class="command">UPDATE</code> triggers
+    defined on the target table used in the <code class="command">UPDATE</code> statement
+    will be fired.
+   </p><p>
+    Trigger functions invoked by per-statement triggers should always
+    return <code class="symbol">NULL</code>. Trigger functions invoked by per-row
+    triggers can return a table row (a value of
+    type <code class="structname">HeapTuple</code>) to the calling executor,
+    if they choose.  A row-level trigger fired before an operation has
+    the following choices:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+       It can return <code class="symbol">NULL</code> to skip the operation for the
+       current row. This instructs the executor to not perform the
+       row-level operation that invoked the trigger (the insertion,
+       modification, or deletion of a particular table row).
+      </p></li><li class="listitem"><p>
+       For row-level <code class="command">INSERT</code>
+       and <code class="command">UPDATE</code> triggers only, the returned row
+       becomes the row that will be inserted or will replace the row
+       being updated.  This allows the trigger function to modify the
+       row being inserted or updated.
+      </p></li></ul></div><p>
+
+    A row-level <code class="literal">BEFORE</code> trigger that does not intend to cause
+    either of these behaviors must be careful to return as its result the same
+    row that was passed in (that is, the <code class="varname">NEW</code> row
+    for <code class="command">INSERT</code> and <code class="command">UPDATE</code>
+    triggers, the <code class="varname">OLD</code> row for
+    <code class="command">DELETE</code> triggers).
+   </p><p>
+    A row-level <code class="literal">INSTEAD OF</code> trigger should either return
+    <code class="symbol">NULL</code> to indicate that it did not modify any data from
+    the view's underlying base tables, or it should return the view
+    row that was passed in (the <code class="varname">NEW</code> row
+    for <code class="command">INSERT</code> and <code class="command">UPDATE</code>
+    operations, or the <code class="varname">OLD</code> row for
+    <code class="command">DELETE</code> operations). A nonnull return value is
+    used to signal that the trigger performed the necessary data
+    modifications in the view.  This will cause the count of the number
+    of rows affected by the command to be incremented. For
+    <code class="command">INSERT</code> and <code class="command">UPDATE</code> operations only, the trigger
+    may modify the <code class="varname">NEW</code> row before returning it.  This will
+    change the data returned by
+    <code class="command">INSERT RETURNING</code> or <code class="command">UPDATE RETURNING</code>,
+    and is useful when the view will not show exactly the same data
+    that was provided.
+   </p><p>
+    The return value is ignored for row-level triggers fired after an
+    operation, and so they can return <code class="symbol">NULL</code>.
+   </p><p>
+    Some considerations apply for generated
+    columns.<a id="id-1.8.4.5.16.1" class="indexterm"></a>  Stored generated columns are computed after
+    <code class="literal">BEFORE</code> triggers and before <code class="literal">AFTER</code>
+    triggers.  Therefore, the generated value can be inspected in
+    <code class="literal">AFTER</code> triggers.  In <code class="literal">BEFORE</code> triggers,
+    the <code class="literal">OLD</code> row contains the old generated value, as one
+    would expect, but the <code class="literal">NEW</code> row does not yet contain the
+    new generated value and should not be accessed.  In the C language
+    interface, the content of the column is undefined at this point; a
+    higher-level programming language should prevent access to a stored
+    generated column in the <code class="literal">NEW</code> row in a
+    <code class="literal">BEFORE</code> trigger.  Changes to the value of a generated
+    column in a <code class="literal">BEFORE</code> trigger are ignored and will be
+    overwritten.
+   </p><p>
+    If more than one trigger is defined for the same event on the same
+    relation, the triggers will be fired in alphabetical order by
+    trigger name.  In the case of <code class="literal">BEFORE</code> and
+    <code class="literal">INSTEAD OF</code> triggers, the possibly-modified row returned by
+    each trigger becomes the input to the next trigger.  If any
+    <code class="literal">BEFORE</code> or <code class="literal">INSTEAD OF</code> trigger returns
+    <code class="symbol">NULL</code>, the operation is abandoned for that row and subsequent
+    triggers are not fired (for that row).
+   </p><p>
+    A trigger definition can also specify a Boolean <code class="literal">WHEN</code>
+    condition, which will be tested to see whether the trigger should
+    be fired.  In row-level triggers the <code class="literal">WHEN</code> condition can
+    examine the old and/or new values of columns of the row.  (Statement-level
+    triggers can also have <code class="literal">WHEN</code> conditions, although the feature
+    is not so useful for them.)  In a <code class="literal">BEFORE</code> trigger, the
+    <code class="literal">WHEN</code>
+    condition is evaluated just before the function is or would be executed,
+    so using <code class="literal">WHEN</code> is not materially different from testing the
+    same condition at the beginning of the trigger function.  However, in
+    an <code class="literal">AFTER</code> trigger, the <code class="literal">WHEN</code> condition is evaluated
+    just after the row update occurs, and it determines whether an event is
+    queued to fire the trigger at the end of statement.  So when an
+    <code class="literal">AFTER</code> trigger's
+    <code class="literal">WHEN</code> condition does not return true, it is not necessary
+    to queue an event nor to re-fetch the row at end of statement.  This
+    can result in significant speedups in statements that modify many
+    rows, if the trigger only needs to be fired for a few of the rows.
+    <code class="literal">INSTEAD OF</code> triggers do not support
+    <code class="literal">WHEN</code> conditions.
+   </p><p>
+    Typically, row-level <code class="literal">BEFORE</code> triggers are used for checking or
+    modifying the data that will be inserted or updated.  For example,
+    a <code class="literal">BEFORE</code> trigger might be used to insert the current time into a
+    <code class="type">timestamp</code> column, or to check that two elements of the row are
+    consistent. Row-level <code class="literal">AFTER</code> triggers are most sensibly
+    used to propagate the updates to other tables, or make consistency
+    checks against other tables.  The reason for this division of labor is
+    that an <code class="literal">AFTER</code> trigger can be certain it is seeing the final
+    value of the row, while a <code class="literal">BEFORE</code> trigger cannot; there might
+    be other <code class="literal">BEFORE</code> triggers firing after it.  If you have no
+    specific reason to make a trigger <code class="literal">BEFORE</code> or
+    <code class="literal">AFTER</code>, the <code class="literal">BEFORE</code> case is more efficient, since
+    the information about
+    the operation doesn't have to be saved until end of statement.
+   </p><p>
+    If a trigger function executes SQL commands then these
+    commands might fire triggers again. This is known as cascading
+    triggers.  There is no direct limitation on the number of cascade
+    levels.  It is possible for cascades to cause a recursive invocation
+    of the same trigger; for example, an <code class="command">INSERT</code>
+    trigger might execute a command that inserts an additional row
+    into the same table, causing the <code class="command">INSERT</code> trigger
+    to be fired again.  It is the trigger programmer's responsibility
+    to avoid infinite recursion in such scenarios.
+   </p><p>
+    <a id="id-1.8.4.5.21.1" class="indexterm"></a>
+    When a trigger is being defined, arguments can be specified for
+    it. The purpose of including arguments in the
+    trigger definition is to allow different triggers with similar
+    requirements to call the same function.  As an example, there
+    could be a generalized trigger function that takes as its
+    arguments two column names and puts the current user in one and
+    the current time stamp in the other.  Properly written, this
+    trigger function would be independent of the specific table it is
+    triggering on.  So the same function could be used for
+    <code class="command">INSERT</code> events on any table with suitable
+    columns, to automatically track creation of records in a
+    transaction table for example. It could also be used to track
+    last-update events if defined as an <code class="command">UPDATE</code>
+    trigger.
+   </p><p>
+    Each programming language that supports triggers has its own method
+    for making the trigger input data available to the trigger function.
+    This input data includes the type of trigger event (e.g.,
+    <code class="command">INSERT</code> or <code class="command">UPDATE</code>) as well as any
+    arguments that were listed in <code class="command">CREATE TRIGGER</code>.
+    For a row-level trigger, the input data also includes the
+    <code class="varname">NEW</code> row for <code class="command">INSERT</code> and
+    <code class="command">UPDATE</code> triggers, and/or the <code class="varname">OLD</code> row
+    for <code class="command">UPDATE</code> and <code class="command">DELETE</code> triggers.
+   </p><p>
+    By default, statement-level triggers do not have any way to examine the
+    individual row(s) modified by the statement.  But an <code class="literal">AFTER
+    STATEMENT</code> trigger can request that <em class="firstterm">transition tables</em>
+    be created to make the sets of affected rows available to the trigger.
+    <code class="literal">AFTER ROW</code> triggers can also request transition tables, so
+    that they can see the total changes in the table as well as the change in
+    the individual row they are currently being fired for.  The method for
+    examining the transition tables again depends on the programming language
+    that is being used, but the typical approach is to make the transition
+    tables act like read-only temporary tables that can be accessed by SQL
+    commands issued within the trigger function.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="triggers.html" title="Chapter 39. Triggers">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="triggers.html" title="Chapter 39. Triggers">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="trigger-datachanges.html" title="39.2. Visibility of Data Changes">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 39. Triggers </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 39.2. Visibility of Data Changes</td></tr></table></div></body></html>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Chapter 61. Table Access Method Interface Definition</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="geqo-biblio.html" title="60.4. Further Reading" /><link rel="next" href="indexam.html" title="Chapter 62. Index Access Method Interface Definition" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">Chapter 61. Table Access Method Interface Definition</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="geqo-biblio.html" title="60.4. Further Reading">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><th width="60%" align="center">Part VII. Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="indexam.html" title="Chapter 62. Index Access Method Interface Definition">Next</a></td></tr></table><hr></hr></div><div class="chapter" id="TABLEAM"><div class="titlepage"><div><div><h2 class="title">Chapter 61. Table Access Method Interface Definition</h2></div></div></div><a id="id-1.10.13.2" class="indexterm"></a><a id="id-1.10.13.3" class="indexterm"></a><p>
+  This chapter explains the interface between the core
+  <span class="productname">PostgreSQL</span> system and <em class="firstterm">table access
+  methods</em>, which manage the storage for tables. The core system
+  knows little about these access methods beyond what is specified here, so
+  it is possible to develop entirely new access method types by writing
+  add-on code.
+ </p><p>
+  Each table access method is described by a row in the <a class="link" href="catalog-pg-am.html" title="52.3. pg_am"><code class="structname">pg_am</code></a> system
+  catalog. The <code class="structname">pg_am</code> entry specifies a name and a
+  <em class="firstterm">handler function</em> for the table access method.  These
+  entries can be created and deleted using the <a class="xref" href="sql-create-access-method.html" title="CREATE ACCESS METHOD"><span class="refentrytitle">CREATE ACCESS METHOD</span></a> and <a class="xref" href="sql-drop-access-method.html" title="DROP ACCESS METHOD"><span class="refentrytitle">DROP ACCESS METHOD</span></a> SQL commands.
+ </p><p>
+  A table access method handler function must be declared to accept a single
+  argument of type <code class="type">internal</code> and to return the pseudo-type
+  <code class="type">table_am_handler</code>.  The argument is a dummy value that simply
+  serves to prevent handler functions from being called directly from SQL commands.
+
+  The result of the function must be a pointer to a struct of type
+  <code class="structname">TableAmRoutine</code>, which contains everything that the
+  core code needs to know to make use of the table access method. The return
+  value needs to be of server lifetime, which is typically achieved by
+  defining it as a <code class="literal">static const</code> variable in global
+  scope. The <code class="structname">TableAmRoutine</code> struct, also called the
+  access method's <em class="firstterm">API struct</em>, defines the behavior of
+  the access method using callbacks. These callbacks are pointers to plain C
+  functions and are not visible or callable at the SQL level. All the
+  callbacks and their behavior is defined in the
+  <code class="structname">TableAmRoutine</code> structure (with comments inside the
+  struct defining the requirements for callbacks). Most callbacks have
+  wrapper functions, which are documented from the point of view of a user
+  (rather than an implementor) of the table access method.  For details,
+  please refer to the <a class="ulink" href="https://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/include/access/tableam.h;hb=HEAD" target="_top">
+  <code class="filename">src/include/access/tableam.h</code></a> file.
+ </p><p>
+  To implement an access method, an implementor will typically need to
+  implement an AM-specific type of tuple table slot (see
+  <a class="ulink" href="https://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/include/executor/tuptable.h;hb=HEAD" target="_top">
+   <code class="filename">src/include/executor/tuptable.h</code></a>), which allows
+   code outside the access method to hold references to tuples of the AM, and
+   to access the columns of the tuple.
+ </p><p>
+  Currently, the way an AM actually stores data is fairly unconstrained. For
+  example, it's possible, but not required, to use postgres' shared buffer
+  cache.  In case it is used, it likely makes sense to use
+  <span class="productname">PostgreSQL</span>'s standard page layout as described in
+  <a class="xref" href="storage-page-layout.html" title="70.6. Database Page Layout">Section 70.6</a>.
+ </p><p>
+  One fairly large constraint of the table access method API is that,
+  currently, if the AM wants to support modifications and/or indexes, it is
+  necessary for each tuple to have a tuple identifier (<acronym class="acronym">TID</acronym>)
+  consisting of a block number and an item number (see also <a class="xref" href="storage-page-layout.html" title="70.6. Database Page Layout">Section 70.6</a>).  It is not strictly necessary that the
+  sub-parts of <acronym class="acronym">TIDs</acronym> have the same meaning they e.g., have
+  for <code class="literal">heap</code>, but if bitmap scan support is desired (it is
+  optional), the block number needs to provide locality.
+ </p><p>
+  For crash safety, an AM can use postgres' <a class="link" href="wal.html" title="Chapter 30. Reliability and the Write-Ahead Log"><acronym class="acronym">WAL</acronym></a>, or a custom implementation.
+  If <acronym class="acronym">WAL</acronym> is chosen, either <a class="link" href="generic-wal.html" title="Chapter 63. Generic WAL Records">Generic WAL Records</a> can be used,
+  or a new type of <acronym class="acronym">WAL</acronym> records can be implemented.
+  Generic WAL Records are easy, but imply higher WAL volume.
+  Implementation of a new type of WAL record
+  currently requires modifications to core code (specifically,
+  <code class="filename">src/include/access/rmgrlist.h</code>).
+ </p><p>
+  To implement transactional support in a manner that allows different table
+  access methods be accessed within a single transaction, it likely is
+  necessary to closely integrate with the machinery in
+  <code class="filename">src/backend/access/transam/xlog.c</code>.
+ </p><p>
+  Any developer of a new <code class="literal">table access method</code> can refer to
+  the existing <code class="literal">heap</code> implementation present in
+  <code class="filename">src/backend/access/heap/heapam_handler.c</code> for details of
+  its implementation.
+ </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="geqo-biblio.html" title="60.4. Further Reading">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="indexam.html" title="Chapter 62. Index Access Method Interface Definition">Next</a></td></tr><tr><td width="40%" align="left" valign="top">60.4. Further Reading </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Chapter 62. Index Access Method Interface Definition</td></tr></table></div></body></html>

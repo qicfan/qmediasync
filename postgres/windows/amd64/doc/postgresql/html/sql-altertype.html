@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>ALTER TYPE</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-altertrigger.html" title="ALTER TRIGGER" /><link rel="next" href="sql-alteruser.html" title="ALTER USER" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">ALTER TYPE</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-altertrigger.html" title="ALTER TRIGGER">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-alteruser.html" title="ALTER USER">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-ALTERTYPE"><div class="titlepage"></div><a id="id-1.9.3.42.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">ALTER TYPE</span></h2><p>ALTER TYPE — 
+   change the definition of a type
+  </p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+ALTER TYPE <em class="replaceable"><code>name</code></em> OWNER TO { <em class="replaceable"><code>new_owner</code></em> | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TYPE <em class="replaceable"><code>name</code></em> RENAME TO <em class="replaceable"><code>new_name</code></em>
+ALTER TYPE <em class="replaceable"><code>name</code></em> SET SCHEMA <em class="replaceable"><code>new_schema</code></em>
+ALTER TYPE <em class="replaceable"><code>name</code></em> RENAME ATTRIBUTE <em class="replaceable"><code>attribute_name</code></em> TO <em class="replaceable"><code>new_attribute_name</code></em> [ CASCADE | RESTRICT ]
+ALTER TYPE <em class="replaceable"><code>name</code></em> <em class="replaceable"><code>action</code></em> [, ... ]
+ALTER TYPE <em class="replaceable"><code>name</code></em> ADD VALUE [ IF NOT EXISTS ] <em class="replaceable"><code>new_enum_value</code></em> [ { BEFORE | AFTER } <em class="replaceable"><code>neighbor_enum_value</code></em> ]
+ALTER TYPE <em class="replaceable"><code>name</code></em> RENAME VALUE <em class="replaceable"><code>existing_enum_value</code></em> TO <em class="replaceable"><code>new_enum_value</code></em>
+ALTER TYPE <em class="replaceable"><code>name</code></em> SET ( <em class="replaceable"><code>property</code></em> = <em class="replaceable"><code>value</code></em> [, ... ] )
+
+<span class="phrase">where <em class="replaceable"><code>action</code></em> is one of:</span>
+
+    ADD ATTRIBUTE <em class="replaceable"><code>attribute_name</code></em> <em class="replaceable"><code>data_type</code></em> [ COLLATE <em class="replaceable"><code>collation</code></em> ] [ CASCADE | RESTRICT ]
+    DROP ATTRIBUTE [ IF EXISTS ] <em class="replaceable"><code>attribute_name</code></em> [ CASCADE | RESTRICT ]
+    ALTER ATTRIBUTE <em class="replaceable"><code>attribute_name</code></em> [ SET DATA ] TYPE <em class="replaceable"><code>data_type</code></em> [ COLLATE <em class="replaceable"><code>collation</code></em> ] [ CASCADE | RESTRICT ]
+</pre></div><div class="refsect1" id="id-1.9.3.42.5"><h2>Description</h2><p>
+   <code class="command">ALTER TYPE</code> changes the definition of an existing type.
+   There are several subforms:
+
+  </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">OWNER</code></span></dt><dd><p>
+      This form changes the owner of the type.
+     </p></dd><dt><span class="term"><code class="literal">RENAME</code></span></dt><dd><p>
+      This form changes the name of the type.
+     </p></dd><dt><span class="term"><code class="literal">SET SCHEMA</code></span></dt><dd><p>
+      This form moves the type into another schema.
+     </p></dd><dt><span class="term"><code class="literal">RENAME ATTRIBUTE</code></span></dt><dd><p>
+      This form is only usable with composite types.
+      It changes the name of an individual attribute of the type.
+     </p></dd><dt><span class="term"><code class="literal">ADD ATTRIBUTE</code></span></dt><dd><p>
+      This form adds a new attribute to a composite type, using the same syntax as
+      <a class="link" href="sql-createtype.html" title="CREATE TYPE"><code class="command">CREATE TYPE</code></a>.
+     </p></dd><dt><span class="term"><code class="literal">DROP ATTRIBUTE [ IF EXISTS ]</code></span></dt><dd><p>
+      This form drops an attribute from a composite type.
+      If <code class="literal">IF EXISTS</code> is specified and the attribute
+      does not exist, no error is thrown. In this case a notice
+      is issued instead.
+     </p></dd><dt><span class="term"><code class="literal">ALTER ATTRIBUTE ... SET DATA TYPE</code></span></dt><dd><p>
+      This form changes the type of an attribute of a composite type.
+     </p></dd><dt><span class="term"><code class="literal">ADD VALUE [ IF NOT EXISTS ] [ BEFORE | AFTER ]</code></span></dt><dd><p>
+      This form adds a new value to an enum type.  The new value's place in
+      the enum's ordering can be specified as being <code class="literal">BEFORE</code>
+      or <code class="literal">AFTER</code> one of the existing values.  Otherwise,
+      the new item is added at the end of the list of values.
+     </p><p>
+      If <code class="literal">IF NOT EXISTS</code> is specified, it is not an error if
+      the type already contains the new value: a notice is issued but no other
+      action is taken. Otherwise, an error will occur if the new value is
+      already present.
+     </p></dd><dt><span class="term"><code class="literal">RENAME VALUE</code></span></dt><dd><p>
+      This form renames a value of an enum type.
+      The value's place in the enum's ordering is not affected.
+      An error will occur if the specified value is not present or the new
+      name is already present.
+     </p></dd><dt><span class="term">
+     <code class="literal">SET ( <em class="replaceable"><code>property</code></em> = <em class="replaceable"><code>value</code></em> [, ... ] )</code>
+    </span></dt><dd><p>
+      This form is only applicable to base types.  It allows adjustment of a
+      subset of the base-type properties that can be set in <code class="command">CREATE
+      TYPE</code>.  Specifically, these properties can be changed:
+      </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+         <code class="literal">RECEIVE</code> can be set to the name of a binary input
+         function, or <code class="literal">NONE</code> to remove the type's binary
+         input function.  Using this option requires superuser privilege.
+        </p></li><li class="listitem"><p>
+         <code class="literal">SEND</code> can be set to the name of a binary output
+         function, or <code class="literal">NONE</code> to remove the type's binary
+         output function.  Using this option requires superuser privilege.
+        </p></li><li class="listitem"><p>
+         <code class="literal">TYPMOD_IN</code> can be set to the name of a type
+         modifier input function, or <code class="literal">NONE</code> to remove the
+         type's type modifier input function.  Using this option requires
+         superuser privilege.
+        </p></li><li class="listitem"><p>
+         <code class="literal">TYPMOD_OUT</code> can be set to the name of a type
+         modifier output function, or <code class="literal">NONE</code> to remove the
+         type's type modifier output function.  Using this option requires
+         superuser privilege.
+        </p></li><li class="listitem"><p>
+         <code class="literal">ANALYZE</code> can be set to the name of a type-specific
+         statistics collection function, or <code class="literal">NONE</code> to remove
+         the type's statistics collection function.  Using this option
+         requires superuser privilege.
+        </p></li><li class="listitem"><p>
+         <code class="literal">SUBSCRIPT</code> can be set to the name of a type-specific
+         subscripting handler function, or <code class="literal">NONE</code> to remove
+         the type's subscripting handler function.  Using this option
+         requires superuser privilege.
+        </p></li><li class="listitem"><p>
+         <code class="literal">STORAGE</code><a id="id-1.9.3.42.5.2.2.10.2.1.2.7.1.2" class="indexterm"></a>
+         can be set to <code class="literal">plain</code>,
+         <code class="literal">extended</code>, <code class="literal">external</code>,
+         or <code class="literal">main</code> (see <a class="xref" href="storage-toast.html" title="70.2. TOAST">Section 70.2</a> for
+         more information about what these mean).  However, changing
+         from <code class="literal">plain</code> to another setting requires superuser
+         privilege (because it requires that the type's C functions all be
+         TOAST-ready), and changing to <code class="literal">plain</code> from another
+         setting is not allowed at all (since the type may already have
+         TOASTed values present in the database).  Note that changing this
+         option doesn't by itself change any stored data, it just sets the
+         default TOAST strategy to be used for table columns created in the
+         future.  See <a class="xref" href="sql-altertable.html" title="ALTER TABLE"><span class="refentrytitle">ALTER TABLE</span></a> to change the TOAST
+         strategy for existing table columns.
+        </p></li></ul></div><p>
+      See <a class="xref" href="sql-createtype.html" title="CREATE TYPE"><span class="refentrytitle">CREATE TYPE</span></a> for more details about these
+      type properties.  Note that where appropriate, a change in these
+      properties for a base type will be propagated automatically to domains
+      based on that type.
+     </p></dd></dl></div><p>
+  </p><p>
+   The <code class="literal">ADD ATTRIBUTE</code>, <code class="literal">DROP
+   ATTRIBUTE</code>, and <code class="literal">ALTER ATTRIBUTE</code> actions
+   can be combined into a list of multiple alterations to apply in
+   parallel.  For example, it is possible to add several attributes
+   and/or alter the type of several attributes in a single command.
+  </p><p>
+   You must own the type to use <code class="command">ALTER TYPE</code>.
+   To change the schema of a type, you must also have
+   <code class="literal">CREATE</code> privilege on the new schema.
+   To alter the owner, you must also be a direct or indirect member of the new
+   owning role, and that role must have <code class="literal">CREATE</code> privilege on
+   the type's schema.  (These restrictions enforce that altering the owner
+   doesn't do anything you couldn't do by dropping and recreating the type.
+   However, a superuser can alter ownership of any type anyway.)
+   To add an attribute or alter an attribute type, you must also
+   have <code class="literal">USAGE</code> privilege on the attribute's data type.
+  </p></div><div class="refsect1" id="id-1.9.3.42.6"><h2>Parameters</h2><p>
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+        The name (possibly schema-qualified) of an existing type to
+        alter.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>new_name</code></em></span></dt><dd><p>
+        The new name for the type.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>new_owner</code></em></span></dt><dd><p>
+        The user name of the new owner of the type.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>new_schema</code></em></span></dt><dd><p>
+        The new schema for the type.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>attribute_name</code></em></span></dt><dd><p>
+        The name of the attribute to add, alter, or drop.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>new_attribute_name</code></em></span></dt><dd><p>
+        The new name of the attribute to be renamed.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>data_type</code></em></span></dt><dd><p>
+        The data type of the attribute to add, or the new type of the
+        attribute to alter.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>new_enum_value</code></em></span></dt><dd><p>
+        The new value to be added to an enum type's list of values,
+        or the new name to be given to an existing value.
+        Like all enum literals, it needs to be quoted.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>neighbor_enum_value</code></em></span></dt><dd><p>
+        The existing enum value that the new value should be added immediately
+        before or after in the enum type's sort ordering.
+        Like all enum literals, it needs to be quoted.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>existing_enum_value</code></em></span></dt><dd><p>
+        The existing enum value that should be renamed.
+        Like all enum literals, it needs to be quoted.
+       </p></dd><dt><span class="term"><em class="replaceable"><code>property</code></em></span></dt><dd><p>
+        The name of a base-type property to be modified; see above for
+        possible values.
+       </p></dd><dt><span class="term"><code class="literal">CASCADE</code></span></dt><dd><p>
+        Automatically propagate the operation to typed tables of the
+        type being altered, and their descendants.
+       </p></dd><dt><span class="term"><code class="literal">RESTRICT</code></span></dt><dd><p>
+        Refuse the operation if the type being altered is the type of a
+        typed table.  This is the default.
+       </p></dd></dl></div><p>
+   </p></div><div class="refsect1" id="id-1.9.3.42.7"><h2>Notes</h2><p>
+   If <code class="command">ALTER TYPE ... ADD VALUE</code> (the form that adds a new
+   value to an enum type) is executed inside a transaction block, the new
+   value cannot be used until after the transaction has been committed.
+  </p><p>
+   Comparisons involving an added enum value will sometimes be slower than
+   comparisons involving only original members of the enum type.  This will
+   usually only occur if <code class="literal">BEFORE</code> or <code class="literal">AFTER</code>
+   is used to set the new value's sort position somewhere other than at the
+   end of the list.  However, sometimes it will happen even though the new
+   value is added at the end (this occurs if the OID counter <span class="quote">“<span class="quote">wrapped
+   around</span>”</span> since the original creation of the enum type).  The slowdown is
+   usually insignificant; but if it matters, optimal performance can be
+   regained by dropping and recreating the enum type, or by dumping and
+   restoring the database.
+  </p></div><div class="refsect1" id="id-1.9.3.42.8"><h2>Examples</h2><p>
+   To rename a data type:
+</p><pre class="programlisting">
+ALTER TYPE electronic_mail RENAME TO email;
+</pre><p>
+  </p><p>
+   To change the owner of the type <code class="literal">email</code>
+   to <code class="literal">joe</code>:
+</p><pre class="programlisting">
+ALTER TYPE email OWNER TO joe;
+</pre><p>
+  </p><p>
+   To change the schema of the type <code class="literal">email</code>
+   to <code class="literal">customers</code>:
+</p><pre class="programlisting">
+ALTER TYPE email SET SCHEMA customers;
+</pre><p>
+  </p><p>
+   To add a new attribute to a composite type:
+</p><pre class="programlisting">
+ALTER TYPE compfoo ADD ATTRIBUTE f3 int;
+</pre><p>
+  </p><p>
+   To add a new value to an enum type in a particular sort position:
+</p><pre class="programlisting">
+ALTER TYPE colors ADD VALUE 'orange' AFTER 'red';
+</pre><p>
+  </p><p>
+   To rename an enum value:
+</p><pre class="programlisting">
+ALTER TYPE colors RENAME VALUE 'purple' TO 'mauve';
+</pre><p>
+  </p><p>
+   To create binary I/O functions for an existing base type:
+</p><pre class="programlisting">
+CREATE FUNCTION mytypesend(mytype) RETURNS bytea ...;
+CREATE FUNCTION mytyperecv(internal, oid, integer) RETURNS mytype ...;
+ALTER TYPE mytype SET (
+    SEND = mytypesend,
+    RECEIVE = mytyperecv
+);
+</pre></div><div class="refsect1" id="id-1.9.3.42.9"><h2>Compatibility</h2><p>
+   The variants to add and drop attributes are part of the SQL
+   standard; the other variants are PostgreSQL extensions.
+  </p></div><div class="refsect1" id="SQL-ALTERTYPE-SEE-ALSO"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createtype.html" title="CREATE TYPE"><span class="refentrytitle">CREATE TYPE</span></a>, <a class="xref" href="sql-droptype.html" title="DROP TYPE"><span class="refentrytitle">DROP TYPE</span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-altertrigger.html" title="ALTER TRIGGER">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-alteruser.html" title="ALTER USER">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ALTER TRIGGER </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> ALTER USER</td></tr></table></div></body></html>

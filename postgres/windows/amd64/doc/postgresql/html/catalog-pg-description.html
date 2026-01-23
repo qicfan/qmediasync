@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.19. pg_description</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-depend.html" title="52.18. pg_depend" /><link rel="next" href="catalog-pg-enum.html" title="52.20. pg_enum" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.19. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_description</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-depend.html" title="52.18. pg_depend">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-enum.html" title="52.20. pg_enum">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-DESCRIPTION"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.19. <code class="structname">pg_description</code></h2></div></div></div><a id="id-1.10.4.21.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_description</code> stores optional descriptions
+   (comments) for each database object.  Descriptions can be manipulated
+   with the <a class="link" href="sql-comment.html" title="COMMENT"><code class="command">COMMENT</code></a> command and viewed with
+   <span class="application">psql</span>'s <code class="literal">\d</code> commands.
+   Descriptions of many built-in system objects are provided in the initial
+   contents of <code class="structname">pg_description</code>.
+  </p><p>
+   See also <a class="link" href="catalog-pg-shdescription.html" title="52.47. pg_shdescription"><code class="structname">pg_shdescription</code></a>,
+   which performs a similar function for descriptions involving objects that
+   are shared across a database cluster.
+  </p><div class="table" id="id-1.10.4.21.5"><p class="title"><strong>Table 52.19. <code class="structname">pg_description</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_description Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">objoid</code> <code class="type">oid</code>
+       (references any OID column)
+      </p>
+      <p>
+       The OID of the object this description pertains to
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">classoid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The OID of the system catalog this object appears in
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">objsubid</code> <code class="type">int4</code>
+      </p>
+      <p>
+       For a comment on a table column, this is the column number (the
+       <code class="structfield">objoid</code> and <code class="structfield">classoid</code> refer to
+       the table itself).  For all other object types, this column is
+       zero.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">description</code> <code class="type">text</code>
+      </p>
+      <p>
+       Arbitrary text that serves as the description of this object
+      </p></td></tr></tbody></table></div></div><br class="table-break" /></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-depend.html" title="52.18. pg_depend">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-enum.html" title="52.20. pg_enum">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.18. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_depend</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.20. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_enum</code></td></tr></table></div></body></html>

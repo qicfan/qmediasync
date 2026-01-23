@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Chapter 71. System Catalog Declarations and Initial Contents</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="storage-hot.html" title="70.7. Heap-Only Tuples (HOT)" /><link rel="next" href="system-catalog-declarations.html" title="71.1. System Catalog Declaration Rules" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">Chapter 71. System Catalog Declarations and Initial Contents</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="storage-hot.html" title="70.7. Heap-Only Tuples (HOT)">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><th width="60%" align="center">Part VII. Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="system-catalog-declarations.html" title="71.1. System Catalog Declaration Rules">Next</a></td></tr></table><hr></hr></div><div class="chapter" id="BKI"><div class="titlepage"><div><div><h2 class="title">Chapter 71. System Catalog Declarations and Initial Contents</h2></div></div></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="sect1"><a href="system-catalog-declarations.html">71.1. System Catalog Declaration Rules</a></span></dt><dt><span class="sect1"><a href="system-catalog-initial-data.html">71.2. System Catalog Initial Data</a></span></dt><dd><dl><dt><span class="sect2"><a href="system-catalog-initial-data.html#SYSTEM-CATALOG-INITIAL-DATA-FORMAT">71.2.1. Data File Format</a></span></dt><dt><span class="sect2"><a href="system-catalog-initial-data.html#SYSTEM-CATALOG-OID-ASSIGNMENT">71.2.2. OID Assignment</a></span></dt><dt><span class="sect2"><a href="system-catalog-initial-data.html#SYSTEM-CATALOG-OID-REFERENCES">71.2.3. OID Reference Lookup</a></span></dt><dt><span class="sect2"><a href="system-catalog-initial-data.html#SYSTEM-CATALOG-AUTO-ARRAY-TYPES">71.2.4. Automatic Creation of Array Types</a></span></dt><dt><span class="sect2"><a href="system-catalog-initial-data.html#SYSTEM-CATALOG-RECIPES">71.2.5. Recipes for Editing Data Files</a></span></dt></dl></dd><dt><span class="sect1"><a href="bki-format.html">71.3. <acronym class="acronym">BKI</acronym> File Format</a></span></dt><dt><span class="sect1"><a href="bki-commands.html">71.4. <acronym class="acronym">BKI</acronym> Commands</a></span></dt><dt><span class="sect1"><a href="bki-structure.html">71.5. Structure of the Bootstrap <acronym class="acronym">BKI</acronym> File</a></span></dt><dt><span class="sect1"><a href="bki-example.html">71.6. BKI Example</a></span></dt></dl></div><p>
+  <span class="productname">PostgreSQL</span> uses many different system catalogs
+  to keep track of the existence and properties of database objects, such as
+  tables and functions.  Physically there is no difference between a system
+  catalog and a plain user table, but the backend C code knows the structure
+  and properties of each catalog, and can manipulate it directly at a low
+  level.  Thus, for example, it is inadvisable to attempt to alter the
+  structure of a catalog on-the-fly; that would break assumptions built into
+  the C code about how rows of the catalog are laid out.  But the structure
+  of the catalogs can change between major versions.
+ </p><p>
+  The structures of the catalogs are declared in specially formatted C
+  header files in the <code class="filename">src/include/catalog/</code> directory of
+  the source tree.  For each catalog there is a header file
+  named after the catalog (e.g., <code class="filename">pg_class.h</code>
+  for <code class="structname">pg_class</code>), which defines the set of columns
+  the catalog has, as well as some other basic properties such as its OID.
+ </p><p>
+  Many of the catalogs have initial data that must be loaded into them
+  during the <span class="quote">“<span class="quote">bootstrap</span>”</span> phase
+  of <span class="application">initdb</span>, to bring the system up to a point
+  where it is capable of executing SQL commands.  (For
+  example, <code class="filename">pg_class.h</code> must contain an entry for itself,
+  as well as one for each other system catalog and index.)  This
+  initial data is kept in editable form in data files that are also stored
+  in the <code class="filename">src/include/catalog/</code> directory.  For example,
+  <code class="filename">pg_proc.dat</code> describes all the initial rows that must
+  be inserted into the <code class="structname">pg_proc</code> catalog.
+ </p><p>
+  To create the catalog files and load this initial data into them, a
+  backend running in bootstrap mode reads a <acronym class="acronym">BKI</acronym>
+  (Backend Interface) file containing commands and initial data.
+  The <code class="filename">postgres.bki</code> file used in this mode is prepared
+  from the aforementioned header and data files, while building
+  a <span class="productname">PostgreSQL</span> distribution, by a Perl script
+  named <code class="filename">genbki.pl</code>.
+  Although it's specific to a particular <span class="productname">PostgreSQL</span>
+  release, <code class="filename">postgres.bki</code> is platform-independent and is
+  installed in the <code class="filename">share</code> subdirectory of the
+  installation tree.
+ </p><p>
+  <code class="filename">genbki.pl</code> also produces a derived header file for
+  each catalog, for example <code class="filename">pg_class_d.h</code> for
+  the <code class="structname">pg_class</code> catalog.  This file contains
+  automatically-generated macro definitions, and may contain other macros,
+  enum declarations, and so on that can be useful for client C code that
+  reads a particular catalog.
+ </p><p>
+  Most PostgreSQL developers don't need to be directly concerned with
+  the <acronym class="acronym">BKI</acronym> file, but almost any nontrivial feature
+  addition in the backend will require modifying the catalog header files
+  and/or initial data files.  The rest of this chapter gives some
+  information about that, and for completeness describes
+  the <acronym class="acronym">BKI</acronym> file format.
+ </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="storage-hot.html" title="70.7. Heap-Only Tuples (HOT)">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="internals.html" title="Part VII. Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="system-catalog-declarations.html" title="71.1. System Catalog Declaration Rules">Next</a></td></tr><tr><td width="40%" align="left" valign="top">70.7. Heap-Only Tuples (<acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">HOT</acronym>) </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 71.1. System Catalog Declaration Rules</td></tr></table></div></body></html>

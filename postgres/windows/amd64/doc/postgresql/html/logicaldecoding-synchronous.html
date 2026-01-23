@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>49.8. Synchronous Replication Support for Logical Decoding</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="logicaldecoding-writer.html" title="49.7. Logical Decoding Output Writers" /><link rel="next" href="logicaldecoding-streaming.html" title="49.9. Streaming of Large Transactions for Logical Decoding" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">49.8. Synchronous Replication Support for Logical Decoding</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="logicaldecoding-writer.html" title="49.7. Logical Decoding Output Writers">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="logicaldecoding.html" title="Chapter 49. Logical Decoding">Up</a></td><th width="60%" align="center">Chapter 49. Logical Decoding</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="logicaldecoding-streaming.html" title="49.9. Streaming of Large Transactions for Logical Decoding">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LOGICALDECODING-SYNCHRONOUS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">49.8. Synchronous Replication Support for Logical Decoding</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="logicaldecoding-synchronous.html#id-1.8.14.14.2">49.8.1. Overview</a></span></dt><dt><span class="sect2"><a href="logicaldecoding-synchronous.html#LOGICALDECODING-SYNCHRONOUS-CAVEATS">49.8.2. Caveats</a></span></dt></dl></div><div class="sect2" id="id-1.8.14.14.2"><div class="titlepage"><div><div><h3 class="title">49.8.1. Overview</h3></div></div></div><p>
+     Logical decoding can be used to build
+     <a class="link" href="warm-standby.html#SYNCHRONOUS-REPLICATION" title="27.2.8. Synchronous Replication">synchronous
+     replication</a> solutions with the same user interface as synchronous
+     replication for <a class="link" href="warm-standby.html#STREAMING-REPLICATION" title="27.2.5. Streaming Replication">streaming
+     replication</a>.  To do this, the streaming replication interface
+     (see <a class="xref" href="logicaldecoding-walsender.html" title="49.3. Streaming Replication Protocol Interface">Section 49.3</a>) must be used to stream out
+     data. Clients have to send <code class="literal">Standby status update (F)</code>
+     (see <a class="xref" href="protocol-replication.html" title="53.4. Streaming Replication Protocol">Section 53.4</a>) messages, just like streaming
+     replication clients do.
+    </p><div class="note"><h3 class="title">Note</h3><p>
+      A synchronous replica receiving changes via logical decoding will work in
+      the scope of a single database. Since, in contrast to
+      that, <em class="parameter"><code>synchronous_standby_names</code></em> currently is
+      server wide, this means this technique will not work properly if more
+      than one database is actively used.
+     </p></div></div><div class="sect2" id="LOGICALDECODING-SYNCHRONOUS-CAVEATS"><div class="titlepage"><div><div><h3 class="title">49.8.2. Caveats</h3></div></div></div><p>
+     In synchronous replication setup, a deadlock can happen, if the transaction
+     has locked [user] catalog tables exclusively. See
+     <a class="xref" href="logicaldecoding-output-plugin.html#LOGICALDECODING-CAPABILITIES" title="49.6.2. Capabilities">Section 49.6.2</a> for information on user
+     catalog tables. This is because logical decoding of transactions can lock
+     catalog tables to access them. To avoid this users must refrain from taking
+     an exclusive lock on [user] catalog tables. This can happen in the following
+     ways:
+
+     </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+        Issuing an explicit <code class="command">LOCK</code> on <code class="structname">pg_class</code>
+        in a transaction.
+       </p></li><li class="listitem"><p>
+        Perform <code class="command">CLUSTER</code> on <code class="structname">pg_class</code> in
+        a transaction.
+       </p></li><li class="listitem"><p>
+        <code class="command">PREPARE TRANSACTION</code> after <code class="command">LOCK</code> command
+        on <code class="structname">pg_class</code> and allow logical decoding of two-phase
+        transactions.
+       </p></li><li class="listitem"><p>
+        <code class="command">PREPARE TRANSACTION</code> after <code class="command">CLUSTER</code>
+        command on <code class="structname">pg_trigger</code> and allow logical decoding of
+        two-phase transactions. This will lead to deadlock only when published table
+        have a trigger.
+       </p></li><li class="listitem"><p>
+        Executing <code class="command">TRUNCATE</code> on [user] catalog table in a
+        transaction.
+       </p></li></ul></div><p>
+
+     Note that these commands that can cause deadlock apply to not only explicitly
+     indicated system catalog tables above but also to any other [user] catalog
+     table.
+    </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="logicaldecoding-writer.html" title="49.7. Logical Decoding Output Writers">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="logicaldecoding.html" title="Chapter 49. Logical Decoding">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="logicaldecoding-streaming.html" title="49.9. Streaming of Large Transactions for Logical Decoding">Next</a></td></tr><tr><td width="40%" align="left" valign="top">49.7. Logical Decoding Output Writers </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 49.9. Streaming of Large Transactions for Logical Decoding</td></tr></table></div></body></html>

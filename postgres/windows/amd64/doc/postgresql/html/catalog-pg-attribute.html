@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>52.7. pg_attribute</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="catalog-pg-attrdef.html" title="52.6. pg_attrdef" /><link rel="next" href="catalog-pg-authid.html" title="52.8. pg_authid" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">52.7. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_attribute</code></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="catalog-pg-attrdef.html" title="52.6. pg_attrdef">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><th width="60%" align="center">Chapter 52. System Catalogs</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="catalog-pg-authid.html" title="52.8. pg_authid">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CATALOG-PG-ATTRIBUTE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">52.7. <code class="structname">pg_attribute</code></h2></div></div></div><a id="id-1.10.4.9.2" class="indexterm"></a><p>
+   The catalog <code class="structname">pg_attribute</code> stores information about
+   table columns.  There will be exactly one
+   <code class="structname">pg_attribute</code> row for every column in every
+   table in the database.  (There will also be attribute entries for
+   indexes, and indeed all objects that have
+   <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>
+   entries.)
+  </p><p>
+   The term attribute is equivalent to column and is used for
+   historical reasons.
+  </p><div class="table" id="id-1.10.4.9.5"><p class="title"><strong>Table 52.7. <code class="structname">pg_attribute</code> Columns</strong></p><div class="table-contents"><table class="table" summary="pg_attribute Columns" border="1"><colgroup><col /></colgroup><thead><tr><th class="catalog_table_entry"><p class="column_definition">
+       Column Type
+      </p>
+      <p>
+       Description
+      </p></th></tr></thead><tbody><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attrelid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-class.html" title="52.11. pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The table this column belongs to
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attname</code> <code class="type">name</code>
+      </p>
+      <p>
+       The column name
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">atttypid</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-type.html" title="52.62. pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The data type of this column (zero for a dropped column)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attstattarget</code> <code class="type">int4</code>
+      </p>
+      <p>
+       <code class="structfield">attstattarget</code> controls the level of detail
+       of statistics accumulated for this column by
+       <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a>.
+       A zero value indicates that no statistics should be collected.
+       A negative value says to use the system default statistics target.
+       The exact meaning of positive values is data type-dependent.
+       For scalar data types, <code class="structfield">attstattarget</code>
+       is both the target number of <span class="quote">“<span class="quote">most common values</span>”</span>
+       to collect, and the target number of histogram bins to create.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attlen</code> <code class="type">int2</code>
+      </p>
+      <p>
+       A copy of <code class="literal">pg_type.typlen</code> of this column's
+       type
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attnum</code> <code class="type">int2</code>
+      </p>
+      <p>
+       The number of the column.  Ordinary columns are numbered from 1
+       up.  System columns, such as <code class="structfield">ctid</code>,
+       have (arbitrary) negative numbers.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attndims</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Number of dimensions, if the column is an array type; otherwise 0.
+       (Presently, the number of dimensions of an array is not enforced,
+       so any nonzero value effectively means <span class="quote">“<span class="quote">it's an array</span>”</span>.)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attcacheoff</code> <code class="type">int4</code>
+      </p>
+      <p>
+       Always -1 in storage, but when loaded into a row descriptor
+       in memory this might be updated to cache the offset of the attribute
+       within the row
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">atttypmod</code> <code class="type">int4</code>
+      </p>
+      <p>
+       <code class="structfield">atttypmod</code> records type-specific data
+       supplied at table creation time (for example, the maximum
+       length of a <code class="type">varchar</code> column).  It is passed to
+       type-specific input functions and length coercion functions.
+       The value will generally be -1 for types that do not need <code class="structfield">atttypmod</code>.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attbyval</code> <code class="type">bool</code>
+      </p>
+      <p>
+       A copy of <code class="literal">pg_type.typbyval</code> of this column's type
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attalign</code> <code class="type">char</code>
+      </p>
+      <p>
+       A copy of <code class="literal">pg_type.typalign</code> of this column's type
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attstorage</code> <code class="type">char</code>
+      </p>
+      <p>
+       Normally a copy of <code class="literal">pg_type.typstorage</code> of this
+       column's type.  For TOAST-able data types, this can be altered
+       after column creation to control storage policy.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attcompression</code> <code class="type">char</code>
+      </p>
+      <p>
+       The current compression method of the column.  Typically this is
+       <code class="literal">'\0'</code> to specify use of the current default setting
+       (see <a class="xref" href="runtime-config-client.html#GUC-DEFAULT-TOAST-COMPRESSION">default_toast_compression</a>).  Otherwise,
+       <code class="literal">'p'</code> selects pglz compression, while
+       <code class="literal">'l'</code> selects <span class="productname">LZ4</span>
+       compression.  However, this field is ignored
+       whenever <code class="structfield">attstorage</code> does not allow
+       compression.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attnotnull</code> <code class="type">bool</code>
+      </p>
+      <p>
+       This represents a not-null constraint.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">atthasdef</code> <code class="type">bool</code>
+      </p>
+      <p>
+       This column has a default expression or generation expression, in which
+       case there will be a corresponding entry in the
+       <a class="link" href="catalog-pg-attrdef.html" title="52.6. pg_attrdef"><code class="structname">pg_attrdef</code></a> catalog that actually defines the
+       expression.  (Check <code class="structfield">attgenerated</code> to
+       determine whether this is a default or a generation expression.)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">atthasmissing</code> <code class="type">bool</code>
+      </p>
+      <p>
+       This column has a value which is used where the column is entirely
+       missing from the row, as happens when a column is added with a
+       non-volatile <code class="literal">DEFAULT</code> value after the row is created.
+       The actual value used is stored in the
+       <code class="structfield">attmissingval</code> column.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attidentity</code> <code class="type">char</code>
+      </p>
+      <p>
+       If a zero byte (<code class="literal">''</code>), then not an identity column.
+       Otherwise, <code class="literal">a</code> = generated
+       always, <code class="literal">d</code> = generated by default.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attgenerated</code> <code class="type">char</code>
+      </p>
+      <p>
+       If a zero byte (<code class="literal">''</code>), then not a generated column.
+       Otherwise, <code class="literal">s</code> = stored.  (Other values might be added
+       in the future.)
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attisdropped</code> <code class="type">bool</code>
+      </p>
+      <p>
+       This column has been dropped and is no longer valid.  A dropped
+       column is still physically present in the table, but is
+       ignored by the parser and so cannot be accessed via SQL.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attislocal</code> <code class="type">bool</code>
+      </p>
+      <p>
+       This column is defined locally in the relation.  Note that a column can
+       be locally defined and inherited simultaneously.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attinhcount</code> <code class="type">int4</code>
+      </p>
+      <p>
+       The number of direct ancestors this column has.  A column with a
+       nonzero number of ancestors cannot be dropped nor renamed.
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attcollation</code> <code class="type">oid</code>
+       (references <a class="link" href="catalog-pg-collation.html" title="52.12. pg_collation"><code class="structname">pg_collation</code></a>.<code class="structfield">oid</code>)
+      </p>
+      <p>
+       The defined collation of the column, or zero if the column is
+       not of a collatable data type
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attacl</code> <code class="type">aclitem[]</code>
+      </p>
+      <p>
+       Column-level access privileges, if any have been granted specifically
+       on this column
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attoptions</code> <code class="type">text[]</code>
+      </p>
+      <p>
+       Attribute-level options, as <span class="quote">“<span class="quote">keyword=value</span>”</span> strings
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attfdwoptions</code> <code class="type">text[]</code>
+      </p>
+      <p>
+       Attribute-level foreign data wrapper options, as <span class="quote">“<span class="quote">keyword=value</span>”</span> strings
+      </p></td></tr><tr><td class="catalog_table_entry"><p class="column_definition">
+       <code class="structfield">attmissingval</code> <code class="type">anyarray</code>
+      </p>
+      <p>
+       This column has a one element array containing the value used when the
+       column is entirely missing from the row, as happens when the column is
+       added with a non-volatile <code class="literal">DEFAULT</code> value after the
+       row is created.  The value is only used when
+       <code class="structfield">atthasmissing</code> is true.  If there is no value
+       the column is null.
+      </p></td></tr></tbody></table></div></div><br class="table-break" /><p>
+   In a dropped column's <code class="structname">pg_attribute</code> entry,
+   <code class="structfield">atttypid</code> is reset to zero, but
+   <code class="structfield">attlen</code> and the other fields copied from
+   <a class="link" href="catalog-pg-type.html" title="52.62. pg_type"><code class="structname">pg_type</code></a> are still valid.  This arrangement is needed
+   to cope with the situation where the dropped column's data type was
+   later dropped, and so there is no <code class="structname">pg_type</code> row anymore.
+   <code class="structfield">attlen</code> and the other fields can be used
+   to interpret the contents of a row of the table.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="catalog-pg-attrdef.html" title="52.6. pg_attrdef">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter 52. System Catalogs">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="catalog-pg-authid.html" title="52.8. pg_authid">Next</a></td></tr><tr><td width="40%" align="left" valign="top">52.6. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_attrdef</code> </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 52.8. <code xmlns="http://www.w3.org/1999/xhtml" class="structname">pg_authid</code></td></tr></table></div></body></html>

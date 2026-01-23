@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>REINDEX</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="sql-refreshmaterializedview.html" title="REFRESH MATERIALIZED VIEW" /><link rel="next" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">REINDEX</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="sql-refreshmaterializedview.html" title="REFRESH MATERIALIZED VIEW">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><th width="60%" align="center">SQL Commands</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="SQL-REINDEX"><div class="titlepage"></div><a id="id-1.9.3.162.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle">REINDEX</span></h2><p>REINDEX — rebuild indexes</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis">
+REINDEX [ ( <em class="replaceable"><code>option</code></em> [, ...] ) ] { INDEX | TABLE | SCHEMA | DATABASE | SYSTEM } [ CONCURRENTLY ] <em class="replaceable"><code>name</code></em>
+
+<span class="phrase">where <em class="replaceable"><code>option</code></em> can be one of:</span>
+
+    CONCURRENTLY [ <em class="replaceable"><code>boolean</code></em> ]
+    TABLESPACE <em class="replaceable"><code>new_tablespace</code></em>
+    VERBOSE [ <em class="replaceable"><code>boolean</code></em> ]
+</pre></div><div class="refsect1" id="id-1.9.3.162.5"><h2>Description</h2><p>
+   <code class="command">REINDEX</code> rebuilds an index using the data
+   stored in the index's table, replacing the old copy of the index. There are
+   several scenarios in which to use <code class="command">REINDEX</code>:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      An index has become corrupted, and no longer contains valid
+      data. Although in theory this should never happen, in
+      practice indexes can become corrupted due to software bugs or
+      hardware failures.  <code class="command">REINDEX</code> provides a
+      recovery method.
+     </p></li><li class="listitem"><p>
+      An index has become <span class="quote">“<span class="quote">bloated</span>”</span>, that is it contains many
+      empty or nearly-empty pages.  This can occur with B-tree indexes in
+      <span class="productname">PostgreSQL</span> under certain uncommon access
+      patterns. <code class="command">REINDEX</code> provides a way to reduce
+      the space consumption of the index by writing a new version of
+      the index without the dead pages. See <a class="xref" href="routine-reindex.html" title="25.2. Routine Reindexing">Section 25.2</a> for more information.
+     </p></li><li class="listitem"><p>
+      You have altered a storage parameter (such as fillfactor)
+      for an index, and wish to ensure that the change has taken full effect.
+     </p></li><li class="listitem"><p>
+      If an index build fails with the <code class="literal">CONCURRENTLY</code> option,
+      this index is left as <span class="quote">“<span class="quote">invalid</span>”</span>. Such indexes are useless
+      but it can be convenient to use <code class="command">REINDEX</code> to rebuild
+      them. Note that only <code class="command">REINDEX INDEX</code> is able
+      to perform a concurrent build on an invalid index.
+     </p></li></ul></div></div><div class="refsect1" id="id-1.9.3.162.6"><h2>Parameters</h2><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">INDEX</code></span></dt><dd><p>
+      Recreate the specified index. This form of <code class="command">REINDEX</code>
+      cannot be executed inside a transaction block when used with a
+      partitioned index.
+     </p></dd><dt><span class="term"><code class="literal">TABLE</code></span></dt><dd><p>
+      Recreate all indexes of the specified table.  If the table has a
+      secondary <span class="quote">“<span class="quote">TOAST</span>”</span> table, that is reindexed as well.
+      This form of <code class="command">REINDEX</code> cannot be executed inside a
+      transaction block when used with a partitioned table.
+     </p></dd><dt><span class="term"><code class="literal">SCHEMA</code></span></dt><dd><p>
+      Recreate all indexes of the specified schema.  If a table of this
+      schema has a secondary <span class="quote">“<span class="quote">TOAST</span>”</span> table, that is reindexed as
+      well. Indexes on shared system catalogs are also processed.
+      This form of <code class="command">REINDEX</code> cannot be executed inside a
+      transaction block.
+     </p></dd><dt><span class="term"><code class="literal">DATABASE</code></span></dt><dd><p>
+      Recreate all indexes within the current database.
+      Indexes on shared system catalogs are also processed.
+      This form of <code class="command">REINDEX</code> cannot be executed inside a
+      transaction block.
+     </p></dd><dt><span class="term"><code class="literal">SYSTEM</code></span></dt><dd><p>
+      Recreate all indexes on system catalogs within the current database.
+      Indexes on shared system catalogs are included.
+      Indexes on user tables are not processed.
+      This form of <code class="command">REINDEX</code> cannot be executed inside a
+      transaction block.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>name</code></em></span></dt><dd><p>
+      The name of the specific index, table, or database to be
+      reindexed.  Index and table names can be schema-qualified.
+      Presently, <code class="command">REINDEX DATABASE</code> and <code class="command">REINDEX SYSTEM</code>
+      can only reindex the current database, so their parameter must match
+      the current database's name.
+     </p></dd><dt><span class="term"><code class="literal">CONCURRENTLY</code></span></dt><dd><p>
+      When this option is used, <span class="productname">PostgreSQL</span> will rebuild the
+      index without taking any locks that prevent concurrent inserts,
+      updates, or deletes on the table; whereas a standard index rebuild
+      locks out writes (but not reads) on the table until it's done.
+      There are several caveats to be aware of when using this option
+      — see <a class="xref" href="sql-reindex.html#SQL-REINDEX-CONCURRENTLY" title="Rebuilding Indexes Concurrently">Rebuilding Indexes Concurrently</a> below.
+     </p><p>
+      For temporary tables, <code class="command">REINDEX</code> is always
+      non-concurrent, as no other session can access them, and
+      non-concurrent reindex is cheaper.
+     </p></dd><dt><span class="term"><code class="literal">TABLESPACE</code></span></dt><dd><p>
+      Specifies that indexes will be rebuilt on a new tablespace.
+     </p></dd><dt><span class="term"><code class="literal">VERBOSE</code></span></dt><dd><p>
+      Prints a progress report as each index is reindexed.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>boolean</code></em></span></dt><dd><p>
+      Specifies whether the selected option should be turned on or off.
+      You can write <code class="literal">TRUE</code>, <code class="literal">ON</code>, or
+      <code class="literal">1</code> to enable the option, and <code class="literal">FALSE</code>,
+      <code class="literal">OFF</code>, or <code class="literal">0</code> to disable it.  The
+      <em class="replaceable"><code>boolean</code></em> value can also
+      be omitted, in which case <code class="literal">TRUE</code> is assumed.
+     </p></dd><dt><span class="term"><em class="replaceable"><code>new_tablespace</code></em></span></dt><dd><p>
+      The tablespace where indexes will be rebuilt.
+     </p></dd></dl></div></div><div class="refsect1" id="id-1.9.3.162.7"><h2>Notes</h2><p>
+   If you suspect corruption of an index on a user table, you can
+   simply rebuild that index, or all indexes on the table, using
+   <code class="command">REINDEX INDEX</code> or <code class="command">REINDEX TABLE</code>.
+  </p><p>
+   Things are more difficult if you need to recover from corruption of
+   an index on a system table.  In this case it's important for the
+   system to not have used any of the suspect indexes itself.
+   (Indeed, in this sort of scenario you might find that server
+   processes are crashing immediately at start-up, due to reliance on
+   the corrupted indexes.)  To recover safely, the server must be started
+   with the <code class="option">-P</code> option, which prevents it from using
+   indexes for system catalog lookups.
+  </p><p>
+   One way to do this is to shut down the server and start a single-user
+   <span class="productname">PostgreSQL</span> server
+   with the <code class="option">-P</code> option included on its command line.
+   Then, <code class="command">REINDEX DATABASE</code>, <code class="command">REINDEX SYSTEM</code>,
+   <code class="command">REINDEX TABLE</code>, or <code class="command">REINDEX INDEX</code> can be
+   issued, depending on how much you want to reconstruct.  If in
+   doubt, use <code class="command">REINDEX SYSTEM</code> to select
+   reconstruction of all system indexes in the database.  Then quit
+   the single-user server session and restart the regular server.
+   See the <a class="xref" href="app-postgres.html" title="postgres"><span class="refentrytitle"><span class="application">postgres</span></span></a> reference page for more
+   information about how to interact with the single-user server
+   interface.
+  </p><p>
+   Alternatively, a regular server session can be started with
+   <code class="option">-P</code> included in its command line options.
+   The method for doing this varies across clients, but in all
+   <span class="application">libpq</span>-based clients, it is possible to set
+   the <code class="envar">PGOPTIONS</code> environment variable to <code class="literal">-P</code>
+   before starting the client.  Note that while this method does not
+   require locking out other clients, it might still be wise to prevent
+   other users from connecting to the damaged database until repairs
+   have been completed.
+  </p><p>
+   <code class="command">REINDEX</code> is similar to a drop and recreate of the index
+   in that the index contents are rebuilt from scratch.  However, the locking
+   considerations are rather different.  <code class="command">REINDEX</code> locks out writes
+   but not reads of the index's parent table.  It also takes an
+   <code class="literal">ACCESS EXCLUSIVE</code> lock on the specific index being processed,
+   which will block reads that attempt to use that index.  In contrast,
+   <code class="command">DROP INDEX</code> momentarily takes an
+   <code class="literal">ACCESS EXCLUSIVE</code> lock on the parent table, blocking both
+   writes and reads.  The subsequent <code class="command">CREATE INDEX</code> locks out
+   writes but not reads; since the index is not there, no read will attempt to
+   use it, meaning that there will be no blocking but reads might be forced
+   into expensive sequential scans.
+  </p><p>
+   Reindexing a single index or table requires being the owner of that
+   index or table.  Reindexing a schema or database requires being the
+   owner of that schema or database.  Note specifically that it's thus
+   possible for non-superusers to rebuild indexes of tables owned by
+   other users.  However, as a special exception, when
+   <code class="command">REINDEX DATABASE</code>, <code class="command">REINDEX SCHEMA</code>
+   or <code class="command">REINDEX SYSTEM</code> is issued by a non-superuser,
+   indexes on shared catalogs will be skipped unless the user owns the
+   catalog (which typically won't be the case).  Of course, superusers
+   can always reindex anything.
+  </p><p>
+   Reindexing partitioned indexes or partitioned tables is supported
+   with <code class="command">REINDEX INDEX</code> or <code class="command">REINDEX TABLE</code>,
+   respectively. Each partition of the specified partitioned relation is
+   reindexed in a separate transaction. Those commands cannot be used inside
+   a transaction block when working on a partitioned table or index.
+  </p><p>
+   When using the <code class="literal">TABLESPACE</code> clause with
+   <code class="command">REINDEX</code> on a partitioned index or table, only the
+   tablespace references of the leaf partitions are updated. As partitioned
+   indexes are not updated, it is recommended to separately use
+   <code class="command">ALTER TABLE ONLY</code> on them so as any new partitions
+   attached inherit the new tablespace. On failure, it may not have moved
+   all the indexes to the new tablespace. Re-running the command will rebuild
+   all the leaf partitions and move previously-unprocessed indexes to the new
+   tablespace.
+  </p><p>
+   If <code class="literal">SCHEMA</code>, <code class="literal">DATABASE</code> or
+   <code class="literal">SYSTEM</code> is used with <code class="literal">TABLESPACE</code>,
+   system relations are skipped and a single <code class="literal">WARNING</code>
+   will be generated. Indexes on TOAST tables are rebuilt, but not moved
+   to the new tablespace.
+  </p><div class="refsect2" id="SQL-REINDEX-CONCURRENTLY"><h3>Rebuilding Indexes Concurrently</h3><a id="id-1.9.3.162.7.11.2" class="indexterm"></a><p>
+    Rebuilding an index can interfere with regular operation of a database.
+    Normally <span class="productname">PostgreSQL</span> locks the table whose index is rebuilt
+    against writes and performs the entire index build with a single scan of the
+    table. Other transactions can still read the table, but if they try to
+    insert, update, or delete rows in the table they will block until the
+    index rebuild is finished. This could have a severe effect if the system is
+    a live production database. Very large tables can take many hours to be
+    indexed, and even for smaller tables, an index rebuild can lock out writers
+    for periods that are unacceptably long for a production system.
+   </p><p>
+    <span class="productname">PostgreSQL</span> supports rebuilding indexes with minimum locking
+    of writes.  This method is invoked by specifying the
+    <code class="literal">CONCURRENTLY</code> option of <code class="command">REINDEX</code>. When this option
+    is used, <span class="productname">PostgreSQL</span> must perform two scans of the table
+    for each index that needs to be rebuilt and wait for termination of
+    all existing transactions that could potentially use the index.
+    This method requires more total work than a standard index
+    rebuild and takes significantly longer to complete as it needs to wait
+    for unfinished transactions that might modify the index. However, since
+    it allows normal operations to continue while the index is being rebuilt, this
+    method is useful for rebuilding indexes in a production environment. Of
+    course, the extra CPU, memory and I/O load imposed by the index rebuild
+    may slow down other operations.
+   </p><p>
+    The following steps occur in a concurrent reindex.  Each step is run in a
+    separate transaction.  If there are multiple indexes to be rebuilt, then
+    each step loops through all the indexes before moving to the next step.
+
+    </p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>
+       A new transient index definition is added to the catalog
+       <code class="literal">pg_index</code>.  This definition will be used to replace
+       the old index.  A <code class="literal">SHARE UPDATE EXCLUSIVE</code> lock at
+       session level is taken on the indexes being reindexed as well as their
+       associated tables to prevent any schema modification while processing.
+      </p></li><li class="listitem"><p>
+       A first pass to build the index is done for each new index.  Once the
+       index is built, its flag <code class="literal">pg_index.indisready</code> is
+       switched to <span class="quote">“<span class="quote">true</span>”</span> to make it ready for inserts, making it
+       visible to other sessions once the transaction that performed the build
+       is finished.  This step is done in a separate transaction for each
+       index.
+      </p></li><li class="listitem"><p>
+       Then a second pass is performed to add tuples that were added while the
+       first pass was running.  This step is also done in a separate
+       transaction for each index.
+      </p></li><li class="listitem"><p>
+       All the constraints that refer to the index are changed to refer to the
+       new index definition, and the names of the indexes are changed.  At
+       this point, <code class="literal">pg_index.indisvalid</code> is switched to
+       <span class="quote">“<span class="quote">true</span>”</span> for the new index and to <span class="quote">“<span class="quote">false</span>”</span> for
+       the old, and a cache invalidation is done causing all sessions that
+       referenced the old index to be invalidated.
+      </p></li><li class="listitem"><p>
+       The old indexes have <code class="literal">pg_index.indisready</code> switched to
+       <span class="quote">“<span class="quote">false</span>”</span> to prevent any new tuple insertions, after waiting
+       for running queries that might reference the old index to complete.
+      </p></li><li class="listitem"><p>
+       The old indexes are dropped.  The <code class="literal">SHARE UPDATE
+       EXCLUSIVE</code> session locks for the indexes and the table are
+       released.
+      </p></li></ol></div><p>
+   </p><p>
+    If a problem arises while rebuilding the indexes, such as a
+    uniqueness violation in a unique index, the <code class="command">REINDEX</code>
+    command will fail but leave behind an <span class="quote">“<span class="quote">invalid</span>”</span> new index in addition to
+    the pre-existing one. This index will be ignored for querying purposes
+    because it might be incomplete; however it will still consume update
+    overhead. The <span class="application">psql</span> <code class="command">\d</code> command will report
+    such an index as <code class="literal">INVALID</code>:
+
+</p><pre class="programlisting">
+postgres=# \d tab
+       Table "public.tab"
+ Column |  Type   | Modifiers
+--------+---------+-----------
+ col    | integer |
+Indexes:
+    "idx" btree (col)
+    "idx_ccnew" btree (col) INVALID
+</pre><p>
+
+    If the index marked <code class="literal">INVALID</code> is suffixed
+    <code class="literal">ccnew</code>, then it corresponds to the transient
+    index created during the concurrent operation, and the recommended
+    recovery method is to drop it using <code class="literal">DROP INDEX</code>,
+    then attempt <code class="command">REINDEX CONCURRENTLY</code> again.
+    If the invalid index is instead suffixed <code class="literal">ccold</code>,
+    it corresponds to the original index which could not be dropped;
+    the recommended recovery method is to just drop said index, since the
+    rebuild proper has been successful.
+   </p><p>
+    Regular index builds permit other regular index builds on the same table
+    to occur simultaneously, but only one concurrent index build can occur on a
+    table at a time. In both cases, no other types of schema modification on
+    the table are allowed meanwhile.  Another difference is that a regular
+    <code class="command">REINDEX TABLE</code> or <code class="command">REINDEX INDEX</code>
+    command can be performed within a transaction block, but <code class="command">REINDEX
+    CONCURRENTLY</code> cannot.
+   </p><p>
+    Like any long-running transaction, <code class="command">REINDEX</code> on a table
+    can affect which tuples can be removed by concurrent
+    <code class="command">VACUUM</code> on any other table.
+   </p><p>
+    <code class="command">REINDEX SYSTEM</code> does not support
+    <code class="command">CONCURRENTLY</code> since system catalogs cannot be reindexed
+    concurrently.
+   </p><p>
+    Furthermore, indexes for exclusion constraints cannot be reindexed
+    concurrently.  If such an index is named directly in this command, an
+    error is raised.  If a table or database with exclusion constraint indexes
+    is reindexed concurrently, those indexes will be skipped.  (It is possible
+    to reindex such indexes without the <code class="command">CONCURRENTLY</code> option.)
+   </p><p>
+    Each backend running <code class="command">REINDEX</code> will report its progress
+    in the <code class="structname">pg_stat_progress_create_index</code> view. See
+    <a class="xref" href="progress-reporting.html#CREATE-INDEX-PROGRESS-REPORTING" title="28.4.2. CREATE INDEX Progress Reporting">Section 28.4.2</a> for details.
+  </p></div></div><div class="refsect1" id="id-1.9.3.162.8"><h2>Examples</h2><p>
+   Rebuild a single index:
+
+</p><pre class="programlisting">
+REINDEX INDEX my_index;
+</pre><p>
+  </p><p>
+   Rebuild all the indexes on the table <code class="literal">my_table</code>:
+
+</p><pre class="programlisting">
+REINDEX TABLE my_table;
+</pre><p>
+  </p><p>
+   Rebuild all indexes in a particular database, without trusting the
+   system indexes to be valid already:
+
+</p><pre class="programlisting">
+$ <strong class="userinput"><code>export PGOPTIONS="-P"</code></strong>
+$ <strong class="userinput"><code>psql broken_db</code></strong>
+...
+broken_db=&gt; REINDEX DATABASE broken_db;
+broken_db=&gt; \q
+</pre><p>
+   Rebuild indexes for a table, without blocking read and write operations
+   on involved relations while reindexing is in progress:
+
+</p><pre class="programlisting">
+REINDEX TABLE CONCURRENTLY my_broken_table;
+</pre></div><div class="refsect1" id="id-1.9.3.162.9"><h2>Compatibility</h2><p>
+   There is no <code class="command">REINDEX</code> command in the SQL standard.
+  </p></div><div class="refsect1" id="id-1.9.3.162.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="sql-createindex.html" title="CREATE INDEX"><span class="refentrytitle">CREATE INDEX</span></a>, <a class="xref" href="sql-dropindex.html" title="DROP INDEX"><span class="refentrytitle">DROP INDEX</span></a>, <a class="xref" href="app-reindexdb.html" title="reindexdb"><span class="refentrytitle"><span class="application">reindexdb</span></span></a>, <a class="xref" href="progress-reporting.html#CREATE-INDEX-PROGRESS-REPORTING" title="28.4.2. CREATE INDEX Progress Reporting">Section 28.4.2</a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="sql-refreshmaterializedview.html" title="REFRESH MATERIALIZED VIEW">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="sql-commands.html" title="SQL Commands">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="sql-release-savepoint.html" title="RELEASE SAVEPOINT">Next</a></td></tr><tr><td width="40%" align="left" valign="top">REFRESH MATERIALIZED VIEW </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> RELEASE SAVEPOINT</td></tr></table></div></body></html>

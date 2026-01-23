@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>36.16. Oracle Compatibility Mode</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="ecpg-informix-compat.html" title="36.15. Informix Compatibility Mode" /><link rel="next" href="ecpg-develop.html" title="36.17. Internals" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">36.16. <span xmlns="http://www.w3.org/1999/xhtml" class="productname">Oracle</span> Compatibility Mode</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="ecpg-informix-compat.html" title="36.15. Informix Compatibility Mode">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><th width="60%" align="center">Chapter 36. <span xmlns="http://www.w3.org/1999/xhtml" class="application">ECPG</span> — Embedded <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">SQL</acronym> in C</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="ecpg-develop.html" title="36.17. Internals">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ECPG-ORACLE-COMPAT"><div class="titlepage"><div><div><h2 class="title" style="clear: both">36.16. <span class="productname">Oracle</span> Compatibility Mode</h2></div></div></div><p>
+   <code class="command">ecpg</code> can be run in a so-called <em class="firstterm">Oracle
+   compatibility mode</em>. If this mode is active, it tries to
+   behave as if it were Oracle <span class="productname">Pro*C</span>.
+  </p><p>
+   Specifically, this mode changes <code class="command">ecpg</code> in three ways:
+
+   </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Pad character arrays receiving character string types with
+      trailing spaces to the specified length
+     </p></li><li class="listitem"><p>
+      Zero byte terminate these character arrays, and set the indicator
+      variable if truncation occurs
+     </p></li><li class="listitem"><p>
+      Set the null indicator to <code class="literal">-1</code> when character
+      arrays receive empty character string types
+     </p></li></ul></div><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ecpg-informix-compat.html" title="36.15. Informix Compatibility Mode">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter 36. ECPG — Embedded SQL in C">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ecpg-develop.html" title="36.17. Internals">Next</a></td></tr><tr><td width="40%" align="left" valign="top">36.15. <span xmlns="http://www.w3.org/1999/xhtml" class="productname">Informix</span> Compatibility Mode </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 36.17. Internals</td></tr></table></div></body></html>

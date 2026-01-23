@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>F.34. pg_visibility</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="pgtrgm.html" title="F.33. pg_trgm" /><link rel="next" href="postgres-fdw.html" title="F.35. postgres_fdw" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">F.34. pg_visibility</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="pgtrgm.html" title="F.33. pg_trgm">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><th width="60%" align="center">Appendix F. Additional Supplied Modules</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="postgres-fdw.html" title="F.35. postgres_fdw">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PGVISIBILITY"><div class="titlepage"><div><div><h2 class="title" style="clear: both">F.34. pg_visibility</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="pgvisibility.html#id-1.11.7.43.6">F.34.1. Functions</a></span></dt><dt><span class="sect2"><a href="pgvisibility.html#id-1.11.7.43.7">F.34.2. Author</a></span></dt></dl></div><a id="id-1.11.7.43.2" class="indexterm"></a><p>
+  The <code class="filename">pg_visibility</code> module provides a means for examining the
+  visibility map (VM) and page-level visibility information of a table.
+  It also provides functions to check the integrity of a visibility map and to
+  force it to be rebuilt.
+ </p><p>
+  Three different bits are used to store information about page-level
+  visibility.  The all-visible bit in the visibility map indicates that every
+  tuple in the corresponding page of the relation is visible to every current
+  and future transaction.  The all-frozen bit in the visibility map indicates
+  that every tuple in the page is frozen; that is, no future vacuum will need
+  to modify the page until such time as a tuple is inserted, updated, deleted,
+  or locked on that page.
+  The page header's <code class="literal">PD_ALL_VISIBLE</code> bit has the
+  same meaning as the all-visible bit in the visibility map, but is stored
+  within the data page itself rather than in a separate data structure.
+  These two bits will normally agree, but the page's all-visible bit can
+  sometimes be set while the visibility map bit is clear after a crash
+  recovery.  The reported values can also disagree because of a change that
+  occurs after <code class="literal">pg_visibility</code> examines the visibility map and
+  before it examines the data page.  Any event that causes data corruption
+  can also cause these bits to disagree.
+ </p><p>
+  Functions that display information about <code class="literal">PD_ALL_VISIBLE</code> bits
+  are much more costly than those that only consult the visibility map,
+  because they must read the relation's data blocks rather than only the
+  (much smaller) visibility map.  Functions that check the relation's
+  data blocks are similarly expensive.
+ </p><div class="sect2" id="id-1.11.7.43.6"><div class="titlepage"><div><div><h3 class="title">F.34.1. Functions</h3></div></div></div><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="function">pg_visibility_map(relation regclass, blkno bigint, all_visible OUT boolean, all_frozen OUT boolean) returns record</code></span></dt><dd><p>
+      Returns the all-visible and all-frozen bits in the visibility map for
+      the given block of the given relation.
+     </p></dd><dt><span class="term"><code class="function">pg_visibility(relation regclass, blkno bigint, all_visible OUT boolean, all_frozen OUT boolean, pd_all_visible OUT boolean) returns record</code></span></dt><dd><p>
+      Returns the all-visible and all-frozen bits in the visibility map for
+      the given block of the given relation, plus the
+      <code class="literal">PD_ALL_VISIBLE</code> bit of that block.
+     </p></dd><dt><span class="term"><code class="function">pg_visibility_map(relation regclass, blkno OUT bigint, all_visible OUT boolean, all_frozen OUT boolean) returns setof record</code></span></dt><dd><p>
+      Returns the all-visible and all-frozen bits in the visibility map for
+      each block of the given relation.
+     </p></dd><dt><span class="term"><code class="function">pg_visibility(relation regclass, blkno OUT bigint, all_visible OUT boolean, all_frozen OUT boolean, pd_all_visible OUT boolean) returns setof record</code></span></dt><dd><p>
+      Returns the all-visible and all-frozen bits in the visibility map for
+      each block of the given relation, plus the <code class="literal">PD_ALL_VISIBLE</code>
+      bit of each block.
+     </p></dd><dt><span class="term"><code class="function">pg_visibility_map_summary(relation regclass, all_visible OUT bigint, all_frozen OUT bigint) returns record</code></span></dt><dd><p>
+      Returns the number of all-visible pages and the number of all-frozen
+      pages in the relation according to the visibility map.
+     </p></dd><dt><span class="term"><code class="function">pg_check_frozen(relation regclass, t_ctid OUT tid) returns setof tid</code></span></dt><dd><p>
+      Returns the TIDs of non-frozen tuples stored in pages marked all-frozen
+      in the visibility map.  If this function returns a non-empty set of
+      TIDs, the visibility map is corrupt.
+     </p></dd><dt><span class="term"><code class="function">pg_check_visible(relation regclass, t_ctid OUT tid) returns setof tid</code></span></dt><dd><p>
+      Returns the TIDs of non-all-visible tuples stored in pages marked
+      all-visible in the visibility map.  If this function returns a non-empty
+      set of TIDs, the visibility map is corrupt.
+     </p></dd><dt><span class="term"><code class="function">pg_truncate_visibility_map(relation regclass) returns void</code></span></dt><dd><p>
+      Truncates the visibility map for the given relation.  This function is
+      useful if you believe that the visibility map for the relation is
+      corrupt and wish to force rebuilding it.  The first <code class="command">VACUUM</code>
+      executed on the given relation after this function is executed will scan
+      every page in the relation and rebuild the visibility map.  (Until that
+      is done, queries will treat the visibility map as containing all zeroes.)
+     </p></dd></dl></div><p>
+   By default, these functions are executable only by superusers and members of the
+   <code class="literal">pg_stat_scan_tables</code> role, with the exception of
+   <code class="function">pg_truncate_visibility_map(relation regclass)</code> which can only
+   be executed by superusers.
+  </p></div><div class="sect2" id="id-1.11.7.43.7"><div class="titlepage"><div><div><h3 class="title">F.34.2. Author</h3></div></div></div><p>
+   Robert Haas <code class="email">&lt;<a class="email" href="mailto:rhaas@postgresql.org">rhaas@postgresql.org</a>&gt;</code>
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="pgtrgm.html" title="F.33. pg_trgm">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib.html" title="Appendix F. Additional Supplied Modules">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="postgres-fdw.html" title="F.35. postgres_fdw">Next</a></td></tr><tr><td width="40%" align="left" valign="top">F.33. pg_trgm </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> F.35. postgres_fdw</td></tr></table></div></body></html>

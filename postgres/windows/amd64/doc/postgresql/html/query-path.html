@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>51.1. The Path of a Query</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals" /><link rel="next" href="connect-estab.html" title="51.2. How Connections Are Established" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">51.1. The Path of a Query</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Up</a></td><th width="60%" align="center">Chapter 51. Overview of PostgreSQL Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="connect-estab.html" title="51.2. How Connections Are Established">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="QUERY-PATH"><div class="titlepage"><div><div><h2 class="title" style="clear: both">51.1. The Path of a Query</h2></div></div></div><p>
+    Here we give a short overview of the stages a query has to pass
+    to obtain a result.
+   </p><div class="procedure"><ol class="procedure" type="1"><li class="step"><p>
+      A connection from an application program to the <span class="productname">PostgreSQL</span>
+      server has to be established. The application program transmits a
+      query to the server and waits to receive the results sent back by the
+      server.
+     </p></li><li class="step"><p>
+      The <em class="firstterm">parser stage</em> checks the query
+      transmitted by the application
+      program for correct syntax and creates
+      a <em class="firstterm">query tree</em>.
+     </p></li><li class="step"><p>
+      The <em class="firstterm">rewrite system</em> takes
+      the query tree created by the parser stage and looks for
+      any <em class="firstterm">rules</em> (stored in the
+      <em class="firstterm">system catalogs</em>) to apply to
+      the query tree.  It performs the
+      transformations given in the <em class="firstterm">rule bodies</em>.
+     </p><p>
+      One application of the rewrite system is in the realization of
+      <em class="firstterm">views</em>.
+      Whenever a query against a view
+      (i.e., a <em class="firstterm">virtual table</em>) is made,
+      the rewrite system rewrites the user's query to
+      a query that accesses the <em class="firstterm">base tables</em> given in
+      the <em class="firstterm">view definition</em> instead.
+     </p></li><li class="step"><p>
+      The <em class="firstterm">planner/optimizer</em> takes
+      the (rewritten) query tree and creates a
+      <em class="firstterm">query plan</em> that will be the input to the
+      <em class="firstterm">executor</em>.
+     </p><p>
+      It does so by first creating all possible <em class="firstterm">paths</em>
+      leading to the same result. For example if there is an index on a
+      relation to be scanned, there are two paths for the
+      scan. One possibility is a simple sequential scan and the other
+      possibility is to use the index. Next the cost for the execution of
+      each path is estimated and the cheapest path is chosen.  The cheapest
+      path is expanded into a complete plan that the executor can use.
+     </p></li><li class="step"><p>
+      The executor recursively steps through
+      the <em class="firstterm">plan tree</em> and
+      retrieves rows in the way represented by the plan.
+      The executor makes use of the
+      <em class="firstterm">storage system</em> while scanning
+      relations, performs <em class="firstterm">sorts</em> and <em class="firstterm">joins</em>,
+      evaluates <em class="firstterm">qualifications</em> and finally hands back the rows derived.
+     </p></li></ol></div><p>
+    In the following sections we will cover each of the above listed items
+    in more detail to give a better understanding of <span class="productname">PostgreSQL</span>'s internal
+    control and data structures.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="connect-estab.html" title="51.2. How Connections Are Established">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 51. Overview of PostgreSQL Internals </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 51.2. How Connections Are Established</td></tr></table></div></body></html>

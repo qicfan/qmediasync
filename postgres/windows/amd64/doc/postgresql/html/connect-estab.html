@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>51.2. How Connections Are Established</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="query-path.html" title="51.1. The Path of a Query" /><link rel="next" href="parser-stage.html" title="51.3. The Parser Stage" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">51.2. How Connections Are Established</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="query-path.html" title="51.1. The Path of a Query">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Up</a></td><th width="60%" align="center">Chapter 51. Overview of PostgreSQL Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="parser-stage.html" title="51.3. The Parser Stage">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CONNECT-ESTAB"><div class="titlepage"><div><div><h2 class="title" style="clear: both">51.2. How Connections Are Established</h2></div></div></div><p>
+    <span class="productname">PostgreSQL</span> implements a
+    <span class="quote">“<span class="quote">process per user</span>”</span> client/server model.
+    In this model, every
+    <a class="glossterm" href="glossary.html#GLOSSARY-CLIENT"><em class="glossterm"><a class="glossterm" href="glossary.html#GLOSSARY-CLIENT" title="Client (process)">client process</a></em></a>
+    connects to exactly one
+    <a class="glossterm" href="glossary.html#GLOSSARY-BACKEND"><em class="glossterm"><a class="glossterm" href="glossary.html#GLOSSARY-BACKEND" title="Backend (process)">backend process</a></em></a>.
+    As we do not know ahead of time how many connections will be made,
+    we have to use a <span class="quote">“<span class="quote">supervisor process</span>”</span> that spawns a new
+    backend process every time a connection is requested. This supervisor
+    process is called
+    <a class="glossterm" href="glossary.html#GLOSSARY-POSTMASTER"><em class="glossterm"><a class="glossterm" href="glossary.html#GLOSSARY-POSTMASTER" title="Postmaster (process)">postmaster</a></em></a>
+    and listens at a specified TCP/IP port for incoming connections.
+    Whenever it detects a request for a connection, it spawns a new
+    backend process.  Those backend processes communicate with each
+    other and with other processes of the
+    <a class="glossterm" href="glossary.html#GLOSSARY-INSTANCE"><em class="glossterm"><a class="glossterm" href="glossary.html#GLOSSARY-INSTANCE" title="Instance">instance</a></em></a>
+    using <em class="firstterm">semaphores</em> and
+    <a class="glossterm" href="glossary.html#GLOSSARY-SHARED-MEMORY"><em class="glossterm"><a class="glossterm" href="glossary.html#GLOSSARY-SHARED-MEMORY" title="Shared memory">shared memory</a></em></a>
+    to ensure data integrity throughout concurrent data access.
+   </p><p>
+    The client process can be any program that understands the
+    <span class="productname">PostgreSQL</span> protocol described in
+    <a class="xref" href="protocol.html" title="Chapter 53. Frontend/Backend Protocol">Chapter 53</a>.  Many clients are based on the
+    C-language library <span class="application">libpq</span>, but several independent
+    implementations of the protocol exist, such as the Java
+    <span class="application">JDBC</span> driver.
+   </p><p>
+    Once a connection is established, the client process can send a query
+    to the backend process it's connected to. The query is transmitted using
+    plain text, i.e., there is no parsing done in the client. The backend
+    process parses the query, creates an <em class="firstterm">execution plan</em>,
+    executes the plan, and returns the retrieved rows to the client
+    by transmitting them over the established connection.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="query-path.html" title="51.1. The Path of a Query">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="overview.html" title="Chapter 51. Overview of PostgreSQL Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="parser-stage.html" title="51.3. The Parser Stage">Next</a></td></tr><tr><td width="40%" align="left" valign="top">51.1. The Path of a Query </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 51.3. The Parser Stage</td></tr></table></div></body></html>

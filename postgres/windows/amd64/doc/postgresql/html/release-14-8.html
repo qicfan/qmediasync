@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>E.5. Release 14.8</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="release-14-9.html" title="E.4. Release 14.9" /><link rel="next" href="release-14-7.html" title="E.6. Release 14.7" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">E.5. Release 14.8</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="release-14-9.html" title="E.4. Release 14.9">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><th width="60%" align="center">Appendix E. Release Notes</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="release-14-7.html" title="E.6. Release 14.7">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RELEASE-14-8"><div class="titlepage"><div><div><h2 class="title" style="clear: both">E.5. Release 14.8</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="release-14-8.html#id-1.11.6.9.4">E.5.1. Migration to Version 14.8</a></span></dt><dt><span class="sect2"><a href="release-14-8.html#id-1.11.6.9.5">E.5.2. Changes</a></span></dt></dl></div><p><strong>Release date: </strong>2023-05-11</p><p>
+   This release contains a variety of fixes from 14.7.
+   For information about new features in major release 14, see
+   <a class="xref" href="release-14.html" title="E.13. Release 14">Section E.13</a>.
+  </p><div class="sect2" id="id-1.11.6.9.4"><div class="titlepage"><div><div><h3 class="title">E.5.1. Migration to Version 14.8</h3></div></div></div><p>
+    A dump/restore is not required for those running 14.X.
+   </p><p>
+    However, if you are upgrading from a version earlier than 14.4,
+    see <a class="xref" href="release-14-4.html" title="E.9. Release 14.4">Section E.9</a>.
+   </p></div><div class="sect2" id="id-1.11.6.9.5"><div class="titlepage"><div><div><h3 class="title">E.5.2. Changes</h3></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+      Prevent <code class="command">CREATE SCHEMA</code> from defeating changes
+      in <code class="varname">search_path</code> (Alexander Lakhin)
+     </p><p>
+      Within a <code class="command">CREATE SCHEMA</code> command, objects in the
+      prevailing <code class="varname">search_path</code>, as well as those in the
+      newly-created schema, would be visible even within a called
+      function or script that attempted to set a
+      secure <code class="varname">search_path</code>.  This could allow any user
+      having permission to create a schema to hijack the privileges of a
+      security definer function or extension script.
+     </p><p>
+      The <span class="productname">PostgreSQL</span> Project thanks
+      Alexander Lakhin for reporting this problem.
+      (CVE-2023-2454)
+     </p></li><li class="listitem"><p>
+      Enforce row-level security policies correctly after inlining a
+      set-returning function (Stephen Frost, Tom Lane)
+     </p><p>
+      If a set-returning SQL-language function refers to a table having
+      row-level security policies, and it can be inlined into a calling
+      query, those RLS policies would not get enforced properly in some
+      cases involving re-using a cached plan under a different role.
+      This could allow a user to see or modify rows that should have been
+      invisible.
+     </p><p>
+      The <span class="productname">PostgreSQL</span> Project thanks
+      Wolfgang Walther for reporting this problem.
+      (CVE-2023-2455)
+     </p></li><li class="listitem"><p>
+      Avoid crash when the new schema name is omitted
+      in <code class="command">CREATE SCHEMA</code> (Michael Paquier)
+     </p><p>
+      The SQL standard allows writing <code class="literal">CREATE SCHEMA AUTHORIZATION
+      <em class="replaceable"><code>owner_name</code></em></code>, with the schema
+      name defaulting to <em class="replaceable"><code>owner_name</code></em>.  However
+      some code paths expected the schema name to be present and would
+      fail.
+     </p></li><li class="listitem"><p>
+      Fix enabling/disabling of cloned triggers in partitioned tables
+      (Tom Lane)
+     </p><p>
+      <code class="command">ALTER TABLE ... ENABLE/DISABLE TRIGGER USER</code>
+      skipped cloned triggers, mistaking them for system triggers.
+      Other variants of <code class="literal">ENABLE/DISABLE TRIGGER</code> would
+      process them, but only after improperly enforcing a superuserness
+      check.
+     </p></li><li class="listitem"><p>
+      Disallow altering composite types that are stored in indexes
+      (Tom Lane)
+     </p><p>
+      <code class="command">ALTER TYPE</code> disallows non-binary-compatible
+      modifications of composite types if they are stored in any table
+      columns.  (Perhaps that will be allowed someday, but it hasn't
+      happened yet; the locking implications of rewriting many tables are
+      daunting.)  We overlooked the possibility that an index might
+      contain a composite type that doesn't also appear in its table.
+     </p></li><li class="listitem"><p>
+      Disallow system columns as elements of foreign keys (Tom Lane)
+     </p><p>
+      Since the removal of OID as a system column, there is no plausible
+      use-case for this, and various bits of code no longer support it.
+      Disallow it rather than trying to fix all the cases.
+     </p></li><li class="listitem"><p>
+      Ensure that <code class="command">COPY TO</code> from an RLS-enabled parent
+      table does not copy any rows from child tables (Antonin Houska)
+     </p><p>
+      The documentation is quite clear that <code class="command">COPY TO</code>
+      copies rows from only the named table, not any inheritance children
+      it may have.  However, if row-level security was enabled on the table
+      then this stopped being true.
+     </p></li><li class="listitem"><p>
+      Avoid possible crash when <code class="function">array_position()</code>
+      or <code class="function">array_positions()</code> is passed an empty array
+      (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix possible out-of-bounds fetch in <code class="function">to_char()</code>
+      (Tom Lane)
+     </p><p>
+      With bad luck this could have resulted in a server crash.
+     </p></li><li class="listitem"><p>
+      Avoid buffer overread in <code class="function">translate()</code> function
+      (Daniil Anisimov)
+     </p><p>
+      When using the deletion feature, the function might fetch the byte
+      just after the input string, creating a small risk of crash.
+     </p></li><li class="listitem"><p>
+      Fix error cursor setting for parse errors in JSON string literals
+      (Tom Lane)
+     </p><p>
+      Most cases in which a syntax error is detected in a string literal
+      within a JSON value failed to set the error cursor appropriately.
+      This led at least to an unhelpful error message (pointing to the
+      token before the string, rather than the actual trouble spot), and
+      could even result in a crash in v14 and later.
+     </p></li><li class="listitem"><p>
+      Fix data corruption due to <code class="varname">vacuum_defer_cleanup_age</code>
+      being larger than the current 64-bit xid (Andres Freund)
+     </p><p>
+      In v14 and later with non-default settings
+      of <code class="varname">vacuum_defer_cleanup_age</code>, it was possible to
+      compute a very large vacuum cleanup horizon xid, leading to vacuum
+      removing rows that are still live.  v12 and v13 have a lesser form
+      of the same problem affecting only GiST indexes, which could lead to
+      index pages getting recycled too early.
+     </p></li><li class="listitem"><p>
+      Fix parser's failure to detect some cases of improperly-nested
+      aggregates (Tom Lane)
+     </p><p>
+      This oversight could lead to executor failures for queries that
+      should have been rejected as invalid.
+     </p></li><li class="listitem"><p>
+      Fix data structure corruption during parsing of
+      serial <code class="literal">SEQUENCE NAME</code> options (David Rowley)
+     </p><p>
+      This can lead to trouble if an event trigger captures the corrupted
+      parse tree.
+     </p></li><li class="listitem"><p>
+      Correctly update plan nodes' parallel-safety markings when moving
+      initplans from one node to another (Tom Lane)
+     </p><p>
+      This planner oversight could lead to <span class="quote">“<span class="quote">subplan was not
+      initialized</span>”</span> errors at runtime.
+     </p></li><li class="listitem"><p>
+      Avoid failure with PlaceHolderVars in extended-statistics code
+      (Tom Lane)
+     </p><p>
+      Use of dependency-type extended statistics could fail with
+      <span class="quote">“<span class="quote">PlaceHolderVar found where not expected</span>”</span>.
+     </p></li><li class="listitem"><p>
+      Disable the inverse-transition optimization for window aggregates
+      when the call contains sub-SELECTs (David Rowley)
+     </p><p>
+      This optimization requires that the aggregate's argument expressions
+      have repeatable results, which might not hold for a sub-SELECT.
+     </p></li><li class="listitem"><p>
+      Fix oversights in execution of nested <code class="literal">ARRAY[]</code>
+      constructs (Alexander Lakhin, Tom Lane)
+     </p><p>
+      Correctly detect overflow of the total space needed for the result
+      array, avoiding a possible crash due to undersized output
+      allocation.  Also ensure that any trailing padding space in the
+      result array is zeroed; while leaving garbage there is harmless for
+      most purposes, it can result in odd behavior later.
+     </p></li><li class="listitem"><p>
+      Prevent crash when updating a field within an
+      array-of-domain-over-composite-type column (Dmitry Dolgov)
+     </p></li><li class="listitem"><p>
+      Fix partition pruning logic for partitioning on boolean columns
+      (David Rowley)
+     </p><p>
+      Pruning with a condition like <code class="literal">boolcol IS NOT TRUE</code>
+      was done incorrectly, leading to possibly not returning rows in
+      which <code class="literal">boolcol</code> is NULL.  Also, the rather unlikely
+      case of partitioning on <code class="literal">NOT boolcol</code> was handled
+      incorrectly.
+     </p></li><li class="listitem"><p>
+      Fix race condition in per-batch cleanup during parallel hash join
+      (Thomas Munro, Melanie Plageman)
+     </p><p>
+      A crash was possible given unlucky timing and
+      <code class="varname">parallel_leader_participation</code>
+      = <code class="literal">off</code> (which is not the default).
+     </p></li><li class="listitem"><p>
+      Recalculate <code class="literal">GENERATED</code> columns after an
+      EvalPlanQual check (Tom Lane)
+     </p><p>
+      In <code class="literal">READ COMMITTED</code> isolation mode, the effects of
+      a row update might need to get reapplied to a newer version of the
+      row than the query found originally.  If so, we need to recompute
+      any <code class="literal">GENERATED</code> columns, in case they depend on
+      columns that were changed by the concurrent update.
+     </p></li><li class="listitem"><p>
+      Fix memory leak in Memoize plan execution (David Rowley)
+     </p></li><li class="listitem"><p>
+      Fix buffer refcount leak when using batched inserts for a foreign
+      table included in a partitioned tree (Alexander Pyhalov)
+     </p></li><li class="listitem"><p>
+      Restore support for
+      sub-millisecond <code class="varname">vacuum_cost_delay</code> settings
+      (Thomas Munro)
+     </p></li><li class="listitem"><p>
+      Don't balance vacuum cost delay when a table has a
+      per-relation <code class="varname">vacuum_cost_delay</code> setting of zero
+      (Masahiko Sawada)
+     </p><p>
+      Delay balancing is supposed to be disabled whenever autovacuum is
+      processing a table with a
+      per-relation <code class="varname">vacuum_cost_delay</code> setting, but this
+      was done only for positive settings, not zero.
+     </p></li><li class="listitem"><p>
+      Fix corner-case crashes when columns have been added to the end of a
+      view (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Repair rare failure of MULTIEXPR_SUBLINK subplans in partitioned
+      updates (Andres Freund, Tom Lane)
+     </p><p>
+      Use of the syntax <code class="literal">INSERT ... ON CONFLICT DO UPDATE SET (c1,
+      ...) = (SELECT ...)</code> with a partitioned target table could
+      result in failure if any child table is dissimilar from the parent
+      (for example, different physical column order).
+      This typically manifested as failure of consistency checks in the
+      executor; but a crash or incorrect data updates are also possible.
+     </p></li><li class="listitem"><p>
+      Fix handling of <code class="literal">DEFAULT</code> markers within a
+      multi-row <code class="literal">INSERT ... VALUES</code> query on a view that
+      has a <code class="literal">DO ALSO INSERT ... SELECT</code> rule (Dean
+      Rasheed)
+     </p><p>
+      Such cases typically failed with <span class="quote">“<span class="quote">unrecognized node
+      type</span>”</span> errors or assertion failures.
+     </p></li><li class="listitem"><p>
+      Support references to <code class="literal">OLD</code>
+      and <code class="literal">NEW</code> within subqueries in rule actions
+      (Dean Rasheed, Tom Lane)
+     </p><p>
+      Such references are really lateral references, but the server could
+      crash if the subquery wasn't explicitly marked
+      with <code class="literal">LATERAL</code>.  Arrange to do that implicitly when
+      necessary.
+     </p></li><li class="listitem"><p>
+      When decompiling a rule or SQL function body
+      containing <code class="command">INSERT</code>/<code class="command">UPDATE</code>/<code class="command">DELETE</code>
+      within <code class="command">WITH</code>, take care to print the correct alias
+      for the target table (Tom Lane)
+     </p></li><li class="listitem"><p>
+      Fix glitches in <code class="literal">SERIALIZABLE READ ONLY</code>
+      optimization (Thomas Munro)
+     </p><p>
+      Transactions already marked as <span class="quote">“<span class="quote">doomed</span>”</span> confused the
+      safe-snapshot optimization for <code class="literal">SERIALIZABLE READ
+      ONLY</code> transactions.  The optimization was unnecessarily
+      skipped in some cases.  In other cases an assertion failure occurred
+      (but there was no problem in non-assert builds).
+     </p></li><li class="listitem"><p>
+      Avoid leaking cache callback slots in
+      the <code class="literal">pgoutput</code> logical decoding plugin (Shi Yu)
+     </p><p>
+      Multiple cycles of starting up and shutting down the plugin within a
+      single session would eventually lead to an <span class="quote">“<span class="quote">out of
+      relcache_callback_list slots</span>”</span> error.
+     </p></li><li class="listitem"><p>
+      Avoid unnecessary calls to custom validators for index operator
+      class options (Alexander Korotkov)
+     </p><p>
+      This change fixes some cases where an unexpected error was thrown.
+     </p></li><li class="listitem"><p>
+      Avoid useless work while scanning a multi-column BRIN index with
+      multiple scan keys (Tomas Vondra)
+     </p><p>
+      The existing code effectively considered only the last scan key
+      while deciding whether a range matched, thus usually scanning more
+      of the index than it needed to.
+     </p></li><li class="listitem"><p>
+      Fix netmask handling in BRIN inet_minmax_multi_ops opclass
+      (Tomas Vondra)
+     </p><p>
+      This error triggered an assertion failure in assert-enabled builds,
+      but is mostly harmless in production builds.
+     </p></li><li class="listitem"><p>
+      Fix dereference of dangling pointer during buffering build of a GiST
+      index (Alexander Lakhin)
+     </p><p>
+      This error seems to usually be harmless in production builds, as the
+      fetched value is noncritical; but in principle it could cause a
+      server crash.
+     </p></li><li class="listitem"><p>
+      Ignore dropped columns and generated columns during logical
+      replication of an update or delete action (Onder Kalaci, Shi Yu)
+     </p><p>
+      Replication with the <code class="literal">REPLICA IDENTITY FULL</code> option
+      failed if the table contained such columns.
+     </p></li><li class="listitem"><p>
+      Correct the name of the wait event for SLRU buffer I/O for commit
+      timestamps (Alexander Lakhin)
+     </p><p>
+      This wait event is named <code class="literal">CommitTsBuffer</code> according
+      to the documentation, but the code had it
+      as <code class="literal">CommitTSBuffer</code>.  Change the code to match the
+      documentation, as that way is more consistent with the naming of
+      related wait events.
+     </p></li><li class="listitem"><p>
+      Re-activate reporting of wait event <code class="literal">SLRUFlushSync</code>
+      (Thomas Munro)
+     </p><p>
+      Reporting of this type of wait was accidentally removed in code
+      refactoring.
+     </p></li><li class="listitem"><p>
+      Avoid possible underflow when calculating how many WAL segments to
+      keep (Kyotaro Horiguchi)
+     </p><p>
+      This could result in not honoring <code class="varname">wal_keep_size</code>
+      accurately.
+     </p></li><li class="listitem"><p>
+      Support RSA-PSS certificates with SCRAM-SHA-256 channel binding
+      (Jacob Champion, Heikki Linnakangas)
+     </p><p>
+      This feature requires building with OpenSSL 1.1.1 or newer.  Both
+      the server and <span class="application">libpq</span> are affected.
+     </p></li><li class="listitem"><p>
+      Avoid race condition with process ID tracking on Windows (Thomas Munro)
+     </p><p>
+      The operating system could recycle a PID before the postmaster
+      observed that that child process was gone.  This could lead to
+      tracking more than one child with the same PID, resulting in
+      confusion.
+     </p></li><li class="listitem"><p>
+      Add missing cases to <code class="function">SPI_result_code_string()</code>
+      (Dean Rasheed)
+     </p></li><li class="listitem"><p>
+      Fix erroneous Valgrind markings
+      in <code class="function">AllocSetRealloc()</code> (Karina Litskevich)
+     </p><p>
+      In the unusual case where the size of a large (&gt;8kB) palloc chunk
+      is decreased, a Valgrind-aware build would mismark the defined-ness
+      state of the memory released from the chunk, possibly causing
+      incorrect results during Valgrind testing.
+     </p></li><li class="listitem"><p>
+      Avoid assertion failure when decoding a transactional logical
+      replication message (Tomas Vondra)
+     </p></li><li class="listitem"><p>
+      Avoid locale sensitivity when processing regular expression escapes
+      (Jeff Davis)
+     </p><p>
+      A backslash followed by a non-ASCII character could sometimes cause
+      an assertion failure, depending on the prevailing locale.
+     </p></li><li class="listitem"><p>
+      Avoid trying to write an empty WAL record
+      in <code class="function">log_newpage_range()</code> when the last few pages
+      in the specified range are empty (Matthias van de Meent)
+     </p><p>
+      It is not entirely clear whether this case is reachable in released
+      branches, but if it is then an assertion failure could occur.
+     </p></li><li class="listitem"><p>
+      Fix session-lifespan memory leakage in <span class="application">plpgsql</span>
+      <code class="literal">DO</code> blocks that use cast expressions
+      (Ajit Awekar, Tom Lane)
+     </p></li><li class="listitem"><p>
+      Tighten array dimensionality checks when converting Perl
+      list structures to multi-dimensional SQL arrays (Tom Lane)
+     </p><p>
+      <span class="application">plperl</span> could misbehave when the nesting
+      of sub-lists is inconsistent so that the data does not represent a
+      rectangular array of values.  Such cases now produce errors, but
+      previously they could result in a crash or garbage output.
+     </p></li><li class="listitem"><p>
+      Tighten array dimensionality checks when converting Python
+      list structures to multi-dimensional SQL arrays (Tom Lane)
+     </p><p>
+      <span class="application">plpython</span> could misbehave when dealing
+      with empty sub-lists, or when the nesting of sub-lists is
+      inconsistent so that the data does not represent a rectangular array
+      of values.  The former should result in an empty output array, and
+      the latter in an error.  But some cases resulted in a crash, and
+      others in unexpected output.
+     </p></li><li class="listitem"><p>
+      Fix unwinding of exception stack
+      in <span class="application">plpython</span> (Xing Guo)
+     </p><p>
+      Some rare failure cases could return without cleaning up the PG_TRY
+      exception stack, risking a crash if another error was raised before
+      the next stack level was unwound.
+     </p></li><li class="listitem"><p>
+      Fix inconsistent GSS-encryption error handling
+      in <span class="application">libpq</span>'s
+      <code class="function">PQconnectPoll()</code>
+      (Michael Paquier)
+     </p><p>
+      With <code class="option">gssencmode</code> set to <code class="literal">require</code>,
+      the connection was not marked dead after a GSS initialization
+      failure.  Make it fail immediately, as the equivalent case for TLS
+      encryption has long done.
+     </p></li><li class="listitem"><p>
+      Fix possible data corruption in <span class="application">ecpg</span>
+      programs built with the <code class="option">-C ORACLE</code> option
+      (Kyotaro Horiguchi)
+     </p><p>
+      When <code class="function">ecpg_get_data()</code> is called
+      with <code class="varname">varcharsize</code> set to zero, it could write a
+      terminating zero character into the last byte of the preceding
+      field, truncating the data in that field.
+     </p></li><li class="listitem"><p>
+      Fix <span class="application">pg_dump</span> so that partitioned tables
+      that are hash-partitioned on an enum-type column can be restored
+      successfully (Tom Lane)
+     </p><p>
+      Since the hash codes for enum values depend on the OIDs assigned to
+      the enum, they are typically different after a dump and restore,
+      meaning that rows often need to go into a different partition than
+      they were in originally.  Users can work around that by specifying
+      the <code class="option">--load-via-partition-root</code> option; but since
+      there is very little chance of success without that,
+      teach <span class="application">pg_dump</span> to apply it automatically
+      to such tables.
+     </p><p>
+      Also, fix <span class="application">pg_restore</span> to not try
+      to <code class="command">TRUNCATE</code> target tables before restoring into
+      them when <code class="option">--load-via-partition-root</code> mode is used.
+      This avoids a hazard of deadlocks and lost data.
+     </p></li><li class="listitem"><p>
+      Correctly detect non-seekable files on Windows
+      (Juan José Santamaría Flecha, Michael Paquier, Daniel Watzinger)
+     </p><p>
+      This bug led to misbehavior when <span class="application">pg_dump</span>
+      writes to a pipe or <span class="application">pg_restore</span> reads from
+      one.
+     </p></li><li class="listitem"><p>
+      In <span class="application">pgbench</span>'s <span class="quote">“<span class="quote">prepared</span>”</span>
+      mode, prepare all the commands in a pipeline before starting the
+      pipeline (Álvaro Herrera)
+     </p><p>
+      This avoids a failure when a pgbench script tries to
+      start a serializable transaction inside a pipeline.
+     </p></li><li class="listitem"><p>
+      In <code class="filename">contrib/amcheck</code>'s heap checking code, deal
+      correctly with tuples having zero xmin or xmax (Robert Haas)
+     </p></li><li class="listitem"><p>
+      In <code class="filename">contrib/amcheck</code>, deal sanely with xids that
+      appear to be before epoch zero (Andres Freund)
+     </p><p>
+      In cases of corruption we might see a wrapped-around 32-bit xid that
+      appears to be before the first xid epoch.  Promoting such a value to
+      64-bit form produced a value far in the future, resulting in wrong
+      reports.  Return FirstNormalFullTransactionId in such cases so that
+      things work reasonably sanely.
+     </p></li><li class="listitem"><p>
+      In <code class="filename">contrib/hstore_plpython</code>, avoid crashing if
+      the Python value to be transformed isn't a mapping (Dmitry Dolgov,
+      Tom Lane)
+     </p><p>
+      This should give an error, but Python 3 changed some APIs in a way
+      that caused the check to misbehave, allowing a crash to ensue.
+     </p></li><li class="listitem"><p>
+      Require the <code class="literal">siglen</code> option of a GiST index on
+      an <code class="type">ltree</code> column, if specified, to be a multiple of 4
+      (Alexander Korotkov)
+     </p><p>
+      Other values result in misaligned accesses to index content, which
+      is harmless on Intel-compatible hardware but can cause a crash on
+      some other architectures.
+     </p></li><li class="listitem"><p>
+      In <code class="filename">contrib/pageinspect</code>, add defenses against
+      incorrect input for the <code class="function">gist_page_items()</code> function
+      (Dmitry Koval)
+     </p></li><li class="listitem"><p>
+      Fix misbehavior in <code class="filename">contrib/pg_trgm</code> with an
+      unsatisfiable regular expression (Tom Lane)
+     </p><p>
+      A regex such as <code class="literal">$foo</code> is legal but unsatisfiable;
+      the regex compiler recognizes that and produces an empty NFA graph.
+      Attempting to optimize such a graph into a pg_trgm GIN or GiST index
+      qualification resulted in accessing off the end of a work array,
+      possibly leading to crashes.
+     </p></li><li class="listitem"><p>
+      Use the <code class="option">--strip-unneeded</code> option when stripping
+      static libraries with
+      GNU-compatible <span class="application">strip</span> (Tom Lane)
+     </p><p>
+      Previously, <code class="literal">make install-strip</code> used
+      the <code class="option">-x</code> option in this case.  This change avoids
+      misbehavior of <span class="application">llvm-strip</span>, and gives
+      slightly smaller output as well.
+     </p></li><li class="listitem"><p>
+      Stop recommending auto-download of DTD files for building the
+      documentation, and indeed disable it (Aleksander Alekseev, Peter
+      Eisentraut, Tom Lane)
+     </p><p>
+      It appears no longer possible to build the SGML documentation
+      without a local installation of the DocBook DTD files.
+      Formerly <span class="application">xsltproc</span> could download those
+      files on-the-fly from sourceforge.net; but sourceforge.net now
+      permits only HTTPS access, and no common version
+      of <span class="application">xsltproc</span> supports that.  Hence, remove
+      the bits of our documentation suggesting that that's possible or
+      useful, and instead
+      add <span class="application">xsltproc</span>'s <code class="option">--nonet</code>
+      option to the build recipes.
+     </p></li><li class="listitem"><p>
+      When running TAP tests in PGXS builds, use a saner location for the
+      temporary <code class="filename">portlock</code> directory (Peter Eisentraut)
+     </p><p>
+      Place it under <code class="filename">tmp_check</code> in the build
+      directory.  With the previous coding, a PGXS build would try to place
+      it in the installation directory, which is not necessarily writable.
+     </p></li><li class="listitem"><p>
+      Update time zone data files to <span class="application">tzdata</span>
+      release 2023c for DST law changes in Egypt, Greenland, Morocco, and
+      Palestine.
+     </p><p>
+      When observing Moscow time, Europe/Kirov and Europe/Volgograd now
+      use the abbreviations MSK/MSD instead of numeric abbreviations,
+      for consistency with other timezones observing Moscow time.
+      Also, America/Yellowknife is no longer distinct from America/Edmonton;
+      this affects some pre-1948 timestamps in that area.
+     </p></li></ul></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="release-14-9.html" title="E.4. Release 14.9">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="release.html" title="Appendix E. Release Notes">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="release-14-7.html" title="E.6. Release 14.7">Next</a></td></tr><tr><td width="40%" align="left" valign="top">E.4. Release 14.9 </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> E.6. Release 14.7</td></tr></table></div></body></html>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>45.7. PL/Perl Event Triggers</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="plperl-triggers.html" title="45.6. PL/Perl Triggers" /><link rel="next" href="plperl-under-the-hood.html" title="45.8. PL/Perl Under the Hood" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">45.7. PL/Perl Event Triggers</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="plperl-triggers.html" title="45.6. PL/Perl Triggers">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="plperl.html" title="Chapter 45. PL/Perl — Perl Procedural Language">Up</a></td><th width="60%" align="center">Chapter 45. PL/Perl — Perl Procedural Language</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="plperl-under-the-hood.html" title="45.8. PL/Perl Under the Hood">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="PLPERL-EVENT-TRIGGERS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">45.7. PL/Perl Event Triggers</h2></div></div></div><p>
+   PL/Perl can be used to write event trigger functions.  In an event trigger
+   function, the hash reference <code class="varname">$_TD</code> contains information
+   about the current trigger event.  <code class="varname">$_TD</code> is a global variable,
+   which gets a separate local value for each invocation of the trigger.  The
+   fields of the <code class="varname">$_TD</code> hash reference are:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="literal">$_TD-&gt;{event}</code></span></dt><dd><p>
+       The name of the event the trigger is fired for.
+      </p></dd><dt><span class="term"><code class="literal">$_TD-&gt;{tag}</code></span></dt><dd><p>
+       The command tag for which the trigger is fired.
+      </p></dd></dl></div><p>
+  </p><p>
+   The return value of the trigger function is ignored.
+  </p><p>
+   Here is an example of an event trigger function, illustrating some of the
+   above:
+</p><pre class="programlisting">
+CREATE OR REPLACE FUNCTION perlsnitch() RETURNS event_trigger AS $$
+  elog(NOTICE, "perlsnitch: " . $_TD-&gt;{event} . " " . $_TD-&gt;{tag} . " ");
+$$ LANGUAGE plperl;
+
+CREATE EVENT TRIGGER perl_a_snitch
+    ON ddl_command_start
+    EXECUTE FUNCTION perlsnitch();
+</pre><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="plperl-triggers.html" title="45.6. PL/Perl Triggers">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="plperl.html" title="Chapter 45. PL/Perl — Perl Procedural Language">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="plperl-under-the-hood.html" title="45.8. PL/Perl Under the Hood">Next</a></td></tr><tr><td width="40%" align="left" valign="top">45.6. PL/Perl Triggers </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 45.8. PL/Perl Under the Hood</td></tr></table></div></body></html>

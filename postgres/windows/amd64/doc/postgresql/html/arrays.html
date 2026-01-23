@@ -1,0 +1,647 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8.15. Arrays</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot" /><link rel="prev" href="datatype-json.html" title="8.14. JSON Types" /><link rel="next" href="rowtypes.html" title="8.16. Composite Types" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">8.15. Arrays</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="datatype-json.html" title="8.14. JSON Types">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><th width="60%" align="center">Chapter 8. Data Types</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="rowtypes.html" title="8.16. Composite Types">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="ARRAYS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">8.15. Arrays</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="arrays.html#ARRAYS-DECLARATION">8.15.1. Declaration of Array Types</a></span></dt><dt><span class="sect2"><a href="arrays.html#ARRAYS-INPUT">8.15.2. Array Value Input</a></span></dt><dt><span class="sect2"><a href="arrays.html#ARRAYS-ACCESSING">8.15.3. Accessing Arrays</a></span></dt><dt><span class="sect2"><a href="arrays.html#ARRAYS-MODIFYING">8.15.4. Modifying Arrays</a></span></dt><dt><span class="sect2"><a href="arrays.html#ARRAYS-SEARCHING">8.15.5. Searching in Arrays</a></span></dt><dt><span class="sect2"><a href="arrays.html#ARRAYS-IO">8.15.6. Array Input and Output Syntax</a></span></dt></dl></div><a id="id-1.5.7.23.2" class="indexterm"></a><p>
+  <span class="productname">PostgreSQL</span> allows columns of a table to be
+  defined as variable-length multidimensional arrays. Arrays of any
+  built-in or user-defined base type, enum type, composite type, range type,
+  or domain can be created.
+ </p><div class="sect2" id="ARRAYS-DECLARATION"><div class="titlepage"><div><div><h3 class="title">8.15.1. Declaration of Array Types</h3></div></div></div><a id="id-1.5.7.23.4.2" class="indexterm"></a><p>
+  To illustrate the use of array types, we create this table:
+</p><pre class="programlisting">
+CREATE TABLE sal_emp (
+    name            text,
+    pay_by_quarter  integer[],
+    schedule        text[][]
+);
+</pre><p>
+  As shown, an array data type is named by appending square brackets
+  (<code class="literal">[]</code>) to the data type name of the array elements.  The
+  above command will create a table named
+  <code class="structname">sal_emp</code> with a column of type
+  <code class="type">text</code> (<code class="structfield">name</code>), a
+  one-dimensional array of type <code class="type">integer</code>
+  (<code class="structfield">pay_by_quarter</code>), which represents the
+  employee's salary by quarter, and a two-dimensional array of
+  <code class="type">text</code> (<code class="structfield">schedule</code>), which
+  represents the employee's weekly schedule.
+ </p><p>
+  The syntax for <code class="command">CREATE TABLE</code> allows the exact size of
+  arrays to be specified, for example:
+
+</p><pre class="programlisting">
+CREATE TABLE tictactoe (
+    squares   integer[3][3]
+);
+</pre><p>
+
+  However, the current implementation ignores any supplied array size
+  limits, i.e., the behavior is the same as for arrays of unspecified
+  length.
+ </p><p>
+  The current implementation does not enforce the declared
+  number of dimensions either.  Arrays of a particular element type are
+  all considered to be of the same type, regardless of size or number
+  of dimensions.  So, declaring the array size or number of dimensions in
+  <code class="command">CREATE TABLE</code> is simply documentation; it does not
+  affect run-time behavior.
+ </p><p>
+  An alternative syntax, which conforms to the SQL standard by using
+  the keyword <code class="literal">ARRAY</code>, can be used for one-dimensional arrays.
+  <code class="structfield">pay_by_quarter</code> could have been defined
+  as:
+</p><pre class="programlisting">
+    pay_by_quarter  integer ARRAY[4],
+</pre><p>
+  Or, if no array size is to be specified:
+</p><pre class="programlisting">
+    pay_by_quarter  integer ARRAY,
+</pre><p>
+  As before, however, <span class="productname">PostgreSQL</span> does not enforce the
+  size restriction in any case.
+ </p></div><div class="sect2" id="ARRAYS-INPUT"><div class="titlepage"><div><div><h3 class="title">8.15.2. Array Value Input</h3></div></div></div><a id="id-1.5.7.23.5.2" class="indexterm"></a><p>
+   To write an array value as a literal constant, enclose the element
+   values within curly braces and separate them by commas.  (If you
+   know C, this is not unlike the C syntax for initializing
+   structures.)  You can put double quotes around any element value,
+   and must do so if it contains commas or curly braces.  (More
+   details appear below.)  Thus, the general format of an array
+   constant is the following:
+</p><pre class="synopsis">
+'{ <em class="replaceable"><code>val1</code></em> <em class="replaceable"><code>delim</code></em> <em class="replaceable"><code>val2</code></em> <em class="replaceable"><code>delim</code></em> ... }'
+</pre><p>
+   where <em class="replaceable"><code>delim</code></em> is the delimiter character
+   for the type, as recorded in its <code class="literal">pg_type</code> entry.
+   Among the standard data types provided in the
+   <span class="productname">PostgreSQL</span> distribution, all use a comma
+   (<code class="literal">,</code>), except for type <code class="type">box</code> which uses a semicolon
+   (<code class="literal">;</code>). Each <em class="replaceable"><code>val</code></em> is
+   either a constant of the array element type, or a subarray. An example
+   of an array constant is:
+</p><pre class="programlisting">
+'{{1,2,3},{4,5,6},{7,8,9}}'
+</pre><p>
+   This constant is a two-dimensional, 3-by-3 array consisting of
+   three subarrays of integers.
+  </p><p>
+   To set an element of an array constant to NULL, write <code class="literal">NULL</code>
+   for the element value.  (Any upper- or lower-case variant of
+   <code class="literal">NULL</code> will do.)  If you want an actual string value
+   <span class="quote">“<span class="quote">NULL</span>”</span>, you must put double quotes around it.
+  </p><p>
+   (These kinds of array constants are actually only a special case of
+   the generic type constants discussed in <a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-CONSTANTS-GENERIC" title="4.1.2.7. Constants of Other Types">Section 4.1.2.7</a>.  The constant is initially
+   treated as a string and passed to the array input conversion
+   routine.  An explicit type specification might be necessary.)
+  </p><p>
+   Now we can show some <code class="command">INSERT</code> statements:
+
+</p><pre class="programlisting">
+INSERT INTO sal_emp
+    VALUES ('Bill',
+    '{10000, 10000, 10000, 10000}',
+    '{{"meeting", "lunch"}, {"training", "presentation"}}');
+
+INSERT INTO sal_emp
+    VALUES ('Carol',
+    '{20000, 25000, 25000, 25000}',
+    '{{"breakfast", "consulting"}, {"meeting", "lunch"}}');
+</pre><p>
+  </p><p>
+  The result of the previous two inserts looks like this:
+
+</p><pre class="programlisting">
+SELECT * FROM sal_emp;
+ name  |      pay_by_quarter       |                 schedule
+-------+---------------------------+-------------------------------------------
+ Bill  | {10000,10000,10000,10000} | {{meeting,lunch},{training,presentation}}
+ Carol | {20000,25000,25000,25000} | {{breakfast,consulting},{meeting,lunch}}
+(2 rows)
+</pre><p>
+ </p><p>
+  Multidimensional arrays must have matching extents for each
+  dimension. A mismatch causes an error, for example:
+
+</p><pre class="programlisting">
+INSERT INTO sal_emp
+    VALUES ('Bill',
+    '{10000, 10000, 10000, 10000}',
+    '{{"meeting", "lunch"}, {"meeting"}}');
+ERROR:  multidimensional arrays must have array expressions with matching dimensions
+</pre><p>
+ </p><p>
+  The <code class="literal">ARRAY</code> constructor syntax can also be used:
+</p><pre class="programlisting">
+INSERT INTO sal_emp
+    VALUES ('Bill',
+    ARRAY[10000, 10000, 10000, 10000],
+    ARRAY[['meeting', 'lunch'], ['training', 'presentation']]);
+
+INSERT INTO sal_emp
+    VALUES ('Carol',
+    ARRAY[20000, 25000, 25000, 25000],
+    ARRAY[['breakfast', 'consulting'], ['meeting', 'lunch']]);
+</pre><p>
+  Notice that the array elements are ordinary SQL constants or
+  expressions; for instance, string literals are single quoted, instead of
+  double quoted as they would be in an array literal.  The <code class="literal">ARRAY</code>
+  constructor syntax is discussed in more detail in
+  <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ARRAY-CONSTRUCTORS" title="4.2.12. Array Constructors">Section 4.2.12</a>.
+ </p></div><div class="sect2" id="ARRAYS-ACCESSING"><div class="titlepage"><div><div><h3 class="title">8.15.3. Accessing Arrays</h3></div></div></div><a id="id-1.5.7.23.6.2" class="indexterm"></a><p>
+  Now, we can run some queries on the table.
+  First, we show how to access a single element of an array.
+  This query retrieves the names of the employees whose pay changed in
+  the second quarter:
+
+</p><pre class="programlisting">
+SELECT name FROM sal_emp WHERE pay_by_quarter[1] &lt;&gt; pay_by_quarter[2];
+
+ name
+-------
+ Carol
+(1 row)
+</pre><p>
+
+  The array subscript numbers are written within square brackets.
+  By default <span class="productname">PostgreSQL</span> uses a
+  one-based numbering convention for arrays, that is,
+  an array of <em class="replaceable"><code>n</code></em> elements starts with <code class="literal">array[1]</code> and
+  ends with <code class="literal">array[<em class="replaceable"><code>n</code></em>]</code>.
+ </p><p>
+  This query retrieves the third quarter pay of all employees:
+
+</p><pre class="programlisting">
+SELECT pay_by_quarter[3] FROM sal_emp;
+
+ pay_by_quarter
+----------------
+          10000
+          25000
+(2 rows)
+</pre><p>
+ </p><p>
+  We can also access arbitrary rectangular slices of an array, or
+  subarrays.  An array slice is denoted by writing
+  <code class="literal"><em class="replaceable"><code>lower-bound</code></em>:<em class="replaceable"><code>upper-bound</code></em></code>
+  for one or more array dimensions.  For example, this query retrieves the first
+  item on Bill's schedule for the first two days of the week:
+
+</p><pre class="programlisting">
+SELECT schedule[1:2][1:1] FROM sal_emp WHERE name = 'Bill';
+
+        schedule
+------------------------
+ {{meeting},{training}}
+(1 row)
+</pre><p>
+
+  If any dimension is written as a slice, i.e., contains a colon, then all
+  dimensions are treated as slices.  Any dimension that has only a single
+  number (no colon) is treated as being from 1
+  to the number specified.  For example, <code class="literal">[2]</code> is treated as
+  <code class="literal">[1:2]</code>, as in this example:
+
+</p><pre class="programlisting">
+SELECT schedule[1:2][2] FROM sal_emp WHERE name = 'Bill';
+
+                 schedule
+-------------------------------------------
+ {{meeting,lunch},{training,presentation}}
+(1 row)
+</pre><p>
+
+  To avoid confusion with the non-slice case, it's best to use slice syntax
+  for all dimensions, e.g., <code class="literal">[1:2][1:1]</code>, not <code class="literal">[2][1:1]</code>.
+ </p><p>
+  It is possible to omit the <em class="replaceable"><code>lower-bound</code></em> and/or
+  <em class="replaceable"><code>upper-bound</code></em> of a slice specifier; the missing
+  bound is replaced by the lower or upper limit of the array's subscripts.
+  For example:
+
+</p><pre class="programlisting">
+SELECT schedule[:2][2:] FROM sal_emp WHERE name = 'Bill';
+
+        schedule
+------------------------
+ {{lunch},{presentation}}
+(1 row)
+
+SELECT schedule[:][1:1] FROM sal_emp WHERE name = 'Bill';
+
+        schedule
+------------------------
+ {{meeting},{training}}
+(1 row)
+</pre><p>
+ </p><p>
+  An array subscript expression will return null if either the array itself or
+  any of the subscript expressions are null.  Also, null is returned if a
+  subscript is outside the array bounds (this case does not raise an error).
+  For example, if <code class="literal">schedule</code>
+  currently has the dimensions <code class="literal">[1:3][1:2]</code> then referencing
+  <code class="literal">schedule[3][3]</code> yields NULL.  Similarly, an array reference
+  with the wrong number of subscripts yields a null rather than an error.
+ </p><p>
+  An array slice expression likewise yields null if the array itself or
+  any of the subscript expressions are null.  However, in other
+  cases such as selecting an array slice that
+  is completely outside the current array bounds, a slice expression
+  yields an empty (zero-dimensional) array instead of null.  (This
+  does not match non-slice behavior and is done for historical reasons.)
+  If the requested slice partially overlaps the array bounds, then it
+  is silently reduced to just the overlapping region instead of
+  returning null.
+ </p><p>
+  The current dimensions of any array value can be retrieved with the
+  <code class="function">array_dims</code> function:
+
+</p><pre class="programlisting">
+SELECT array_dims(schedule) FROM sal_emp WHERE name = 'Carol';
+
+ array_dims
+------------
+ [1:2][1:2]
+(1 row)
+</pre><p>
+
+  <code class="function">array_dims</code> produces a <code class="type">text</code> result,
+  which is convenient for people to read but perhaps inconvenient
+  for programs.  Dimensions can also be retrieved with
+  <code class="function">array_upper</code> and <code class="function">array_lower</code>,
+  which return the upper and lower bound of a
+  specified array dimension, respectively:
+
+</p><pre class="programlisting">
+SELECT array_upper(schedule, 1) FROM sal_emp WHERE name = 'Carol';
+
+ array_upper
+-------------
+           2
+(1 row)
+</pre><p>
+
+ <code class="function">array_length</code> will return the length of a specified
+ array dimension:
+
+</p><pre class="programlisting">
+SELECT array_length(schedule, 1) FROM sal_emp WHERE name = 'Carol';
+
+ array_length
+--------------
+            2
+(1 row)
+</pre><p>
+
+ <code class="function">cardinality</code> returns the total number of elements in an
+ array across all dimensions.  It is effectively the number of rows a call to
+ <code class="function">unnest</code> would yield:
+
+</p><pre class="programlisting">
+SELECT cardinality(schedule) FROM sal_emp WHERE name = 'Carol';
+
+ cardinality
+-------------
+           4
+(1 row)
+</pre><p>
+ </p></div><div class="sect2" id="ARRAYS-MODIFYING"><div class="titlepage"><div><div><h3 class="title">8.15.4. Modifying Arrays</h3></div></div></div><a id="id-1.5.7.23.7.2" class="indexterm"></a><p>
+  An array value can be replaced completely:
+
+</p><pre class="programlisting">
+UPDATE sal_emp SET pay_by_quarter = '{25000,25000,27000,27000}'
+    WHERE name = 'Carol';
+</pre><p>
+
+  or using the <code class="literal">ARRAY</code> expression syntax:
+
+</p><pre class="programlisting">
+UPDATE sal_emp SET pay_by_quarter = ARRAY[25000,25000,27000,27000]
+    WHERE name = 'Carol';
+</pre><p>
+
+  An array can also be updated at a single element:
+
+</p><pre class="programlisting">
+UPDATE sal_emp SET pay_by_quarter[4] = 15000
+    WHERE name = 'Bill';
+</pre><p>
+
+  or updated in a slice:
+
+</p><pre class="programlisting">
+UPDATE sal_emp SET pay_by_quarter[1:2] = '{27000,27000}'
+    WHERE name = 'Carol';
+</pre><p>
+
+  The slice syntaxes with omitted <em class="replaceable"><code>lower-bound</code></em> and/or
+  <em class="replaceable"><code>upper-bound</code></em> can be used too, but only when
+  updating an array value that is not NULL or zero-dimensional (otherwise,
+  there is no existing subscript limit to substitute).
+ </p><p>
+  A stored array value can be enlarged by assigning to elements not already
+  present.  Any positions between those previously present and the newly
+  assigned elements will be filled with nulls.  For example, if array
+  <code class="literal">myarray</code> currently has 4 elements, it will have six
+  elements after an update that assigns to <code class="literal">myarray[6]</code>;
+  <code class="literal">myarray[5]</code> will contain null.
+  Currently, enlargement in this fashion is only allowed for one-dimensional
+  arrays, not multidimensional arrays.
+ </p><p>
+  Subscripted assignment allows creation of arrays that do not use one-based
+  subscripts.  For example one might assign to <code class="literal">myarray[-2:7]</code> to
+  create an array with subscript values from -2 to 7.
+ </p><p>
+  New array values can also be constructed using the concatenation operator,
+  <code class="literal">||</code>:
+</p><pre class="programlisting">
+SELECT ARRAY[1,2] || ARRAY[3,4];
+ ?column?
+-----------
+ {1,2,3,4}
+(1 row)
+
+SELECT ARRAY[5,6] || ARRAY[[1,2],[3,4]];
+      ?column?
+---------------------
+ {{5,6},{1,2},{3,4}}
+(1 row)
+</pre><p>
+ </p><p>
+  The concatenation operator allows a single element to be pushed onto the
+  beginning or end of a one-dimensional array. It also accepts two
+  <em class="replaceable"><code>N</code></em>-dimensional arrays, or an <em class="replaceable"><code>N</code></em>-dimensional
+  and an <em class="replaceable"><code>N+1</code></em>-dimensional array.
+ </p><p>
+  When a single element is pushed onto either the beginning or end of a
+  one-dimensional array, the result is an array with the same lower bound
+  subscript as the array operand. For example:
+</p><pre class="programlisting">
+SELECT array_dims(1 || '[0:1]={2,3}'::int[]);
+ array_dims
+------------
+ [0:2]
+(1 row)
+
+SELECT array_dims(ARRAY[1,2] || 3);
+ array_dims
+------------
+ [1:3]
+(1 row)
+</pre><p>
+ </p><p>
+  When two arrays with an equal number of dimensions are concatenated, the
+  result retains the lower bound subscript of the left-hand operand's outer
+  dimension. The result is an array comprising every element of the left-hand
+  operand followed by every element of the right-hand operand. For example:
+</p><pre class="programlisting">
+SELECT array_dims(ARRAY[1,2] || ARRAY[3,4,5]);
+ array_dims
+------------
+ [1:5]
+(1 row)
+
+SELECT array_dims(ARRAY[[1,2],[3,4]] || ARRAY[[5,6],[7,8],[9,0]]);
+ array_dims
+------------
+ [1:5][1:2]
+(1 row)
+</pre><p>
+ </p><p>
+  When an <em class="replaceable"><code>N</code></em>-dimensional array is pushed onto the beginning
+  or end of an <em class="replaceable"><code>N+1</code></em>-dimensional array, the result is
+  analogous to the element-array case above. Each <em class="replaceable"><code>N</code></em>-dimensional
+  sub-array is essentially an element of the <em class="replaceable"><code>N+1</code></em>-dimensional
+  array's outer dimension. For example:
+</p><pre class="programlisting">
+SELECT array_dims(ARRAY[1,2] || ARRAY[[3,4],[5,6]]);
+ array_dims
+------------
+ [1:3][1:2]
+(1 row)
+</pre><p>
+ </p><p>
+  An array can also be constructed by using the functions
+  <code class="function">array_prepend</code>, <code class="function">array_append</code>,
+  or <code class="function">array_cat</code>. The first two only support one-dimensional
+  arrays, but <code class="function">array_cat</code> supports multidimensional arrays.
+  Some examples:
+
+</p><pre class="programlisting">
+SELECT array_prepend(1, ARRAY[2,3]);
+ array_prepend
+---------------
+ {1,2,3}
+(1 row)
+
+SELECT array_append(ARRAY[1,2], 3);
+ array_append
+--------------
+ {1,2,3}
+(1 row)
+
+SELECT array_cat(ARRAY[1,2], ARRAY[3,4]);
+ array_cat
+-----------
+ {1,2,3,4}
+(1 row)
+
+SELECT array_cat(ARRAY[[1,2],[3,4]], ARRAY[5,6]);
+      array_cat
+---------------------
+ {{1,2},{3,4},{5,6}}
+(1 row)
+
+SELECT array_cat(ARRAY[5,6], ARRAY[[1,2],[3,4]]);
+      array_cat
+---------------------
+ {{5,6},{1,2},{3,4}}
+</pre><p>
+ </p><p>
+  In simple cases, the concatenation operator discussed above is preferred
+  over direct use of these functions.  However, because the concatenation
+  operator is overloaded to serve all three cases, there are situations where
+  use of one of the functions is helpful to avoid ambiguity.  For example
+  consider:
+
+</p><pre class="programlisting">
+SELECT ARRAY[1, 2] || '{3, 4}';  -- the untyped literal is taken as an array
+ ?column?
+-----------
+ {1,2,3,4}
+
+SELECT ARRAY[1, 2] || '7';                 -- so is this one
+ERROR:  malformed array literal: "7"
+
+SELECT ARRAY[1, 2] || NULL;                -- so is an undecorated NULL
+ ?column?
+----------
+ {1,2}
+(1 row)
+
+SELECT array_append(ARRAY[1, 2], NULL);    -- this might have been meant
+ array_append
+--------------
+ {1,2,NULL}
+</pre><p>
+
+  In the examples above, the parser sees an integer array on one side of the
+  concatenation operator, and a constant of undetermined type on the other.
+  The heuristic it uses to resolve the constant's type is to assume it's of
+  the same type as the operator's other input — in this case,
+  integer array.  So the concatenation operator is presumed to
+  represent <code class="function">array_cat</code>, not <code class="function">array_append</code>.  When
+  that's the wrong choice, it could be fixed by casting the constant to the
+  array's element type; but explicit use of <code class="function">array_append</code> might
+  be a preferable solution.
+ </p></div><div class="sect2" id="ARRAYS-SEARCHING"><div class="titlepage"><div><div><h3 class="title">8.15.5. Searching in Arrays</h3></div></div></div><a id="id-1.5.7.23.8.2" class="indexterm"></a><p>
+  To search for a value in an array, each value must be checked.
+  This can be done manually, if you know the size of the array.
+  For example:
+
+</p><pre class="programlisting">
+SELECT * FROM sal_emp WHERE pay_by_quarter[1] = 10000 OR
+                            pay_by_quarter[2] = 10000 OR
+                            pay_by_quarter[3] = 10000 OR
+                            pay_by_quarter[4] = 10000;
+</pre><p>
+
+  However, this quickly becomes tedious for large arrays, and is not
+  helpful if the size of the array is unknown. An alternative method is
+  described in <a class="xref" href="functions-comparisons.html" title="9.24. Row and Array Comparisons">Section 9.24</a>. The above
+  query could be replaced by:
+
+</p><pre class="programlisting">
+SELECT * FROM sal_emp WHERE 10000 = ANY (pay_by_quarter);
+</pre><p>
+
+  In addition, you can find rows where the array has all values
+  equal to 10000 with:
+
+</p><pre class="programlisting">
+SELECT * FROM sal_emp WHERE 10000 = ALL (pay_by_quarter);
+</pre><p>
+
+ </p><p>
+  Alternatively, the <code class="function">generate_subscripts</code> function can be used.
+  For example:
+
+</p><pre class="programlisting">
+SELECT * FROM
+   (SELECT pay_by_quarter,
+           generate_subscripts(pay_by_quarter, 1) AS s
+      FROM sal_emp) AS foo
+ WHERE pay_by_quarter[s] = 10000;
+</pre><p>
+
+  This function is described in <a class="xref" href="functions-srf.html#FUNCTIONS-SRF-SUBSCRIPTS" title="Table 9.64. Subscript Generating Functions">Table 9.64</a>.
+ </p><p>
+  You can also search an array using the <code class="literal">&amp;&amp;</code> operator,
+  which checks whether the left operand overlaps with the right operand.
+  For instance:
+
+</p><pre class="programlisting">
+SELECT * FROM sal_emp WHERE pay_by_quarter &amp;&amp; ARRAY[10000];
+</pre><p>
+
+  This and other array operators are further described in
+  <a class="xref" href="functions-array.html" title="9.19. Array Functions and Operators">Section 9.19</a>.  It can be accelerated by an appropriate
+  index, as described in <a class="xref" href="indexes-types.html" title="11.2. Index Types">Section 11.2</a>.
+ </p><p>
+  You can also search for specific values in an array using the <code class="function">array_position</code>
+  and <code class="function">array_positions</code> functions. The former returns the subscript of
+  the first occurrence of a value in an array; the latter returns an array with the
+  subscripts of all occurrences of the value in the array.  For example:
+
+</p><pre class="programlisting">
+SELECT array_position(ARRAY['sun','mon','tue','wed','thu','fri','sat'], 'mon');
+ array_position
+----------------
+              2
+(1 row)
+
+SELECT array_positions(ARRAY[1, 4, 3, 1, 3, 4, 2, 1], 1);
+ array_positions
+-----------------
+ {1,4,8}
+(1 row)
+</pre><p>
+ </p><div class="tip"><h3 class="title">Tip</h3><p>
+   Arrays are not sets; searching for specific array elements
+   can be a sign of database misdesign.  Consider
+   using a separate table with a row for each item that would be an
+   array element.  This will be easier to search, and is likely to
+   scale better for a large number of elements.
+  </p></div></div><div class="sect2" id="ARRAYS-IO"><div class="titlepage"><div><div><h3 class="title">8.15.6. Array Input and Output Syntax</h3></div></div></div><a id="id-1.5.7.23.9.2" class="indexterm"></a><p>
+   The external text representation of an array value consists of items that
+   are interpreted according to the I/O conversion rules for the array's
+   element type, plus decoration that indicates the array structure.
+   The decoration consists of curly braces (<code class="literal">{</code> and <code class="literal">}</code>)
+   around the array value plus delimiter characters between adjacent items.
+   The delimiter character is usually a comma (<code class="literal">,</code>) but can be
+   something else: it is determined by the <code class="literal">typdelim</code> setting
+   for the array's element type.  Among the standard data types provided
+   in the <span class="productname">PostgreSQL</span> distribution, all use a comma,
+   except for type <code class="type">box</code>, which uses a semicolon (<code class="literal">;</code>).
+   In a multidimensional array, each dimension (row, plane,
+   cube, etc.) gets its own level of curly braces, and delimiters
+   must be written between adjacent curly-braced entities of the same level.
+  </p><p>
+   The array output routine will put double quotes around element values
+   if they are empty strings, contain curly braces, delimiter characters,
+   double quotes, backslashes, or white space, or match the word
+   <code class="literal">NULL</code>.  Double quotes and backslashes
+   embedded in element values will be backslash-escaped.  For numeric
+   data types it is safe to assume that double quotes will never appear, but
+   for textual data types one should be prepared to cope with either the presence
+   or absence of quotes.
+  </p><p>
+   By default, the lower bound index value of an array's dimensions is
+   set to one.  To represent arrays with other lower bounds, the array
+   subscript ranges can be specified explicitly before writing the
+   array contents.
+   This decoration consists of square brackets (<code class="literal">[]</code>)
+   around each array dimension's lower and upper bounds, with
+   a colon (<code class="literal">:</code>) delimiter character in between. The
+   array dimension decoration is followed by an equal sign (<code class="literal">=</code>).
+   For example:
+</p><pre class="programlisting">
+SELECT f1[1][-2][3] AS e1, f1[1][-1][5] AS e2
+ FROM (SELECT '[1:1][-2:-1][3:5]={{{1,2,3},{4,5,6}}}'::int[] AS f1) AS ss;
+
+ e1 | e2
+----+----
+  1 |  6
+(1 row)
+</pre><p>
+   The array output routine will include explicit dimensions in its result
+   only when there are one or more lower bounds different from one.
+  </p><p>
+   If the value written for an element is <code class="literal">NULL</code> (in any case
+   variant), the element is taken to be NULL.  The presence of any quotes
+   or backslashes disables this and allows the literal string value
+   <span class="quote">“<span class="quote">NULL</span>”</span> to be entered.  Also, for backward compatibility with
+   pre-8.2 versions of <span class="productname">PostgreSQL</span>, the <a class="xref" href="runtime-config-compatible.html#GUC-ARRAY-NULLS">array_nulls</a> configuration parameter can be turned
+   <code class="literal">off</code> to suppress recognition of <code class="literal">NULL</code> as a NULL.
+  </p><p>
+   As shown previously, when writing an array value you can use double
+   quotes around any individual array element. You <span class="emphasis"><em>must</em></span> do so
+   if the element value would otherwise confuse the array-value parser.
+   For example, elements containing curly braces, commas (or the data type's
+   delimiter character), double quotes, backslashes, or leading or trailing
+   whitespace must be double-quoted.  Empty strings and strings matching the
+   word <code class="literal">NULL</code> must be quoted, too.  To put a double
+   quote or backslash in a quoted array element value, precede it
+   with a backslash. Alternatively, you can avoid quotes and use
+   backslash-escaping to protect all data characters that would otherwise
+   be taken as array syntax.
+  </p><p>
+   You can add whitespace before a left brace or after a right
+   brace. You can also add whitespace before or after any individual item
+   string. In all of these cases the whitespace will be ignored. However,
+   whitespace within double-quoted elements, or surrounded on both sides by
+   non-whitespace characters of an element, is not ignored.
+  </p><div class="tip"><h3 class="title">Tip</h3><p>
+   The <code class="literal">ARRAY</code> constructor syntax (see
+   <a class="xref" href="sql-expressions.html#SQL-SYNTAX-ARRAY-CONSTRUCTORS" title="4.2.12. Array Constructors">Section 4.2.12</a>) is often easier to work
+   with than the array-literal syntax when writing array values in SQL
+   commands. In <code class="literal">ARRAY</code>, individual element values are written the
+   same way they would be written when not members of an array.
+  </p></div></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="datatype-json.html" title="8.14. JSON Types">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="datatype.html" title="Chapter 8. Data Types">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="rowtypes.html" title="8.16. Composite Types">Next</a></td></tr><tr><td width="40%" align="left" valign="top">8.14. <acronym xmlns="http://www.w3.org/1999/xhtml" class="acronym">JSON</acronym> Types </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 14.12 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 8.16. Composite Types</td></tr></table></div></body></html>
