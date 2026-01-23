@@ -1,3 +1,0 @@
-comment = 'Test extension using CREATE IF NOT EXISTS'
-default_version = '1.0'
-relocatable = true

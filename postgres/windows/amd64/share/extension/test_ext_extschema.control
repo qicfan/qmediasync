@@ -1,3 +1,0 @@
-comment = 'test @extschema@'
-default_version = '1.0'
-relocatable = false
