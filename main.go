@@ -400,36 +400,43 @@ func setRouter(r *gin.Engine) {
 		api.POST("/account/add", controllers.CreateTmpAccount)                                     // 创建开放平台账号
 		api.POST("/account/delete", controllers.DeleteAccount)                                     // 删除开放平台账号
 		api.POST("/account/openlist", controllers.CreateOpenListAccount)                           // 创建openlist账号
-		api.GET("/scrape/movie-genre", controllers.GetMovieGenre)                                  // 获取电影类别
-		api.GET("/scrape/tvshow-genre", controllers.GetTvshowGenre)                                // 获取电视剧类别
-		api.GET("/scrape/language", controllers.GetLanguage)                                       // 获取语言数组
-		api.GET("/scrape/countries", controllers.GetCountries)                                     // 获取国家数组
-		api.GET("/scrape/tmdb", controllers.GetTmdbSettings)                                       // 获取TMDB设置
-		api.POST("/scrape/tmdb", controllers.SaveTmdbSettings)                                     // 保存TMDB设置
-		api.POST("/scrape/tmdb-test", controllers.TestTmdbSettings)                                // 测试TMDB设置
-		api.GET("/scrape/ai-settings", controllers.GetAiSettings)                                  // 获取AI识别设置
-		api.POST("/scrape/ai-settings", controllers.SaveAiSettings)                                // 保存AI识别设置
-		api.POST("/scrape/ai-test", controllers.TestAiSettings)                                    // 测试AI识别设置
-		api.GET("/scrape/movie-categories", controllers.GetMovieCategories)                        // 获取电影分类列表
-		api.GET("/scrape/tvshow-categories", controllers.GetTvshowCategories)                      // 获取电视剧分类列表
-		api.POST("/scrape/movie-categories", controllers.SaveMovieCategory)                        // 保存电影分类
-		api.POST("/scrape/tvshow-categories", controllers.SaveTvshowCategory)                      // 保存电视剧分类
-		api.DELETE("/scrape/movie-categories/:id", controllers.DeleteMovieCategory)                // 删除电影分类
-		api.DELETE("/scrape/tvshow-categories/:id", controllers.DeleteTvshowCategory)              // 删除电视剧分类
-		api.GET("/scrape/pathes", controllers.GetScrapePathes)                                     // 获取刮削路径列表
-		api.POST("/scrape/pathes", controllers.SaveScrapePath)                                     // 保存刮削路径列表
-		api.DELETE("/scrape/pathes/:id", controllers.DeleteScrapePath)                             // 删除刮削路径
-		api.GET("/scrape/pathes/:id", controllers.GetScrapePath)                                   // 获取刮削路径详情
-		api.POST("/scrape/pathes/start", controllers.ScanScrapePath)                               // 扫描刮削路径
-		api.POST("/scrape/pathes/stop", controllers.StopScrape)                                    // 停止刮削任务
-		api.POST("/scrape/pathes/toggle-cron", controllers.ToggleScrapePathCron)                   // 关闭或开启刮削路径的定时刮削
-		api.GET("/scrape/records", controllers.GetScrapeRecords)                                   // 获取刮削记录
-		api.POST("/scrape/re-scrape", controllers.ReScrape)                                        // 重新刮削记录
-		api.POST("/scrape/clear-failed", controllers.ClearFailedScrapeRecords)                     // 清除所有刮削失败的记录
-		api.POST("/scrape/truncate-all", controllers.TruncateAllScrapeRecords)                     // 一键清空所有刮削记录
-		api.DELETE("/scrape/records", controllers.DeleteScrapeMediaFile)                           // 删除刮削记录
-		api.POST("/scrape/finish", controllers.FinishScrapeMediaFile)                              // 完成刮削记录
-		api.POST("/scrape/rename-failed", controllers.RenameFailedScrapeMediaFile)                 // 标记所有失败的记录为待整理
+
+		// API Key管理接口
+		api.POST("/api-keys", controllers.CreateAPIKey)                 // 创建API Key
+		api.GET("/api-keys", controllers.ListAPIKeys)                   // 获取API Key列表
+		api.PUT("/api-keys/:id/status", controllers.UpdateAPIKeyStatus) // 更新API Key状态
+		api.DELETE("/api-keys/:id", controllers.DeleteAPIKey)           // 删除API Key
+
+		api.GET("/scrape/movie-genre", controllers.GetMovieGenre)                     // 获取电影类别
+		api.GET("/scrape/tvshow-genre", controllers.GetTvshowGenre)                   // 获取电视剧类别
+		api.GET("/scrape/language", controllers.GetLanguage)                          // 获取语言数组
+		api.GET("/scrape/countries", controllers.GetCountries)                        // 获取国家数组
+		api.GET("/scrape/tmdb", controllers.GetTmdbSettings)                          // 获取TMDB设置
+		api.POST("/scrape/tmdb", controllers.SaveTmdbSettings)                        // 保存TMDB设置
+		api.POST("/scrape/tmdb-test", controllers.TestTmdbSettings)                   // 测试TMDB设置
+		api.GET("/scrape/ai-settings", controllers.GetAiSettings)                     // 获取AI识别设置
+		api.POST("/scrape/ai-settings", controllers.SaveAiSettings)                   // 保存AI识别设置
+		api.POST("/scrape/ai-test", controllers.TestAiSettings)                       // 测试AI识别设置
+		api.GET("/scrape/movie-categories", controllers.GetMovieCategories)           // 获取电影分类列表
+		api.GET("/scrape/tvshow-categories", controllers.GetTvshowCategories)         // 获取电视剧分类列表
+		api.POST("/scrape/movie-categories", controllers.SaveMovieCategory)           // 保存电影分类
+		api.POST("/scrape/tvshow-categories", controllers.SaveTvshowCategory)         // 保存电视剧分类
+		api.DELETE("/scrape/movie-categories/:id", controllers.DeleteMovieCategory)   // 删除电影分类
+		api.DELETE("/scrape/tvshow-categories/:id", controllers.DeleteTvshowCategory) // 删除电视剧分类
+		api.GET("/scrape/pathes", controllers.GetScrapePathes)                        // 获取刮削路径列表
+		api.POST("/scrape/pathes", controllers.SaveScrapePath)                        // 保存刮削路径列表
+		api.DELETE("/scrape/pathes/:id", controllers.DeleteScrapePath)                // 删除刮削路径
+		api.GET("/scrape/pathes/:id", controllers.GetScrapePath)                      // 获取刮削路径详情
+		api.POST("/scrape/pathes/start", controllers.ScanScrapePath)                  // 扫描刮削路径
+		api.POST("/scrape/pathes/stop", controllers.StopScrape)                       // 停止刮削任务
+		api.POST("/scrape/pathes/toggle-cron", controllers.ToggleScrapePathCron)      // 关闭或开启刮削路径的定时刮削
+		api.GET("/scrape/records", controllers.GetScrapeRecords)                      // 获取刮削记录
+		api.POST("/scrape/re-scrape", controllers.ReScrape)                           // 重新刮削记录
+		api.POST("/scrape/clear-failed", controllers.ClearFailedScrapeRecords)        // 清除所有刮削失败的记录
+		api.POST("/scrape/truncate-all", controllers.TruncateAllScrapeRecords)        // 一键清空所有刮削记录
+		api.DELETE("/scrape/records", controllers.DeleteScrapeMediaFile)              // 删除刮削记录
+		api.POST("/scrape/finish", controllers.FinishScrapeMediaFile)                 // 完成刮削记录
+		api.POST("/scrape/rename-failed", controllers.RenameFailedScrapeMediaFile)    // 标记所有失败的记录为待整理
 
 		api.GET("/upload/queue", controllers.UploadList)                                             // 获取上传队列列表
 		api.POST("/upload/queue/clear-pending", controllers.ClearPendingUploadTasks)                 // 清除上传队列中未开始的任务

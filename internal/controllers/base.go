@@ -36,6 +36,30 @@ type APIResponse[T any] struct {
 // JWTAuthMiddleware 基于JWT的认证中间件--验证用户是否登录
 func JWTAuthMiddleware() func(c *gin.Context) {
 	return func(c *gin.Context) {
+		// 优先检查 API Key（GET 参数 api_key）
+		apiKey := c.Query("api_key")
+		if apiKey != "" {
+			// 验证 API Key
+			apiKeyModel, err := models.ValidateAPIKey(apiKey)
+			if err == nil && apiKeyModel != nil {
+				// API Key 验证成功
+				// 获取关联的用户信息
+				user, err := models.GetUserById(apiKeyModel.UserID)
+				if err == nil && user != nil {
+					LoginedUser = user
+					// 将用户名保存到上下文
+					c.Set("username", user.Username)
+					// 异步更新最后使用时间
+					go func() {
+						apiKeyModel.UpdateLastUsedAt()
+					}()
+					c.Next()
+					return
+				}
+			}
+		}
+
+		// 回退到 JWT Token 验证
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, APIResponse[any]{Code: BadRequest, Message: "Token不存在", Data: nil})

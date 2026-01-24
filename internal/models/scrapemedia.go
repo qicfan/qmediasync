@@ -1007,11 +1007,11 @@ func (sm *ScrapeMediaFile) GetDestFullSeasonPath() string {
 
 // 生成季的nfo文件的名字
 // 如果有单独的季目录，则命名为season.nfo
-// 如果没有则命名为season01.nfo
+// 如果没有单独的季目录，则命名为season01.nfo
 func (sm *ScrapeMediaFile) GetSeasonNfoName() string {
 	hasSeasonPath := sm.HasRemoteSeasonPath()
 	if sm.ScrapeType == ScrapeTypeOnly {
-		if hasSeasonPath {
+		if !hasSeasonPath {
 			return fmt.Sprintf("season%02d.nfo", sm.MediaSeason.SeasonNumber)
 		} else {
 			return "season.nfo"

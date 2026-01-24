@@ -28,7 +28,7 @@ func (*Migrator) TableName() string {
 func Migrate() {
 	dbFile := filepath.Join(helpers.RootDir, helpers.GlobalConfig.Db.File)
 	sqliteDb := db.GetDb(dbFile)
-	maxVersion := 13
+	maxVersion := 14
 	if sqliteDb != nil {
 		// 从sqlite迁移数据到postgres
 		moveSqliteToPostres(sqliteDb, maxVersion)
@@ -255,6 +255,11 @@ func Migrate() {
 		migrateEmbyConfig(db.Db)
 		migrator.UpdateVersionCode(db.Db)
 	}
+	if migrator.VersionCode == 13 {
+		// 备份相关表 + Emby同步相关表
+		db.Db.AutoMigrate(ApiKey{})
+		migrator.UpdateVersionCode(db.Db)
+	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
 }
 
@@ -274,6 +279,8 @@ func BatchCreateTable() {
 	db.Db.AutoMigrate(DbDownloadTask{}, DbUploadTask{})
 	// 通知渠道表
 	db.Db.AutoMigrate(NotificationChannel{}, TelegramChannelConfig{}, MeoWChannelConfig{}, BarkChannelConfig{}, ServerChanChannelConfig{}, CustomWebhookChannelConfig{}, NotificationRule{})
+	// API Key认证表
+	db.Db.AutoMigrate(ApiKey{})
 }
 
 func InitMigrationTable(version int) {
