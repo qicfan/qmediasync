@@ -351,12 +351,12 @@ func (s *SyncStrm) AddDownloadTaskFromMemCache() {
 	// 遍历内存同步缓存的下载索引
 	s.memSyncCache.mu.RLock()
 	for _, file := range s.memSyncCache.downloadIndex {
-		if _, exists := existingDownloads[file.GetPickCode()]; exists {
+		if _, exists := existingDownloads[file.GetPickCode(s.Account.BaseUrl)]; exists {
 			// 已经存在下载任务，跳过
 			continue
 		}
 		// 添加下载任务
-		err := models.AddDownloadTaskFromSyncFile(file.GetSyncFile(s))
+		err := models.AddDownloadTaskFromSyncFile(file.GetSyncFile(s, s.Account.BaseUrl))
 		if err == nil {
 			s.Sync.Logger.Infof("添加下载任务成功: %s=>%s", file.Path+"/"+file.FileName, file.GetLocalFilePath(s.TargetPath, s.SourcePath))
 			atomic.AddInt64(&s.NewMeta, 1)
@@ -616,7 +616,7 @@ func (s *SyncStrm) handleTempTableDiff() error {
 			break
 		}
 		for _, file := range fileItems {
-			syncFile := file.GetSyncFile(s)
+			syncFile := file.GetSyncFile(s, s.Account.BaseUrl)
 			err := db.Db.Create(syncFile).Error
 			if err != nil {
 				s.Sync.Logger.Errorf("插入SyncFile表数据失败 FileID=%s: %v", file.GetFileId(), err)

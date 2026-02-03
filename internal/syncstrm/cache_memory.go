@@ -1,6 +1,7 @@
 package syncstrm
 
 import (
+	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/v115open"
 	"fmt"
@@ -74,12 +75,13 @@ func (sfc *SyncFileCache) GetFileId() string {
 	return sfc.FileId
 }
 
-func (sfc *SyncFileCache) GetPickCode() string {
+func (sfc *SyncFileCache) GetPickCode(openlistBaseUrl string) string {
 	switch sfc.SourceType {
 	case models.SourceType115:
 		return sfc.PickCode
 	case models.SourceTypeOpenList:
-		return sfc.GetFileId()
+		// 计算出完整的下载链接
+		return helpers.MakeOpenListUrl(openlistBaseUrl, sfc.OpenlistSign, sfc.GetFileId())
 	case models.SourceTypeLocal:
 		return sfc.GetFileId()
 	case models.SourceType123:
@@ -131,7 +133,7 @@ func (b *SyncFileCache) GetLocalFilePath(targetPath, sourcePath string) string {
 }
 
 // 将SyncFileCache转换为models.SyncFile
-func (d *SyncFileCache) GetSyncFile(s *SyncStrm) *models.SyncFile {
+func (d *SyncFileCache) GetSyncFile(s *SyncStrm, openlistBaseUrl string) *models.SyncFile {
 	syncFile := &models.SyncFile{
 		AccountId:     s.Account.ID,
 		SyncPathId:    s.SyncPathId,
@@ -143,7 +145,7 @@ func (d *SyncFileCache) GetSyncFile(s *SyncStrm) *models.SyncFile {
 		FileSize:      d.FileSize,
 		FileType:      d.FileType,
 		MTime:         d.MTime,
-		PickCode:      d.GetPickCode(),
+		PickCode:      d.GetPickCode(openlistBaseUrl),
 		OpenlistSign:  d.OpenlistSign,
 		ThumbUrl:      d.ThumbUrl,
 		Sha1:          d.Sha1,
@@ -223,10 +225,10 @@ func (c *MemorySyncCache) Insert(file *SyncFileCache) error {
 func (c *MemorySyncCache) InsertDownloadIndex(file *SyncFileCache) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if file.GetPickCode() == "" {
+	if file.GetFileId() == "" {
 		return nil
 	}
-	c.downloadIndex[file.GetPickCode()] = file
+	c.downloadIndex[file.GetFileId()] = file
 	return nil
 }
 

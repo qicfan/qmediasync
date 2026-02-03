@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -214,26 +213,26 @@ func (task *DbDownloadTask) DownloadOpenListFile() {
 	// 标记为下载中
 	task.Downloading()
 	// 拼接url
-	syncFile := GetSyncFileById(task.SyncFileId)
-	if syncFile == nil {
-		task.Fail(fmt.Errorf("openlist文件ID不存在，无法下载文件%s", task.LocalFullPath))
-		return
-	}
-	remoteFileId := strings.ReplaceAll(task.RemoteFileId, "\\", "/")
-	// 去掉remoteFileId的开头的/
-	remoteFileId = strings.TrimPrefix(remoteFileId, "/")
+	// syncFile := GetSyncFileById(task.SyncFileId)
+	// if syncFile == nil {
+	// 	task.Fail(fmt.Errorf("openlist文件ID不存在，无法下载文件%s", task.LocalFullPath))
+	// 	return
+	// }
+	// remoteFileId := strings.ReplaceAll(task.RemoteFileId, "\\", "/")
+	// // 去掉remoteFileId的开头的/
+	// remoteFileId = strings.TrimPrefix(remoteFileId, "/")
 	// 将remoteFileId中的每一段都做urlencode
 	// remoteFileIdParts := strings.Split(remoteFileId, "/")
 	// for i, part := range remoteFileIdParts {
 	// 	remoteFileIdParts[i] = url.QueryEscape(part)
 	// }
 	// url := fmt.Sprintf("%s/d/%s", account.BaseUrl, strings.Join(remoteFileIdParts, "/"))
-	url := fmt.Sprintf("%s/d/%s", account.BaseUrl, remoteFileId)
-	if syncFile.OpenlistSign != "" {
-		url += "?sign=" + syncFile.OpenlistSign
-	}
+	// url := fmt.Sprintf("%s/d/%s", account.BaseUrl, remoteFileId)
+	// if syncFile.OpenlistSign != "" {
+	// 	url += "?sign=" + syncFile.OpenlistSign
+	// }
 	// 下载文件到指定位置
-	downloadErr := helpers.DownloadFile(url, task.LocalFullPath, v115open.DEFAULTUA)
+	downloadErr := helpers.DownloadFile(task.RemoteFileId, task.LocalFullPath, v115open.DEFAULTUA)
 	if downloadErr != nil {
 		helpers.AppLogger.Warnf("[下载] 下载文件失败: %s", downloadErr.Error())
 		task.Fail(downloadErr)
@@ -301,8 +300,12 @@ func AddDownloadTaskFromSyncFile(file *SyncFile) error {
 		file.SyncPath = GetSyncPathById(file.SyncPathId)
 	}
 	source := DownloadSourceStrm
-	if file.SourceType == SourceTypeLocal {
+	switch file.SourceType {
+	case SourceTypeLocal:
 		source = DownloadSourceLocalFile
+	case SourceTypeOpenList:
+		// openlist文件，直接使用远程路径作为下载链接
+
 	}
 	// 插入新纪录
 	task := &DbDownloadTask{

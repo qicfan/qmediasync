@@ -1,6 +1,7 @@
 package syncstrm
 
 import (
+	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/openlist"
 	"Q115-STRM/internal/v115open"
@@ -148,19 +149,7 @@ func (d *openListDriver) GetPathIdByPath(ctx context.Context, path string) (stri
 }
 
 func (d *openListDriver) MakeStrmContent(sf *SyncFileCache) string {
-	// 去掉BaseUrl末尾的/
-	baseUrl := strings.TrimSuffix(d.s.Account.BaseUrl, "/")
-	// 将sf.FileId中的\替换为/
-	fileId := sf.GetFileId()
-	// 去掉sf.FileId首尾的/
-	fileId = strings.Trim(fileId, "/")
-	// 对sf.FileId做Urlencode
-	// fileId = url.QueryEscape(fileId)
-	url := fmt.Sprintf("%s/d/%s", baseUrl, fileId)
-	if sf.OpenlistSign != "" {
-		url += "?sign=" + sf.OpenlistSign
-	}
-	return url
+	return helpers.MakeOpenListUrl(d.s.Account.BaseUrl, sf.OpenlistSign, sf.GetFileId())
 }
 
 func (d *openListDriver) GetTotalFileCount(ctx context.Context) (int64, string, error) {
