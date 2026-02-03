@@ -29,7 +29,7 @@ func (s *SyncStrm) Preload115Dirs(firstFileId string) error {
 	// 使用 errgroup 管理并发生命周期
 	eg, ctx := errgroup.WithContext(s.Context)
 	// SetLimit 自动限制并发数（替代 Worker Pool）
-	eg.SetLimit(int(s.PathWorkerMax))
+	eg.SetLimit(int(s.PathWorkerMax) + 2) // 增加2个协程，避免死锁，115 openapi客户端会限制并发
 
 	// 递归函数，优雅地处理树状目录结构
 	var processPath func(*pathQueueItem) error

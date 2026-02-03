@@ -13,7 +13,7 @@ func (s *SyncStrm) StartOther() {
 	s.Sync.UpdateSubStatus(models.SyncSubStatusProcessNetFileList)
 
 	eg, ctx := errgroup.WithContext(s.Context)
-	eg.SetLimit(int(s.PathWorkerMax))
+	eg.SetLimit(int(s.PathWorkerMax) + 3) // 增加一些额外的协程数，避免死锁
 
 	var processPath func(pathQueueItem) error
 	processPath = func(pathItem pathQueueItem) error {

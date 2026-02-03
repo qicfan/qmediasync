@@ -404,26 +404,20 @@ func DeleteSyncPathById(id uint) bool {
 	if syncPath.SourceType == SourceType115 {
 		// 清空数据表
 		// Delete by ID
-		result = tx.Exec("DELETE FROM sync_files WHERE sync_path_id = ?", syncPath.ID)
+		result = tx.Delete(SyncFile{}, "sync_path_id = ?", syncPath.ID)
+		// result = tx.Exec("DELETE FROM sync_files WHERE sync_path_id = ?", syncPath.ID)
 		if result.Error != nil {
 			helpers.AppLogger.Errorf("删除同步路径数据失败: %v", result.Error)
 			tx.Rollback()
 			return false
 		}
-		if syncPath.SourceType == SourceType115 {
-			result = tx.Exec("DELETE FROM sync115_paths WHERE sync_path_id = ?", syncPath.ID)
-			if result.Error != nil {
-				helpers.AppLogger.Errorf("删除同步路径路径数据失败: %v", result.Error)
-				tx.Rollback()
-				return false
-			}
-		}
 	}
-
-	// 删除SyncPath和Emby Library的关联
-	tx.Exec("DELETE FROM emby_library_sync_paths WHERE sync_path_id = ?", syncPath.ID)
-	// 删除SyncFiles和Emby Media的关联
-	tx.Exec("DELETE FROM emby_media_sync_files WHERE sync_path_id = ?", syncPath.ID)
+	tx.Delete(EmbyLibrarySyncPath{}, "sync_path_id = ?", syncPath.ID)
+	tx.Delete(EmbyMediaSyncFile{}, "sync_path_id = ?", syncPath.ID)
+	// // 删除SyncPath和Emby Library的关联
+	// tx.Exec("DELETE FROM emby_library_sync_paths WHERE sync_path_id = ?", syncPath.ID)
+	// // 删除SyncFiles和Emby Media的关联
+	// tx.Exec("DELETE FROM emby_media_sync_files WHERE sync_path_id = ?", syncPath.ID)
 	tx.Commit()
 	// 其他类型删除localpath/remotePath
 	fullPath := filepath.Join(syncPath.LocalPath, syncPath.RemotePath)
