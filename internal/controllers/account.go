@@ -40,6 +40,7 @@ func GetAccountList(c *gin.Context) {
 		CreatedAt         int64             `json:"created_at"`
 		TokenFailedReason string            `json:"token_failed_reason"`
 		BaseUrl           string            `json:"base_url"`
+		AuthType          string            `json:"auth_type"`
 	}
 	resp := make([]accountResp, 0, len(accounts))
 	for _, account := range accounts {
@@ -69,6 +70,13 @@ func GetAccountList(c *gin.Context) {
 		}
 		if a.Name == "" {
 			a.Name = account.Username
+		}
+		if account.SourceType == models.SourceTypeOpenList {
+			if account.Password != "" {
+				a.AuthType = "password"
+			} else {
+				a.AuthType = "token"
+			}
 		}
 		resp = append(resp, a)
 	}

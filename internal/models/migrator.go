@@ -577,7 +577,7 @@ func InitSettings() {
 		UploadMeta:        1,
 		DownloadMeta:      1,
 		StrmBaseUrl:       fmt.Sprintf("http://%s:12333", ipv4),
-		DownloadThreads:   5,
+		DownloadThreads:   1,
 		FileDetailThreads: 3,
 	}
 	db.Db.Create(&defaultSettings)
