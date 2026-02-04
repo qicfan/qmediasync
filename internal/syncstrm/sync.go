@@ -274,10 +274,6 @@ func (s *SyncStrm) Start() error {
 // 处理网盘文件，生成strm或者添加下载任务
 func (s *SyncStrm) processNetFile(file *SyncFileCache) error {
 	// 1. 检查对应的本地文件是否存在
-	// 先处理视频文件
-	defer func() {
-		file.Processed = true // 文件已处理
-	}()
 	// s.Sync.Logger.Infof("正在处理网盘文件 %s => %s", file.FileId, file.FileName)
 	localFilePath := file.GetLocalFilePath(s.TargetPath, s.SourcePath)
 	// s.Sync.Logger.Infof("本地文件路径: %s", localFilePath)

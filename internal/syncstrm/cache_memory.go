@@ -31,8 +31,6 @@ type SyncFileCache struct {
 	IsVideo bool `json:"is_video"`
 	IsMeta  bool `json:"is_meta"`
 
-	// 处理状态
-	Processed    bool `json:"processed"`
 	NeedDownload bool `json:"need_download"` // 标记需要下载
 
 	// 115特有字段

@@ -17,27 +17,19 @@ func (s *SyncStrm) Start115PathDispathcer() error {
 	// 使用 errgroup 管理并发
 	eg, ctx := errgroup.WithContext(s.Context)
 	eg.SetLimit(int(s.PathWorkerMax))
-	offset := 0
-	limit := 1000
 	// 先找到所有路径为空的目录ID，去重
 	parentIds := make(map[string]bool)
-	for {
-
-		c := s.memSyncCache.Count()
-		if c == 0 {
-			break
+	c := s.memSyncCache.Count()
+	if c == 0 {
+		s.Sync.Logger.Infof("同步缓存中没有文件记录需要处理")
+		return nil
+	}
+	fileItems := s.memSyncCache.GetAllFile()
+	for _, item := range fileItems {
+		if item.FileType == v115open.TypeDir || item.Path != "" {
+			continue
 		}
-		fileItems := s.memSyncCache.GetAllFile()
-		for _, item := range fileItems {
-			if item.FileType == v115open.TypeDir || item.Path != "" {
-				continue
-			}
-			parentIds[item.ParentId] = true
-		}
-		if len(fileItems) < limit {
-			break
-		}
-		offset += limit
+		parentIds[item.ParentId] = true
 	}
 	// 将路径ID加入任务队列
 	s.Sync.Logger.Infof("开始路径补全任务，共有 %d 个需要补全路径的目录", len(parentIds))
