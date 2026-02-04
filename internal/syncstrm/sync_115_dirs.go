@@ -22,10 +22,12 @@ func (s *SyncStrm) Start115PathDispathcer() error {
 	// 先找到所有路径为空的目录ID，去重
 	parentIds := make(map[string]bool)
 	for {
-		fileItems, err := s.memSyncCache.Query(offset, limit)
-		if err != nil || len(fileItems) == 0 {
+
+		c := s.memSyncCache.Count()
+		if c == 0 {
 			break
 		}
+		fileItems := s.memSyncCache.GetAllFile()
 		for _, item := range fileItems {
 			if item.FileType == v115open.TypeDir || item.Path != "" {
 				continue
@@ -161,22 +163,20 @@ pathloop:
 	return nil
 }
 
+// 更新路径下的所有文件并处理他们
 func (s *SyncStrm) handelTempFileByPathId(pathId string) error {
 	// 加锁
-	s.memSyncCache.mu.RLock()
-	fileIds := s.memSyncCache.parentIndex[pathId]
-	s.memSyncCache.mu.RUnlock()
-	s.Sync.Logger.Infof("开始处理路径ID %s 下的所有文件，共 %d 个", pathId, len(fileIds))
-	if len(fileIds) == 0 {
+	files, err := s.memSyncCache.GetByParentId(pathId)
+	if err != nil {
+		s.Sync.Logger.Errorf("查询临时表文件失败: parent_id=%s, %v", pathId, err.Error)
+		return err
+	}
+	s.Sync.Logger.Infof("开始处理路径ID %s 下的所有文件，共 %d 个", pathId, len(files))
+	if len(files) == 0 {
 		// 如果没有更多文件，退出
 		return nil
 	}
-	for _, fileId := range fileIds {
-		file, err := s.memSyncCache.GetByFileId(fileId)
-		if err != nil {
-			s.Sync.Logger.Errorf("查询临时表文件失败: parent_id=%s, %v", pathId, err.Error)
-			return err
-		}
+	for _, file := range files {
 		if file.Processed {
 			s.Sync.Logger.Infof("文件ID %s %s 路径 %s 已处理，跳过", file.FileId, file.FileName, file.Path)
 			continue

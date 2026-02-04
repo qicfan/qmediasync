@@ -570,7 +570,7 @@ func (s *SyncStrm) handleTempTableDiff() error {
 				}
 				// 然后从同步缓存中移除该记录
 				s.memSyncCache.DeleteByFileId(file.FileId)
-				s.Sync.Logger.Infof("SyncFile表数据 ID=%d 在同步缓存中存在，已更新并移除同步缓存记录", file.ID)
+				// s.Sync.Logger.Infof("SyncFile表数据 ID=%d 在同步缓存中存在，已更新并移除同步缓存记录", file.ID)
 			}
 		}
 		if len(batch) < limit {
@@ -607,34 +607,25 @@ func (s *SyncStrm) handleTempTableDiff() error {
 		s.Sync.Logger.Infof("已删除所有网盘不存在的文件记录，开始插入新增的文件记录")
 	}
 	waitDeleteIds = nil // 清空切片
-
 	// 然后插入同步缓存中剩余的新增数据
 	// 不会并发执行该方法，所以可以直接读取
-	offset = 0
-	for {
-		fileItems, err := s.memSyncCache.Query(offset, limit)
-		if err != nil {
-			s.Sync.Logger.Errorf("查询内存同步缓存数据失败: %v", err)
-			return err
-		}
-		if len(fileItems) == 0 {
-			s.Sync.Logger.Info("内存同步缓存数据全部处理完毕")
-			break
-		}
-		for _, file := range fileItems {
-			syncFile := file.GetSyncFile(s, s.Account.BaseUrl)
-			err := db.Db.Create(syncFile).Error
-			if err != nil {
-				s.Sync.Logger.Errorf("插入SyncFile表数据失败 FileID=%s: %v", file.GetFileId(), err)
-				continue
-			}
-			s.Sync.Logger.Infof("插入SyncFile表数据成功 FileID=%s", file.GetFileId())
-			// 插入成功后，从同步缓存中移除该记录
-			s.memSyncCache.DeleteByFileId(file.FileId)
-		}
-		if len(fileItems) < limit {
-			break
-		}
+	fileItems := s.memSyncCache.GetAllFile()
+	s.Sync.Logger.Infof("内存同步缓存中共有 %d 条新增数据需要插入", len(fileItems))
+	if len(fileItems) == 0 {
+		s.Sync.Logger.Info("内存同步缓存数据全部处理完毕")
+		return nil
 	}
+	for _, file := range fileItems {
+		syncFile := file.GetSyncFile(s, s.Account.BaseUrl)
+		err := db.Db.Create(syncFile).Error
+		if err != nil {
+			s.Sync.Logger.Errorf("插入SyncFile表数据失败 FileID=%s: %v", file.GetFileId(), err)
+			continue
+		}
+		s.Sync.Logger.Infof("插入SyncFile表数据成功 FileID=%s", file.GetFileId())
+		// 插入成功后，从同步缓存中移除该记录
+		s.memSyncCache.DeleteByFileId(file.GetFileId())
+	}
+	s.Sync.Logger.Infof("已插入所有新增文件记录，内存同步缓存中剩余 %d 条数据", s.memSyncCache.Count())
 	return nil
 }

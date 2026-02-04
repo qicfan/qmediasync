@@ -168,13 +168,13 @@ type MemorySyncCache struct {
 	downloadIndex map[string]*SyncFileCache
 
 	// 辅助索引：local_file_path -> file_id（用于快速查找）
-	localPathIndex map[string]string
+	localPathIndex map[string]*SyncFileCache
 
 	// 辅助索引：parent_id -> []file_id（用于按父目录查询）
-	parentIndex map[string][]string
+	parentIndex map[string][]*SyncFileCache
 
-	// 按顺序存储的 file_id 列表（用于分页查询）
-	orderedFiles []string
+	// // 按顺序存储的 file_id 列表（用于分页查询）
+	// orderedFiles []string
 
 	// 同步路径ID（用于过滤）
 	syncPathId uint
@@ -185,10 +185,10 @@ func NewMemorySyncCache(syncPathId uint) *MemorySyncCache {
 	return &MemorySyncCache{
 		fileIndex:      make(map[string]*SyncFileCache),
 		downloadIndex:  make(map[string]*SyncFileCache),
-		localPathIndex: make(map[string]string),
-		parentIndex:    make(map[string][]string),
-		orderedFiles:   make([]string, 0),
-		syncPathId:     syncPathId,
+		localPathIndex: make(map[string]*SyncFileCache),
+		parentIndex:    make(map[string][]*SyncFileCache),
+		// orderedFiles:   make([]string, 0),
+		syncPathId: syncPathId,
 	}
 }
 
@@ -208,20 +208,21 @@ func (c *MemorySyncCache) Insert(file *SyncFileCache) error {
 	// helpers.AppLogger.Infof("缓存文件: %s 路径：%s 本地路径: %s", file.GetFileId(), file.GetPath(), file.LocalFilePath)
 	if file.GetPath() != "" {
 		// helpers.AppLogger.Infof("加入本地文件索引: %s 路径：%s 本地路径: %s", file.GetFileId(), file.GetPath(), file.LocalFilePath)
-		c.localPathIndex[file.LocalFilePath] = file.GetFileId()
+		c.localPathIndex[file.LocalFilePath] = file
 	}
 
 	// 父目录索引
 	if file.ParentId != "" {
-		c.parentIndex[file.ParentId] = append(c.parentIndex[file.ParentId], file.GetFileId())
+		c.parentIndex[file.ParentId] = append(c.parentIndex[file.ParentId], file)
 	}
 
 	// 顺序列表
-	c.orderedFiles = append(c.orderedFiles, file.GetFileId())
+	// c.orderedFiles = append(c.orderedFiles, file.GetFileId())
 
 	return nil
 }
 
+// 放入待下载索引
 func (c *MemorySyncCache) InsertDownloadIndex(file *SyncFileCache) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -242,30 +243,30 @@ func (c *MemorySyncCache) BatchInsert(files []*SyncFileCache) error {
 	return nil
 }
 
-// Query 分页查询
-func (c *MemorySyncCache) Query(offset, limit int) ([]*SyncFileCache, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+// Query 查询，不分页
+func (c *MemorySyncCache) Query() {
+	// c.mu.RLock()
+	// defer c.mu.RUnlock()
 
-	total := len(c.orderedFiles)
-	if offset >= total {
-		return []*SyncFileCache{}, nil
-	}
+	// total := len(c.orderedFiles)
+	// if offset >= total {
+	// 	return []*SyncFileCache{}, nil
+	// }
 
-	end := offset + limit
-	if limit <= 0 || end > total {
-		end = total
-	}
+	// end := offset + limit
+	// if limit <= 0 || end > total {
+	// 	end = total
+	// }
 
-	result := make([]*SyncFileCache, 0, end-offset)
-	for i := offset; i < end; i++ {
-		fileId := c.orderedFiles[i]
-		if file, ok := c.fileIndex[fileId]; ok {
-			result = append(result, file)
-		}
-	}
+	// result := make([]*SyncFileCache, 0, end-offset)
+	// for i := offset; i < end; i++ {
+	// 	fileId := c.orderedFiles[i]
+	// 	if file, ok := c.fileIndex[fileId]; ok {
+	// 		result = append(result, file)
+	// 	}
+	// }
 
-	return result, nil
+	// return result, nil
 }
 
 // GetByFileId 根据 file_id 查询
@@ -285,12 +286,24 @@ func (c *MemorySyncCache) GetByLocalPath(localFilePath string) (*SyncFileCache, 
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	fileId, ok := c.localPathIndex[localFilePath]
+	file, ok := c.localPathIndex[localFilePath]
 	if !ok {
 		return nil, fmt.Errorf("未找到记录: local_file_path=%s", localFilePath)
 	}
 
-	return c.fileIndex[fileId], nil
+	return file, nil
+}
+
+// GetByParentId 根据 parent_id 查询
+func (c *MemorySyncCache) GetByParentId(parentId string) ([]*SyncFileCache, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	files, ok := c.parentIndex[parentId]
+	if !ok {
+		return nil, fmt.Errorf("未找到记录: parent_id=%s", parentId)
+	}
+	return files, nil
 }
 
 // ExistsByLocalPath 检查本地路径是否存在
@@ -300,33 +313,6 @@ func (c *MemorySyncCache) ExistsByLocalPath(localFilePath string) bool {
 
 	_, ok := c.localPathIndex[localFilePath]
 	return ok
-}
-
-// MarkProcessed 标记为已处理
-func (c *MemorySyncCache) MarkProcessed(fileId string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	file, ok := c.fileIndex[fileId]
-	if !ok {
-		return fmt.Errorf("未找到记录: file_id=%s", fileId)
-	}
-
-	file.Processed = true
-	return nil
-}
-
-// BatchMarkProcessed 批量标记为已处理
-func (c *MemorySyncCache) BatchMarkProcessed(fileIds []string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	for _, fileId := range fileIds {
-		if file, ok := c.fileIndex[fileId]; ok {
-			file.Processed = true
-		}
-	}
-	return nil
 }
 
 // DeleteByFileId 根据 file_id 删除
@@ -351,22 +337,13 @@ func (c *MemorySyncCache) DeleteByFileId(fileId string) error {
 	// 删除父目录索引中的引用
 	if file.ParentId != "" {
 		children := c.parentIndex[file.ParentId]
-		for i, id := range children {
-			if id == fileId {
+		for i, child := range children {
+			if child.GetFileId() == fileId {
 				c.parentIndex[file.ParentId] = append(children[:i], children[i+1:]...)
 				break
 			}
 		}
 	}
-
-	// 从顺序列表中删除
-	for i, id := range c.orderedFiles {
-		if id == fileId {
-			c.orderedFiles = append(c.orderedFiles[:i], c.orderedFiles[i+1:]...)
-			break
-		}
-	}
-
 	return nil
 }
 
@@ -375,29 +352,21 @@ func (c *MemorySyncCache) DeleteByParentId(parentId string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	fileIds, ok := c.parentIndex[parentId]
+	files, ok := c.parentIndex[parentId]
 	if !ok {
 		return nil // 没有子项
 	}
 
 	// 删除所有子项
-	for _, fileId := range fileIds {
-		if file, exists := c.fileIndex[fileId]; exists {
+	for _, file := range files {
+		if file, exists := c.fileIndex[file.GetFileId()]; exists {
 			// 删除主索引
-			delete(c.fileIndex, fileId)
+			delete(c.fileIndex, file.GetFileId())
 
 			// 删除本地路径索引（使用实时生成的 GetLocalFilePath()）
 			localPath := file.LocalFilePath
 			if localPath != "" {
 				delete(c.localPathIndex, localPath)
-			}
-
-			// 从顺序列表中删除
-			for i, id := range c.orderedFiles {
-				if id == fileId {
-					c.orderedFiles = append(c.orderedFiles[:i], c.orderedFiles[i+1:]...)
-					break
-				}
 			}
 		}
 	}
@@ -413,18 +382,18 @@ func (c *MemorySyncCache) UpdatePathByParentId(parentId string, newPath string, 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	fileIds, ok := c.parentIndex[parentId]
+	files, ok := c.parentIndex[parentId]
 	if !ok {
 		return nil // 没有子项
 	}
 
-	for _, fileId := range fileIds {
-		if file, exists := c.fileIndex[fileId]; exists {
+	for _, file := range files {
+		if file, exists := c.fileIndex[file.GetFileId()]; exists {
 			file.Path = newPath
-			// 更新本地路径索引
+			// 更新完整本地路径
 			file.GetLocalFilePath(targetPath, sourcePath)
 			// 加入本地路径索引
-			c.localPathIndex[file.LocalFilePath] = file.GetFileId()
+			c.localPathIndex[file.LocalFilePath] = file
 		}
 	}
 
@@ -445,35 +414,10 @@ func (c *MemorySyncCache) Clear() {
 	defer c.mu.Unlock()
 
 	c.fileIndex = make(map[string]*SyncFileCache)
-	c.localPathIndex = make(map[string]string)
-	c.parentIndex = make(map[string][]string)
-	c.orderedFiles = make([]string, 0)
+	c.localPathIndex = make(map[string]*SyncFileCache)
+	c.parentIndex = make(map[string][]*SyncFileCache)
 }
 
-// GetAllUnprocessedFiles 获取所有未处理的文件，用于实时差异处理
-func (c *MemorySyncCache) GetAllUnprocessedFiles() []*SyncFileCache {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	result := make([]*SyncFileCache, 0)
-	for _, fileId := range c.orderedFiles {
-		if file, ok := c.fileIndex[fileId]; ok && !file.Processed {
-			result = append(result, file)
-		}
-	}
-	return result
-}
-
-// GetAllFiles 获取所有文件，用于计算差异
-func (c *MemorySyncCache) GetAllFiles() []*SyncFileCache {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	result := make([]*SyncFileCache, 0, len(c.fileIndex))
-	for _, fileId := range c.orderedFiles {
-		if file, ok := c.fileIndex[fileId]; ok {
-			result = append(result, file)
-		}
-	}
-	return result
+func (c *MemorySyncCache) GetAllFile() map[string]*SyncFileCache {
+	return c.fileIndex
 }
