@@ -311,6 +311,8 @@ func Migrate() {
 		db.Db.AutoMigrate(Settings{}) // 增加openlist限速新字段
 		// 给新字段添加默认值
 		updateData := make(map[string]interface{})
+		// 将下载QPS默认改为1，防止限流
+		updateData["download_threads"] = 1
 		updateData["openlist_qps"] = 1
 		updateData["openlist_retry"] = 1
 		updateData["openlist_retry_delay"] = 60

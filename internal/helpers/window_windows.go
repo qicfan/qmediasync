@@ -13,6 +13,8 @@ import (
 	"github.com/lxn/walk"
 )
 
+var WindowsExitChan = make(chan struct{})
+
 func StartApp(stopFunc func()) {
 	startWindow(stopFunc)
 }

@@ -65,14 +65,23 @@ func (app *App) Start() {
 	go func() {
 		http.ListenAndServe(":12330", nil)
 	}()
+	if runtime.GOOS == "windows" {
+		helpers.AppLogger.Infof("QMediaSync 启动完成，现在可以关闭终端窗口。如果要退出请在通知栏（右下角）找到QMediaSync图标右键退出。")
+	}
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("收到停止信号")
-
-	// 停止应用
-	app.Stop()
-	log.Println("应用程序正常退出")
+	if runtime.GOOS == "windows" {
+		// 只关闭终端窗口，真正退出需要通知栏图标退出
+		// 等待程序真正退出
+		<-helpers.WindowsExitChan
+		log.Println("应用程序正常退出")
+	} else {
+		// 停止应用
+		app.Stop()
+		log.Println("应用程序正常退出")
+	}
 }
 
 func (app *App) Stop() {
@@ -101,6 +110,9 @@ func (app *App) Stop() {
 		if err := app.httpsServer.Shutdown(ctx); err != nil {
 			log.Println("HTTPS Server Shutdown:", err)
 		}
+	}
+	if runtime.GOOS == "windows" {
+		helpers.WindowsExitChan <- struct{}{} // 通知退出
 	}
 }
 
@@ -681,15 +693,15 @@ func main() {
 	ParseParams()
 	Init()
 	if runtime.GOOS == "windows" {
-		if helpers.IsRelease {
-			go QMSApp.Start()
-			helpers.StartApp(func() {
-				QMSApp.Stop()
-			})
-		} else {
-			QMSApp.Start()
-		}
+		// if helpers.IsRelease {
+		go QMSApp.Start()
+		helpers.StartApp(func() {
+			QMSApp.Stop()
+		})
 	} else {
 		QMSApp.Start()
 	}
+	// } else {
+	// 	QMSApp.Start()
+	// }
 }
