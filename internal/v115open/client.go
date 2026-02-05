@@ -213,10 +213,20 @@ func (c *OpenClient) authRequest(ctx context.Context, url string, req *resty.Req
 		return response, nil, ioErr
 	}
 	resp := &RespBaseBool[json.RawMessage]{}
+
 	bodyErr := json.Unmarshal(resBytes, resp)
 	if bodyErr != nil {
-		helpers.V115Log.Errorf("解析响应失败: %s", bodyErr.Error())
-		return response, resBytes, bodyErr
+		// 尝试用RespBase[json.RawMessage]解析
+		respBase := &RespBase[json.RawMessage]{}
+		bodyErr = json.Unmarshal(resBytes, respBase)
+		if bodyErr != nil {
+			helpers.V115Log.Errorf("解析响应失败: %s", bodyErr.Error())
+			return response, resBytes, bodyErr
+		}
+		// 重新赋值状态码、错误码、错误信息、数据
+		resp.Code = respBase.Code
+		resp.Message = respBase.Message
+		resp.Data = respBase.Data
 	}
 	helpers.V115Log.Infof("认证访问 %s %s\nstate=%v, code=%d, msg=%s, data=%s\n", req.Method, req.URL, resp.State, resp.Code, resp.Message, string(resp.Data))
 	switch resp.Code {
