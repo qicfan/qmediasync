@@ -177,8 +177,6 @@ func UpdateToVersion(c *gin.Context) {
 				os.RemoveAll(updateDestpath)
 			}
 			os.MkdirAll(updateDestpath, 0777)
-			// 解压到updaet目录，然后将文件从qmediasync_GOOS_GOARCH目录下复制到udpate目录
-			helpers.ExtractZip(updateFilename, updateFilePath)
 			// 复制文件到update目录
 			goos := runtime.GOOS
 			goarch := runtime.GOARCH
@@ -186,6 +184,8 @@ func UpdateToVersion(c *gin.Context) {
 				goarch = "x86_64"
 			}
 			srcPath := filepath.Join(updateFilePath, "qmediasync_"+goos+"_"+goarch)
+			// 解压到updaet目录，然后将文件从qmediasync_GOOS_GOARCH目录下复制到udpate目录
+			helpers.ExtractZip(updateFilename, srcPath)
 			err = helpers.MoveDir(srcPath, updateDestpath)
 			if err != nil {
 				helpers.AppLogger.Errorf("移动文件失败: %v", err)
@@ -409,20 +409,21 @@ func listReleases(passCache bool) []version {
 }
 
 func triggerUpdate() {
-	batFile := filepath.Join(helpers.RootDir, "scripts", "update.bat")
-	if !helpers.PathExists(batFile) {
-		helpers.AppLogger.Errorf("更新脚本不存在: %s", batFile)
+	exePath, err := os.Executable()
+	if err != nil {
+		helpers.AppLogger.Errorf("获取程序路径失败: %v", err)
 		return
 	}
-	helpers.AppLogger.Infof("触发更新脚本: %s", batFile)
-	cmd := exec.Command(batFile)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
-		helpers.AppLogger.Errorf("启动更新脚本失败: %v", err)
+	updateDir := filepath.Join(helpers.ConfigDir, "update")
+	if !helpers.PathExists(updateDir) {
+		helpers.AppLogger.Errorf("更新目录不存在: %s", updateDir)
 		return
 	}
 
-	helpers.AppLogger.Infof("更新脚本已启动，程序退出...")
+	if !helpers.StartNewProcess(exePath, updateDir) {
+		helpers.AppLogger.Errorf("启动更新进程失败: %v", err)
+		return
+	}
+
+	helpers.StopApp()
 }

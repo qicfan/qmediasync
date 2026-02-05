@@ -5,27 +5,46 @@ package helpers
 
 import (
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/lxn/walk"
+	"golang.org/x/sys/windows"
 )
 
+var mainWindow *walk.MainWindow
+var ExitChan chan struct{} = make(chan struct{})
+
+var stopFunction func()
+
 func StartApp(stopFunc func()) {
-	startWindow(stopFunc)
+	stopFunction = stopFunc
+	startWindow()
 }
 
-func startWindow(stopFunc func()) {
+func StopApp() {
+	if mainWindow != nil {
+		ExitChan <- struct{}{} // 发送关闭信号
+		exitApp()
+		mainWindow.Dispose()
+		mainWindow = nil
+	}
+}
+
+func startWindow() {
 	// 创建隐藏的主窗口
-	mainWindow, err := walk.NewMainWindow()
+	var err error
+	mainWindow, err = walk.NewMainWindow()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// 设置托盘
-	if err := setupFullFeaturedTray(mainWindow, stopFunc); err != nil {
+	if err := setupFullFeaturedTray(mainWindow, StopApp); err != nil {
 		log.Fatal(err)
 	}
 
@@ -102,4 +121,59 @@ func openBrowser(url string) error {
 	}
 
 	return exec.Command(cmd, args...).Start()
+}
+
+func StartNewProcess(exePath, updateDir string) bool {
+	// 复制一个临时的exe文件，启动这个临时文件，更新完成后删除
+	var cmd *exec.Cmd
+	if updateDir != "" {
+		cmd = exec.Command(exePath, "-update", updateDir)
+	} else {
+		cmd = exec.Command(exePath)
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+	}
+
+	if err := cmd.Start(); err != nil {
+		AppLogger.Errorf("启动更新进程失败: %v", err)
+		return false
+	}
+	return true
+}
+
+// 检查进程是否存活 - Windows 专用
+func IsProcessAlive(pid int) (bool, error) {
+	// 定义常量
+	const (
+		PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+		STILL_ACTIVE                      = 259
+	)
+
+	// 打开进程
+	handle, err := windows.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
+	if err != nil {
+		// 如果进程不存在，OpenProcess 会返回错误
+		if err == windows.ERROR_INVALID_PARAMETER {
+			return false, nil
+		}
+		if err == windows.ERROR_ACCESS_DENIED {
+			// 有权限问题，但进程可能存活
+			return true, nil
+		}
+		return false, err
+	}
+	defer windows.CloseHandle(handle)
+
+	// 获取退出码
+	var exitCode uint32
+	err = windows.GetExitCodeProcess(handle, &exitCode)
+	if err != nil {
+		return false, err
+	}
+
+	// 如果退出码是 STILL_ACTIVE (259)，表示进程还在运行
+	return exitCode == STILL_ACTIVE, nil
 }

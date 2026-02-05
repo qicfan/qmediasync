@@ -98,6 +98,10 @@ func (s *SyncStrm) CompareStrm(st *SyncFileCache) int {
 			}
 		}
 		// 比较主机名称是否相同
+		// 如果StrmBaseUrl以/结尾，那删除掉末尾的/
+		if before, ok := strings.CutSuffix(models.SettingsGlobal.StrmBaseUrl, "/"); ok {
+			models.SettingsGlobal.StrmBaseUrl = before
+		}
 		if strmData.BaseUrl != models.SettingsGlobal.StrmBaseUrl {
 			s.Sync.Logger.Warnf("文件 %s 的STRM内容的主机名称与本地不一致, 本地: %s, 远程: %s", filepath.Join(st.Path, st.FileName), models.SettingsGlobal.StrmBaseUrl, strmData.BaseUrl)
 			return 0

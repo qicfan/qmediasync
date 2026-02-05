@@ -40,7 +40,7 @@ func Load() *Config {
 	}
 
 	// 数据库配置
-	cfg.DB.Host = getEnv("DB_HOST", "127.0.0.1")
+	cfg.DB.Host = getEnv("DB_HOST", "localhost")
 	cfg.DB.Port = getEnvInt("DB_PORT", 5432)
 	cfg.DB.User = getEnv("DB_USER", "qms")
 	cfg.DB.Password = getEnv("DB_PASSWORD", "qms123456")

@@ -467,7 +467,8 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 						s.Sync.Logger.Infof("准备上传本地元数据文件 %s，检查父目录 %s 是否存在网盘", parentDir, sourceRootPath)
 						if existsPath == nil && parentDir != sourceRootPath {
 							if !isAllowedUploadDir {
-								s.Sync.Logger.Infof("父目录 %s 不存在网盘，无法上传子文件 %s", parentDir, path)
+								s.Sync.Logger.Infof("父目录 %s 不存在网盘，进入删除流程 %s，", parentDir, path)
+								s.RemoveFileAndCheckDirEmtry(path)
 								return nil
 							} else {
 								// 递归创建目录, 调用不同的driver

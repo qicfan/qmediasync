@@ -53,7 +53,7 @@ type App struct {
 
 func (app *App) Start() {
 	// 启动外网302服务
-	StartEmby302()
+	startEmby302()
 	if helpers.IsRelease {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -68,20 +68,27 @@ func (app *App) Start() {
 	// if runtime.GOOS == "windows" {
 	// 	helpers.AppLogger.Infof("QMediaSync 启动完成，现在可以关闭终端窗口。如果要退出请在通知栏（右下角）找到QMediaSync图标右键退出。")
 	// }
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("收到停止信号")
-	// if runtime.GOOS == "windows" {
-	// 	// 只关闭终端窗口，真正退出需要通知栏图标退出
-	// 	// 等待程序真正退出
-	// 	<-helpers.WindowsExitChan
-	// 	log.Println("应用程序正常退出")
-	// } else {
-	// 停止应用
-	app.Stop()
-	log.Println("应用程序正常退出")
-	// }
+	if runtime.GOOS == "windows" {
+		<-helpers.ExitChan
+		log.Println("收到停止信号")
+		app.Stop()
+		close(helpers.ExitChan)
+		log.Println("应用程序正常退出")
+	} else {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+		log.Println("收到停止信号")
+		// if runtime.GOOS == "windows" {
+		// 	// 只关闭终端窗口，真正退出需要通知栏图标退出
+		// 	// 等待程序真正退出
+		// 	<-helpers.WindowsExitChan
+		// 	log.Println("应用程序正常退出")
+		// } else {
+		// 停止应用
+		app.Stop()
+		log.Println("应用程序正常退出")
+	}
 }
 
 func (app *App) Stop() {
@@ -246,7 +253,7 @@ func (app *App) migratePostgresToDataDir() {
 	}
 }
 
-func NewApp() {
+func newApp() {
 	if QMSApp != nil {
 		log.Println("App已经初始化，不能再次初始化")
 		return
@@ -267,7 +274,7 @@ func initTimeZone() {
 	time.Local = cstZone
 }
 
-func CheckRelease() {
+func checkRelease() {
 	if helpers.IsRunningInDocker() {
 		helpers.IsRelease = true
 	}
@@ -280,7 +287,7 @@ func CheckRelease() {
 
 func getRootDir() string {
 	var exPath string = "/app" // 默认使用docker的路径
-	CheckRelease()
+	checkRelease()
 	if helpers.IsRelease {
 		ex, err := os.Executable()
 		if err != nil {
@@ -333,7 +340,7 @@ func getDataAndConfigDir() {
 //go:embed emby302.yml
 var s string
 
-func StartEmby302() {
+func startEmby302() {
 	dataRoot := helpers.ConfigDir
 	if err := config.ReadFromFile([]byte(s)); err != nil {
 		log.Fatal(err)
@@ -364,7 +371,7 @@ func StartEmby302() {
 
 }
 
-func InitLogger() {
+func initLogger() {
 	logPath := filepath.Join(helpers.ConfigDir, "logs")
 	os.MkdirAll(logPath, 0755) // 如果没有logs目录则创建
 	libLogPath := filepath.Join(logPath, "libs")
@@ -375,7 +382,7 @@ func InitLogger() {
 	helpers.TMDBLog = helpers.NewLogger(helpers.GlobalConfig.Log.TMDB, false, true)
 }
 
-func InitOthers() {
+func initOthers() {
 	helpers.InitEventBus() // 初始化事件总线
 	models.LoadSettings()  // 从数据库加载设置
 	helpers.AppLogger.Infof("已加载配置，准备初始化115请求队列，线程数: %d", models.SettingsGlobal.FileDetailThreads)
@@ -598,7 +605,7 @@ func setRouter(r *gin.Engine) {
 	}
 }
 
-func Init() {
+func initEnv() {
 	fmt.Printf("当前版本号:%s, 发布日期:%s\n", Version, PublishDate)
 	// 将版本写入helper
 	helpers.Version = Version
@@ -637,24 +644,33 @@ func Init() {
 	ipv4, _ := helpers.GetLocalIP()
 	fmt.Printf("本机IPv4地址是 <%s>\n", ipv4)
 	helpers.InitConfig() // 初始化配置文件
-	InitLogger()
+	initLogger()
 	// 创建App
-	NewApp()
+	newApp()
 	helpers.AppLogger.Infof("当前版本号:%s, 发布日期:%s\n", Version, PublishDate)
 	if err := QMSApp.StartDatabase(); err != nil {
 		log.Println("数据库启动失败:", err)
 		return
 	}
 	db.InitCache() // 初始化内存缓存
-	InitOthers()
+	initOthers()
 }
 
-func ParseParams() {
+func parseParams() {
 	// 定义 guid 参数
 	var guid string
+	var update string
 	flag.StringVar(&guid, "guid", "", "GUID 参数")
+	flag.StringVar(&update, "update", "", "更新参数")
 	// 解析命令行参数
 	flag.Parse()
+
+	// 检查是否是更新模式
+	if update != "" && runtime.GOOS == "windows" {
+		runUpdateProcess()
+		os.Exit(0)
+	}
+
 	fmt.Printf("传入的 GUID: %s\n", guid)
 	// 使用参数
 	if guid != "" {
@@ -686,9 +702,9 @@ func ParseParams() {
 // @name api_key
 func main() {
 	getRootDir()
+	parseParams()
 	helpers.LoadEnvFromFile(filepath.Join(helpers.RootDir, "config", ".env"))
-	ParseParams()
-	Init()
+	initEnv()
 	if runtime.GOOS == "windows" {
 		if helpers.IsRelease {
 			go QMSApp.Start()
@@ -698,5 +714,131 @@ func main() {
 		}
 	} else {
 		QMSApp.Start()
+	}
+}
+
+func runUpdateProcess() {
+	if len(os.Args) < 3 {
+		fmt.Println("更新参数不足")
+		return
+	}
+
+	updateDir := os.Args[2]
+
+	fmt.Println("开始更新流程...")
+
+	parentPID := os.Getppid()
+	fmt.Printf("等待父进程退出 (PID: %d)...\n", parentPID)
+
+	if err := waitForProcessExit(parentPID); err != nil {
+		fmt.Printf("等待父进程退出失败: %v\n", err)
+	}
+
+	fmt.Println("父进程已退出，开始更新...")
+
+	backupDir := filepath.Join(helpers.RootDir, "old")
+
+	if helpers.PathExists(backupDir) {
+		fmt.Println("删除旧的备份目录...")
+		os.RemoveAll(backupDir)
+	}
+
+	os.MkdirAll(backupDir, 0777)
+
+	appName := "QMediaSync.exe"
+	appPath := filepath.Join(helpers.RootDir, appName)
+	// backupAppPath := filepath.Join(backupDir, appName)
+	// 跳过备份
+	// if helpers.PathExists(appPath) {
+	// 	fmt.Printf("备份 %s...\n", appName)
+	// 	if err := helpers.CopyFile(appPath, backupAppPath); err != nil {
+	// 		fmt.Printf("备份主程序失败: %v\n", err)
+	// 	}
+	// }
+
+	newAppPath := filepath.Join(updateDir, appName)
+	if helpers.PathExists(newAppPath) {
+		fmt.Printf("更新 %s...\n", appName)
+		// 将老的可执行文件改名为old.exe
+		oldAppPath := appPath + ".old.exe"
+		if helpers.PathExists(oldAppPath) {
+			if err := os.Remove(oldAppPath); err != nil {
+				fmt.Printf("删除旧 %s 失败: %v\n", appName, err)
+				os.Exit(1)
+			}
+		}
+		if err := os.Rename(appPath, oldAppPath); err != nil {
+			fmt.Printf("重命名旧 %s 失败: %v\n", appName, err)
+			os.Exit(1)
+		}
+		if err := helpers.CopyFile(newAppPath, appPath); err != nil {
+			fmt.Printf("更新主程序失败: %v\n", err)
+		}
+	} else {
+		fmt.Printf("更新目录中未找到 %s\n", appName)
+	}
+
+	replaceDir(filepath.Join(updateDir, "web_statics"), filepath.Join(helpers.RootDir, "web_statics"), backupDir)
+	replaceDir(filepath.Join(updateDir, "scripts"), filepath.Join(helpers.RootDir, "scripts"), backupDir)
+	// 删除临时exe
+	tempExePath := newAppPath + ".temp.exe"
+	if helpers.PathExists(tempExePath) {
+		if err := os.Remove(tempExePath); err != nil {
+			fmt.Printf("删除临时exe文件失败: %v\n", err)
+		}
+	}
+	fmt.Println("更新完成!")
+	fmt.Println("启动新版本...")
+	// 启动新进程
+	if !helpers.StartNewProcess(appPath, "") {
+		fmt.Printf("启动新版本失败\n")
+	}
+}
+
+func waitForProcessExit(pid int) error {
+	maxWait := 30 * time.Second
+	deadline := time.Now().Add(maxWait)
+
+	for time.Now().Before(deadline) {
+
+		alive, err := helpers.IsProcessAlive(pid)
+		if err != nil {
+			return nil
+		}
+		// 检查process已经退出
+		if !alive {
+			fmt.Printf("父进程已退出，等待资源释放...\n")
+			time.Sleep(2 * time.Second)
+			return nil
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	return nil
+}
+
+func replaceDir(srcDir, dstDir, backupDir string) {
+	if !helpers.PathExists(srcDir) {
+		return
+	}
+
+	dirName := filepath.Base(dstDir)
+	backupPath := filepath.Join(backupDir, dirName)
+
+	if helpers.PathExists(dstDir) {
+		fmt.Printf("备份 %s 目录...\n", dirName)
+		os.RemoveAll(backupPath)
+		if err := helpers.CopyDir(dstDir, backupPath); err != nil {
+			fmt.Printf("备份 %s 目录失败: %v\n", dirName, err)
+		}
+
+		fmt.Printf("删除旧 %s 目录...\n", dirName)
+		os.RemoveAll(dstDir)
+	}
+
+	fmt.Printf("更新 %s 目录...\n", dirName)
+	if err := helpers.CopyDir(srcDir, dstDir); err != nil {
+		fmt.Printf("更新 %s 目录失败: %v\n", dirName, err)
 	}
 }

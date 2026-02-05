@@ -6,6 +6,7 @@ import (
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/synccron"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -318,6 +319,10 @@ func GetStrmConfig(c *gin.Context) {
 	models.LoadSettings() // 确保设置已加载
 	strmConfig := make(map[string]interface{})
 	strmConfig["strm_base_url"] = models.SettingsGlobal.StrmBaseUrl
+	// 如果strmConfig["strm_base_url"]以/结尾，那删除掉末尾的/
+	if strings.HasSuffix(strmConfig["strm_base_url"].(string), "/") {
+		strmConfig["strm_base_url"] = strings.TrimSuffix(strmConfig["strm_base_url"].(string), "/")
+	}
 	if models.SettingsGlobal.Cron == "" {
 		strmConfig["cron"] = helpers.GlobalConfig.Strm.Cron // 使用默认配置
 	} else {
