@@ -1,6 +1,7 @@
 package models
 
 import (
+	"Q115-STRM/internal/baidupan"
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/notificationmanager"
@@ -86,6 +87,10 @@ func (account *Account) Get115Client() *v115open.OpenClient {
 
 func (account *Account) GetOpenListClient() *openlist.Client {
 	return openlist.NewClient(account.ID, account.BaseUrl, account.Username, account.Password, account.Token)
+}
+
+func (account *Account) GetBaiDuPanClient() *baidupan.BaiDuPanClient {
+	return baidupan.GetClient(account.ID, account.Token, account.RefreshToken)
 }
 
 func (account *Account) Delete() error {

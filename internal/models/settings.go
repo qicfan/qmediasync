@@ -45,22 +45,40 @@ type Settings struct {
 	OpenlistRetry      int `json:"openlist_retry" gorm:"default:1"`        // Openlist重试次数，默认1
 	OpenlistRetryDelay int `json:"openlist_retry_delay" gorm:"default:60"` // Openlist重试间隔，默认60秒，躲避QPM限流
 
+	// 百度网盘四维度限速
+	BaiDuPanQPS int `json:"baidupan_qps" gorm:"default:10"`     // 百度网盘每秒请求数限制，默认10
+	BaiDuPanQPM int `json:"baidupan_qpm" gorm:"default:600"`    // 百度网盘每分钟请求数限制，默认600
+	BaiDuPanQPH int `json:"baidupan_qph" gorm:"default:36000"`  // 百度网盘每小时请求数限制，默认36000
+	BaiDuPanQPT int `json:"baidupan_qpt" gorm:"default:864000"` // 百度网盘每天请求数限制，默认864000
+
 }
 
 var SettingsGlobal = &Settings{}
 
-func (settings *Settings) UpdateThreads(downloadThreads int, fileDetailThreads, openlistQPS, openlistRetry, openlistRetryDelay int) bool {
+func (settings *Settings) UpdateThreads(downloadThreads int, fileDetailThreads, openlistQPS, openlistRetry, openlistRetryDelay int, baidupanQPS, baidupanQPM, baidupanQPH, baidupanQPT int) bool {
 	settings.DownloadThreads = downloadThreads
 	settings.FileDetailThreads = fileDetailThreads
 	settings.OpenlistQPS = openlistQPS
 	settings.OpenlistRetry = openlistRetry
 	settings.OpenlistRetryDelay = openlistRetryDelay
+	// 更新百度网盘限速
+	settings.BaiDuPanQPS = baidupanQPS
+	settings.BaiDuPanQPM = baidupanQPM
+	settings.BaiDuPanQPH = baidupanQPH
+	settings.BaiDuPanQPT = baidupanQPT
+	
 	updateData := make(map[string]interface{})
 	updateData["download_threads"] = downloadThreads
 	updateData["file_detail_threads"] = fileDetailThreads
 	updateData["openlist_qps"] = openlistQPS
 	updateData["openlist_retry"] = openlistRetry
 	updateData["openlist_retry_delay"] = openlistRetryDelay
+	// 百度网盘限速
+	updateData["baidupan_qps"] = baidupanQPS
+	updateData["baidupan_qpm"] = baidupanQPM
+	updateData["baidupan_qph"] = baidupanQPH
+	updateData["baidupan_qpt"] = baidupanQPT
+	
 	err := db.Db.Model(settings).Where("id = ?", settings.ID).Updates(updateData).Error
 	if err != nil {
 		helpers.AppLogger.Errorf("更新线程数失败: %v", err)
@@ -78,6 +96,11 @@ func (settings *Settings) GetThreads() map[string]int {
 		"openlist_qps":         settings.OpenlistQPS,
 		"openlist_retry":       settings.OpenlistRetry,
 		"openlist_retry_delay": settings.OpenlistRetryDelay,
+		// 百度网盘限速
+		"baidupan_qps":         settings.BaiDuPanQPS,
+		"baidupan_qpm":         settings.BaiDuPanQPM,
+		"baidupan_qph":         settings.BaiDuPanQPH,
+		"baidupan_qpt":         settings.BaiDuPanQPT,
 	}
 }
 

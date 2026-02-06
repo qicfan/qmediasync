@@ -1,0 +1,24 @@
+package baidupan
+
+const (
+	// 默认值
+	DEFAULT_MAX_RETRIES = 3
+	DEFAULT_RETRY_DELAY = 2
+	DEFAULT_TIMEOUT     = 30
+
+	// API端点
+	API_BASE_URL = "https://openapi.baidu.com"
+
+	// 错误码
+	ACCESS_TOKEN_AUTH_FAIL  = 110
+	ACCESS_AUTH_INVALID     = 111
+	ACCESS_TOKEN_EXPIRY_CODE = 112
+	REFRESH_TOKEN_INVALID    = 113
+	REQUEST_MAX_LIMIT_CODE   = 114
+
+	// 限速默认值
+	DEFAULT_QPS_LIMIT = 10  // 每秒10个请求
+	DEFAULT_QPM_LIMIT = 600 // 每分钟600个请求
+	DEFAULT_QPH_LIMIT = 36000 // 每小时36000个请求
+	DEFAULT_QPT_LIMIT = 864000 // 每天864000个请求
+)

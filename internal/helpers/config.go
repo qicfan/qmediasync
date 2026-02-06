@@ -36,6 +36,7 @@ type Config struct {
 	Strm             configStrm `yaml:"strm"`
 	Open115AppId     string     `yaml:"open115AppId"`
 	Open115TestAppId string     `yaml:"open115TestAppId"`
+	BaiDuPanAppId    string     `yaml:"baiDuPanAppId"`
 }
 
 var GlobalConfig Config
@@ -72,6 +73,7 @@ func InitConfig() error {
 		},
 		Open115AppId:     "",
 		Open115TestAppId: "",
+		BaiDuPanAppId:    "QMediaSync",
 	}
 	return nil
 }

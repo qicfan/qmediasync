@@ -19,6 +19,7 @@ const (
 	SourceTypeLocal     SourceType = "local"
 	SourceType123       SourceType = "123"
 	SourceTypeOpenList  SourceType = "openlist"
+	SourceTypeBaiduPan  SourceType = "baidupan"
 	SourceTypeEmbyMedia SourceType = "emby媒体信息提取" // emby媒体信息提取专用
 )
 

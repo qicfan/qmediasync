@@ -79,12 +79,6 @@ func (app *App) Start() {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 		log.Println("收到停止信号")
-		// if runtime.GOOS == "windows" {
-		// 	// 只关闭终端窗口，真正退出需要通知栏图标退出
-		// 	// 等待程序真正退出
-		// 	<-helpers.WindowsExitChan
-		// 	log.Println("应用程序正常退出")
-		// } else {
 		// 停止应用
 		app.Stop()
 		log.Println("应用程序正常退出")
@@ -473,10 +467,20 @@ func setRouter(r *gin.Engine) {
 		api.GET("/115/stats/daily", controllers.GetRequestStatsByDay)    // 获取115请求统计（按天）
 		api.GET("/115/stats/hourly", controllers.GetRequestStatsByHour)  // 获取115请求统计（按小时）
 		api.POST("/115/stats/clean", controllers.CleanOldRequestStats)   // 清理旧的请求统计数据
-		api.GET("/update/last", controllers.GetLastRelease)              // 获取最新版本
-		api.POST("/update/to-version", controllers.UpdateToVersion)      // 获取更新版本
-		api.GET("/update/progress", controllers.UpdateProgress)          // 获取更新进度
-		api.POST("/update/cancel", controllers.CancelUpdate)             // 取消更新
+		// 百度网盘相关路由
+		api.GET("/baidupan/oauth-url", controllers.GetBaiDuPanOAuthUrl)               // 获取百度网盘OAuth登录地址
+		api.POST("/baidupan/oauth-confirm", controllers.ConfirmBaiDuPanOAuthCode)     // 确认百度网盘OAuth登录
+		api.GET("/baidupan/queue/stats", controllers.GetBaiDuPanQueueStats)           // 获取百度网盘请求队列统计数据
+		api.POST("/baidupan/queue/rate-limit", controllers.SetBaiDuPanQueueRateLimit) // 设置百度网盘请求队列速率限制
+		api.GET("/baidupan/stats/daily", controllers.GetBaiDuPanRequestStatsByDay)    // 获取百度网盘请求统计（按天）
+		api.GET("/baidupan/stats/hourly", controllers.GetBaiDuPanRequestStatsByHour)  // 获取百度网盘请求统计（按小时）
+		api.POST("/baidupan/stats/clean", controllers.CleanOldBaiDuPanRequestStats)   // 清理旧的百度网盘请求统计数据
+		api.GET("/auth/baidupan-status", controllers.GetBaiDuPanStatus)               // 查询百度网盘状态
+
+		api.GET("/update/last", controllers.GetLastRelease)         // 获取最新版本
+		api.POST("/update/to-version", controllers.UpdateToVersion) // 获取更新版本
+		api.GET("/update/progress", controllers.UpdateProgress)     // 获取更新进度
+		api.POST("/update/cancel", controllers.CancelUpdate)        // 取消更新
 		api.GET("/user/info", controllers.GetUserInfo)
 		api.GET("/path/list", controllers.GetPathList)
 		api.GET("/path/files", controllers.GetNetFileList) // 查询网盘文件列表
@@ -711,6 +715,8 @@ func main() {
 			helpers.StartApp(func() {
 				QMSApp.Stop()
 			})
+		} else {
+			QMSApp.Start()
 		}
 	} else {
 		QMSApp.Start()

@@ -516,8 +516,18 @@ func UpdateThreads(c *gin.Context) {
 	}
 	downloadThreads := req.DownloadThreads
 	fileDetailThreads := req.FileDetailThreads
-	// 更新设置
-	if !models.SettingsGlobal.UpdateThreads(downloadThreads, fileDetailThreads, req.OpenlistQPS, req.OpenlistRetry, req.OpenlistRetryDelay) {
+	// 更新设置，传递当前的百度网盘限速值
+	if !models.SettingsGlobal.UpdateThreads(
+		downloadThreads, 
+		fileDetailThreads, 
+		req.OpenlistQPS, 
+		req.OpenlistRetry, 
+		req.OpenlistRetryDelay,
+		models.SettingsGlobal.BaiDuPanQPS,
+		models.SettingsGlobal.BaiDuPanQPM,
+		models.SettingsGlobal.BaiDuPanQPH,
+		models.SettingsGlobal.BaiDuPanQPT,
+	) {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "更新线程数失败", Data: nil})
 		return
 	}
