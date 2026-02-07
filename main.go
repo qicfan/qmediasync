@@ -643,6 +643,24 @@ func initEnv() {
 	fmt.Printf("当前配置文件目录: %s\n", helpers.ConfigDir)
 	ipv4, _ := helpers.GetLocalIP()
 	fmt.Printf("本机IPv4地址是 <%s>\n", ipv4)
+
+	// --- 新增：检测数据库数据文件夹是否存在 ---
+	dbDataPath := filepath.Join(helpers.ConfigDir, "postgres/data")
+
+	// 使用 os.Stat 检查目录
+	if _, err := os.Stat(dbDataPath); os.IsNotExist(err) {
+		// 如果文件夹不存在，说明是第一次运行
+		helpers.IsFirstRun = true
+		fmt.Println("检测到数据库尚未初始化，标记为第一次运行")
+	} else {
+		// 如果文件夹存在，进一步检查是否为空（可选）
+		files, _ := os.ReadDir(dbDataPath)
+		if len(files) == 0 {
+			helpers.IsFirstRun = true
+			fmt.Println("检测到数据库文件夹为空，标记为第一次运行")
+		}
+	}
+
 	helpers.InitConfig() // 初始化配置文件
 	initLogger()
 	// 创建App
@@ -711,6 +729,8 @@ func main() {
 			helpers.StartApp(func() {
 				QMSApp.Stop()
 			})
+		} else {
+			QMSApp.Start()
 		}
 	} else {
 		QMSApp.Start()

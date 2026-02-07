@@ -16,6 +16,8 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+var IsFirstRun bool = false // 默认为 false
+
 var mainWindow *walk.MainWindow
 var ExitChan chan struct{} = make(chan struct{})
 
@@ -49,10 +51,16 @@ func startWindow() {
 	}
 
 	// 启动后台任务
-	go func() {
-		time.Sleep(5 * time.Second)
-		openBrowser("http://127.0.0.1:12333")
-	}()
+	// 只有第一次启动才打开网页
+	if IsFirstRun {
+		go func() {
+			// 第一次启动建议多等一会儿，因为数据库初始化需要时间
+			time.Sleep(5 * time.Second)
+			openBrowser("http://127.0.0.1:12333")
+			// 启动完后重置，防止程序内部逻辑错误（可选）
+			IsFirstRun = false
+		}()
+	}
 	// // 运行应用
 	mainWindow.Run()
 }
@@ -77,6 +85,18 @@ func setupFullFeaturedTray(parent walk.Form, stopFunc func()) error {
 		return err
 	}
 	if err = notifyIcon.SetToolTip("QMediaSync正在后台运行中"); err != nil {
+		return err
+	}
+
+	// 创建“打开控制面板”菜单项
+	openWebAction := walk.NewAction()
+	openWebAction.SetText("打开控制面板")
+	openWebAction.Triggered().Attach(func() {
+		// 这里直接调用你已经写好的 openBrowser 函数
+		openBrowser("http://127.0.0.1:12333")
+	})
+	// 将该项加入右键菜单
+	if err := notifyIcon.ContextMenu().Actions().Add(openWebAction); err != nil {
 		return err
 	}
 
@@ -105,22 +125,20 @@ func exitApp() {
 }
 
 func openBrowser(url string) error {
-	var cmd string
-	var args []string
+	var cmd *exec.Cmd
 
 	switch runtime.GOOS {
 	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start", url}
+		// 使用 cmd /c start 虽然方便，但必须设置 HideWindow
+		cmd = exec.Command("cmd", "/c", "start", url)
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true} // 关键：隐藏子进程窗口
 	case "darwin":
-		cmd = "open"
-		args = []string{url}
-	default: // linux, freebsd, etc.
-		cmd = "xdg-open"
-		args = []string{url}
+		cmd = exec.Command("open", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
 	}
 
-	return exec.Command(cmd, args...).Start()
+	return cmd.Start()
 }
 
 func StartNewProcess(exePath, updateDir string) bool {
@@ -134,7 +152,8 @@ func StartNewProcess(exePath, updateDir string) bool {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP | 0x08000000, // 0x08000000 是 CREATE_NO_WINDOW
+		HideWindow:    true,
 	}
 
 	if err := cmd.Start(); err != nil {
@@ -176,4 +195,20 @@ func IsProcessAlive(pid int) (bool, error) {
 
 	// 如果退出码是 STILL_ACTIVE (259)，表示进程还在运行
 	return exitCode == STILL_ACTIVE, nil
+}
+
+// Command 是对 exec.Command 的包装，在 Windows 下会自动隐藏窗口
+func Command(name string, arg ...string) *exec.Cmd {
+	cmd := exec.Command(name, arg...)
+
+	if runtime.GOOS == "windows" {
+		if cmd.SysProcAttr == nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{}
+		}
+		// 核心：设置隐藏窗口和创建无窗口标志
+		cmd.SysProcAttr.HideWindow = true
+		cmd.SysProcAttr.CreationFlags = 0x08000000 // CREATE_NO_WINDOW
+	}
+
+	return cmd
 }
