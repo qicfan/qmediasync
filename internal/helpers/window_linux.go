@@ -4,6 +4,7 @@
 package helpers
 
 var ExitChan chan struct{} = make(chan struct{})
+var IsFirstRun bool = false // 默认为 false
 
 func StartApp(stopFunc func()) {
 }
