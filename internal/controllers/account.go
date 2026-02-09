@@ -111,16 +111,17 @@ func CreateTmpAccount(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "请求参数错误", Data: nil})
 		return
 	}
+	// 创建临时账号
+	var appId string
 	if tmpAccount.SourceType == models.SourceTypeBaiduPan {
-		tmpAccount.AppId = helpers.GlobalConfig.BaiDuPanAppId
+		appId = helpers.GlobalConfig.BaiDuPanAppId
 	}
 	var v115AppIdMap = map[string]string{
 		"Q115-STRM": helpers.GlobalConfig.Open115AppId,
 		"MQ的媒体库":    helpers.GlobalConfig.Open115TestAppId,
 		"自定义":       "",
 	}
-	// 创建临时账号
-	var appId string
+
 	if models.SourceType115 == tmpAccount.SourceType {
 		if tmpAccount.AppIdName == "自定义" {
 			if tmpAccount.AppId == "" {

@@ -255,8 +255,8 @@ func GetBaiduPanUrlByPickCode(c *gin.Context) {
 			helpers.AppLogger.Infof("从缓存中查询到百度网盘下载链接: %s => %s", pickCode, cachedUrl)
 		}
 		// 跳转到本地代理
-		helpers.AppLogger.Infof("通过本地代理访问百度网盘下载链接，非qms 8095播放: %s", cachedUrl)
 		proxyUrl := fmt.Sprintf("/proxy-115?baidupan=1&url=%s", url.QueryEscape(cachedUrl))
+		helpers.AppLogger.Infof("通过本地代理访问百度网盘下载链接，非qms 8095播放: %s", url.QueryEscape(cachedUrl))
 		c.Redirect(http.StatusFound, proxyUrl)
 	}
 
