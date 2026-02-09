@@ -742,27 +742,26 @@ func (sm *ScrapeMediaFile) ReScrape(name string, year int, tmdbId int64, season 
 			updateData["media_season_id"] = 0
 			updateData["media_episode_id"] = 0
 			updateData["failed_reason"] = ""
-			// 先修改sm
-
-			if sm.PathId == "" {
-				updateData["media_id"] = 0
-				db.Db.Where("id = ?", sm.ID).Updates(updateData)
-				db.Db.Where("id = ?", mediaId).Delete(&Media{})
-				db.Db.Where("media_id = ?", mediaId).Delete(&MediaSeason{})
-				db.Db.Where("media_id = ?", mediaId).Delete(&MediaEpisode{})
-				if err := db.Db.Model(&ScrapeMediaFile{}).Where("tvshow_path_id = ? and batch_no = ?", sm.TvshowPathId, sm.BatchNo).Updates(updateData).Error; err != nil {
-					helpers.AppLogger.Errorf("重新刮削时更新电视剧内其他剧集失败1: %v", err)
-					return err
-				}
-			} else {
-				db.Db.Where("id = ?", sm.ID).Updates(updateData)
-				db.Db.Where("media_id = ?", mediaId).Delete(&MediaSeason{})
-				db.Db.Where("media_id = ?", mediaId).Delete(&MediaEpisode{})
-				if err := db.Db.Model(&ScrapeMediaFile{}).Where("path_id = ? and batch_no = ?", sm.PathId, sm.BatchNo).Updates(updateData).Error; err != nil {
-					helpers.AppLogger.Errorf("重新刮削时更新电视剧内其他剧集失败2: %v", err)
-					return err
-				}
+			updateData["media_id"] = 0
+			db.Db.Where("id = ?", mediaId).Delete(&Media{})
+			db.Db.Where("media_id = ?", mediaId).Delete(&MediaSeason{})
+			db.Db.Where("media_id = ?", mediaId).Delete(&MediaEpisode{})
+			// if sm.PathId == "" {
+			if err := db.Db.Model(&ScrapeMediaFile{}).Where("tvshow_path_id = ? and batch_no = ?", sm.TvshowPathId, sm.BatchNo).Updates(updateData).Error; err != nil {
+				helpers.AppLogger.Errorf("重新刮削时更新电视剧内所有剧集失败: %v", err)
+				return err
 			}
+			if err := db.Db.Where("id = ?", sm.ID).Updates(updateData).Error; err != nil {
+				helpers.AppLogger.Errorf("重新刮削时更新剧集失败: %v", err)
+				return err
+			}
+			// } else {
+			// 	if err := db.Db.Model(&ScrapeMediaFile{}).Where("path_id = ? and batch_no = ?", sm.PathId, sm.BatchNo).Updates(updateData).Error; err != nil {
+			// 		helpers.AppLogger.Errorf("重新刮削时更新电视剧内其他剧集失败2: %v", err)
+			// 		return err
+			// 	}
+			// 	db.Db.Where("id = ?", sm.ID).Updates(updateData)
+			// }
 
 			hasEdit := false
 			// 检查输入的季是否存在
