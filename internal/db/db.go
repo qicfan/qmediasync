@@ -92,12 +92,8 @@ func GetPostgresBinaryPath(embeddedBasePath string) string {
 	switch goos {
 	case "windows":
 		binDir = filepath.Join(embeddedBasePath, "windows", goarch, "bin")
-	case "darwin":
-		panic("Mac 平台不支持嵌入式 PostgreSQL")
-	case "linux":
-		panic("linux 平台不支持嵌入式 PostgreSQL")
 	default:
-		panic(fmt.Sprintf("%s 平台不支持嵌入式 PostgreSQL", goos))
+		return ""
 	}
 	return binDir
 }
