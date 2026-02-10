@@ -152,7 +152,9 @@ func (s *Scan115Impl) startPathWorkWithLimiter(workerID int) {
 						continue
 					}
 					ext := filepath.Ext(file.FileName)
+					helpers.AppLogger.Infof("开始处理文件 %s 扩展名 %s", file.FileName, ext)
 					if slices.Contains(models.SubtitleExtArr, ext) {
+						helpers.AppLogger.Infof("文件 %s 是字幕文件", file.FileName)
 						subFiles = append(subFiles, &localFile{
 							Id:       file.FileId,
 							PickCode: file.PickCode,
@@ -163,6 +165,7 @@ func (s *Scan115Impl) startPathWorkWithLimiter(workerID int) {
 						continue fileloop
 					}
 					if slices.Contains(models.ImageExtArr, ext) {
+						helpers.AppLogger.Infof("文件 %s 是图片文件", file.FileName)
 						picFiles = append(picFiles, &localFile{
 							Id:       file.FileId,
 							PickCode: file.PickCode,
@@ -173,6 +176,7 @@ func (s *Scan115Impl) startPathWorkWithLimiter(workerID int) {
 						continue fileloop
 					}
 					if ext == ".nfo" {
+						helpers.AppLogger.Infof("文件 %s 是nfo文件", file.FileName)
 						nfoFiles = append(nfoFiles, &localFile{
 							Id:       file.FileId,
 							PickCode: file.PickCode,
@@ -198,6 +202,7 @@ func (s *Scan115Impl) startPathWorkWithLimiter(workerID int) {
 					break pageloop
 				}
 			}
+			helpers.AppLogger.Infof("目录 %s 处理完成，%d 个视频文件，%d 个图片文件，%d 个nfo文件，%d 个字幕文件", parentPath, len(videoFiles), len(picFiles), len(nfoFiles), len(subFiles))
 			// 处理视频文件
 			verr := s.processVideoFile(parentPath, pathId, videoFiles, picFiles, nfoFiles, subFiles)
 			if verr != nil {

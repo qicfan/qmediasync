@@ -190,15 +190,17 @@ videoloop:
 			}
 		}
 		// 查找是否有字幕文件
-	subloop:
 		for _, subFile := range subFiles {
+			helpers.AppLogger.Infof("检查字幕文件 %s 是否匹配视频文件 %s", subFile.Name, videoFile.Name)
 			if strings.HasPrefix(subFile.Name, baseName) {
+				helpers.AppLogger.Infof("字幕文件 %s 匹配视频文件 %s", subFile.Name, videoFile.Name)
 				subMetaFiles = append(subMetaFiles, &models.MediaMetaFiles{
 					FileName: subFile.Name,
 					FileId:   subFile.Id,
 					PickCode: subFile.PickCode,
 				})
-				break subloop
+			} else {
+				helpers.AppLogger.Infof("字幕文件 %s 不匹配视频文件 %s", subFile.Name, videoFile.Name)
 			}
 		}
 		// 生成ScrapeMediaFiles，并加入待保存列表

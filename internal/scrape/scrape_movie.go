@@ -180,9 +180,12 @@ func (m *movieScrapeImpl) Scrape(mediaFile *models.ScrapeMediaFile) error {
 		// 生成nfo
 		m.GenerateMovieNfo(mediaFile, localTempPath, nfoName, m.scrapePath.ExcludeNoImageActor)
 		fileList := map[string]string{}
-		fileList[m.GetMovieRealName(mediaFile, "poster.jpg", "image")] = mediaFile.Media.PosterPath
-		fileList[m.GetMovieRealName(mediaFile, "clearlogo.jpg", "image")] = mediaFile.Media.LogoPath
-		fileList[m.GetMovieRealName(mediaFile, "fanart.jpg", "image")] = mediaFile.Media.BackdropPath
+		posterExt := filepath.Ext(mediaFile.Media.PosterPath)
+		fileList[m.GetMovieRealName(mediaFile, fmt.Sprintf("poster%s", posterExt), "image")] = mediaFile.Media.PosterPath
+		logoExt := filepath.Ext(mediaFile.Media.LogoPath)
+		fileList[m.GetMovieRealName(mediaFile, fmt.Sprintf("clearlogo%s", logoExt), "image")] = mediaFile.Media.LogoPath
+		fanartExt := filepath.Ext(mediaFile.Media.BackdropPath)
+		fileList[m.GetMovieRealName(mediaFile, fmt.Sprintf("fanart%s", fanartExt), "image")] = mediaFile.Media.BackdropPath
 		m.DownloadImages(localTempPath, v115open.DEFAULTUA, fileList)
 		// 从fanart.tv查询图片并下载
 		if m.scrapePath.EnableFanartTv {
@@ -337,35 +340,53 @@ func (m *movieScrapeImpl) GetMovieUploadFiles(mediaFile *models.ScrapeMediaFile)
 	destPath := mediaFile.GetDestFullMoviePath()
 	destPathId := mediaFile.NewPathId
 	movieSourcePath := mediaFile.GetTmpFullMoviePath()
+	// 将movieSourcePath目录下所有文件全部上传
+	files, err := os.ReadDir(movieSourcePath)
+	if err != nil {
+		helpers.AppLogger.Errorf("读取目录 %s 失败: %v", movieSourcePath, err)
+		return nil
+	}
 	fileList := make([]uploadFile, 0)
-	nfoName := m.GetMovieRealName(mediaFile, "", "nfo")
-	nfoPath := filepath.Join(movieSourcePath, nfoName)
-	if helpers.PathExists(nfoPath) {
-		file := uploadFile{
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		fileList = append(fileList, uploadFile{
 			ID:         fmt.Sprintf("%d", mediaFile.ID),
-			FileName:   nfoName,
-			SourcePath: nfoPath,
+			FileName:   file.Name(),
+			SourcePath: filepath.Join(movieSourcePath, file.Name()),
 			DestPath:   destPath,
 			DestPathId: destPathId,
-		}
+		})
+	}
+	// nfoName := m.GetMovieRealName(mediaFile, "", "nfo")
+	// nfoPath := filepath.Join(movieSourcePath, nfoName)
+	// if helpers.PathExists(nfoPath) {
+	// 	file := uploadFile{
+	// 		ID:         fmt.Sprintf("%d", mediaFile.ID),
+	// 		FileName:   nfoName,
+	// 		SourcePath: nfoPath,
+	// 		DestPath:   destPath,
+	// 		DestPathId: destPathId,
+	// 	}
 
-		fileList = append(fileList, file)
-	}
-	imageList := []string{"poster.jpg", "clearlogo.jpg", "clearart.jpg", "square.jpg", "logo.jpg", "fanart.jpg", "backdrop.jpg", "background.jpg", "4kbackground.jpg", "thumb.jpg", "banner.jpg", "disc.jpg"}
-	for _, im := range imageList {
-		name := m.GetMovieRealName(mediaFile, im, "image")
-		sPath := filepath.Join(movieSourcePath, name)
-		if helpers.PathExists(sPath) {
-			file := uploadFile{
-				ID:         fmt.Sprintf("%d", mediaFile.ID),
-				FileName:   name,
-				SourcePath: sPath,
-				DestPath:   destPath,
-				DestPathId: destPathId,
-			}
-			fileList = append(fileList, file)
-		}
-	}
+	// 	fileList = append(fileList, file)
+	// }
+	// imageList := []string{"poster.jpg", "clearlogo.jpg", "clearart.jpg", "square.jpg", "logo.jpg", "fanart.jpg", "backdrop.jpg", "background.jpg", "4kbackground.jpg", "thumb.jpg", "banner.jpg", "disc.jpg"}
+	// for _, im := range imageList {
+	// 	name := m.GetMovieRealName(mediaFile, im, "image")
+	// 	sPath := filepath.Join(movieSourcePath, name)
+	// 	if helpers.PathExists(sPath) {
+	// 		file := uploadFile{
+	// 			ID:         fmt.Sprintf("%d", mediaFile.ID),
+	// 			FileName:   name,
+	// 			SourcePath: sPath,
+	// 			DestPath:   destPath,
+	// 			DestPathId: destPathId,
+	// 		}
+	// 		fileList = append(fileList, file)
+	// 	}
+	// }
 	return fileList
 }
 
