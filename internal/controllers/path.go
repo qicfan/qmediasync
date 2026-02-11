@@ -134,31 +134,7 @@ func GetLocalPath(parentPath string) ([]DirResp, error) {
 			}
 		}
 	}
-	// if parentPath != "/" && runtime.GOOS != "windows" {
-	// 	// 加入返回上级目录
-	// 	p := filepath.Dir(parentPath)
-	// 	pathes = append(pathes, DirResp{
-	// 		Id:   p,
-	// 		Name: "..",
-	// 		Path: p,
-	// 	})
-	// }
-	// if runtime.GOOS == "windows" && parentPath != "" {
-	// 	var p string
-	// 	if len(parentPath) == 3 && string(parentPath[1]) == ":" && string(parentPath[2]) == "\\" {
-	// 		p = ""
-	// 	} else {
-	// 		p = filepath.Dir(parentPath)
-	// 	}
-
-	// 	pathes = append(pathes, DirResp{
-	// 		Id:   p,
-	// 		Name: "..",
-	// 		Path: p,
-	// 	})
-	// }
 	if (parentPath == "" && len(pathes) == 0) || runtime.GOOS == "windows" {
-		// helpers.AppLogger.Infof("parentPath: %s", parentPath)
 		// 获取子目录列表
 		entries, err := os.ReadDir(parentPath)
 		if err != nil {
