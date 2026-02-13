@@ -384,8 +384,8 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 					),
 					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("🎬 刮削任务", "scrape"),
-						tgbotapi.NewInlineKeyboardButtonData("🔄🎬 刮削后同步", "scrape_sync"),
-						tgbotapi.NewInlineKeyboardButtonData("🎬🔄 同步后刮削", "sync_scrape"),
+						tgbotapi.NewInlineKeyboardButtonData("🎬🔄 刮削后同步", "scrape_sync"),
+						tgbotapi.NewInlineKeyboardButtonData("🔄🎬 同步后刮削", "sync_scrape"),
 					),
 				)
 				reply.ReplyMarkup = keyboard
@@ -402,8 +402,8 @@ func (bot *TelegramBot) SetMenuContent() {
 		"strm_sync":   "🚀 执行 STRM 全量同步",
 		"strm_inc":    "🔄 执行 STRM 增量同步",
 		"scrape":      "🎬 执行刮削任务",
-		"scrape_sync": "🔄🎬 先刮削后同步",
-		"sync_scrape": "🎬🔄 先同步后刮削",
+		"scrape_sync": "🎬🔄 先刮削后同步",
+		"sync_scrape": "🔄🎬 先同步后刮削",
 		"help":        "📋 显示功能操作指南",
 	}
 
