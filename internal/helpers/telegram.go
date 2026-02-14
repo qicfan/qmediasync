@@ -347,8 +347,8 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 					🚀/strm_sync - <b>执行全量 STRM 同步</b>  
 					🔄/strm_inc - <b>执行增量 STRM 同步</b>  
 					🎬/scrape - <b>执行刮削任务</b>  
-					🔄🎬/scrape_sync - <b>先刮削后同步</b>  
-					🎬🔄/sync_scrape - <b>先同步后刮削</b>
+					🔄🎬/scrape_strm - <b>先刮削后同步</b>  
+					🎬🔄/strm_scrape - <b>先同步后刮削</b>
 					 
 					  
 					⚡ <b>同步模式说明：</b>  
@@ -360,8 +360,8 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 					• 可在命令后增加序号指定执行目录, 序号见同步/刮削目录设置。格式: /scrape #序号
 					
 					⚡ <b>任务序列命令：</b>  
-					• 格式: /scrape_sync #刮削目录序号 #同步目录序号
-					• 格式: /sync_scrape #同步目录序号 #刮削目录序号
+					• 格式: /scrape_strm #刮削目录序号 #同步目录序号
+					• 格式: /strm_scrape #同步目录序号 #刮削目录序号
 					• 若参数为 #0，则对所有目录执行任务
 					`
 			case "status":
@@ -384,8 +384,8 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 					),
 					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("🎬 刮削任务", "scrape"),
-						tgbotapi.NewInlineKeyboardButtonData("🎬🔄 刮削后同步", "scrape_sync"),
-						tgbotapi.NewInlineKeyboardButtonData("🔄🎬 同步后刮削", "sync_scrape"),
+						tgbotapi.NewInlineKeyboardButtonData("🎬🔄 刮削后同步", "scrape_strm"),
+						tgbotapi.NewInlineKeyboardButtonData("🔄🎬 同步后刮削", "strm_scrape"),
 					),
 				)
 				reply.ReplyMarkup = keyboard
@@ -402,8 +402,8 @@ func (bot *TelegramBot) SetMenuContent() {
 		"strm_sync":   "🚀 执行 STRM 全量同步",
 		"strm_inc":    "🔄 执行 STRM 增量同步",
 		"scrape":      "🎬 执行刮削任务",
-		"scrape_sync": "🎬🔄 先刮削后同步",
-		"sync_scrape": "🔄🎬 先同步后刮削",
+		"scrape_strm": "🎬🔄 先刮削后同步",
+		"strm_scrape": "🔄🎬 先同步后刮削",
 		"help":        "📋 显示功能操作指南",
 	}
 

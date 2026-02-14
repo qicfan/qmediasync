@@ -447,8 +447,8 @@ func StartListenTelegramBot() {
 		"strm_inc":    SyncStrmInc,
 		"strm_sync":   SyncStrnFull,
 		"scrape":      Scrape,
-		"scrape_sync": ScrapeThenStrm,
-		"sync_scrape": StrmThenScrape,
+		"scrape_strm": ScrapeThenStrm,
+		"strm_scrape": StrmThenScrape,
 	}
 
 	mgr.RegisterTelegramCommands(myCommands)
