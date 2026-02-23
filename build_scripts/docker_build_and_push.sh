@@ -157,7 +157,7 @@ setup_buildx() {
     # 创建并启动buildx构建器（如果不存在）
     if ! docker buildx ls | grep -q "multiarch-builder"; then
         echo "创建多架构构建器..."
-        docker buildx create --name multiarch-builder --driver docker-container --use
+        docker buildx create --name multiarch-builder --driver docker-container --use --driver-opt env.http_proxy=http://192.168.0.4:10809 --driver-opt env.https_proxy=http://192.168.0.4:10809
         if [ $? -ne 0 ]; then
             echo "错误: 创建buildx构建器失败"
             exit 1
