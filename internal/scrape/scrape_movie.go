@@ -334,6 +334,7 @@ func (m *movieScrapeImpl) SyncFilesToSTRMPath(mediaFile *models.ScrapeMediaFile,
 		IsMeta:        false,
 		LocalFilePath: filepath.Join(syncPath.LocalPath, mediaFile.Media.Path, mediaFile.NewVideoBaseName+".strm"),
 	})
+	models.DeleteSyncRecordById(syncStrm.Sync.ID)
 	// 将其他文件放入STRM同步目录内
 	for _, file := range files {
 		destPath := filepath.Join(syncPath.LocalPath, file.DestPath)

@@ -768,8 +768,9 @@ func (sm *ScrapeMediaFile) ReScrape(name string, year int, tmdbId int64, season 
 			if season > 0 {
 				tvSeason, err := tmdbClient.GetTvSeasonDetail(sm.TmdbId, season, GlobalScrapeSettings.GetTmdbLanguage())
 				if err != nil || tvSeason == nil {
-					helpers.AppLogger.Errorf("查询tmdb剧集 季 %d 查询失败: %v", season, err)
-					return err
+					serr := fmt.Errorf("查询tmdb剧集 季 %d 查询失败: %v", season, err)
+					helpers.AppLogger.Errorf("%v", serr)
+					return serr
 				} else {
 					sm.SeasonNumber = season
 					hasEdit = true
@@ -778,8 +779,9 @@ func (sm *ScrapeMediaFile) ReScrape(name string, year int, tmdbId int64, season 
 				if episode > 0 {
 					tvEpisode, err := tmdbClient.GetTvEpisodeDetail(sm.TmdbId, season, episode, GlobalScrapeSettings.GetTmdbLanguage())
 					if err != nil || tvEpisode == nil {
-						helpers.AppLogger.Errorf("查询tmdb剧集 季 %d 集 %d 查询失败: %v", season, episode, err)
-						return err
+						serr := fmt.Errorf("查询tmdb剧集 季 %d 集 %d 查询失败: %v", season, episode, err)
+						helpers.AppLogger.Errorf("%v", serr)
+						return serr
 					} else {
 						sm.EpisodeNumber = episode
 						hasEdit = true

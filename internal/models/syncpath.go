@@ -186,7 +186,7 @@ func (sp *SyncPath) Update(sourceType SourceType, accountId uint, baseCid, local
 		"local_path":    localPath,
 		"remote_path":   remotePath,
 		"enable_cron":   enableCron,
-		"update_at":     time.Now().Unix(),
+		"updated_at":    time.Now().Unix(),
 	}
 	strmSettingMap := sp.SettingStrm.ToMap(true)
 	maps.Copy(updates, strmSettingMap)
