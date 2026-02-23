@@ -64,10 +64,22 @@ func (r *Rename115) move(mediaFile *models.ScrapeMediaFile, destPathId, destPath
 				helpers.AppLogger.Infof("文件 %s 成功重命名为 %s", mediaFile.VideoFilename, newName)
 			}
 		}
-		mediaFile.Media.VideoFileId = mediaFile.VideoFileId
+		if mediaFile.MediaType != models.MediaTypeTvShow {
+			mediaFile.Media.VideoFileId = mediaFile.VideoFileId
+			mediaFile.Media.VideoPickCode = mediaFile.VideoPickCode
+		} else {
+			mediaFile.MediaEpisode.VideoFileId = mediaFile.VideoFileId
+			mediaFile.MediaEpisode.VideoPickCode = mediaFile.VideoPickCode
+		}
 	} else {
 		helpers.AppLogger.Infof("文件 %s 已存在, 无需移动", destPath+"/"+newName)
-		mediaFile.Media.VideoFileId = detail.FileId
+		if mediaFile.MediaType != models.MediaTypeTvShow {
+			mediaFile.Media.VideoFileId = detail.FileId
+			mediaFile.Media.VideoPickCode = detail.PickCode
+		} else {
+			mediaFile.MediaEpisode.VideoFileId = detail.FileId
+			mediaFile.MediaEpisode.VideoPickCode = detail.PickCode
+		}
 	}
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 移动字幕文件到新目录
@@ -173,6 +185,7 @@ func (r *Rename115) copy(mediaFile *models.ScrapeMediaFile, destPathId, destPath
 	// helpers.AppLogger.Infof("115整理文件：%s 到 %s", filepath.Join(mediaFile.Path, mediaFile.VideoFilename), filepath.Join(destPath, newName))
 	var err error
 	var videoFileId string = mediaFile.VideoFileId
+	var pickcode string = mediaFile.VideoPickCode
 	// 先检查是否已存在，如果已存在，就不移动了
 	detail, detailErr := r.client.GetFsDetailByPath(r.ctx, filepath.Join(destPath, newName))
 	if detail == nil || detailErr != nil || detail.FileId == "" {
@@ -190,6 +203,7 @@ func (r *Rename115) copy(mediaFile *models.ScrapeMediaFile, destPathId, destPath
 			}
 			helpers.AppLogger.Infof("复制文件 %s 到 %s 后，新文件ID为 %s", mediaFile.VideoFilename, filepath.Join(destPath, mediaFile.VideoFilename), newDetail.FileId)
 			videoFileId = newDetail.FileId
+			pickcode = newDetail.PickCode
 		}
 		if mediaFile.VideoFilename != newName {
 			// 改名
@@ -201,10 +215,22 @@ func (r *Rename115) copy(mediaFile *models.ScrapeMediaFile, destPathId, destPath
 				helpers.AppLogger.Infof("文件 %s 成功重命名为 %s", filepath.Join(mediaFile.Path, mediaFile.VideoFilename), filepath.Join(destPath, newName))
 			}
 		}
-		mediaFile.Media.VideoFileId = videoFileId
+		if mediaFile.MediaType != models.MediaTypeTvShow {
+			mediaFile.Media.VideoFileId = videoFileId
+			mediaFile.Media.VideoPickCode = pickcode
+		} else {
+			mediaFile.MediaEpisode.VideoFileId = videoFileId
+			mediaFile.MediaEpisode.VideoPickCode = pickcode
+		}
 	} else {
 		helpers.AppLogger.Infof("文件 %s 已存在, 无需复制", destPath+"/"+newName)
-		mediaFile.Media.VideoFileId = detail.FileId
+		if mediaFile.MediaType != models.MediaTypeTvShow {
+			mediaFile.Media.VideoFileId = detail.FileId
+			mediaFile.Media.VideoPickCode = detail.PickCode
+		} else {
+			mediaFile.MediaEpisode.VideoFileId = detail.FileId
+			mediaFile.MediaEpisode.VideoPickCode = detail.PickCode
+		}
 	}
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 复制字幕文件到新目录

@@ -111,7 +111,7 @@ func runStrmTaskSync(taskID uint, isFullSync bool) {
 
 	} else {
 		// 获取所有同步目录
-		allSyncPaths, _ := models.GetSyncPathList(1, 10000000, false)
+		allSyncPaths, _ := models.GetSyncPathList(1, 10000000, false, "")
 		for _, syncPath := range allSyncPaths {
 			// 全量同步时设置标志
 			if isFullSync {
@@ -370,7 +370,7 @@ func runStrmThenScrape(extractedIDs []uint) string {
 					}
 				} else if len(extractedIDs) == 0 || extractedIDs[0] == 0 {
 					// 如果是全部同步，使用所有同步目录的ID
-					allSyncPaths, _ := models.GetSyncPathList(1, 10000000, true)
+					allSyncPaths, _ := models.GetSyncPathList(1, 10000000, true, "")
 					for _, syncPath := range allSyncPaths {
 						refreshIDs = append(refreshIDs, syncPath.ID)
 						helpers.AppLogger.Infof("添加同步目录到Emby刷新列表: %s (ID: %d)", syncPath.RemotePath, syncPath.ID)

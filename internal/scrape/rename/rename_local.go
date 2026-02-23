@@ -59,7 +59,13 @@ func (r *RenameLocal) move(mediaFile *models.ScrapeMediaFile, destPathId, newNam
 			helpers.AppLogger.Infof("文件 %s 成功移动到 %s", sourcePath+"/"+mediaFile.VideoFilename, destPathId+"/"+newName)
 		}
 	}
-	mediaFile.Media.VideoFileId = destFullPath
+	if mediaFile.MediaType != models.MediaTypeTvShow {
+		mediaFile.Media.VideoFileId = destFullPath
+		mediaFile.Media.VideoPickCode = destFullPath
+	} else {
+		mediaFile.MediaEpisode.VideoFileId = destFullPath
+		mediaFile.MediaEpisode.VideoPickCode = destFullPath
+	}
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 移动字幕文件到新目录
 	if mediaFile.SubtitleFileJson != "" {
@@ -144,7 +150,13 @@ func (r *RenameLocal) copy(mediaFile *models.ScrapeMediaFile, destPathId, newNam
 			helpers.AppLogger.Infof("文件 %s 成功移动到 %s", sourcePath+"/"+mediaFile.VideoFilename, destPathId+"/"+newName)
 		}
 	}
-	mediaFile.Media.VideoFileId = destFullPath
+	if mediaFile.MediaType != models.MediaTypeTvShow {
+		mediaFile.Media.VideoFileId = destFullPath
+		mediaFile.Media.VideoPickCode = destFullPath
+	} else {
+		mediaFile.MediaEpisode.VideoFileId = destFullPath
+		mediaFile.MediaEpisode.VideoPickCode = destFullPath
+	}
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 移动字幕文件到新目录
 	if mediaFile.SubtitleFileJson != "" {
@@ -235,7 +247,13 @@ func (r *RenameLocal) symlink(mediaFile *models.ScrapeMediaFile, destPathId, new
 			helpers.AppLogger.Infof("文件 %s 成功链接到 %s", sourceFullPath, destFullPath)
 		}
 	}
-	mediaFile.Media.VideoFileId = destFullPath
+	if mediaFile.MediaType != models.MediaTypeTvShow {
+		mediaFile.Media.VideoFileId = destFullPath
+		mediaFile.Media.VideoPickCode = destFullPath
+	} else {
+		mediaFile.MediaEpisode.VideoFileId = destFullPath
+		mediaFile.MediaEpisode.VideoPickCode = destFullPath
+	}
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 移动字幕文件到新目录
 	if mediaFile.SubtitleFileJson != "" {

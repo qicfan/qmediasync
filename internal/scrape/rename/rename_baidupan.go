@@ -69,6 +69,7 @@ func (r *RenameBaiduPan) move(mediaFile *models.ScrapeMediaFile, newName, newPat
 		})
 	}
 	mediaFile.Media.VideoFileId = destFullPath
+	mediaFile.Media.VideoPickCode = mediaFile.VideoPickCode
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 移动字幕文件到新目录
 	if mediaFile.SubtitleFileJson != "" {
@@ -214,7 +215,13 @@ func (r *RenameBaiduPan) copy(mediaFile *models.ScrapeMediaFile, newName, newPat
 		}
 		for _, file := range fsList {
 			if file.ServerFilename == newName {
-				mediaFile.Media.VideoFileId = helpers.Int64ToString(int64(file.FsId))
+				if mediaFile.MediaType != models.MediaTypeTvShow {
+					mediaFile.Media.VideoPickCode = helpers.Int64ToString(int64(file.FsId))
+					mediaFile.Media.VideoFileId = filepath.ToSlash(filepath.Join(newPathId, newName))
+				} else {
+					mediaFile.MediaEpisode.VideoPickCode = helpers.Int64ToString(int64(file.FsId))
+					mediaFile.MediaEpisode.VideoFileId = filepath.ToSlash(filepath.Join(newPathId, newName))
+				}
 				break
 			}
 			if mediaFile.MediaType != models.MediaTypeTvShow {

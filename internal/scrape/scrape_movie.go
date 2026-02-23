@@ -7,6 +7,7 @@ import (
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/notificationmanager"
 	"Q115-STRM/internal/openlist"
+	"Q115-STRM/internal/syncstrm"
 	"Q115-STRM/internal/tmdb"
 	"Q115-STRM/internal/v115open"
 	"context"
@@ -309,6 +310,49 @@ func (m *movieScrapeImpl) GenerateNewName(mediaFile *models.ScrapeMediaFile) {
 	mediaFile.Media.Save()
 }
 
+// 先命中一个syncPath，使用newPath
+func (m *movieScrapeImpl) SyncFilesToSTRMPath(mediaFile *models.ScrapeMediaFile, files []uploadFile) {
+	syncPath := m.scrapePath.GetSyncPathByPath(mediaFile.Media.Path)
+	if syncPath == nil {
+		helpers.AppLogger.Errorf("未命中任何STRM同步目录, 无法将文件同步到STRM目录 %s", mediaFile.Media.Path)
+		return
+	}
+	// 先生成STRM文件
+	// 1. 构造STRM文件路径
+	syncStrm := syncstrm.NewSyncStrmFromSyncPath(syncPath)
+	syncStrm.ProcessStrmFile(&syncstrm.SyncFileCache{
+		Path:          mediaFile.Media.Path,
+		ParentId:      mediaFile.Media.PathId,
+		FileType:      v115open.TypeFile,
+		FileName:      mediaFile.Media.VideoFileName,
+		FileId:        mediaFile.Media.VideoFileId,
+		PickCode:      mediaFile.Media.VideoPickCode,
+		OpenlistSign:  mediaFile.Media.VideoOpenListSign,
+		FileSize:      0,
+		MTime:         0,
+		IsVideo:       true,
+		IsMeta:        false,
+		LocalFilePath: filepath.Join(syncPath.LocalPath, mediaFile.Media.Path, mediaFile.NewVideoBaseName+".strm"),
+	})
+	// 将其他文件放入STRM同步目录内
+	for _, file := range files {
+		destPath := filepath.Join(syncPath.LocalPath, file.DestPath)
+		if !helpers.PathExists(destPath) {
+			err := os.MkdirAll(destPath, 0755)
+			if err != nil {
+				helpers.AppLogger.Errorf("创建目录 %s 失败, 失败原因: %v", destPath, err)
+			}
+		}
+		destFile := filepath.Join(destPath, file.FileName)
+		// 复制过去
+		err := helpers.CopyFile(file.SourcePath, destFile)
+		if err != nil {
+			helpers.AppLogger.Errorf("复制文件 %s 到 %s 失败, 失败原因: %v", file.SourcePath, destFile, err)
+		}
+		helpers.AppLogger.Infof("复制文件 %s 到 %s 成功", file.SourcePath, destFile)
+	}
+}
+
 func (m *movieScrapeImpl) UploadMovieScrapeFile(mediaFile *models.ScrapeMediaFile) error {
 	if mediaFile.NewPathId == "" {
 		helpers.AppLogger.Errorf("父文件夹不存在，无法上传文件元数据 %s", mediaFile.NewPathName)
@@ -317,6 +361,8 @@ func (m *movieScrapeImpl) UploadMovieScrapeFile(mediaFile *models.ScrapeMediaFil
 	helpers.AppLogger.Infof("开始上传文件元数据 %s", mediaFile.NewPathName)
 	// 整理要上传的文件
 	files := m.GetMovieUploadFiles(mediaFile)
+	// 将文件同步到STRM同步目录内
+	m.SyncFilesToSTRMPath(mediaFile, files)
 	// 如果是本地文件直接移动到目标位置
 	ok, err := m.MoveLocalTempFileToDest(mediaFile, files)
 	if err == nil {
@@ -356,7 +402,7 @@ func (m *movieScrapeImpl) GetMovieUploadFiles(mediaFile *models.ScrapeMediaFile)
 		fileList = append(fileList, uploadFile{
 			ID:         fmt.Sprintf("%d", mediaFile.ID),
 			FileName:   file.Name(),
-			SourcePath: filepath.Join(movieSourcePath, file.Name()),
+			SourcePath: filepath.ToSlash(filepath.Join(movieSourcePath, file.Name())),
 			DestPath:   destPath,
 			DestPathId: destPathId,
 		})

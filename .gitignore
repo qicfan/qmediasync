@@ -35,3 +35,4 @@ scripts/test_share_link.go
 scripts/test_delta_sync.go
 docs/sharepoint_azure_setup.md
 docs/sharepoint_usage.md
+config/qmediasync.db

@@ -126,8 +126,9 @@ func GetSyncTask(c *gin.Context) {
 // @Security ApiKeyAuth
 func GetSyncPathList(c *gin.Context) {
 	type syncPathListRequest struct {
-		Page     int `form:"page" json:"page" binding:"omitempty,min=1"`           // 页码，默认1
-		PageSize int `form:"page_size" json:"page_size" binding:"omitempty,min=1"` // 每页数量，默认20
+		Page       int               `form:"page" json:"page" binding:"omitempty,min=1"`           // 页码，默认1
+		PageSize   int               `form:"page_size" json:"page_size" binding:"omitempty,min=1"` // 每页数量，默认20
+		SourceType models.SourceType `form:"source_type" json:"source_type" binding:"omitempty"`   // 来源类型
 	}
 	var req syncPathListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -143,7 +144,7 @@ func GetSyncPathList(c *gin.Context) {
 		pageSize = 20
 	}
 
-	syncPaths, total := models.GetSyncPathList(page, pageSize, false)
+	syncPaths, total := models.GetSyncPathList(page, pageSize, false, req.SourceType)
 
 	for _, sp := range syncPaths {
 		status := synccron.CheckNewTaskStatus(sp.ID, synccron.SyncTaskTypeStrm)

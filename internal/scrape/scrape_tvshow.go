@@ -455,6 +455,10 @@ func (t *tvShowScrapeImpl) GenerateNewTvshowName(mediaFile *models.ScrapeMediaFi
 	} else {
 		mediaFile.NewPathName = mediaFile.GenerateNameByTemplate(t.scrapePath.FolderNameTemplate)
 	}
+	mediaFile.Media.Path = filepath.Join(mediaFile.DestPath, mediaFile.CategoryName, mediaFile.NewPathName)
+	// 保存
+	mediaFile.Save()
+	mediaFile.Media.Save()
 }
 
 func (t *tvShowScrapeImpl) GetTvshowRealName(mediaFile *models.ScrapeMediaFile, name string, filetype string) string {

@@ -4,6 +4,7 @@ import (
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/notificationmanager"
+	"Q115-STRM/internal/syncstrm"
 	"Q115-STRM/internal/tmdb"
 	"Q115-STRM/internal/v115open"
 	"context"
@@ -348,9 +349,55 @@ func (t *tvShowScrapeImpl) GetEpisodeUploadFiles(mediaFile *models.ScrapeMediaFi
 	return fileList
 }
 
+// 先命中一个syncPath，使用newPath
+func (t *tvShowScrapeImpl) SyncFilesToSTRMPath(mediaFile *models.ScrapeMediaFile, files []uploadFile) {
+	syncPath := t.scrapePath.GetSyncPathByPath(mediaFile.Media.Path)
+	if syncPath == nil {
+		helpers.AppLogger.Errorf("未命中任何STRM同步目录, 无法将文件同步到STRM目录 %s", mediaFile.Media.Path)
+		return
+	}
+	// 先生成STRM文件
+	// 1. 构造STRM文件路径
+	syncStrm := syncstrm.NewSyncStrmFromSyncPath(syncPath)
+	path := mediaFile.GetDestFullSeasonPath()
+	syncStrm.ProcessStrmFile(&syncstrm.SyncFileCache{
+		Path:          path,
+		ParentId:      path,
+		FileType:      v115open.TypeFile,
+		FileName:      mediaFile.MediaEpisode.VideoFileName,
+		FileId:        mediaFile.MediaEpisode.VideoFileId,
+		PickCode:      mediaFile.MediaEpisode.VideoPickCode,
+		OpenlistSign:  mediaFile.MediaEpisode.VideoOpenListSign,
+		FileSize:      0,
+		MTime:         0,
+		IsVideo:       true,
+		IsMeta:        false,
+		LocalFilePath: filepath.Join(syncPath.LocalPath, path, mediaFile.NewVideoBaseName+".strm"),
+	})
+	// 将其他文件放入STRM同步目录内
+	for _, file := range files {
+		destPath := filepath.Join(syncPath.LocalPath, file.DestPath)
+		if !helpers.PathExists(destPath) {
+			err := os.MkdirAll(destPath, 0755)
+			if err != nil {
+				helpers.AppLogger.Errorf("创建目录 %s 失败, 失败原因: %v", destPath, err)
+			}
+		}
+		destFile := filepath.Join(destPath, file.FileName)
+		// 复制过去
+		err := helpers.CopyFile(file.SourcePath, destFile)
+		if err != nil {
+			helpers.AppLogger.Errorf("复制文件 %s 到 %s 失败, 失败原因: %v", file.SourcePath, destFile, err)
+		}
+		helpers.AppLogger.Infof("复制文件 %s 到 %s 成功", file.SourcePath, destFile)
+	}
+}
+
 func (t *tvShowScrapeImpl) UploadEpisodeScrapeFile(mediaFile *models.ScrapeMediaFile) error {
 	// helpers.AppLogger.Infof("开始处理电视剧 %s 季 %d 集 %d 的元数据", mediaFile.Name, mediaFile.SeasonNumber, mediaFile.EpisodeNumber)
 	files := t.GetEpisodeUploadFiles(mediaFile)
+	// 将文件同步到STRM同步目录内
+	t.SyncFilesToSTRMPath(mediaFile, files)
 	// 如果是本地文件直接移动到目标位置
 	ok, err := t.MoveLocalTempFileToDest(mediaFile, files)
 	if err == nil {

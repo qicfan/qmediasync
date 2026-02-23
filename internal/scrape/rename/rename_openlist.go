@@ -79,7 +79,21 @@ func (r *RenameOpenList) move(mediaFile *models.ScrapeMediaFile, newName, newPat
 			helpers.AppLogger.Infof("OpenList 文件 %s 成功从 %s 移动到新文件夹 %s", newName, oldPath, newPathId)
 		}
 	}
-	mediaFile.Media.VideoFileId = destFullPath
+	// 查询一下详情
+	detail, _ = r.client.FileDetail(destFullPath)
+	if detail == nil || detail.Name == "" {
+		helpers.AppLogger.Errorf("OpenList 移动文件 %s 后，查询详情失败", destFullPath)
+		return errors.New("移动文件后，查询详情失败")
+	}
+	if mediaFile.MediaType != models.MediaTypeTvShow {
+		mediaFile.Media.VideoFileId = destFullPath
+		mediaFile.Media.VideoPickCode = destFullPath
+		mediaFile.Media.VideoOpenListSign = detail.Sign
+	} else {
+		mediaFile.MediaEpisode.VideoFileId = destFullPath
+		mediaFile.MediaEpisode.VideoPickCode = destFullPath
+		mediaFile.MediaEpisode.VideoOpenListSign = detail.Sign
+	}
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 移动字幕文件到新目录
 	if mediaFile.SubtitleFileJson != "" {
@@ -195,6 +209,22 @@ func (r *RenameOpenList) copy(mediaFile *models.ScrapeMediaFile, newName, newPat
 		return err
 	} else {
 		helpers.AppLogger.Infof("Openlist 文件 %s 成功复制到 %s", oldPath+"/"+newName, newPathId+"/"+newName)
+	}
+	destFullPath := filepath.ToSlash(filepath.Join(newPathId, newName))
+	// 查询一下详情
+	detail, _ := r.client.FileDetail(filepath.ToSlash(filepath.Join(newPathId, newName)))
+	if detail == nil || detail.Name == "" {
+		helpers.AppLogger.Errorf("OpenList 复制文件 %s 后，查询详情失败", destFullPath)
+		return errors.New("复制文件后，查询详情失败")
+	}
+	if mediaFile.MediaType != models.MediaTypeTvShow {
+		mediaFile.Media.VideoFileId = destFullPath
+		mediaFile.Media.VideoPickCode = destFullPath
+		mediaFile.Media.VideoOpenListSign = detail.Sign
+	} else {
+		mediaFile.MediaEpisode.VideoFileId = destFullPath
+		mediaFile.MediaEpisode.VideoPickCode = destFullPath
+		mediaFile.MediaEpisode.VideoOpenListSign = detail.Sign
 	}
 	oldBaseName := strings.TrimSuffix(mediaFile.VideoFilename, mediaFile.VideoExt)
 	// 复制字幕文件到新目录

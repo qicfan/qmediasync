@@ -895,12 +895,10 @@ func ExportScrapeRecords(c *gin.Context) {
 // @Security ApiKeyAuth
 func ReScrape(c *gin.Context) {
 	type reScrapeReq struct {
-		ID      uint   `json:"id"`
-		Name    string `json:"name"`
-		Year    int    `json:"year"`
-		TmdbId  int64  `json:"tmdb_id"`
-		Season  int    `json:"season"`
-		Episode int    `json:"episode"`
+		ID      uint  `json:"id"`
+		TmdbId  int64 `json:"tmdb_id"`
+		Season  int   `json:"season"`
+		Episode int   `json:"episode"`
 	}
 	var req reScrapeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -919,7 +917,7 @@ func ReScrape(c *gin.Context) {
 		return
 	}
 	oldStatus := scrapeMedia.Status
-	err := scrapeMedia.ReScrape(req.Name, req.Year, req.TmdbId, req.Season, req.Episode)
+	err := scrapeMedia.ReScrape("", 0, req.TmdbId, req.Season, req.Episode)
 	if err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "重新刮削失败: " + err.Error(), Data: nil})
 		return
@@ -1126,4 +1124,175 @@ func TruncateAllScrapeRecords(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功，所有刮削记录已清空", Data: nil})
+}
+
+func SaveScrapeStrmPath(c *gin.Context) {
+	var req struct {
+		ScrapePathID uint   `json:"scrape_path_id" form:"scrape_path_id"` // 刮削目录ID
+		SyncPathIDs  []uint `json:"sync_path_ids" form:"sync_path_ids"`   // 同步目录ID列表
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helpers.AppLogger.Errorf("绑定JSON数据失败: %v", err)
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "绑定JSON数据失败: " + err.Error(), Data: nil})
+		return
+	}
+	scrapePath := models.GetScrapePathByID(req.ScrapePathID)
+	if scrapePath == nil {
+		helpers.AppLogger.Errorf("刮削目录不存在: %v", req.ScrapePathID)
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "刮削目录不存在", Data: nil})
+		return
+	}
+	if err := scrapePath.SaveStrmPath(req.SyncPathIDs); err != nil {
+		helpers.AppLogger.Errorf("保存刮削目录关联的同步目录失败: %v", err)
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "保存刮削目录关联的同步目录失败: " + err.Error(), Data: nil})
+		return
+	}
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功", Data: nil})
+}
+
+func GetScrapeStrmPaths(c *gin.Context) {
+	type GetScrapePathStrmPathsReq struct {
+		ID uint `json:"scrape_path_id" form:"scrape_path_id"`
+	}
+	var req GetScrapePathStrmPathsReq
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "请求参数错误: " + err.Error(), Data: nil})
+		return
+	}
+	scrapePath := models.GetScrapePathByID(req.ID)
+	if scrapePath == nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "没有找到要操作的记录", Data: nil})
+		return
+	}
+	ssp := scrapePath.GetRelatStrmPath()
+	syncPathIds := make([]uint, 0)
+	for _, sp := range ssp {
+		syncPathIds = append(syncPathIds, sp.StrmPathID)
+	}
+
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功", Data: syncPathIds})
+}
+
+type TmdbSearchResp struct {
+	TmdbID        int    `json:"tmdb_id"`
+	Title         string `json:"title"`
+	OriginalTitle string `json:"original_title"`
+	Year          int    `json:"year"`
+	PosterUrl     string `json:"poster_url"`
+	Overview      string `json:"overview"`
+}
+
+func TmdbSearch(c *gin.Context) {
+	type TmdbSearchReq struct {
+		Name   string           `json:"name" form:"name"`
+		Year   int              `json:"year" form:"year"`
+		Type   models.MediaType `json:"type" form:"type" binding:"required"`
+		TmdbId int              `json:"tmdb_id" form:"tmdb_id"`
+	}
+	var req TmdbSearchReq
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "请求参数错误: " + err.Error(), Data: nil})
+		return
+	}
+	if req.Name == "" && req.TmdbId == 0 {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "请输入名称或TMDB ID", Data: nil})
+		return
+	}
+	tmdbClient := models.GlobalScrapeSettings.GetTmdbClient()
+	switch req.Type {
+	case models.MediaTypeMovie:
+		if req.TmdbId == 0 {
+			// 搜索电影
+			resp, err := tmdbClient.SearchMovie(req.Name, req.Year, models.GlobalScrapeSettings.GetTmdbLanguage(), true, false)
+			if err != nil {
+				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "搜索电影失败: " + err.Error(), Data: nil})
+				return
+			}
+			if len(resp.Results) == 0 {
+				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "没有找到电影", Data: nil})
+				return
+			}
+			// 转换为响应结构体
+			tmdbResp := make([]TmdbSearchResp, 0)
+			for _, r := range resp.Results {
+				tmdbResp = append(tmdbResp, TmdbSearchResp{
+					TmdbID:        int(r.ID),
+					Title:         r.Title,
+					OriginalTitle: r.OriginalTitle,
+					Year:          helpers.ParseYearFromDate(r.ReleaseDate),
+					PosterUrl:     models.GetTmdbImageUrl(r.PosterPath),
+					Overview:      r.Overview,
+				})
+			}
+			c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功", Data: tmdbResp})
+			return
+		} else {
+			resp, err := tmdbClient.GetMovieDetail(int64(req.TmdbId), models.GlobalScrapeSettings.GetTmdbLanguage())
+			if err != nil {
+				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取电影详情失败: " + err.Error(), Data: nil})
+				return
+			}
+			tmdbResp := make([]TmdbSearchResp, 0)
+			// 转换为响应结构体
+			tmdbResp = append(tmdbResp, TmdbSearchResp{
+				TmdbID:        int(resp.ID),
+				Title:         resp.Title,
+				OriginalTitle: resp.OriginalTitle,
+				Year:          helpers.ParseYearFromDate(resp.ReleaseDate),
+				PosterUrl:     models.GetTmdbImageUrl(resp.PosterPath),
+				Overview:      resp.Overview,
+			})
+			c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功", Data: tmdbResp})
+			return
+		}
+	case models.MediaTypeTvShow:
+		if req.TmdbId == 0 {
+			// 搜索电视剧
+			resp, err := tmdbClient.SearchTv(req.Name, req.Year, models.GlobalScrapeSettings.GetTmdbLanguage(), true)
+			if err != nil {
+				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "搜索电视剧失败: " + err.Error(), Data: nil})
+				return
+			}
+			if len(resp.Results) == 0 {
+				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "没有找到电视剧", Data: nil})
+				return
+			}
+			// 转换为响应结构体
+			tmdbResp := make([]TmdbSearchResp, 0)
+			for _, r := range resp.Results {
+				tmdbResp = append(tmdbResp, TmdbSearchResp{
+					TmdbID:        int(r.ID),
+					Title:         r.Name,
+					OriginalTitle: r.OriginalName,
+					Year:          helpers.ParseYearFromDate(r.FirstAirDate),
+					PosterUrl:     models.GetTmdbImageUrl(r.PosterPath),
+					Overview:      r.Overview,
+				})
+			}
+			c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功", Data: tmdbResp})
+			return
+		} else {
+			resp, err := tmdbClient.GetTvDetail(int64(req.TmdbId), models.GlobalScrapeSettings.GetTmdbLanguage())
+			if err != nil {
+				c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取电视剧详情失败: " + err.Error(), Data: nil})
+				return
+			}
+			tmdbResp := make([]TmdbSearchResp, 0)
+			// 转换为响应结构体
+			tmdbResp = append(tmdbResp, TmdbSearchResp{
+				TmdbID:        int(resp.ID),
+				Title:         resp.Name,
+				OriginalTitle: resp.OriginalName,
+				Year:          helpers.ParseYearFromDate(resp.FirstAirDate),
+				PosterUrl:     models.GetTmdbImageUrl(resp.PosterPath),
+				Overview:      resp.Overview,
+			})
+			c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功", Data: tmdbResp})
+			return
+		}
+	default:
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "请求参数错误: 类型必须是 movie 或 tv_show", Data: nil})
+		return
+	}
+
 }

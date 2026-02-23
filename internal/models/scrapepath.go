@@ -106,6 +106,12 @@ type ScrapePath struct {
 	IsTaskRunning        int                   `json:"is_running" form:"-" gorm:"-"` // 是否正在运行
 }
 
+type ScrapeStrmPath struct {
+	BaseModel
+	ScrapePathID uint `json:"scrape_path_id" form:"scrape_path_id" gorm:"uniqueIndex:scrape_path_id_strm_path_id"` // 刮削目录ID
+	StrmPathID   uint `json:"strm_path_id" form:"strm_path_id" gorm:"uniqueIndex:scrape_path_id_strm_path_id"`     // 同步目录ID
+}
+
 func (sp *ScrapePath) IsRunning() bool {
 	sp.mutex.RLock()
 	defer sp.mutex.RUnlock()
@@ -625,6 +631,71 @@ func (sp *ScrapePath) GetMovieRealName(sm *ScrapeMediaFile, name string, filetyp
 	}
 }
 
+func (sp *ScrapePath) GetRelatStrmPath() []*ScrapeStrmPath {
+	return GetRelatStrmPathByScrapePathID(sp.ID)
+}
+
+func (sp *ScrapePath) SaveStrmPath(ids []uint) error {
+	tx := db.Db.Begin()
+	// 删除旧关联
+	if err := tx.Where("scrape_path_id = ?", sp.ID).Delete(&ScrapeStrmPath{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	// 保存关联的同步目录
+	var scrapeStrmPaths []*ScrapeStrmPath
+	for _, id := range ids {
+		scrapeStrmPaths = append(scrapeStrmPaths, &ScrapeStrmPath{
+			ScrapePathID: sp.ID,
+			StrmPathID:   id,
+		})
+	}
+	if err := tx.Save(&scrapeStrmPaths).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
+}
+
+func (sp *ScrapePath) GetSyncPathes() []*SyncPath {
+	var scrapeStrmPaths []*ScrapeStrmPath
+	if err := db.Db.Where("scrape_path_id = ?", sp.ID).Find(&scrapeStrmPaths).Error; err != nil {
+		return nil
+	}
+	var syncPathes []*SyncPath
+	for _, sp := range scrapeStrmPaths {
+		syncPath := GetSyncPathById(sp.StrmPathID)
+		syncPathes = append(syncPathes, syncPath)
+	}
+	return syncPathes
+}
+
+// 根据给定的路径，查找命中的syncPath，判断路径是否以syncPath的RemotePath开头
+func (sp *ScrapePath) GetSyncPathByPath(path string) *SyncPath {
+	syncPathes := sp.GetSyncPathes()
+	if len(syncPathes) == 0 {
+		helpers.AppLogger.Errorf("刮削目录 %d 没有关联的同步目录", sp.ID)
+		return nil
+	}
+	path = filepath.ToSlash(path)
+	// 如果path不以/开头，则添加/
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	for _, syncPath := range syncPathes {
+		// 如果syncPath的RemotePath不以/开头，则添加/
+		remotePath := syncPath.RemotePath
+		if !strings.HasPrefix(remotePath, "/") {
+			remotePath = "/" + remotePath
+		}
+		if strings.HasPrefix(path, remotePath) {
+			return syncPath
+		}
+		helpers.AppLogger.Debugf("路径 %s 不匹配同步目录 %s", path, remotePath)
+	}
+	return nil
+}
+
 func GetScrapePathCategoryById(id uint) *ScrapePathCategory {
 	var spc ScrapePathCategory
 	if err := db.Db.Where("id = ?", id).First(&spc).Error; err != nil {
@@ -735,4 +806,19 @@ func ResetScrapePathStatus() {
 	} else {
 		helpers.AppLogger.Infof("重置所有刮削目录状态成功")
 	}
+}
+
+// 查询刮削目录关联的STRM同步目录
+func GetRelatStrmPathByScrapePathID(id uint) []*ScrapeStrmPath {
+	var scrapeStrmPaths []*ScrapeStrmPath
+	err := db.Db.Model(&ScrapeStrmPath{}).Where("scrape_path_id = ?", id).Find(&scrapeStrmPaths).Error
+	if err != nil {
+		helpers.AppLogger.Errorf("查询关联同步目录失败: %v", err)
+		return nil
+	}
+	return scrapeStrmPaths
+}
+
+func GetTmdbImageUrl(path string) string {
+	return fmt.Sprintf("%s/t/p/original%s", GlobalScrapeSettings.GetTmdbImageUrl(), path)
 }

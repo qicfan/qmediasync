@@ -21,7 +21,7 @@ var SyncCron *cron.Cron
 
 func StartSyncCron() {
 	// 查询所有同步目录
-	syncPaths, _ := models.GetSyncPathList(1, 10000000, true)
+	syncPaths, _ := models.GetSyncPathList(1, 10000000, true, "")
 	if len(syncPaths) == 0 {
 		// helpers.AppLogger.Info("没有找到同步目录")
 		return
@@ -263,7 +263,7 @@ func InitSyncCron() {
 	}
 	SyncCron = cron.New()
 	// 查询所有同步目录
-	syncPaths, _ := models.GetSyncPathList(1, 10000000, true)
+	syncPaths, _ := models.GetSyncPathList(1, 10000000, true, "")
 	if len(syncPaths) == 0 {
 		return
 	}

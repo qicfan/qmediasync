@@ -317,8 +317,8 @@ func CreateSyncPath(sourceType SourceType, accountId uint, baseCid, localPath, r
 		"account_id":    accountId,
 		"enable_cron":   enableCron,
 		"custom_config": customConfig,
-		"create_at":     time.Now().Unix(),
-		"update_at":     time.Now().Unix(),
+		"created_at":    time.Now().Unix(),
+		"updated_at":    time.Now().Unix(),
 	}
 	strmSettingMap := syncPathSetting.ToMap(true)
 	maps.Copy(syncPathData, strmSettingMap)
@@ -396,7 +396,7 @@ func GetSyncPathById(id uint) *SyncPath {
 }
 
 // 查询同步路径列表
-func GetSyncPathList(page, pageSize int, enableCron bool) ([]*SyncPath, int64) {
+func GetSyncPathList(page, pageSize int, enableCron bool, sourceType SourceType) ([]*SyncPath, int64) {
 	var syncPaths []*SyncPath
 	var total int64
 
@@ -408,13 +408,15 @@ func GetSyncPathList(page, pageSize int, enableCron bool) ([]*SyncPath, int64) {
 	}
 
 	offset := (page - 1) * pageSize
+	query := db.Db.Model(&SyncPath{})
 	if enableCron {
-		db.Db.Model(&SyncPath{}).Where("enable_cron = ?", enableCron).Count(&total)
-		db.Db.Model(&SyncPath{}).Where("enable_cron = ?", enableCron).Offset(offset).Limit(pageSize).Order("id DESC").Find(&syncPaths)
-	} else {
-		db.Db.Model(&SyncPath{}).Count(&total)
-		db.Db.Offset(offset).Limit(pageSize).Order("id DESC").Find(&syncPaths)
+		query.Where("enable_cron = ?", enableCron)
 	}
+	if sourceType != "" {
+		query.Where("source_type = ?", sourceType)
+	}
+	query.Count(&total)
+	query.Offset(offset).Limit(pageSize).Order("id DESC").Find(&syncPaths)
 	accountCache := make(map[uint]*Account)
 	for _, syncPath := range syncPaths {
 		syncPath.ParseVideoAndMetaExt()

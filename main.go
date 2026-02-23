@@ -586,6 +586,9 @@ func setRouter(r *gin.Engine) {
 		api.DELETE("/scrape/records", controllers.DeleteScrapeMediaFile)              // 删除刮削记录
 		api.POST("/scrape/finish", controllers.FinishScrapeMediaFile)                 // 完成刮削记录
 		api.POST("/scrape/rename-failed", controllers.RenameFailedScrapeMediaFile)    // 标记所有失败的记录为待整理
+		api.POST("/scrape/sync-pathes", controllers.SaveScrapeStrmPath)               // 保存刮削目录关联的同步目录
+		api.GET("/scrape/sync-pathes", controllers.GetScrapeStrmPaths)                // 获取刮削目录关联的同步目录
+		api.GET("/scrape/tmdb-search", controllers.TmdbSearch)                        // 搜索TMDB媒体
 
 		api.GET("/upload/queue", controllers.UploadList)                                             // 获取上传队列列表
 		api.POST("/upload/queue/clear-pending", controllers.ClearPendingUploadTasks)                 // 清除上传队列中未开始的任务
