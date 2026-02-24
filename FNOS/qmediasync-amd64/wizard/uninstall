@@ -1,0 +1,29 @@
+[
+    {
+        "stepTitle": "卸载QMediaSync",
+        "items": [
+            {
+                "type": "radio",
+                "field": "wizard_delete_data",
+                "label": "是否要删除应用数据？",
+                "initValue": "no",
+                "options": [
+                    {
+                        "label": "是",
+                        "value": "yes"
+                    },
+                    {
+                        "label": "否",
+                        "value": "no"
+                    }
+                ],
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请选择是否要删除应用数据"
+                    }
+                ]
+            }
+        ]
+    }
+]
