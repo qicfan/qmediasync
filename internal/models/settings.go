@@ -236,7 +236,7 @@ func (settings *Settings) UpdateStrm(req SettingStrm) bool {
 		return false
 	}
 	settings.SettingStrm = *strm
-	helpers.AppLogger.Infof("更新STRM设置: %+v", SettingsGlobal.SettingStrm.VideoExtArr)
+	// helpers.AppLogger.Infof("更新STRM设置: %+v", SettingsGlobal.SettingStrm.VideoExtArr)
 	// ctx := context.Background()
 	updateData := strm.ToMap(true, true)
 	err := db.Db.Model(settings).Where("id = ?", settings.ID).Updates(updateData).Error

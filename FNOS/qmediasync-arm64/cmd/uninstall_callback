@@ -2,4 +2,11 @@
 
 ### This script is called after the user uninstalls the application.
 
+# Check if the user wants to delete the application data.
+# 删除TRIM_PKGETC 目录下的所有内容
+if [ "$wizard_delete_data" = "yes" ]; then
+    # Delete the application data.
+    rm -rf ${TRIM_PKGETC}/*
+fi
+
 exit 0

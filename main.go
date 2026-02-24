@@ -492,6 +492,7 @@ func setRouter(r *gin.Engine) {
 		api.POST("/update/to-version", controllers.UpdateToVersion) // 获取更新版本
 		api.GET("/update/progress", controllers.UpdateProgress)     // 获取更新进度
 		api.POST("/update/cancel", controllers.CancelUpdate)        // 取消更新
+
 		api.GET("/user/info", controllers.GetUserInfo)
 		api.GET("/path/list", controllers.GetPathList)     // 目录列表
 		api.POST("/path/create", controllers.CreateDir)    // 创建目录接口
@@ -533,24 +534,28 @@ func setRouter(r *gin.Engine) {
 		api.POST("/setting/emby-config", controllers.UpdateEmbyConfig)                             // 更新新的Emby配置
 		api.POST("/setting/threads", controllers.UpdateThreads)                                    // 更新线程数
 		api.GET("/setting/threads", controllers.GetThreads)                                        // 获取线程数
-		api.POST("/emby/sync/start", controllers.StartEmbySync)                                    // 手动启动Emby同步
-		api.GET("/emby/sync/status", controllers.GetEmbySyncStatus)                                // 获取Emby同步状态           // 删除媒体库与同步目录关联
-		api.POST("/sync/start", controllers.StartSync)                                             // 启动同步
-		api.GET("/sync/records", controllers.GetSyncRecords)                                       // 同步列表
-		api.GET("/sync/task", controllers.GetSyncTask)                                             // 获取同步任务详情
-		api.GET("/sync/path-list", controllers.GetSyncPathList)                                    // 获取同步路径列表
-		api.POST("/sync/path-add", controllers.AddSyncPath)                                        // 创建同步路径
-		api.POST("/sync/path-update", controllers.UpdateSyncPath)                                  // 更新同步路径
-		api.POST("/sync/path-delete", controllers.DeleteSyncPath)                                  // 删除同步路径
-		api.POST("/sync/path/stop", controllers.StopSyncByPath)                                    // 停止同步路径的同步任务
-		api.POST("/sync/path/start", controllers.StartSyncByPath)                                  // 启动同步路径的同步任务
-		api.POST("/sync/path/full-start", controllers.FullStart115Sync)                            // 启动115的全量同步任务
-		api.POST("/sync/delete-records", controllers.DelSyncRecords)                               // 批量删除同步记录
-		api.POST("/sync/path/toggle-cron", controllers.ToggleSyncByPath)                           // 关闭或开启同步目录的定时同步
-		api.GET("/account/list", controllers.GetAccountList)                                       // 获取开放平台账号列表
-		api.POST("/account/add", controllers.CreateTmpAccount)                                     // 创建开放平台账号
-		api.POST("/account/delete", controllers.DeleteAccount)                                     // 删除开放平台账号
-		api.POST("/account/openlist", controllers.CreateOpenListAccount)                           // 创建openlist账号
+
+		api.POST("/emby/sync/start", controllers.StartEmbySync)     // 手动启动Emby同步
+		api.GET("/emby/sync/status", controllers.GetEmbySyncStatus) // 获取Emby同步状态           // 删除媒体库与同步目录关联
+
+		api.POST("/sync/start", controllers.StartSync)                   // 启动同步
+		api.GET("/sync/records", controllers.GetSyncRecords)             // 同步列表
+		api.GET("/sync/task", controllers.GetSyncTask)                   // 获取同步任务详情
+		api.GET("/sync/path-list", controllers.GetSyncPathList)          // 获取同步路径列表
+		api.POST("/sync/path-add", controllers.AddSyncPath)              // 创建同步路径
+		api.POST("/sync/path-update", controllers.UpdateSyncPath)        // 更新同步路径
+		api.POST("/sync/path-delete", controllers.DeleteSyncPath)        // 删除同步路径
+		api.POST("/sync/path/stop", controllers.StopSyncByPath)          // 停止同步路径的同步任务
+		api.POST("/sync/path/start", controllers.StartSyncByPath)        // 启动同步路径的同步任务
+		api.POST("/sync/path/full-start", controllers.FullStart115Sync)  // 启动115的全量同步任务
+		api.POST("/sync/delete-records", controllers.DelSyncRecords)     // 批量删除同步记录
+		api.POST("/sync/path/toggle-cron", controllers.ToggleSyncByPath) // 关闭或开启同步目录的定时同步
+		api.GET("/sync/path/:id", controllers.GetSyncPathById)           // 获取同步路径详情
+
+		api.GET("/account/list", controllers.GetAccountList)             // 获取开放平台账号列表
+		api.POST("/account/add", controllers.CreateTmpAccount)           // 创建开放平台账号
+		api.POST("/account/delete", controllers.DeleteAccount)           // 删除开放平台账号
+		api.POST("/account/openlist", controllers.CreateOpenListAccount) // 创建openlist账号
 
 		// API Key管理接口
 		api.POST("/api-keys", controllers.CreateAPIKey)                 // 创建API Key

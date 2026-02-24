@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/synccron"
 	"fmt"
@@ -365,16 +366,9 @@ func DeleteSyncPath(c *gin.Context) {
 // @Security JwtAuth
 // @Security ApiKeyAuth
 func GetSyncPathById(c *gin.Context) {
-	type syncPathRequest struct {
-		ID uint `form:"id" json:"id" binding:"required"` // 同步路径ID
-	}
-	var req syncPathRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "请求参数错误", Data: nil})
-		return
-	}
-
-	id := req.ID
+	// 改成从路径参数获取ID
+	idStr := c.Param("id")
+	id := uint(helpers.StringToInt(idStr))
 	if id == 0 {
 		c.JSON(http.StatusBadRequest, APIResponse[any]{Code: BadRequest, Message: "id 参数格式错误", Data: nil})
 		return
