@@ -1,5 +1,5 @@
 appname               = qmediasync
-version               = 0.13.3
+version = v0.13.6
 display_name          = QMediaSync
 desc                  = 开源免费的STRM生成、Emby 302和影视剧刮削工具，基于网盘开放接口开发合规使用。可以联动Emby刷新媒体库，入库通知，提取媒体信息，联动网盘删除。支持115、百度网盘、Openlist、各种本地挂载。
 platform  = arm
