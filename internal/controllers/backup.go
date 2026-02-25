@@ -1,11 +1,11 @@
 package controllers
 
 import (
+	"Q115-STRM/internal/backup"
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/synccron"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,12 +36,11 @@ type BackupConfigUpdateRequest struct {
 
 func CreateBackup(c *gin.Context) {
 	var req BackupCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		req.Reason = "手动备份"
 	}
 
-	service := models.GetBackupService()
-	if service.IsRunning() {
+	if backup.IsRunning() {
 		c.JSON(http.StatusConflict, APIResponse[any]{
 			Code:    BadRequest,
 			Message: "备份任务正在运行中",
@@ -50,24 +49,14 @@ func CreateBackup(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), models.DefaultBackupTimeout)
-	defer cancel()
-
-	result, err := service.CreateBackup(ctx, models.BackupTypeManual, req.Reason)
-	if err != nil {
-		helpers.AppLogger.Errorf("创建手动备份失败: %v", err)
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: fmt.Sprintf("创建备份失败: %v", err),
-			Data:    nil,
-		})
-		return
-	}
+	go func() {
+		backup.Backup(models.BackupTypeManual, req.Reason)
+	}()
 
 	c.JSON(http.StatusOK, APIResponse[any]{
 		Code:    Success,
-		Message: "备份创建成功",
-		Data:    result.Record,
+		Message: "已触发数据备份任务",
+		Data:    nil,
 	})
 }
 
@@ -160,137 +149,6 @@ func DeleteBackup(c *gin.Context) {
 	c.JSON(http.StatusOK, APIResponse[any]{
 		Code:    Success,
 		Message: "备份已删除",
-		Data:    nil,
-	})
-}
-
-func RestoreFromBackup(c *gin.Context) {
-	var req BackupRestoreRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "请求参数无效",
-			Data:    nil,
-		})
-		return
-	}
-
-	if req.RecordID == 0 {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "请指定要恢复的备份记录ID",
-			Data:    nil,
-		})
-		return
-	}
-
-	service := models.GetBackupService()
-	if service.IsRunning() {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "备份或恢复任务正在运行中",
-			Data:    nil,
-		})
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), models.MaxBackupTimeout)
-	defer cancel()
-
-	if err := service.RestoreBackup(ctx, req.RecordID, ""); err != nil {
-		helpers.AppLogger.Errorf("恢复备份失败: %v", err)
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: fmt.Sprintf("恢复备份失败: %v", err),
-			Data:    nil,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, APIResponse[any]{
-		Code:    Success,
-		Message: "数据恢复成功",
-		Data:    nil,
-	})
-}
-
-func UploadAndRestore(c *gin.Context) {
-	file, header, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "请上传备份文件",
-			Data:    nil,
-		})
-		return
-	}
-	defer file.Close()
-
-	ext := strings.ToLower(filepath.Ext(header.Filename))
-	if ext != ".sql" && ext != ".zip" {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "仅支持.sql和.zip格式的备份文件",
-			Data:    nil,
-		})
-		return
-	}
-
-	service := models.GetBackupService()
-	if service.IsRunning() {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "备份或恢复任务正在运行中",
-			Data:    nil,
-		})
-		return
-	}
-
-	tempDir := filepath.Join(helpers.ConfigDir, "backups", "temp")
-	os.MkdirAll(tempDir, 0755)
-	tempPath := filepath.Join(tempDir, fmt.Sprintf("upload_%d%s", time.Now().UnixNano(), ext))
-
-	dst, err := os.Create(tempPath)
-	if err != nil {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "保存上传文件失败",
-			Data:    nil,
-		})
-		return
-	}
-
-	_, err = io.Copy(dst, file)
-	dst.Close()
-	if err != nil {
-		os.Remove(tempPath)
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: "保存上传文件失败",
-			Data:    nil,
-		})
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), models.MaxBackupTimeout)
-	defer cancel()
-
-	err = service.RestoreBackup(ctx, 0, tempPath)
-	os.Remove(tempPath)
-
-	if err != nil {
-		helpers.AppLogger.Errorf("上传恢复失败: %v", err)
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    BadRequest,
-			Message: fmt.Sprintf("恢复失败: %v", err),
-			Data:    nil,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, APIResponse[any]{
-		Code:    Success,
-		Message: "数据恢复成功",
 		Data:    nil,
 	})
 }
@@ -403,40 +261,132 @@ func UpdateBackupConfig(c *gin.Context) {
 }
 
 func GetBackupStatus(c *gin.Context) {
-	service := models.GetBackupService()
-	status := service.GetBackupStatus()
-
-	c.JSON(http.StatusOK, APIResponse[map[string]interface{}]{
+	result := backup.GetRunningResult()
+	if result == nil {
+		result = &backup.BackupOrRestoreResult{}
+		result.IsRunning = false
+	}
+	c.JSON(http.StatusOK, APIResponse[backup.BackupOrRestoreResult]{
 		Code:    Success,
 		Message: "success",
-		Data:    status,
+		Data:    *result,
 	})
 }
 
-func CancelBackup(c *gin.Context) {
-	service := models.GetBackupService()
-
-	if !service.IsRunning() {
-		c.JSON(http.StatusOK, APIResponse[any]{
-			Code:    Success,
-			Message: "没有正在运行的备份任务",
-			Data:    nil,
-		})
-		return
-	}
-
-	if err := service.CancelBackup(); err != nil {
+func RestoreFromBackup(c *gin.Context) {
+	var req BackupRestoreRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{
 			Code:    BadRequest,
-			Message: fmt.Sprintf("取消备份失败: %v", err),
+			Message: "请求参数无效",
 			Data:    nil,
 		})
 		return
 	}
+
+	if req.RecordID == 0 {
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "请指定要恢复的备份记录ID",
+			Data:    nil,
+		})
+		return
+	}
+	if backup.IsRunning() {
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "备份或恢复任务正在运行中",
+			Data:    nil,
+		})
+		return
+	}
+
+	var record models.BackupRecord
+	if err := db.Db.First(&record, req.RecordID).Error; err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "备份记录不存在",
+			Data:    nil,
+		})
+		return
+	}
+
+	go func() {
+		backup.Restore(record.FilePath)
+	}()
 
 	c.JSON(http.StatusOK, APIResponse[any]{
 		Code:    Success,
-		Message: "已发送取消信号",
+		Message: "已触发数据恢复任务",
+		Data:    nil,
+	})
+}
+
+func UploadAndRestore(c *gin.Context) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "请上传备份文件",
+			Data:    nil,
+		})
+		return
+	}
+	defer file.Close()
+
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext != ".zip" {
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "仅支持.zip格式的备份文件",
+			Data:    nil,
+		})
+		return
+	}
+
+	if backup.IsRunning() {
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "备份或恢复任务正在运行中",
+			Data:    nil,
+		})
+		return
+	}
+
+	tempDir := filepath.Join(helpers.ConfigDir, "backups", "temp")
+	os.MkdirAll(tempDir, 0755)
+	tempPath := filepath.Join(tempDir, fmt.Sprintf("upload_%d%s", time.Now().UnixNano(), ext))
+
+	dst, err := os.Create(tempPath)
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "保存上传文件失败",
+			Data:    nil,
+		})
+		return
+	}
+
+	_, err = io.Copy(dst, file)
+	dst.Close()
+	if err != nil {
+		os.Remove(tempPath)
+		c.JSON(http.StatusOK, APIResponse[any]{
+			Code:    BadRequest,
+			Message: "保存上传文件失败",
+			Data:    nil,
+		})
+		return
+	}
+
+	go func() {
+		backup.Restore(tempPath)
+		os.Remove(tempPath)
+	}()
+
+	c.JSON(http.StatusOK, APIResponse[any]{
+		Code:    Success,
+		Message: "已触发数据恢复任务",
 		Data:    nil,
 	})
 }

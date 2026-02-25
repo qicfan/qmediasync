@@ -142,16 +142,15 @@ func (sp *ScrapePath) SetNotRunning() {
 // 不能编辑同步源类型、网盘账号、媒体类型
 func (m *ScrapePath) Save() error {
 	// 转换媒体文件扩展名列表为json字符串
-	if len(m.VideoExtList) > 0 {
-		mediaExt, err := json.Marshal(m.VideoExtList)
-		if err != nil {
-			helpers.AppLogger.Errorf("转换视频文件扩展名列表失败: %v", err)
-			return err
-		}
-		m.VideoExt = string(mediaExt)
-	} else {
-		m.VideoExt = ""
+	if len(m.VideoExtList) == 0 {
+		m.VideoExtList = helpers.GlobalConfig.Strm.VideoExt
 	}
+	mediaExt, err := json.Marshal(m.VideoExtList)
+	if err != nil {
+		helpers.AppLogger.Errorf("转换视频文件扩展名列表失败: %v", err)
+		return err
+	}
+	m.VideoExt = string(mediaExt)
 	// 转换要删除的关键词列表为json字符串
 	if len(m.DeleteKeyword) > 0 {
 		keyword, err := json.Marshal(m.DeleteKeyword)
@@ -696,6 +695,28 @@ func (sp *ScrapePath) GetSyncPathByPath(path string) *SyncPath {
 	return nil
 }
 
+func (sp *ScrapePath) Decode() error {
+	// 解码json字符串
+	if sp.VideoExt != "" {
+		err := json.Unmarshal([]byte(sp.VideoExt), &sp.VideoExtList)
+		if err != nil {
+			return fmt.Errorf("转换视频文件扩展名列表失败: %v", err)
+		}
+	} else {
+		sp.VideoExtList = helpers.GlobalConfig.Strm.VideoExt
+	}
+	// 解码json字符串
+	if sp.DeletedKeyword != "" {
+		err := json.Unmarshal([]byte(sp.DeletedKeyword), &sp.DeleteKeyword)
+		if err != nil {
+			return fmt.Errorf("转换要删除的关键词列表失败: %v", err)
+		}
+	} else {
+		sp.DeleteKeyword = []string{}
+	}
+	return nil
+}
+
 func GetScrapePathCategoryById(id uint) *ScrapePathCategory {
 	var spc ScrapePathCategory
 	if err := db.Db.Where("id = ?", id).First(&spc).Error; err != nil {
@@ -757,6 +778,11 @@ func GetScrapePathByID(id uint) *ScrapePath {
 			scrapePath.DeleteKeyword = []string{}
 		}
 
+	}
+	// 解码json
+	if err := scrapePath.Decode(); err != nil {
+		helpers.AppLogger.Errorf("解码刮削目录失败: %v", err)
+		return nil
 	}
 	return &scrapePath
 }

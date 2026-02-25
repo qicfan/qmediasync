@@ -4,6 +4,7 @@ import (
 	"Q115-STRM/emby302/config"
 	"Q115-STRM/emby302/util/logs/colors"
 	"Q115-STRM/emby302/web"
+	"Q115-STRM/internal/backup"
 	"Q115-STRM/internal/controllers"
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/db/database"
@@ -427,6 +428,11 @@ func initOthers() {
 	models.UpdateUploadingToPending()
 	// 下载中的任务改为待下载
 	models.UpdateDownloadingToPending()
+	helpers.Subscribe(helpers.BackupCronEevent, func(event helpers.Event) {
+		backup.Backup("定时", "定时备份")
+	})
+	// backup.Backup("手动", "手动备份")
+
 	// account, _ := models.GetAccountById(1)
 	// client := account.Get115Client()
 	// _, err := client.GetFsDetailByCid(context.Background(), "31123123123123")
@@ -628,7 +634,6 @@ func setRouter(r *gin.Engine) {
 		api.GET("/backup/config", controllers.GetBackupConfig)           // 获取备份配置
 		api.PUT("/backup/config", controllers.UpdateBackupConfig)        // 更新备份配置
 		api.GET("/backup/status", controllers.GetBackupStatus)           // 获取备份状态
-		api.POST("/backup/cancel", controllers.CancelBackup)             // 取消正在运行的备份
 
 	}
 }

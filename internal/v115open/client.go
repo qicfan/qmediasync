@@ -193,6 +193,7 @@ func (c *OpenClient) doAuthRequest(ctx context.Context, url string, req *resty.R
 			// 请求成功
 			if respData != nil && queueResp.RespData.State {
 				// 解包响应数据
+				helpers.V115Log.Debugf("解包 %s", string(queueResp.RespData.Data))
 				if unmarshalErr := json.Unmarshal(queueResp.RespData.Data, respData); unmarshalErr != nil {
 					helpers.V115Log.Errorf("解包响应数据失败: %s", unmarshalErr.Error())
 					return queueResp.Response, queueResp.RespBytes, nil

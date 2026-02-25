@@ -122,7 +122,7 @@ func TransferPlaybackInfo(c *gin.Context) {
 		if path, ok = source.Attr("Path").String(); ok {
 			source.Attr("Path").Set(urls.Unescape(path))
 		}
-		logs.Info("Path 解码后: %s", path)
+		// logs.Info("Path 解码后: %s", path)
 		// 转换直链链接
 		source.Put("SupportsDirectPlay", jsons.FromValue(true))
 		source.Put("SupportsDirectStream", jsons.FromValue(true))

@@ -211,3 +211,67 @@ func isSafePath(base, path string) bool {
 	}
 	return rel != ".." && !filepath.IsAbs(rel) && rel[:2] != ".."
 }
+
+// 将src目录内的所有文件打包成zip文件(dst)
+func ZipDir(src, dst string) error {
+	// 创建目标zip文件
+	file, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// 创建zip写入器
+	w := zip.NewWriter(file)
+	defer w.Close()
+
+	// 遍历源目录
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 创建zip header
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
+
+		// 修正路径（使用相对路径）
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		if relPath == "." {
+			return nil // 跳过根目录
+		}
+		header.Name = relPath
+
+		// 如果是目录，需要设置压缩方法为Store
+		if info.IsDir() {
+			header.Method = zip.Store
+		}
+
+		// 写入header
+		zipFile, err := w.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+
+		// 如果是普通文件，写入内容
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		// 打开文件
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		// 复制文件内容
+		_, err = io.Copy(zipFile, f)
+		return err
+	})
+}

@@ -231,7 +231,7 @@ func InitCron() {
 		startScrapeCron()
 	})
 	if config, err := models.GetEmbyConfig(); err == nil {
-		if config.EmbyApiKey != "" && config.EmbyUrl != "" {
+		if config.EmbyApiKey != "" && config.EmbyUrl != "" && config.SyncEnabled == 1 {
 			GlobalCron.AddFunc(config.SyncCron, func() {
 				if _, err := emby.PerformEmbySync(); err != nil {
 					helpers.AppLogger.Errorf("Emby同步失败: %v", err)
@@ -293,14 +293,8 @@ func addBackupCron() {
 		return
 	}
 	_, err := GlobalCron.AddFunc(backupConfig.BackupCron, func() {
-		service := models.GetBackupService()
-		if service.IsRunning() {
-			helpers.AppLogger.Info("备份任务正在运行，跳过本次自动备份")
-			return
-		}
-
 		helpers.AppLogger.Info("开始执行定时自动备份")
-		service.CreateBackup(context.Background(), models.BackupTypeAuto, "定时自动备份")
+		helpers.Publish(helpers.BackupCronEevent, nil)
 	})
 
 	if err != nil {

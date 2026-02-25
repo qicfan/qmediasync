@@ -174,5 +174,6 @@ func (sf *SyncStrm) GetRemoteFilePathUrlEncode(path string) string {
 	path = strings.ReplaceAll(path, "!", "%21")
 	path = strings.ReplaceAll(path, "$", "%24")
 	path = strings.ReplaceAll(path, " ", "%20")
+	path = strings.ReplaceAll(path, "%", "%25")
 	return path
 }

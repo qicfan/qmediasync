@@ -38,10 +38,10 @@ type DbUploadTask struct {
 	ScrapeMediaFileId    uint             `json:"scrape_media_file_id"`                             // 刮削文件ID
 	SourceType           SourceType       `json:"source_type"`                                      // 任务来源类型
 	LocalFullPath        string           `json:"local_full_path" gorm:"index:idx_local_full_path"` // 本地完整文件路径，包含文件名
-	RemoteFileId         string           `json:"remote_file_id" gorm:"index:idx_source"`           // 远程文件ID，包含完整路径
+	RemoteFileId         string           `json:"remote_file_id" gorm:"index:idx_remote_file_id"`   // 远程文件ID，包含完整路径
 	RemotePathId         string           `json:"remote_path_id"`                                   // 父目录CID，如果115就是文件夹ID，如果是openlist就是父文件夹路径
 	FileName             string           `json:"file_name"`                                        // 要上传的文件名
-	Status               UploadStatus     `json:"status" gorm:"index"`                              // 任务状态
+	Status               UploadStatus     `json:"status" gorm:"index:idx_status_new"`               // 任务状态
 	FileSize             int64            `json:"file_size"`                                        // 文件大小
 	Error                string           `json:"error"`                                            // 错误信息
 	StartTime            int64            `json:"start_time"`                                       // 开始时间

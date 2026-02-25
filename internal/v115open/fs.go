@@ -161,7 +161,7 @@ func (c *OpenClient) GetFsDetailByPath(ctx context.Context, path string) (*FileD
 	helpers.V115Log.Infof("调用文件详情接口, path: %s", path)
 	url := fmt.Sprintf("%s/open/folder/get_info", OPEN_BASE_URL)
 	req := c.client.R().SetFormData(data).SetMethod("POST")
-	var respData *FileDetail
+	var respData *FileDetail = &FileDetail{}
 	_, bodyBytes, err := c.doAuthRequest(ctx, url, req, MakeRequestConfig(3, 1, 60), respData)
 	if err != nil {
 		helpers.V115Log.Errorf("调用文件详情接口失败: %v", err)
@@ -181,7 +181,7 @@ func (c *OpenClient) GetFsDetailByPath(ctx context.Context, path string) (*FileD
 		helpers.V115Log.Errorf("调用文件详情接口失败: %v", err)
 		return nil, err
 	}
-	if respData == nil {
+	if respData.FileId == "" {
 		return nil, fmt.Errorf("115 返回空数据")
 	}
 	return respData, nil
@@ -197,7 +197,7 @@ func (c *OpenClient) GetFsDetailByCid(ctx context.Context, fileId string) (*File
 	data["file_id"] = fileId
 	url := fmt.Sprintf("%s/open/folder/get_info", OPEN_BASE_URL)
 	req := c.client.R().SetQueryParams(data).SetMethod("GET")
-	var respData *FileDetail
+	var respData *FileDetail = &FileDetail{}
 	_, bodyBytes, err := c.doAuthRequest(ctx, url, req, MakeRequestConfig(3, 1, 60), respData)
 	resp := &RespBaseBool[json.RawMessage]{}
 	// helpers.V115Log.Debugf("调用文件详情接口, fileId: %s => %s", fileId, string(bodyBytes))
@@ -214,7 +214,7 @@ func (c *OpenClient) GetFsDetailByCid(ctx context.Context, fileId string) (*File
 		helpers.V115Log.Errorf("调用文件详情接口失败: %v", err)
 		return nil, err
 	}
-	if respData == nil {
+	if respData.FileId == "" {
 		return nil, fmt.Errorf("115 返回空数据")
 	}
 	// helpers.AppLogger.Infof("文件 %s 详情中的文件名: %s", fileId, respData.FileName)

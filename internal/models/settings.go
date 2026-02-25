@@ -50,8 +50,8 @@ type Settings struct {
 	LocalProxy       int    `json:"local_proxy" gorm:"default:0"` // 是否启用本地代理，0表示不启用，1表示启用
 }
 
-func (t SettingThreads) ToMap() map[string]int {
-	return map[string]int{
+func (t SettingThreads) ToMap() map[string]any {
+	return map[string]any{
 		"download_threads":     t.DownloadThreads,
 		"file_detail_threads":  t.FileDetailThreads,
 		"openlist_qps":         t.OpenlistQPS,
@@ -239,7 +239,7 @@ func (settings *Settings) UpdateStrm(req SettingStrm) bool {
 
 	// ctx := context.Background()
 	updateData := strm.ToMap(true, true)
-	helpers.AppLogger.Infof("更新STRM设置: %+v", updateData)
+	// helpers.AppLogger.Infof("更新STRM设置: %+v", updateData)
 	err := db.Db.Model(settings).Where("id = ?", settings.ID).Updates(updateData).Error
 	// _, err = gorm.G[Settings](db.Db).Where("id = ?", settings.ID).Updates(ctx, updateData)
 	if err != nil {

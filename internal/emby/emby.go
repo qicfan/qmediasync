@@ -19,6 +19,14 @@ func IsEmbySyncRunning() bool {
 	return atomic.LoadInt32(&embySyncRunning) == 1
 }
 
+func SetEmbySyncRunning(running bool) {
+	if running {
+		atomic.StoreInt32(&embySyncRunning, 1)
+	} else {
+		atomic.StoreInt32(&embySyncRunning, 0)
+	}
+}
+
 type embySyncTask struct {
 	LibraryId   string
 	LibraryName string

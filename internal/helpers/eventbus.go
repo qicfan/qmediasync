@@ -15,6 +15,8 @@ const (
 	V115TokenInValidEvent EventType = "115_token_invalid"
 	// 保存OpenList访问凭证的事件，当openlist刷新token后，通知数据库保存
 	SaveOpenListTokenEvent EventType = "save_open_list_token"
+	// 备份任务定时事件，当定时任务触发时，通知备份任务
+	BackupCronEevent EventType = "backup_cron_event"
 )
 
 // 事件数据

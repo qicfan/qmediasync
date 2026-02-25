@@ -32,8 +32,6 @@ func GetEmbyConfig() (*EmbyConfig, error) {
 	if err := db.Db.First(config).Error; err != nil {
 		return nil, err
 	}
-	config.SyncEnabled = 1
-	config.SyncCron = "0 * * * *"
 	GlobalEmbyConfig = config
 	return GlobalEmbyConfig, nil
 }

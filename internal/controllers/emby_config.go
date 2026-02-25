@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"Q115-STRM/internal/db"
-	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/synccron"
 	"net/http"
@@ -88,65 +87,52 @@ func UpdateEmbyConfig(c *gin.Context) {
 		return
 	}
 	isNew := err == gorm.ErrRecordNotFound
-
-	syncEnabled := req.SyncEnabled
-	syncCron := req.SyncCron
-	if isNew {
-		if syncEnabled == 0 {
-			syncEnabled = 1
-		}
-		if syncCron == "" {
-			syncCron = "*/5 * * * *"
-		}
+	oldSyncEnabled := 0
+	if !isNew {
+		oldSyncEnabled = config.SyncEnabled
 	}
-
-	if syncEnabled == 1 && syncCron != "" {
-		next := helpers.GetNextTimeByCronStr(syncCron, 1)
-		if len(next) == 0 {
-			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "cron表达式格式无效"})
-			return
-		}
-	}
-
 	if isNew {
 		config = &models.EmbyConfig{}
-		config.EmbyUrl = req.EmbyUrl
-		config.EmbyApiKey = req.EmbyApiKey
-		config.EnableDeleteNetdisk = req.EnableDeleteNetdisk
-		config.EnableRefreshLibrary = req.EnableRefreshLibrary
-		config.EnableMediaNotification = req.EnableMediaNotification
-		config.EnableExtractMediaInfo = req.EnableExtractMediaInfo
-		config.EnableAuth = req.EnableAuth
-		config.SyncEnabled = syncEnabled
-		config.SyncCron = syncCron
+	}
+	config.EmbyUrl = req.EmbyUrl
+	config.EmbyApiKey = req.EmbyApiKey
+	config.EnableDeleteNetdisk = req.EnableDeleteNetdisk
+	config.EnableRefreshLibrary = req.EnableRefreshLibrary
+	config.EnableMediaNotification = req.EnableMediaNotification
+	config.EnableExtractMediaInfo = req.EnableExtractMediaInfo
+	config.EnableAuth = req.EnableAuth
+	config.SyncEnabled = req.SyncEnabled
+	config.SyncCron = "0 * * * *"
+	if config.SyncEnabled == 0 {
+		config.EnableDeleteNetdisk = 0
+		config.EnableRefreshLibrary = 0
+	}
+
+	if isNew {
 		if err := db.Db.Create(config).Error; err != nil {
 			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "创建Emby配置失败: " + err.Error()})
 			return
 		}
 	} else {
 		updates := map[string]interface{}{
-			"emby_url":                  req.EmbyUrl,
-			"emby_api_key":              req.EmbyApiKey,
-			"enable_delete_netdisk":     req.EnableDeleteNetdisk,
-			"enable_refresh_library":    req.EnableRefreshLibrary,
-			"enable_media_notification": req.EnableMediaNotification,
-			"enable_extract_media_info": req.EnableExtractMediaInfo,
-			"enable_auth":               req.EnableAuth,
-			"sync_enabled":              syncEnabled,
-			"sync_cron":                 syncCron,
+			"emby_url":                  config.EmbyUrl,
+			"emby_api_key":              config.EmbyApiKey,
+			"enable_delete_netdisk":     config.EnableDeleteNetdisk,
+			"enable_refresh_library":    config.EnableRefreshLibrary,
+			"enable_media_notification": config.EnableMediaNotification,
+			"enable_extract_media_info": config.EnableExtractMediaInfo,
+			"enable_auth":               config.EnableAuth,
+			"sync_enabled":              config.SyncEnabled,
 		}
 		if err := config.Update(updates); err != nil {
 			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "更新Emby配置失败: " + err.Error()})
 			return
 		}
 	}
-
-	// 同步旧配置结构，保持兼容
-	// models.GlobalEmbyConfig.EmbyUrl = req.EmbyUrl
-	// models.GlobalEmbyConfig.EmbyApiKey = req.EmbyApiKey
-
-	// 重新加载cron
-	synccron.InitCron()
+	if oldSyncEnabled != config.SyncEnabled {
+		// 同步状态改变，需要重新加载cron
+		synccron.InitCron()
+	}
 
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "Emby配置更新成功"})
 }
