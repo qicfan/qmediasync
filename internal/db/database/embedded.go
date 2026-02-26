@@ -287,7 +287,6 @@ func (m *EmbeddedManager) startPostgresProcess() error {
 			"PGPORT": fmt.Sprintf("%d", m.config.Port),
 		},
 		postgresPath, "start", "-D", m.config.DataDir, fmt.Sprintf("-o \"-k %s\"", tmpPath),
-		fmt.Sprintf("> %s", filepath.Join(m.config.LogDir, "postgres.log")),
 	)
 	// pg_ctl start -D /app/config/postgres/data -o "-k /app/config/postgres/tmp -c unix_socket_directories='/app/config/postgres/tmp'"
 	// su - qms -c "postgres -D /app/config/postgres/data -k /app/config/postgres/tmp -c unix_socket_directories='/app/config/postgres/tmp'"
@@ -320,7 +319,7 @@ func (m *EmbeddedManager) waitForPostgres(ctx context.Context) error {
 				pgIsReadyPath = filepath.Join(m.config.BinaryPath, "pg_isready.exe")
 			}
 			cmd := exec.Command(pgIsReadyPath, "-h", m.config.Host, "-p",
-				fmt.Sprintf("%d", m.config.Port), "-U", m.config.User, fmt.Sprintf(" >> %s", filepath.Join(m.config.LogDir, "postgres.log")))
+				fmt.Sprintf("%d", m.config.Port), "-U", m.config.User)
 			if err := cmd.Run(); err == nil {
 				helpers.AppLogger.Info("PostgreSQL 已就绪")
 				return nil
