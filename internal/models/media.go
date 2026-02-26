@@ -68,45 +68,45 @@ type Media struct {
 // 刮削好数据的集
 type MediaEpisode struct {
 	BaseModel
-	ScrapePathId      uint              `json:"scrape_path_id" gorm:"index:scrapepathid"` // 刮削路径ID
-	MediaId           uint              `gorm:"index" json:"media_id"`                    // 媒体ID
-	MediaSeasonId     uint              `gorm:"index" json:"media_season_id"`             // 季ID
-	EpisodeName       string            `json:"episode_name"`                             // 集名称
-	Overview          string            `json:"overview"`                                 // 集描述
-	PosterPath        string            `json:"poster_path"`                              // 海报路径 // TMDB链接
-	SeasonNumber      int               `gorm:"index" json:"season_number"`               // 季编号，例如：S01中的1
-	EpisodeNumber     int               `gorm:"index" json:"episode_number"`              // 集编号，例如：S01E01中的1
-	ReleaseDate       string            `json:"release_date"`                             // 发布日期
-	VoteAverage       float64           `json:"vote_average"`                             // 投票平均分
-	VoteCount         int64             `json:"vote_count"`                               // 投票数
-	Actors            []helpers.Actor   `json:"actors" gorm:"-"`                          // 演员列表
-	ActorsJson        string            `json:"-"`                                        // 演员列表JSON字符串
-	Year              int               `json:"year"`                                     // 年份
-	VideoFileName     string            `json:"video_file_name"`                          // 刮削整理后的电影或者电视剧的视频文件名
-	VideoFileId       string            `json:"video_file_id"`                            // 刮削整理后的电影或者电视剧的视频文件ID，完整路径或者网盘文件ID
-	VideoPickCode     string            `json:"video_pick_code"`                          // 115 pickcode 或者 百度网盘 fsid
-	VideoOpenListSign string            `json:"video_open_list_sign"`                     // openlist签名
-	Status            MediaStatus       `gorm:"index" json:"status"`                      // 状态
-	SubtitleFiles     []*MediaMetaFiles `json:"subtitle_files" gorm:"-"`                  // 整理后的字幕文件列表
-	SubtitleFileJson  string            `json:"-"`                                        // SubtitleFiles的JSON字符串
+	ScrapePathId      uint              `json:"scrape_path_id"`               // 刮削路径ID
+	MediaId           uint              `gorm:"index" json:"media_id"`        // 媒体ID
+	MediaSeasonId     uint              `gorm:"index" json:"media_season_id"` // 季ID
+	EpisodeName       string            `json:"episode_name"`                 // 集名称
+	Overview          string            `json:"overview"`                     // 集描述
+	PosterPath        string            `json:"poster_path"`                  // 海报路径 // TMDB链接
+	SeasonNumber      int               `gorm:"index" json:"season_number"`   // 季编号，例如：S01中的1
+	EpisodeNumber     int               `gorm:"index" json:"episode_number"`  // 集编号，例如：S01E01中的1
+	ReleaseDate       string            `json:"release_date"`                 // 发布日期
+	VoteAverage       float64           `json:"vote_average"`                 // 投票平均分
+	VoteCount         int64             `json:"vote_count"`                   // 投票数
+	Actors            []helpers.Actor   `json:"actors" gorm:"-"`              // 演员列表
+	ActorsJson        string            `json:"-"`                            // 演员列表JSON字符串
+	Year              int               `json:"year"`                         // 年份
+	VideoFileName     string            `json:"video_file_name"`              // 刮削整理后的电影或者电视剧的视频文件名
+	VideoFileId       string            `json:"video_file_id"`                // 刮削整理后的电影或者电视剧的视频文件ID，完整路径或者网盘文件ID
+	VideoPickCode     string            `json:"video_pick_code"`              // 115 pickcode 或者 百度网盘 fsid
+	VideoOpenListSign string            `json:"video_open_list_sign"`         // openlist签名
+	Status            MediaStatus       `gorm:"index" json:"status"`          // 状态
+	SubtitleFiles     []*MediaMetaFiles `json:"subtitle_files" gorm:"-"`      // 整理后的字幕文件列表
+	SubtitleFileJson  string            `json:"-"`                            // SubtitleFiles的JSON字符串
 }
 
 // 刮削好数据的季
 type MediaSeason struct {
 	BaseModel
-	ScrapePathId     uint        `json:"scrape_path_id" gorm:"index:scrapepathid"` // 刮削路径ID
-	MediaId          uint        `gorm:"index" json:"media_id"`                    // 媒体ID
-	SeasonNumber     int         `gorm:"index" json:"season_number"`               // 季编号，例如：S01中的S1
-	SeasonName       string      `json:"season_name"`                              // 季名称，可能为空
-	Overview         string      `json:"overview"`                                 // 季描述
-	NumberOfEpisodes int         `json:"number_of_episodes"`                       // 集总数
-	ReleaseDate      string      `json:"release_date"`                             // 发布日期
-	Path             string      `json:"path"`                                     // 刮削整理后的季文件夹路径，固定值：Season + SeasonNumber
-	PathId           string      `json:"path_id"`                                  // 刮削整理后的季文件夹路径ID，完整路径或者网盘文件ID
-	PosterPath       string      `json:"poster_path"`                              // 海报路径 // TMDB链接
-	VoteAverage      float64     `json:"vote_average"`                             // 投票平均分
-	Year             int         `json:"year"`                                     // 年份
-	Status           MediaStatus `gorm:"index" json:"status"`                      // 状态
+	ScrapePathId     uint        `json:"scrape_path_id"`             // 刮削路径ID
+	MediaId          uint        `gorm:"index" json:"media_id"`      // 媒体ID
+	SeasonNumber     int         `gorm:"index" json:"season_number"` // 季编号，例如：S01中的S1
+	SeasonName       string      `json:"season_name"`                // 季名称，可能为空
+	Overview         string      `json:"overview"`                   // 季描述
+	NumberOfEpisodes int         `json:"number_of_episodes"`         // 集总数
+	ReleaseDate      string      `json:"release_date"`               // 发布日期
+	Path             string      `json:"path"`                       // 刮削整理后的季文件夹路径，固定值：Season + SeasonNumber
+	PathId           string      `json:"path_id"`                    // 刮削整理后的季文件夹路径ID，完整路径或者网盘文件ID
+	PosterPath       string      `json:"poster_path"`                // 海报路径 // TMDB链接
+	VoteAverage      float64     `json:"vote_average"`               // 投票平均分
+	Year             int         `json:"year"`                       // 年份
+	Status           MediaStatus `gorm:"index" json:"status"`        // 状态
 }
 
 func (m *Media) Save() error {

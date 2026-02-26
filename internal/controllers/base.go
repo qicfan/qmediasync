@@ -207,7 +207,7 @@ func IsFnOS(c *gin.Context) {
 func RepairDB(c *gin.Context) {
 	// 修复数据库，重建所有表
 	err := models.BatchCreateTable()
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
+	if err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "修复数据库失败: " + err.Error(), Data: nil})
 		return
 	}

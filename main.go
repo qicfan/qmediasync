@@ -13,12 +13,12 @@ import (
 	"Q115-STRM/internal/synccron"
 	"Q115-STRM/internal/v115open"
 	"context"
-	_ "embed"
+	"embed"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -62,12 +62,6 @@ func (app *App) Start() {
 	setRouter(r)
 	app.StartHttpServer(r)
 	app.StartHttpsServer(r)
-	go func() {
-		http.ListenAndServe(":12330", nil)
-	}()
-	// if runtime.GOOS == "windows" {
-	// 	helpers.AppLogger.Infof("QMediaSync 启动完成，现在可以关闭终端窗口。如果要退出请在通知栏（右下角）找到QMediaSync图标右键退出。")
-	// }
 	if runtime.GOOS == "windows" {
 		// 监听Ctrl+C信号
 		go func() {
@@ -330,11 +324,16 @@ func getDataAndConfigDir() {
 }
 
 //go:embed emby302.yml
-var s string
+//go:embed assets/db_config.html
+var embedFiles embed.FS
 
 func startEmby302() {
 	dataRoot := helpers.ConfigDir
-	if err := config.ReadFromFile([]byte(s)); err != nil {
+	data, err := embedFiles.ReadFile("emby302.yml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := config.ReadFromFile(data); err != nil {
 		log.Fatal(err)
 	}
 	if models.GlobalEmbyConfig == nil || models.GlobalEmbyConfig.EmbyUrl == "" {
@@ -940,6 +939,15 @@ func StartConfigWebServer() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.Default()
+	// 使用embed.FS加载模板
+	data, err := embedFiles.ReadFile("assets/db_config.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 创建内存中的HTML文件
+	tmpl := template.Must(template.New("db_config.html").Parse(string(data)))
+	r.SetHTMLTemplate(tmpl)
+
 	r.GET("/", func(c *gin.Context) {
 		isRestricted, warningMsg := isInRestrictedDirectory()
 		c.HTML(200, "db_config.html", gin.H{
@@ -1002,8 +1010,6 @@ func StartConfigWebServer() {
 			os.Exit(0)
 		}()
 	})
-
-	r.LoadHTMLGlob(filepath.Join(helpers.RootDir, "web_statics", "*.html"))
 
 	fmt.Printf("配置服务已启动，请在浏览器中访问: http://ip:12333\n")
 	if err := r.Run(":12333"); err != nil {

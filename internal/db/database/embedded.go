@@ -85,11 +85,19 @@ func (m *EmbeddedManager) Start(ctx context.Context) error {
 func (m *EmbeddedManager) Stop() error {
 	helpers.AppLogger.Info("停止内嵌的 PostgreSQL...")
 
-	if m.process != nil {
-		postgresPath := "pg_ctl"
-		if runtime.GOOS == "windows" {
-			postgresPath = filepath.Join(m.config.BinaryPath, "pg_ctl.exe")
+	postgresPath := "pg_ctl"
+	if runtime.GOOS == "windows" {
+		postgresPath = filepath.Join(m.config.BinaryPath, "pg_ctl.exe")
+		// 直接执行
+		cmd := exec.Command(postgresPath, "stop", "-m", "fast")
+		outout, err := cmd.CombinedOutput()
+		if err != nil {
+			helpers.AppLogger.Errorf("pg_ctl stop 执行失败: %v", err)
+			return err
 		}
+		helpers.AppLogger.Infof("pg_ctl stop 输出: %s", string(outout))
+
+	} else {
 		// 使用 pg_ctl 优雅停止，使用qms用户执行
 		output, err := m.userSwitcher.RunCommandAsUser(postgresPath, "stop", "-D", m.config.DataDir, "-m", "fast")
 		if err != nil {
@@ -97,9 +105,9 @@ func (m *EmbeddedManager) Stop() error {
 			return err
 		}
 		helpers.AppLogger.Infof("pg_ctl stop 输出: %s", output)
-
-		time.Sleep(2 * time.Second)
 	}
+
+	time.Sleep(2 * time.Second)
 
 	return nil
 }
@@ -167,6 +175,7 @@ func (m *EmbeddedManager) prepareDataDir() error {
 	// 检查是否已经初始化
 	pgVersionFile := filepath.Join(m.config.DataDir, "PG_VERSION")
 	if helpers.PathExists(pgVersionFile) {
+		helpers.AppLogger.Infof("Postgres数据文件 %s 已存在， 跳过初始化过程", pgVersionFile)
 		return nil
 	}
 
@@ -177,6 +186,7 @@ func (m *EmbeddedManager) prepareDataDir() error {
 	}
 	output, err := m.userSwitcher.RunCommandAsUser(initdbPath, "-D", m.config.DataDir, "-U", m.config.User, "--encoding=UTF8", "--locale=C", "--auth=trust")
 	if err != nil {
+		helpers.AppLogger.Errorf("数据库用户初始化失败: %v, 输出: %s", err, output)
 		return fmt.Errorf("数据库用户初始化失败: %v, 输出: %s", err, output)
 	}
 	helpers.AppLogger.Info("数据库初始化完成")
@@ -279,7 +289,7 @@ func (m *EmbeddedManager) startPostgresProcess() error {
 	var cmd *exec.Cmd
 	postgresPath := "pg_ctl"
 	if runtime.GOOS == "windows" {
-		postgresPath = filepath.Join(m.config.BinaryPath, "pg_ctl.exe")
+		postgresPath = filepath.Join(m.config.BinaryPath, "postgres.exe")
 	}
 	var err error
 	if m.UserName != "" && runtime.GOOS != "windows" {
@@ -294,13 +304,17 @@ func (m *EmbeddedManager) startPostgresProcess() error {
 	} else {
 		os.Setenv("PGDATA", m.config.DataDir)
 		os.Setenv("PGPORT", fmt.Sprintf("%d", m.config.Port))
-		cmd = exec.Command(postgresPath, "start", "-D", m.config.DataDir, "-o", fmt.Sprintf("-k %s -c unix_socket_directories='%s'", tmpPath, tmpPath))
-		cmd.Stdout = os.Stdout
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command(postgresPath, "-D", m.config.DataDir, "-h", m.config.Host, "-p", fmt.Sprintf("%d", m.config.Port))
+			cmd.Stdout = os.Stdout
+		} else {
+			cmd = exec.Command(postgresPath, "start", "-D", m.config.DataDir, "-o", fmt.Sprintf("-k %s -c unix_socket_directories='%s'", tmpPath, tmpPath))
+			cmd.Stdout = os.Stdout
+		}
+
 		cmd.Stderr = os.Stderr
 		err = cmd.Start()
 	}
-	// pg_ctl start -D /app/config/postgres/data -o "-k /app/config/postgres/tmp -c unix_socket_directories='/app/config/postgres/tmp'"
-	// su - qms -c "postgres -D /app/config/postgres/data -k /app/config/postgres/tmp -c unix_socket_directories='/app/config/postgres/tmp'"
 	if err != nil {
 		helpers.AppLogger.Errorf("启动 PostgreSQL 失败: %v", err)
 		return fmt.Errorf("启动 PostgreSQL 失败: %v", err)

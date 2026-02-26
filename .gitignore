@@ -42,3 +42,5 @@ FNOS/qmediasync-arm64/app/QMediaSync
 FNOS/qmediasync-arm64/app/web_statics/
 FNOS/qmediasync-amd64/app/web_statics/
 FNOS/qmediasync-amd64/app/QMediaSync
+config/qmediasync.db-shm
+config/qmediasync.db-wal

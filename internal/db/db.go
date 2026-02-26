@@ -25,22 +25,38 @@ func InitSqlite3(dbFile string) *gorm.DB {
 	// if !helpers.PathExists(dbFile) {
 	// 	return nil
 	// }
-	sqliteDb, err := gorm.Open(sqlite.Open(dbFile+"?mode=wal&cache=shared&_journal_mode=WAL&busy_timeout=30000&synchronous=NORMAL&foreign_keys=ON&cache_size=-100000"), &gorm.Config{
+	sqliteDb, err := gorm.Open(sqlite.Open(dbFile+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"), &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect database: %v", err))
 	}
-	sqlDB, dbError := sqliteDb.DB()
-	if dbError != nil {
-		return nil
+	// sqlDB, dbError := sqliteDb.DB()
+	// if dbError != nil {
+	// 	return nil
+	// }
+
+	// 2. 设置 busy_timeout (例如 5000 毫秒)
+	if tx := sqliteDb.Exec("PRAGMA busy_timeout = 5000"); tx.Error != nil {
+		panic(fmt.Errorf("设置 busy_timeout 失败: %w", tx.Error))
+	} else {
+		helpers.AppLogger.Infof("设置 busy_timeout 成功: %d 毫秒", 5000)
 	}
 
-	// SetMaxIdleConns 设置空闲连接池中连接的最大数量
-	sqlDB.SetMaxIdleConns(10)
+	// 3. 启用 WAL 模式
+	if tx := sqliteDb.Exec("PRAGMA journal_mode = WAL"); tx.Error != nil {
+		panic(fmt.Errorf("启用 WAL 失败: %w", tx.Error))
+	} else {
+		helpers.AppLogger.Infof("启用 WAL 成功: %s", "WAL")
+	}
 
-	// SetMaxOpenConns 设置打开数据库连接的最大数量。
-	sqlDB.SetMaxOpenConns(100)
+	// 可选：调整同步模式以提升写入性能 (从 FULL 改为 NORMAL)
+	// 在 WAL 模式下，NORMAL 是安全且更快的选择[citation:2]
+	if tx := sqliteDb.Exec("PRAGMA synchronous = NORMAL"); tx.Error != nil {
+		panic(fmt.Errorf("设置 synchronous 失败: %w", tx.Error))
+	} else {
+		helpers.AppLogger.Infof("设置 synchronous 成功: %s", "NORMAL")
+	}
 	return sqliteDb
 }
 
@@ -112,6 +128,9 @@ func ConnectPostgres(dbConfig *database.Config) error {
 }
 
 func InitPostgres(sqlDB *sql.DB) {
+	if sqlDB == nil {
+		panic("数据库连接失败")
+	}
 	// 配置Logger
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer

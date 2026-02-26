@@ -17,7 +17,7 @@ type EmbyItem struct {
 type EmbyLibrary struct {
 	BaseModel
 	Name       string `json:"name"`
-	LibraryId  string `json:"library_id" gorm:"index:idx_emby_library_id"`
+	LibraryId  string `json:"library_id"`
 	SyncPathId uint   `json:"sync_path_id"` // 媒体库对应的同步目录ID，如果时0则表示没有关联同步目录
 }
 

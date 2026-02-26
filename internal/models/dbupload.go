@@ -32,7 +32,7 @@ const (
 
 type DbUploadTask struct {
 	BaseModel
-	Source               UploadSource     `json:"source" gorm:"index:idx_source"` // 任务来源
+	Source               UploadSource     `json:"source"` // 任务来源
 	AccountId            uint             `json:"account_id"`
 	SyncFileId           uint             `json:"sync_file_id"`                                     // 同步文件ID
 	ScrapeMediaFileId    uint             `json:"scrape_media_file_id"`                             // 刮削文件ID
