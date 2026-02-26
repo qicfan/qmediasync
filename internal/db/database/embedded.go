@@ -281,12 +281,13 @@ func (m *EmbeddedManager) startPostgresProcess() error {
 	if runtime.GOOS == "windows" {
 		postgresPath = filepath.Join(m.config.BinaryPath, "pg_ctl.exe")
 	}
+	command := fmt.Sprintf("\"%s start -D %s -o '-k %s'\"", postgresPath, m.config.DataDir, tmpPath)
 	cmd, err := m.userSwitcher.RunCommandAsUserWithEnv(
 		map[string]string{
 			"PGDATA": m.config.DataDir,
 			"PGPORT": fmt.Sprintf("%d", m.config.Port),
 		},
-		postgresPath, "start", "-D", m.config.DataDir, fmt.Sprintf("-o \"-k %s\"", tmpPath),
+		command,
 	)
 	// pg_ctl start -D /app/config/postgres/data -o "-k /app/config/postgres/tmp -c unix_socket_directories='/app/config/postgres/tmp'"
 	// su - qms -c "postgres -D /app/config/postgres/data -k /app/config/postgres/tmp -c unix_socket_directories='/app/config/postgres/tmp'"

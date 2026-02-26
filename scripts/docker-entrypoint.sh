@@ -111,7 +111,7 @@ trap 'handle_signal' INT TERM
 # 主循环，确保可以多次更新
 while true; do
     # 启动主进程，支持GPID和GUID环境变量
-    if [ -n "$GUID" ]; then
+    if [ -n "$GUID" ] && [ "$GUID" != "0" ]; then
         echo "使用GUID=$GUID 启动主程序"
         if id "$GUID" >/dev/null 2>&1; then
             echo "切换到用户 $GUID 并启动主程序"
@@ -121,7 +121,7 @@ while true; do
             /app/QMediaSync &
         fi
     else
-        echo "未设置GUID，使用默认参数启动主程序"
+        echo "GUID为0或未设置，使用默认参数启动主程序"
         /app/QMediaSync &
     fi
     MAIN_PID=$!
