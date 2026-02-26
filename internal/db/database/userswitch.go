@@ -70,7 +70,7 @@ func (u *UserSwitcher) RunCommandAsUserWithEnv(env map[string]string, command st
 		for key, value := range env {
 			envVars += fmt.Sprintf("export %s=%s; ", key, value)
 		}
-		fullCommand := fmt.Sprintf("\"%s %s\"", envVars, command+" "+strings.Join(args, " "))
+		fullCommand := fmt.Sprintf("%s%s", envVars, command+" "+strings.Join(args, " "))
 		fullArgs := []string{"-", u.username, "-s", "/bin/bash", "-c", fullCommand}
 		cmd = exec.Command("su", fullArgs...)
 	}
