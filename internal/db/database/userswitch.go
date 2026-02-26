@@ -70,9 +70,8 @@ func (u *UserSwitcher) RunCommandAsUserWithEnv(env map[string]string, command st
 		for key, value := range env {
 			envVars += fmt.Sprintf("export %s=%s; ", key, value)
 		}
-		fullCommand := envVars + command + " " + strings.Join(args, " ")
+		fullCommand := fmt.Sprintf("\"%s %s\"", envVars, command+" "+strings.Join(args, " "))
 		fullArgs := []string{"-", u.username, "-c", fullCommand}
-		// logs.Info(fmt.Sprintf("以用户 %s 执行命令: %s", u.username, fullCommand))
 		cmd = exec.Command("su", fullArgs...)
 	}
 	helpers.AppLogger.Infof("执行命令: %s", cmd.String())
