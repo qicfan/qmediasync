@@ -215,6 +215,7 @@ func (m *ScrapePath) Save() error {
 			"enable_fanart_tv":         m.EnableFanartTv,
 			"max_threads":              m.MaxThreads,
 		}
+		helpers.AppLogger.Infof("更新的数据：%+v", updates)
 		if oldScrapePath.ScrapeType != ScrapeTypeOnly && m.ScrapeType == ScrapeTypeOnly {
 			updates["dest_path"] = m.SourcePath
 		}

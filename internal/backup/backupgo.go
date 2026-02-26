@@ -57,8 +57,16 @@ func IsRunning() bool {
 func SetRunning(running bool) {
 	if running {
 		atomic.StoreInt32(&isRuning, 1)
+		helpers.AppLogger.Infof("已将任务设置为进行中: %d", atomic.LoadInt32(&isRuning))
+		if runningResult != nil {
+			runningResult.IsRunning = true
+		}
 	} else {
 		atomic.StoreInt32(&isRuning, 0)
+		helpers.AppLogger.Infof("已将任务设置为完成: %d", atomic.LoadInt32(&isRuning))
+		if runningResult != nil {
+			runningResult.IsRunning = false
+		}
 	}
 }
 
