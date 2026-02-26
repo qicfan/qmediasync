@@ -147,7 +147,7 @@ func (m *EmbeddedManager) InitDataDir() error {
 		helpers.AppLogger.Infof("创建Postgres临时目录 %s 成功", tmpDir)
 	}
 	// 再修改权限
-	if helpers.Guid != "" || runtime.GOOS == "windows" {
+	if (helpers.Guid != "" && helpers.Guid != "0") || runtime.GOOS == "windows" {
 		// 如果是非root用户启动，postgres用guid启动即可，无需修改权限
 		// windows无需修改权限
 		return nil
