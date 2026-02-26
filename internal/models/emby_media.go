@@ -1,6 +1,7 @@
 package models
 
 import (
+	"Q115-STRM/internal/baidupan"
 	"Q115-STRM/internal/db"
 	embyclientrestgo "Q115-STRM/internal/embyclient-rest-go"
 	"Q115-STRM/internal/helpers"
@@ -282,7 +283,7 @@ func DeleteNetdiskMovieByEmbyItemId(itemId string) error {
 			metaFiles = append(metaFiles, f)
 		}
 	}
-	// 调用115接口删除文件
+	// 调用网盘接口删除文件
 	account, err := GetAccountById(syncFile.AccountId)
 	if err != nil {
 		helpers.AppLogger.Errorf("获取网盘账号 %d 失败: %v", syncFile.AccountId, err)
@@ -311,7 +312,16 @@ func DeleteNetdiskMovieByEmbyItemId(itemId string) error {
 			// 删除视频文件+元数据
 			success, delErr = deleteOpenListFiles(client, syncFile, metaFiles)
 		}
-
+	case SourceTypeBaiduPan:
+		// 执行BaiduPan网盘删除逻辑
+		client := account.GetBaiDuPanClient()
+		if videoFileCount == 1 {
+			// 删除目录
+			success, delErr = deleteBaiduPanFolders(client, syncFile.Path)
+		} else {
+			// 删除视频文件+元数据
+			success, delErr = deleteBaiduPanFiles(client, syncFile, metaFiles)
+		}
 	}
 	if delErr != nil {
 		helpers.AppLogger.Errorf("删除Emby Item %s 关联的网盘视频文件+元数据失败: %v", itemId, delErr)
@@ -360,7 +370,7 @@ func DeleteNetdiskEpisodeByEmbyItemId(itemId string) error {
 			filesToDelete = append(filesToDelete, f)
 		}
 	}
-	// 调用115接口删除文件
+	// 调用网盘接口删除文件
 	account, err := GetAccountById(syncFile.AccountId)
 	if err != nil {
 		helpers.AppLogger.Errorf("获取网盘账号 %d 失败: %v", syncFile.AccountId, err)
@@ -377,6 +387,10 @@ func DeleteNetdiskEpisodeByEmbyItemId(itemId string) error {
 		// 执行OpenList网盘删除逻辑
 		client := account.GetOpenListClient()
 		success, delErr = deleteOpenListFiles(client, syncFile, filesToDelete)
+	case SourceTypeBaiduPan:
+		// 执行BaiduPan网盘删除逻辑
+		client := account.GetBaiDuPanClient()
+		success, delErr = deleteBaiduPanFiles(client, syncFile, filesToDelete)
 	}
 	if delErr != nil {
 		helpers.AppLogger.Errorf("删除Emby Item %s 关联的网盘集视频文件+元数据失败: %v", itemId, delErr)
@@ -447,41 +461,10 @@ func DeleteNetdiskSeasonByItemId(itemId string) error {
 		case SourceTypeOpenList:
 			client := account.GetOpenListClient()
 			_, delErr = deleteOpenListFolders(client, seasonPath)
+		case SourceTypeBaiduPan:
+			client := account.GetBaiDuPanClient()
+			_, delErr = deleteBaiduPanFolders(client, seasonPath)
 		}
-		// // 查询path的file_id
-		// path := Sync115Path{}
-		// if err := db.Db.Where("path = ?", seasonPath).First(&path).Error; err != nil {
-		// 	helpers.AppLogger.Errorf("查询网盘路径 %s 失败: %v", seasonPath, err)
-		// 	return err
-		// }
-		// // 查找seasonPath的父目录ID
-		// tvshowPath := filepath.Dir(seasonPath)
-		// tvshowPathId := ""
-		// if tvshowPath == "" || tvshowPath == "." || tvshowPath == "/" {
-		// 	// 到了根目录，取SyncPath.SourcePathId
-		// 	syncPath := GetSyncPathById(syncFile.SyncPathId)
-		// 	if syncPath == nil {
-		// 		helpers.AppLogger.Errorf("查询SyncPath %d 失败", syncFile.SyncPathId)
-		// 		return nil
-		// 	}
-		// 	tvshowPathId = syncPath.BaseCid
-		// } else {
-		// 	// 查询tvshowPath的file_id
-		// 	tvshowSync115Path := Sync115Path{}
-		// 	if err := db.Db.Where("path = ?", tvshowPath).First(&tvshowSync115Path).Error; err != nil {
-		// 		helpers.AppLogger.Errorf("查询季文件夹的父路径 %s 失败: %v", tvshowPath, err)
-		// 		return err
-		// 	}
-		// 	tvshowPathId = tvshowSync115Path.FileId
-		// }
-		// // 调用115接口删除文件
-		// account, err := GetAccountById(syncFile.AccountId)
-		// if err != nil {
-		// 	helpers.AppLogger.Errorf("获取网盘账号 %d 失败: %v", syncFile.AccountId, err)
-		// 	return err
-		// }
-		// client := account.Get115Client(true)
-		// _, delErr := client.Del(context.Background(), []string{path.FileId}, tvshowPathId)
 		if delErr != nil {
 			helpers.AppLogger.Errorf("删除Emby Item %s 关联的网盘电视剧 季目录 %s失败: %v", itemId, seasonPath, delErr)
 			return delErr
@@ -566,6 +549,9 @@ func DeleteNetdiskTvshowByItemId(itemId string) error {
 	case SourceTypeOpenList:
 		client := account.GetOpenListClient()
 		_, delErr = deleteOpenListFolders(client, tvshowPath)
+	case SourceTypeBaiduPan:
+		client := account.GetBaiDuPanClient()
+		_, delErr = deleteBaiduPanFolders(client, tvshowPath)
 	}
 	if delErr != nil {
 		helpers.AppLogger.Errorf("删除Emby Item %s 关联的网盘电视剧 目录 %s=>%s失败: %v", itemId, tvshowPathId, tvshowPath, delErr)
@@ -660,6 +646,31 @@ func deleteOpenListFolders(client *openlist.Client, path string) (bool, error) {
 	}
 	folerName := filepath.Base(path)
 	err := client.Del(pathParent, []string{folerName})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func deleteBaiduPanFolders(client *baidupan.Client, path string) (bool, error) {
+	if path == "" || path == "." || path == "/" {
+		// 到了根目录，不能删除
+		helpers.AppLogger.Errorf("删除网盘目录失败: 已到达根目录 %s", path)
+		return false, nil
+	}
+	err := client.Del(context.Background(), []string{path})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func deleteBaiduPanFiles(client *baidupan.Client, syncFile SyncFile, metaFiles []SyncFile) (bool, error) {
+	fileNameToDelete := []string{syncFile.FileName}
+	for _, mf := range metaFiles {
+		fileNameToDelete = append(fileNameToDelete, filepath.ToSlash(filepath.Join(mf.Path, mf.FileName)))
+	}
+	err := client.Del(context.Background(), fileNameToDelete)
 	if err != nil {
 		return false, err
 	}

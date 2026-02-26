@@ -407,10 +407,10 @@ func CreateDir(c *gin.Context) {
 		return
 	}
 	// 父目录不能为空
-	if req.ParentPath == "" || req.ParentId == "" {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "父目录不能为空", Data: nil})
-		return
-	}
+	// if req.ParentPath == "" || req.ParentId == "" {
+	// 	c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "父目录不能为空", Data: nil})
+	// 	return
+	// }
 	// 文件夹名称不能包含/
 	if strings.Contains(req.Name, "/") {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "文件夹名称不能包含/", Data: nil})
@@ -447,7 +447,7 @@ func CreateDir(c *gin.Context) {
 // 创建本地目录
 func makeLocalPath(parentId string, folderName string) (string, error) {
 	// 检查父目录是否存在
-	if !helpers.PathExists(parentId) {
+	if !helpers.PathExists(parentId) || parentId == "" {
 		return "", fmt.Errorf("父目录不存在: %s", parentId)
 	}
 	// 构建新目录路径
@@ -461,6 +461,9 @@ func makeLocalPath(parentId string, folderName string) (string, error) {
 
 // 创建openlist目录
 func makeOpenListPath(parentId string, folderName string, accountId uint) (string, error) {
+	if parentId == "" {
+		parentId = "/"
+	}
 	// 检查父目录是否存在
 	account, err := models.GetAccountById(accountId)
 	if err != nil {
@@ -481,15 +484,20 @@ func makeOpenListPath(parentId string, folderName string, accountId uint) (strin
 
 // 创建115目录
 func make115PathList(parentId, parentPath, folderName string, accountId uint) (string, error) {
+	if parentId == "" {
+		parentId = "0"
+	}
 	// 检查父目录是否存在
 	account, err := models.GetAccountById(accountId)
 	if err != nil {
 		return "", fmt.Errorf("获取账号失败: %v", err)
 	}
 	client := account.Get115Client()
-	_, err = client.GetFsDetailByCid(context.Background(), parentId)
-	if err != nil {
-		return "", fmt.Errorf("获取115目录详情失败，目录可能不存在: %v", err)
+	if parentId != "0" {
+		_, err = client.GetFsDetailByCid(context.Background(), parentId)
+		if err != nil {
+			return "", fmt.Errorf("获取115目录详情失败，目录可能不存在: %v", err)
+		}
 	}
 	newDir := filepath.ToSlash(filepath.Join(parentPath, folderName))
 	newPathId, err := client.MkDir(context.Background(), parentId, folderName)
@@ -500,6 +508,9 @@ func make115PathList(parentId, parentPath, folderName string, accountId uint) (s
 }
 
 func makeBaiduPanPathList(parentId string, folderName string, accountId uint) (string, error) {
+	if parentId == "" {
+		parentId = "/"
+	}
 	// 检查父目录是否存在
 	account, err := models.GetAccountById(accountId)
 	if err != nil {
@@ -536,4 +547,42 @@ func UpdateFNPath(c *gin.Context) {
 	helpers.AccessiblePathes = req.Path
 	helpers.AppLogger.Infof("更新飞牛有权限的目录为: %s", req.Path)
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "更新目录成功", Data: nil})
+}
+
+func DeleteDir(c *gin.Context) {
+	type deleteDirReq struct {
+		ParentId  string `json:"parent_id" form:"parent_id"`
+		FileId    string `json:"file_id" form:"file_id"`
+		AccountId uint   `json:"account_id" form:"account_id"`
+	}
+	var req deleteDirReq
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "参数错误", Data: nil})
+		return
+	}
+	if req.FileId == "" || req.AccountId == 0 || req.FileId == "0" {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "参数错误", Data: nil})
+		return
+	}
+	account, err := models.GetAccountById(req.AccountId)
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取账号失败: " + err.Error(), Data: nil})
+		return
+	}
+	switch account.SourceType {
+	case models.SourceType115:
+		client := account.Get115Client()
+		_, err = client.Del(context.Background(), []string{req.FileId}, req.ParentId)
+	case models.SourceTypeBaiduPan:
+		client := account.GetBaiDuPanClient()
+		err = client.Del(context.Background(), []string{req.FileId})
+	default:
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "不支持的文件系统", Data: nil})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "删除目录失败: " + err.Error(), Data: nil})
+		return
+	}
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "删除目录成功", Data: nil})
 }

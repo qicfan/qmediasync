@@ -49,6 +49,44 @@ setup_user_and_group() {
 
 setup_user_and_group
 
+check_and_update_ownership() {
+    USER_FILE="/app/config/.USER"
+    
+    CURRENT_GUID="${GUID:-0}"
+    CURRENT_GPID="${GPID:-0}"
+    CURRENT_ID="${CURRENT_GUID}:${CURRENT_GPID}"
+    
+    if [ -d "/app/config" ]; then
+        if [ -f "$USER_FILE" ]; then
+            SAVED_ID=$(cat "$USER_FILE")
+            if [ "$SAVED_ID" != "$CURRENT_ID" ]; then
+                echo "检测到GUID:GPID变化 ($SAVED_ID -> $CURRENT_ID)，更新config目录所有者..."
+                chown -R "$CURRENT_GUID:$CURRENT_GPID" /app/config
+                if [ "$CURRENT_GUID" = "0" ] && [ -d "/app/config/postgres" ]; then
+                    echo "GUID为0，将postgres目录所有者改为qms:qms"
+                    chown -R 12331:12331 /app/config/postgres
+                fi
+                echo "所有者更新完成"
+                echo "$CURRENT_ID" > "$USER_FILE"
+            else
+                echo "GUID:GPID未变化 ($CURRENT_ID)"
+            fi
+        else
+            echo "首次记录GUID:GPID: $CURRENT_ID"
+            echo "$CURRENT_ID" > "$USER_FILE"
+            chown "$CURRENT_GUID:$CURRENT_GPID" "$USER_FILE" 2>/dev/null
+            if [ "$CURRENT_GUID" = "0" ] && [ -d "/app/config/postgres" ]; then
+                echo "GUID为0，将postgres目录所有者改为qms:qms"
+                chown -R 12331:12331 /app/config/postgres
+            fi
+        fi
+    else
+        echo "警告: /app/config目录不存在"
+    fi
+}
+
+check_and_update_ownership
+
 # 启动文件监视
 echo "启动文件更新监视器..."
 /app/scripts/watch_update.sh &

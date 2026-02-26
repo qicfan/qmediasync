@@ -507,6 +507,7 @@ func setRouter(r *gin.Engine) {
 		api.GET("/user/info", controllers.GetUserInfo)
 		api.GET("/path/list", controllers.GetPathList)     // 目录列表
 		api.POST("/path/create", controllers.CreateDir)    // 创建目录接口
+		api.DELETE("/path", controllers.DeleteDir)         // 删除目录接口
 		api.GET("/path/files", controllers.GetNetFileList) // 查询网盘文件列表
 		api.POST("/user/change", controllers.ChangePassword)
 
