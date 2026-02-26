@@ -138,7 +138,7 @@ for platform in "${PLATFORMS[@]}"; do
         # Determine executable name and link flags
         if [ "$platform" = "windows" ]; then
             EXE_NAME="QMediaSync.exe"
-            LDFLAGS="-H=windowsgui -s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.FANART_API_KEY=$FANART_API_KEY -X main.DEFAULT_TMDB_ACCESS_TOKEN=$DEFAULT_TMDB_ACCESS_TOKEN -X main.DEFAULT_TMDB_API_KEY=$DEFAULT_TMDB_API_KEY -X main.DEFAULT_SC_API_KEY=$DEFAULT_SC_API_KEY -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
+            LDFLAGS="-s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.FANART_API_KEY=$FANART_API_KEY -X main.DEFAULT_TMDB_ACCESS_TOKEN=$DEFAULT_TMDB_ACCESS_TOKEN -X main.DEFAULT_TMDB_API_KEY=$DEFAULT_TMDB_API_KEY -X main.DEFAULT_SC_API_KEY=$DEFAULT_SC_API_KEY -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
         else
             EXE_NAME="QMediaSync"
             LDFLAGS="-s -w -X main.Version=$TAG -X 'main.PublishDate=$PUBLISH_DATE' -X main.FANART_API_KEY=$FANART_API_KEY -X main.DEFAULT_TMDB_ACCESS_TOKEN=$DEFAULT_TMDB_ACCESS_TOKEN -X main.DEFAULT_TMDB_API_KEY=$DEFAULT_TMDB_API_KEY -X main.DEFAULT_SC_API_KEY=$DEFAULT_SC_API_KEY -X main.ENCRYPTION_KEY=$ENCRYPTION_KEY"
