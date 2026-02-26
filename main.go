@@ -483,7 +483,7 @@ func setRouter(r *gin.Engine) {
 			})
 		})
 		// api.GET("/announce", controllers.GetAnnounce) // 获取公告
-
+		api.POST("/database/repair", controllers.RepairDB)                // 更新系统设置
 		api.POST("/auth/115-qrcode-open", controllers.GetLoginQrCodeOpen) // 获取115开放平台登录二维码
 		api.POST("/auth/115-qrcode-status", controllers.GetQrCodeStatus)  // 查询115二维码扫码状态
 		api.GET("/115/status", controllers.Get115Status)                  // 查询115状态
@@ -732,7 +732,7 @@ func parseParams() {
 	if helpers.IsFnOS {
 		log.Printf("当前环境为飞牛环境\n")
 	}
-	if helpers.Guid == "" {
+	if helpers.Guid == "" || helpers.Guid == "0" {
 		// 检查是否有GUID环境变量，有的话直接使用
 		guidEnv := os.Getenv("GUID")
 		if guidEnv != "" {
@@ -740,7 +740,7 @@ func parseParams() {
 			helpers.Guid = guidEnv
 		} else {
 			log.Printf("使用 root 执行操作\n")
-			helpers.Guid = ""
+			helpers.Guid = "0"
 		}
 	}
 	// 检查是否是更新模式

@@ -356,27 +356,61 @@ func Migrate() {
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
 }
 
-func BatchCreateTable() {
+func BatchCreateTable() error {
 	db.Db.Statement.PrepareStmt = true
+
+	var err error
+	var lastErr error
 	// 数据库版本表
-	db.Db.AutoMigrate(Migrator{})
+	err = db.Db.AutoMigrate(Migrator{})
+	if err != nil {
+		lastErr = err
+	}
 	// 配置、用户、同步目录表
-	db.Db.AutoMigrate(Settings{}, Sync{}, User{}, SyncPath{}, Account{})
-	db.Db.AutoMigrate(SyncFile{})
+	err = db.Db.AutoMigrate(Settings{}, Sync{}, User{}, SyncPath{}, Account{})
+	if err != nil {
+		lastErr = err
+	}
+	err = db.Db.AutoMigrate(SyncFile{})
+	if err != nil {
+		lastErr = err
+	}
 	// 刮削相关表
-	db.Db.AutoMigrate(ScrapeSettings{}, ScrapePath{}, MovieCategory{}, TvShowCategory{}, ScrapePathCategory{}, ScrapeMediaFile{}, Media{}, MediaSeason{}, MediaEpisode{})
+	err = db.Db.AutoMigrate(ScrapeSettings{}, ScrapePath{}, MovieCategory{}, TvShowCategory{}, ScrapePathCategory{}, ScrapeMediaFile{}, Media{}, MediaSeason{}, MediaEpisode{}, ScrapeStrmPath{})
+	if err != nil {
+		lastErr = err
+	}
 	// 115请求统计表
-	db.Db.AutoMigrate(&RequestStat{})
+	err = db.Db.AutoMigrate(&RequestStat{})
+	if err != nil {
+		lastErr = err
+	}
 	// Emby 同步相关表
-	db.Db.AutoMigrate(EmbyConfig{}, EmbyMediaItem{}, EmbyMediaSyncFile{}, EmbyLibrary{}, EmbyLibrarySyncPath{})
+	err = db.Db.AutoMigrate(EmbyConfig{}, EmbyMediaItem{}, EmbyMediaSyncFile{}, EmbyLibrary{}, EmbyLibrarySyncPath{})
+	if err != nil {
+		lastErr = err
+	}
 	// 下载队列
-	db.Db.AutoMigrate(DbDownloadTask{}, DbUploadTask{})
+	err = db.Db.AutoMigrate(DbDownloadTask{}, DbUploadTask{})
+	if err != nil {
+		lastErr = err
+	}
 	// 通知渠道表
-	db.Db.AutoMigrate(NotificationChannel{}, TelegramChannelConfig{}, MeoWChannelConfig{}, BarkChannelConfig{}, ServerChanChannelConfig{}, CustomWebhookChannelConfig{}, NotificationRule{})
+	err = db.Db.AutoMigrate(NotificationChannel{}, TelegramChannelConfig{}, MeoWChannelConfig{}, BarkChannelConfig{}, ServerChanChannelConfig{}, CustomWebhookChannelConfig{}, NotificationRule{})
+	if err != nil {
+		lastErr = err
+	}
 	// API Key认证表
-	db.Db.AutoMigrate(ApiKey{})
+	err = db.Db.AutoMigrate(ApiKey{})
+	if err != nil {
+		lastErr = err
+	}
 	// 备份恢复相关表
-	db.Db.AutoMigrate(BackupConfig{}, BackupRecord{})
+	err = db.Db.AutoMigrate(BackupConfig{}, BackupRecord{})
+	if err != nil {
+		lastErr = err
+	}
+	return lastErr
 }
 
 func InitMigrationTable(version int) {

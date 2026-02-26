@@ -203,3 +203,13 @@ func Cors() gin.HandlerFunc {
 func IsFnOS(c *gin.Context) {
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "", Data: helpers.IsFnOS})
 }
+
+func RepairDB(c *gin.Context) {
+	// 修复数据库，重建所有表
+	err := models.BatchCreateTable()
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "修复数据库失败: " + err.Error(), Data: nil})
+		return
+	}
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "修复数据库成功", Data: nil})
+}
