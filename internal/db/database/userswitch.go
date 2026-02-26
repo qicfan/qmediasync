@@ -75,7 +75,8 @@ func (u *UserSwitcher) RunCommandAsUserWithEnv(env map[string]string, command st
 		logs.Info(fmt.Sprintf("以用户 %s 执行命令: %s", u.username, fullCommand))
 		cmd = exec.Command("su", fullArgs...)
 	}
-
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err = cmd.Start()
 	if err != nil {
 		output, _ := cmd.Output()
