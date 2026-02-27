@@ -43,7 +43,7 @@ func StartSyncCron() {
 // 开始刮削整理任务
 func startScrapeCron() {
 	// 查询所有刮削目录
-	scrapePaths := models.GetScrapePathes()
+	scrapePaths := models.GetScrapePathes("")
 	if len(scrapePaths) == 0 {
 		// helpers.AppLogger.Info("没有找到刮削目录")
 		return

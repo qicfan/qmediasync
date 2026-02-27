@@ -40,14 +40,14 @@ type Settings struct {
 	BaseModel
 	SettingThreads
 	SettingStrm
-	UseTelegram      int8   `json:"use_telegram"`                 // @deprecated 已迁移到TelegramChannelConfig 是否使用Telegram Bot通知
-	TelegramBotToken string `json:"telegram_bot_token"`           // @deprecated 已迁移到TelegramChannelConfig Telegram Bot Token
-	TelegramChatId   string `json:"telegram_chat_id"`             // @deprecated 已迁移到TelegramChannelConfig Telegram Chat ID
-	MeoWName         string `json:"meow_name"`                    // @deprecated 已迁移到MeoWChannelConfig MeoW昵称，用于发送MeoW消息
-	EmbyUrl          string `json:"emby_url"`                     // @deprecated 已迁移到EmbyConfig Emby的主机地址
-	EmbyApiKey       string `json:"emby_api_key"`                 // @deprecated 已迁移到EmbyConfig Emby的API Key
-	HttpProxy        string `json:"http_proxy"`                   // HTTP代理地址
-	LocalProxy       int    `json:"local_proxy" gorm:"default:0"` // 是否启用本地代理，0表示不启用，1表示启用
+	UseTelegram      int8   `json:"use_telegram"`       // @deprecated 已迁移到TelegramChannelConfig 是否使用Telegram Bot通知
+	TelegramBotToken string `json:"telegram_bot_token"` // @deprecated 已迁移到TelegramChannelConfig Telegram Bot Token
+	TelegramChatId   string `json:"telegram_chat_id"`   // @deprecated 已迁移到TelegramChannelConfig Telegram Chat ID
+	MeoWName         string `json:"meow_name"`          // @deprecated 已迁移到MeoWChannelConfig MeoW昵称，用于发送MeoW消息
+	EmbyUrl          string `json:"emby_url"`           // @deprecated 已迁移到EmbyConfig Emby的主机地址
+	EmbyApiKey       string `json:"emby_api_key"`       // @deprecated 已迁移到EmbyConfig Emby的API Key
+	HttpProxy        string `json:"http_proxy"`         // HTTP代理地址
+	// LocalProxy       int    `json:"local_proxy" gorm:"default:0"` // 是否启用本地代理，0表示不启用，1表示启用
 }
 
 func (t SettingThreads) ToMap() map[string]any {
@@ -61,6 +61,7 @@ func (t SettingThreads) ToMap() map[string]any {
 }
 
 func (s SettingStrm) ToMap(isDb bool, isSetting bool) map[string]any {
+	// helpers.AppLogger.Debugf("SettingStrm: %+v", s)
 	dataMap := map[string]any{
 		"cron":             s.Cron,
 		"min_video_size":   s.MinVideoSize,

@@ -26,7 +26,7 @@ func (*Migrator) TableName() string {
 // 如果已有数据库则从数据库中获取版本，根据版本执行变更
 func Migrate() {
 	// sqliteDb := db.InitSqlite3(dbFile)
-	maxVersion := 30
+	maxVersion := 32
 	// 先初始化所有表和基础数据
 	if !InitDB(maxVersion) {
 		// 初始化数据库版本表
@@ -58,7 +58,7 @@ func Migrate() {
 		db.Db.AutoMigrate(ScrapeMediaFile{}, Media{}, MediaSeason{}, MediaEpisode{})
 		// 给所有ScrapeMediaFile补充新增字段的值
 		scrapePathMap := make(map[uint]*ScrapePath)
-		scrapePathes := GetScrapePathes()
+		scrapePathes := GetScrapePathes("")
 		for _, scrapePath := range scrapePathes {
 			scrapePathMap[scrapePath.ID] = scrapePath
 		}
@@ -351,6 +351,18 @@ func Migrate() {
 	}
 	if migrator.VersionCode == 29 {
 		db.Db.AutoMigrate(EmbyLibrarySyncPath{})
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 30 {
+		// 将EmbyItem中的EmbyData字段置空
+		err := db.Db.Model(EmbyMediaItem{}).Where("id > 0").Update("emby_data", "").Error
+		if err != nil {
+			helpers.AppLogger.Errorf("更新EmbyMediaItem EmbyData字段为空失败: %v", err)
+		}
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 31 {
+		db.Db.AutoMigrate(SyncPathScrapePath{})
 		migrator.UpdateVersionCode(db.Db)
 	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)

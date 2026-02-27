@@ -179,7 +179,7 @@ func runScrapeTaskSync(taskID uint) {
 
 	} else {
 		// 获取所有刮削目录
-		allScrapePaths := models.GetScrapePathes()
+		allScrapePaths := models.GetScrapePathes("")
 		for _, scrapePath := range allScrapePaths {
 			// 执行刮削任务
 			synccron.AddNewSyncTask(scrapePath.ID, synccron.SyncTaskTypeScrape)
@@ -330,7 +330,7 @@ func runStrmThenScrape(extractedIDs []uint) string {
 			// 检查是否有新文件
 			if len(extractedIDs) == 0 || extractedIDs[1] == 0 {
 				// 检查所有刮削目录是否有新文件
-				allScrapePaths := models.GetScrapePathes()
+				allScrapePaths := models.GetScrapePathes("")
 				for _, scrapePath := range allScrapePaths {
 					newScrapeFilesCount := models.GetScannedScrapeMediaFilesTotal(scrapePath.ID, scrapePath.MediaType)
 					if newScrapeFilesCount > 0 {

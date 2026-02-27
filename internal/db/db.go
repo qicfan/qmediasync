@@ -155,7 +155,29 @@ func InitPostgres(sqlDB *sql.DB) {
 	}
 	// 设置全局Logger
 	Db.Logger = newLogger
+	// 启动连接保持的goroutine（使用GORM的DB对象）
+	go keepGormAlive()
 	helpers.AppLogger.Info("成功初始化数据库组件")
+}
+
+// keepGormAlive 使用GORM的原始数据库连接进行ping
+func keepGormAlive() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		sqlDB, err := Db.DB()
+		if err != nil {
+			helpers.AppLogger.Errorf("获取数据库连接失败: %v", err)
+			continue
+		}
+
+		if err := sqlDB.Ping(); err != nil {
+			helpers.AppLogger.Errorf("数据库ping失败: %v", err)
+		} else {
+			// helpers.AppLogger.Debug("数据库ping成功")
+		}
+	}
 }
 
 // IsPostgres 判断当前使用的是否为PostgreSQL数据库

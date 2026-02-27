@@ -58,6 +58,12 @@ type SyncPath struct {
 	IsRunning    int        `json:"is_running" gorm:"-"`    // 是否正在运行 0-未运行，1-已在队列，2-正在运行
 }
 
+type SyncPathScrapePath struct {
+	BaseModel
+	SyncPathId   uint `json:"sync_path_id" form:"sync_path_id"  gorm:"uniqueIndex:sync_path_id_scrape_path_id"`    // 同步目录ID
+	ScrapePathId uint `json:"scrape_path_id" form:"scrape_path_id" gorm:"uniqueIndex:sync_path_id_scrape_path_id"` // 刮削路径ID
+}
+
 func GetStrmSettingDefault() SettingStrm {
 	return SettingStrm{
 		StrmBaseUrl:    "",
@@ -75,6 +81,38 @@ func GetStrmSettingDefault() SettingStrm {
 		MetaExt:        "",
 		ExcludeName:    "",
 	}
+}
+
+func (sp *SyncPath) GetScrapePathIds() []uint {
+	var scrapePathIds []uint
+	db.Db.Model(&SyncPathScrapePath{}).Where("sync_path_id = ?", sp.ID).Pluck("scrape_path_id", &scrapePathIds)
+	return scrapePathIds
+}
+
+func (sp *SyncPath) SaveScrapePaths(scrapePathIds []uint) error {
+	tx := db.Db.Begin()
+	// 删除旧关联
+	if err := tx.Where("sync_path_id = ?", sp.ID).Delete(&SyncPathScrapePath{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if len(scrapePathIds) == 0 {
+		tx.Commit()
+		return nil
+	}
+	// 保存关联的刮削路径
+	var syncPathScrapePaths []*SyncPathScrapePath
+	for _, id := range scrapePathIds {
+		syncPathScrapePaths = append(syncPathScrapePaths, &SyncPathScrapePath{
+			SyncPathId:   sp.ID,
+			ScrapePathId: id,
+		})
+	}
+	if err := tx.Save(&syncPathScrapePaths).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
 }
 
 func (sp *SyncPath) GetUploadMeta() int {

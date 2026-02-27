@@ -457,7 +457,8 @@ func DeleteTvshowCategory(c *gin.Context) {
 // @Security JwtAuth
 // @Security ApiKeyAuth
 func GetScrapePathes(c *gin.Context) {
-	scrapePathes := models.GetScrapePathes()
+	sourceType := c.Query("source_type")
+	scrapePathes := models.GetScrapePathes(sourceType)
 	for _, scrapePath := range scrapePathes {
 		// 检查是否正在运行
 		scrapePath.IsTaskRunning = synccron.CheckNewTaskStatus(scrapePath.ID, synccron.SyncTaskTypeScrape)

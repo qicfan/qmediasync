@@ -4,7 +4,6 @@ import (
 	embyclientrestgo "Q115-STRM/internal/embyclient-rest-go"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
-	"encoding/json"
 	"errors"
 	"net/url"
 	"strings"
@@ -91,7 +90,6 @@ func PerformEmbySync() (int, error) {
 				// 没有pickcode不入库
 				continue
 			}
-			itemData, _ := json.Marshal(task.Item)
 			pathStr := mediaPath
 			if pathStr == "" {
 				pathStr = task.Item.Path
@@ -117,7 +115,6 @@ func PerformEmbySync() (int, error) {
 				DateCreated:       task.Item.DateCreated,
 				DateModified:      task.Item.DateModified,
 				IsFolder:          task.Item.IsFolder,
-				EmbyData:          string(itemData),
 			}
 			if err := models.CreateOrUpdateEmbyMediaItem(mediaItem); err != nil {
 				helpers.AppLogger.Errorf("保存Emby媒体项失败 id=%s name=%s err=%v", task.Item.Id, task.Item.Name, err)

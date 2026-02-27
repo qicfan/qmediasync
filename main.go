@@ -409,14 +409,12 @@ func initOthers() {
 		}
 	})
 
-	// if helpers.IsRelease {
 	// 启动同步任务队列管理器
 	synccron.InitNewSyncQueueManager()
 	synccron.InitCron()     // 初始化定时任务（包含备份定时任务）
 	synccron.InitSyncCron() // 初始化同步目录的定时任务
 	// 初始化备份服务
 	models.InitBackupService()
-	// }
 	// 将所有刮削中和整理中的记录改为未执行
 	models.ResetScrapePathStatus()
 	// 将所有刮削中改为待刮削
@@ -430,13 +428,18 @@ func initOthers() {
 	helpers.Subscribe(helpers.BackupCronEevent, func(event helpers.Event) {
 		backup.Backup("定时", "定时备份")
 	})
-	// backup.Backup("手动", "手动备份")
-
-	// account, _ := models.GetAccountById(1)
-	// client := account.Get115Client()
-	// _, err := client.GetFsDetailByCid(context.Background(), "31123123123123")
-	// helpers.AppLogger.Errorf("获取文件详情失败: %v", err)
-	// panic("test")
+	helpers.Subscribe(helpers.StrmSyncCompleteEvent, func(event helpers.Event) {
+		// 触发关联的刮削任务
+		scrapePathIds := event.Data.([]uint)
+		// 将任务添加到队列中
+		for _, scrapePathId := range scrapePathIds {
+			if err := synccron.AddNewSyncTask(scrapePathId, synccron.SyncTaskTypeScrape); err != nil {
+				helpers.AppLogger.Errorf("添加刮削任务失败: %v", err)
+			} else {
+				helpers.AppLogger.Infof("创建刮削任务成功并已添加到执行队列，刮削目录ID: %d，", scrapePathId)
+			}
+		}
+	})
 }
 
 // 设置路由
@@ -549,19 +552,21 @@ func setRouter(r *gin.Engine) {
 		api.POST("/emby/sync/start", controllers.StartEmbySync)     // 手动启动Emby同步
 		api.GET("/emby/sync/status", controllers.GetEmbySyncStatus) // 获取Emby同步状态           // 删除媒体库与同步目录关联
 
-		api.POST("/sync/start", controllers.StartSync)                   // 启动同步
-		api.GET("/sync/records", controllers.GetSyncRecords)             // 同步列表
-		api.GET("/sync/task", controllers.GetSyncTask)                   // 获取同步任务详情
-		api.GET("/sync/path-list", controllers.GetSyncPathList)          // 获取同步路径列表
-		api.POST("/sync/path-add", controllers.AddSyncPath)              // 创建同步路径
-		api.POST("/sync/path-update", controllers.UpdateSyncPath)        // 更新同步路径
-		api.POST("/sync/path-delete", controllers.DeleteSyncPath)        // 删除同步路径
-		api.POST("/sync/path/stop", controllers.StopSyncByPath)          // 停止同步路径的同步任务
-		api.POST("/sync/path/start", controllers.StartSyncByPath)        // 启动同步路径的同步任务
-		api.POST("/sync/path/full-start", controllers.FullStart115Sync)  // 启动115的全量同步任务
-		api.POST("/sync/delete-records", controllers.DelSyncRecords)     // 批量删除同步记录
-		api.POST("/sync/path/toggle-cron", controllers.ToggleSyncByPath) // 关闭或开启同步目录的定时同步
-		api.GET("/sync/path/:id", controllers.GetSyncPathById)           // 获取同步路径详情
+		api.POST("/sync/start", controllers.StartSync)                       // 启动同步
+		api.GET("/sync/records", controllers.GetSyncRecords)                 // 同步列表
+		api.GET("/sync/task", controllers.GetSyncTask)                       // 获取同步任务详情
+		api.GET("/sync/path-list", controllers.GetSyncPathList)              // 获取同步路径列表
+		api.POST("/sync/path-add", controllers.AddSyncPath)                  // 创建同步路径
+		api.POST("/sync/path-update", controllers.UpdateSyncPath)            // 更新同步路径
+		api.POST("/sync/path-delete", controllers.DeleteSyncPath)            // 删除同步路径
+		api.POST("/sync/path/stop", controllers.StopSyncByPath)              // 停止同步路径的同步任务
+		api.POST("/sync/path/start", controllers.StartSyncByPath)            // 启动同步路径的同步任务
+		api.POST("/sync/path/full-start", controllers.FullStart115Sync)      // 启动115的全量同步任务
+		api.POST("/sync/delete-records", controllers.DelSyncRecords)         // 批量删除同步记录
+		api.POST("/sync/path/toggle-cron", controllers.ToggleSyncByPath)     // 关闭或开启同步目录的定时同步
+		api.GET("/sync/path/:id", controllers.GetSyncPathById)               // 获取同步路径详情
+		api.GET("/sync/path/:id/scrape-paths", controllers.GetRelScrapePath) // 获取同步路径关联的刮削路径
+		api.POST("/sync/path/scrape-paths", controllers.SaveRelScrapePath)   // 更新同步路径关联的刮削路径
 
 		api.GET("/account/list", controllers.GetAccountList)             // 获取开放平台账号列表
 		api.POST("/account/add", controllers.CreateTmpAccount)           // 创建开放平台账号

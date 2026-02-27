@@ -88,11 +88,16 @@ func UpdateEmbyConfig(c *gin.Context) {
 	}
 	isNew := err == gorm.ErrRecordNotFound
 	oldSyncEnabled := 0
+	oldSyncCron := req.SyncCron
 	if !isNew {
 		oldSyncEnabled = config.SyncEnabled
+		oldSyncCron = config.SyncCron
 	}
 	if isNew {
 		config = &models.EmbyConfig{}
+	}
+	if req.SyncCron == "" {
+		req.SyncCron = "0 * * * *"
 	}
 	config.EmbyUrl = req.EmbyUrl
 	config.EmbyApiKey = req.EmbyApiKey
@@ -102,7 +107,7 @@ func UpdateEmbyConfig(c *gin.Context) {
 	config.EnableExtractMediaInfo = req.EnableExtractMediaInfo
 	config.EnableAuth = req.EnableAuth
 	config.SyncEnabled = req.SyncEnabled
-	config.SyncCron = "0 * * * *"
+	config.SyncCron = req.SyncCron
 	if config.SyncEnabled == 0 {
 		config.EnableDeleteNetdisk = 0
 		config.EnableRefreshLibrary = 0
@@ -129,7 +134,7 @@ func UpdateEmbyConfig(c *gin.Context) {
 			return
 		}
 	}
-	if oldSyncEnabled != config.SyncEnabled {
+	if oldSyncEnabled != config.SyncEnabled || oldSyncCron != config.SyncCron {
 		// 同步状态改变，需要重新加载cron
 		synccron.InitCron()
 	}

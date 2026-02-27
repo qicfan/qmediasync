@@ -36,7 +36,6 @@ type EmbyMediaItem struct {
 	DateCreated       string `json:"date_created"`
 	DateModified      string `json:"date_modified"`
 	IsFolder          bool   `json:"is_folder"`
-	EmbyData          string `json:"emby_data" gorm:"type:text"`
 }
 
 func (*EmbyMediaItem) TableName() string {
@@ -77,27 +76,6 @@ func CreateOrUpdateEmbyMediaItem(item *EmbyMediaItem) error {
 	}
 	item.ID = existing.ID
 	return db.Db.Model(existing).Updates(item).Error
-}
-
-// GetEmbyMediaItemsPaginated 简单分页过滤
-func GetEmbyMediaItemsPaginated(page, pageSize int, libraryId, itemType string) ([]*EmbyMediaItem, int64, error) {
-	var items []*EmbyMediaItem
-	var total int64
-	q := db.Db.Model(&EmbyMediaItem{})
-	if libraryId != "" {
-		q = q.Where("library_id = ?", libraryId)
-	}
-	if itemType != "" {
-		q = q.Where("type = ?", itemType)
-	}
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	offset := (page - 1) * pageSize
-	if err := q.Order("id DESC").Offset(offset).Limit(pageSize).Find(&items).Error; err != nil {
-		return nil, 0, err
-	}
-	return items, total, nil
 }
 
 func GetEmbyMediaItemsCount() (int64, error) {

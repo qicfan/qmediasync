@@ -297,6 +297,20 @@ func (s *SyncStrm) Start() error {
 			if s.NewMeta > 0 || s.NewStrm > 0 {
 				s.Sync.Logger.Info("有新的元数据文件或STRM文件，触发刷新Emby媒体库，是否可以刷新受到 Emby设置 - STRM同步完成后刷新媒体库 选项是否开启的影响")
 				models.RefreshEmbyLibraryBySyncPathId(s.SyncPathId)
+
+			}
+			if s.NewStrm > 0 {
+				s.Sync.Logger.Info("准备触发关联的刮削任务")
+				syncPath := models.GetSyncPathById(s.SyncPathId)
+				scrapePathIds := syncPath.GetScrapePathIds()
+				if len(scrapePathIds) > 0 {
+					// 发送异步消息，防止循环引用
+					helpers.Publish(helpers.StrmSyncCompleteEvent, scrapePathIds)
+				} else {
+					s.Sync.Logger.Info("关联的刮削目录为空，跳过触发刮削任务")
+				}
+			} else {
+				s.Sync.Logger.Info("没有新的strm生成，跳过关联的刮削任务")
 			}
 		}()
 		// 处理差异

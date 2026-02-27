@@ -642,6 +642,10 @@ func (sp *ScrapePath) SaveStrmPath(ids []uint) error {
 		tx.Rollback()
 		return err
 	}
+	if len(ids) == 0 {
+		tx.Commit()
+		return nil
+	}
 	// 保存关联的同步目录
 	var scrapeStrmPaths []*ScrapeStrmPath
 	for _, id := range ids {
@@ -727,9 +731,13 @@ func GetScrapePathCategoryById(id uint) *ScrapePathCategory {
 }
 
 // 查询刮削目录列表，不需要分页
-func GetScrapePathes() []*ScrapePath {
+func GetScrapePathes(sourceType string) []*ScrapePath {
 	var scrapePathes []*ScrapePath
-	db.Db.Model(&ScrapePath{}).Order("id DESC").Find(&scrapePathes)
+	if sourceType == "" {
+		db.Db.Model(&ScrapePath{}).Order("id DESC").Find(&scrapePathes)
+	} else {
+		db.Db.Model(&ScrapePath{}).Where("source_type = ?", sourceType).Order("id DESC").Find(&scrapePathes)
+	}
 	if len(scrapePathes) > 0 {
 		// 将video_ext转为字符串数组
 		for _, scrapePath := range scrapePathes {

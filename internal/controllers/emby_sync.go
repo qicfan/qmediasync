@@ -62,6 +62,6 @@ func GetEmbySyncStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, APIResponse[any]{
 		Code:    Success,
 		Message: "获取同步状态成功",
-		Data:    gin.H{"last_sync_time": config.LastSyncTime, "total_items": total, "sync_enabled": config.SyncEnabled, "is_running": emby.IsEmbySyncRunning()},
+		Data:    gin.H{"last_sync_time": config.LastSyncTime, "sync_cron": config.SyncCron, "total_items": total, "sync_enabled": config.SyncEnabled, "is_running": emby.IsEmbySyncRunning()},
 	})
 }

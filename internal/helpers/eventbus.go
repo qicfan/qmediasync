@@ -17,6 +17,8 @@ const (
 	SaveOpenListTokenEvent EventType = "save_open_list_token"
 	// 备份任务定时事件，当定时任务触发时，通知备份任务
 	BackupCronEevent EventType = "backup_cron_event"
+	// strm同步完成后通知刮削任务
+	StrmSyncCompleteEvent EventType = "strm_sync_complete"
 )
 
 // 事件数据
