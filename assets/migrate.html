@@ -407,58 +407,77 @@
                     <a href="https://github.com/qicfan/qmediasync/wiki/Docker%E5%AE%89%E8%A3%85" target="_blank" style="color: #667eea;">
                         https://github.com/qicfan/qmediasync/wiki/Docker安装
                     </a>
+                    <p>如果不明白怎么操作，加QQ群：1057459156 或者Telegram: https://t.me/q115_strm </p>
                 </p>
-                
-                <div class="warning">
-                    <strong>注意：</strong>如果使用内嵌postgres数据库，只能使用bridge模式，不能使用host模式
-                </div>
-
-                <h4 style="margin: 15px 0 10px;">创建数据目录</h4>
-                <pre>mkdir -p /vol1/1000/docker/postgres/data
-mkdir -p /vol1/1000/docker/qmediasync/config
-mkdir -p /vol1/1000/网盘</pre>
 
                 <h4 style="margin: 15px 0 10px;">使用 Docker Compose 和 外置 Postgres容器</h4>
                 
-                <p><strong>没有postgres容器的情况（compose含postgres容器）：</strong></p>
+                <p><strong>修改qms的docker-compose.yml（compose含postgres容器）：</strong></p>
                 <pre>services:
+  # 数据库服务
   postgres:
-    image: postgres:latest
-    container_name: postgres
+    image: postgres:17          # 使用官方 Postgres 镜像
+    container_name: postgres        # 指定容器名称
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "123123"
-      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres          # 数据库用户名
+      POSTGRES_PASSWORD: "123123"      # 数据库密码
+      POSTGRES_DB: postgres            # 默认创建的数据库名
     ports:
-      - "5432:5432"
+      - "15432:5432"                  # 将端口映射到宿主机，便于外部连接，这里映射的是15432端口，如果其他服务要用不要写错
     volumes:
-      - /vol1/1000/docker/postgres/data:/var/lib/postgresql/data
+      - ./postgres/data:/var/lib/postgresql/data # 数据持久化
+    networks:
+      qms:
+        ipv4_address: 172.25.0.3
 
   qmediasync:
     image: qicfan/qmediasync:latest
     container_name: qmediasync
     restart: always
     depends_on:
-      - postgres
+      - postgres                       # 确保 postgres 服务先启动
     ports:
-      - "12333:12333"
-      - "8095:8095"
+      - "12333:12333"                  # Web后台管理端口
+      - "8095:8095"                    # Emby代理端口,302需要访问该端口
+      #- "12332:12332"                 # https Web后台管理端口的
+      #- "8094:8094"                   # https Emby代理端口
     volumes:
-      - /vol1/1000/docker/qmediasync/config:/app/config
-      - /vol1/1000/网盘:/media</pre>
+      - ./config:/app/config           # 必须有，运行日志和数据
+      - /vol1/1000/网盘:/media         # 用来存放strm和元数据的目录，必须有，前后路径都可以自定义
+    networks:
+      qms:
+        ipv4_address: 172.25.0.2
+        
+networks:
+  qms:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16</pre>
 
-                <p><strong>已有postgres容器的情况：</strong></p>
+                <p><strong>单独安装postgres容器：</strong></p>
                 <pre>services:
-  qmediasync:
-    image: qicfan/qmediasync:latest
-    container_name: qmediasync
-    restart: always
+  # 数据库服务
+  postgres:
+    image: postgres:17          # 使用官方 Postgres 镜像
+    container_name: postgres        # 指定容器名称
+    environment:
+      POSTGRES_USER: postgres          # 数据库用户名
+      POSTGRES_PASSWORD: "123123"      # 数据库密码
+      POSTGRES_DB: postgres            # 默认创建的数据库名
     ports:
-      - "12333:12333"
-      - "8095:8095"
+      - "15432:5432"                  # 将端口映射到宿主机，便于外部连接，这里映射的是15432端口，如果其他服务要用不要写错
     volumes:
-      - /vol1/1000/docker/qmediasync/config:/app/config
-      - /vol1/1000/网盘:/media</pre>
+      - ./postgres/data:/var/lib/postgresql/data # 数据持久化
+    networks:
+      qms:
+        ipv4_address: 172.25.0.3
+networks:
+  qms:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16</pre>
 
                 <div class="tip">
                     <strong>提示：</strong>确保postgres容器已经启动并运行正常后再进行下一步。
@@ -473,6 +492,7 @@ mkdir -p /vol1/1000/网盘</pre>
                     <a href="https://github.com/qicfan/qmediasync/wiki/Windows-%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8" target="_blank" style="color: #667eea;">
                         https://github.com/qicfan/qmediasync/wiki/Windows-安装使用
                     </a>
+                    <p>如果不明白怎么操作，加QQ群：1057459156 或者Telegram: https://t.me/q115_strm </p>
                 </p>
                 
                 <h4 style="margin: 15px 0 10px;">Postgres安装方式</h4>
@@ -509,11 +529,19 @@ mkdir -p /vol1/1000/网盘</pre>
             <div class="form-group">
                 <label for="host">主机地址</label>
                 <input type="text" id="host" value="{{if .isWindows}}localhost{{else}}postgres{{end}}" oninput="onInputChanged()">
+                <p style="font-size: 12px; color: #666; margin-top: 4px;">
+                    如果使用第一种包含postgres和qmediasync的compose构建则输入 <code>postgres</code>；<br>
+                    如果使用单独安装postgres的compose则输入 <code>172.25.0.1</code>
+                </p>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="port">端口</label>
                     <input type="number" id="port" value="5432" oninput="onInputChanged()">
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">
+                        如果主机地址是 <code>postgres</code>，端口为 <code>5432</code>；<br>
+                        如果主机地址是 <code>172.25.0.1</code>，端口为 <code>15432</code>
+                    </p>
                 </div>
             </div>
             <div class="form-group">
