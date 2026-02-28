@@ -643,3 +643,20 @@ func ExtractFileChunkToTemp(filePath string, chunkSize int64, chunkIndex int) (s
 
 	return tempFile.Name(), nil
 }
+
+func IsDirEmpty(dirPath string) bool {
+	dir, err := os.Open(dirPath)
+	if err != nil {
+		return false
+	}
+	defer dir.Close()
+
+	// 读取目录下的所有文件
+	names, err := dir.Readdirnames(-1)
+	if err != nil {
+		return false
+	}
+
+	// 如果目录下没有文件或子目录，返回true
+	return len(names) == 0
+}

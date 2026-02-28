@@ -244,10 +244,11 @@ else
     # 创建app目录
     mkdir -p "FNOS/qmediasync-arm64/app"
     
-    # 更新manifest文件中的version字段
+    # 更新manifest文件中的version字段（去掉v前缀）
+    FNOS_VERSION="${TAG#v}"
     if [ -f "FNOS/qmediasync-arm64/manifest" ]; then
-        sed -i "s/^version\s*=.*/version = $TAG/g" "FNOS/qmediasync-arm64/manifest"
-        print_colored "green" "✓ Updated version in FNOS/qmediasync-arm64/manifest to $TAG"
+        sed -i "s/^version\s*=.*/version = $FNOS_VERSION/g" "FNOS/qmediasync-arm64/manifest"
+        print_colored "green" "✓ Updated version in FNOS/qmediasync-arm64/manifest to $FNOS_VERSION"
     else
         print_colored "yellow" "Warning: FNOS/qmediasync-arm64/manifest not found"
     fi
@@ -322,10 +323,11 @@ else
     # 创建app目录
     mkdir -p "FNOS/qmediasync-amd64/app"
     
-    # 更新manifest文件中的version字段
+    # 更新manifest文件中的version字段（去掉v前缀）
+    FNOS_VERSION="${TAG#v}"
     if [ -f "FNOS/qmediasync-amd64/manifest" ]; then
-        sed -i "s/^version\s*=.*/version = $TAG/g" "FNOS/qmediasync-amd64/manifest"
-        print_colored "green" "✓ Updated version in FNOS/qmediasync-amd64/manifest to $TAG"
+        sed -i "s/^version\s*=.*/version = $FNOS_VERSION/g" "FNOS/qmediasync-amd64/manifest"
+        print_colored "green" "✓ Updated version in FNOS/qmediasync-amd64/manifest to $FNOS_VERSION"
     else
         print_colored "yellow" "Warning: FNOS/qmediasync-amd64/manifest not found"
     fi
