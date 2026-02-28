@@ -47,6 +47,7 @@ type SyncStrm struct {
 	Context      context.Context
 	Cancel       context.CancelFunc
 	FullSync     bool // 是否是全量同步
+	IsFile       bool // 是否是文件
 
 	// 路径队列
 	PathWorkerMax int64
@@ -78,7 +79,7 @@ type pathQueueItem struct {
 	Mtime  int64  // 最后修改时间
 }
 
-func NewSyncStrm(account *models.Account, syncPathId uint, sourcePath, sourcePathId, targetPath string, config SyncStrmConfig, IsFullSync bool, lastSyncAt int64) *SyncStrm {
+func NewSyncStrm(account *models.Account, syncPathId uint, sourcePath, sourcePathId, targetPath string, config SyncStrmConfig, IsFullSync bool, lastSyncAt int64, isFile bool) *SyncStrm {
 	var syncDriver driverImpl
 	switch account.SourceType {
 	case models.SourceType115:
@@ -128,6 +129,7 @@ func NewSyncStrm(account *models.Account, syncPathId uint, sourcePath, sourcePat
 		FullSync:      IsFullSync,
 		PathErrChan:   make(chan error, 1),
 		LastSyncAt:    lastSyncAt,
+		IsFile:        isFile,
 	}
 	s.memSyncCache = NewMemorySyncCache(syncPathId)
 	if s.Account == nil {
@@ -175,11 +177,11 @@ func NewSyncStrmFromSyncPath(syncPath *models.SyncPath) *SyncStrm {
 		CheckMetaMtime:        syncPath.GetCheckMetaMtime(),
 		StrmBaseUrl:           syncPath.GetStrmBaseUrl(),
 	}
-	return NewSyncStrm(account, syncPath.ID, syncPath.RemotePath, syncPath.BaseCid, syncPath.LocalPath, config, syncPath.IsFullSync, syncPath.LastSyncAt)
+	return NewSyncStrm(account, syncPath.ID, syncPath.RemotePath, syncPath.BaseCid, syncPath.LocalPath, config, syncPath.IsFullSync, syncPath.LastSyncAt, false)
 }
 
 // 直接同步某个路径（可以是目录，也可以是文件）
-func NewSyncStrmByPath(account *models.Account, sourcePath, sourcePathId string) *SyncStrm {
+func NewSyncStrmByPath(account *models.Account, sourcePath, sourcePathId string, targetPath string, isFile bool) *SyncStrm {
 	config := SyncStrmConfig{
 		EnableDownloadMeta:    int64(models.SettingsGlobal.DownloadMeta),
 		MinVideoSize:          int64(models.SettingsGlobal.MinVideoSize),
@@ -192,7 +194,7 @@ func NewSyncStrmByPath(account *models.Account, sourcePath, sourcePathId string)
 		CheckMetaMtime:        models.SettingsGlobal.CheckMetaMtime,
 		StrmBaseUrl:           models.SettingsGlobal.StrmBaseUrl,
 	}
-	return NewSyncStrm(account, 0, sourcePath, sourcePathId, "", config, false, 0)
+	return NewSyncStrm(account, 0, sourcePath, sourcePathId, targetPath, config, false, 0, isFile)
 }
 
 func (s *SyncStrm) Stop() {
@@ -222,61 +224,70 @@ func (s *SyncStrm) Start() error {
 	s.Sync.Logger.Infof("本次同步的入口目录：%s，目标目录：%s", s.SourcePath, s.TargetPath)
 	s.Sync.Logger.Infof("本次同步使用的STRM配置%+v", s.Config)
 	s.Sync.UpdateStatus(models.SyncStatusInProgress)
-	newPathId, err := s.SyncDriver.GetPathIdByPath(s.Context, s.SourcePath)
-	if err != nil {
-		reason := err.Error()
-		s.Sync.Failed(reason)
-		return errors.New(reason)
-	}
-	if newPathId != s.SourcePathId {
-		s.SourcePathId = newPathId
-	}
-	if !s.checkPathExists(s.TargetPath) {
-		reason := fmt.Sprintf("目标路径 %s 不存在", s.TargetPath)
-		s.Sync.Failed(reason)
-		return errors.New(reason)
-	}
-	// 创建本地根目录
-	localBaseDir := s.GetLocalBaseDir()
-	if !s.checkPathExists(localBaseDir) {
-		if err := os.MkdirAll(localBaseDir, 0777); err != nil {
-			reason := fmt.Sprintf("创建本地根目录失败: %s %v", localBaseDir, err)
+	if s.IsFile {
+		// 如果是文件，直接同步文件
+		s.Sync.Logger.Infof("本次同步的文件：%s，目标目录：%s", s.SourcePath, s.TargetPath)
+		// 直接同步文件
+		// 生成SyncFileCache
+
+		// 验证文件有效性
+	} else {
+		newPathId, err := s.SyncDriver.GetPathIdByPath(s.Context, s.SourcePath)
+		if err != nil {
+			reason := err.Error()
 			s.Sync.Failed(reason)
 			return errors.New(reason)
 		}
-	}
-	switch s.Account.SourceType {
-	case models.SourceType115:
-		s.Start115Sync()
-	case models.SourceTypeBaiduPan:
-		s.StartBaiduPanSync()
-	default:
-		// 其他来源走一套逻辑
-		s.StartOther()
-	}
-	s.Sync.Logger.Info("完成所有路径和文件的处理，检查是否有错误发生")
-	select {
-	case <-s.Context.Done():
-		s.Sync.Failed(fmt.Sprintf("同步任务被取消: %v", s.Context.Err()))
-		return nil
-	case err := <-s.PathErrChan:
-		s.Sync.Failed(fmt.Sprintf("路径队列处理失败: %v", err))
-		return err
-	default:
-	}
-	// 处理完所有路径和文件后，更新最后同步时间
-	if s.SyncPathId > 0 {
-		syncPath := models.GetSyncPathById(s.SyncPathId)
-		if syncPath != nil {
-			syncPath.UpdateLastSync()
+		if newPathId != s.SourcePathId {
+			s.SourcePathId = newPathId
 		}
-	}
-	// 开始添加需要下载的文件到下载队列
-	s.Sync.Logger.Info("开始将要下载的任务添加到下载队列")
-	s.AddDownloadTaskFromMemCache()
-	s.Sync.Logger.Infof("开始对比本地文件和临时表中的文件，删除多余的本地文件")
-	if err := s.compareLocalFilesWithTempTable(); err != nil {
-		return err
+		if !s.checkPathExists(s.TargetPath) {
+			reason := fmt.Sprintf("目标路径 %s 不存在", s.TargetPath)
+			s.Sync.Failed(reason)
+			return errors.New(reason)
+		}
+		// 创建本地根目录
+		localBaseDir := s.GetLocalBaseDir()
+		if !s.checkPathExists(localBaseDir) {
+			if err := os.MkdirAll(localBaseDir, 0777); err != nil {
+				reason := fmt.Sprintf("创建本地根目录失败: %s %v", localBaseDir, err)
+				s.Sync.Failed(reason)
+				return errors.New(reason)
+			}
+		}
+		switch s.Account.SourceType {
+		case models.SourceType115:
+			s.Start115Sync()
+		case models.SourceTypeBaiduPan:
+			s.StartBaiduPanSync()
+		default:
+			// 其他来源走一套逻辑
+			s.StartOther()
+		}
+		s.Sync.Logger.Info("完成所有路径和文件的处理，检查是否有错误发生")
+		select {
+		case <-s.Context.Done():
+			s.Sync.Failed(fmt.Sprintf("同步任务被取消: %v", s.Context.Err()))
+			return nil
+		case err := <-s.PathErrChan:
+			s.Sync.Failed(fmt.Sprintf("路径队列处理失败: %v", err))
+			return err
+		default:
+		}
+		// 处理完所有路径和文件后，更新最后同步时间
+		if s.SyncPathId > 0 {
+			syncPath := models.GetSyncPathById(s.SyncPathId)
+			if syncPath != nil {
+				syncPath.UpdateLastSync()
+			}
+		}
+		// 开始添加需要下载的文件到下载队列
+		s.Sync.Logger.Info("开始将要下载的任务添加到下载队列")
+		s.AddDownloadTaskFromMemCache()
+		s.Sync.Logger.Infof("开始对比本地文件和临时表中的文件，删除多余的本地文件")
+		if err := s.compareLocalFilesWithTempTable(); err != nil {
+			return err
+		}
 	}
 	s.Sync.NewMeta = int(s.NewMeta)
 	s.Sync.NewStrm = int(s.NewStrm)
@@ -284,7 +295,6 @@ func (s *SyncStrm) Start() error {
 	s.Sync.Total = int(s.TotalFile)
 	s.Sync.Complete(s.Account.SourceType)
 	// 如果有syncpathid，则更新最后同步时间
-
 	if !s.TmpSyncPath {
 		// 有syncPathId,将IsFullSync改为false
 		if s.FullSync {
@@ -459,7 +469,11 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 						if len(dirEntries) == 0 {
 							os.Remove(path)
 							s.Sync.Logger.Infof("删除空目录 %s", path)
+						} else {
+							s.Sync.Logger.Infof("本地目录 %s 不是空目录， 跳过删除", path)
 						}
+					} else {
+						s.Sync.Logger.Infof("设置不允许删除空目录， 跳过本地目录 %s", path)
 					}
 					return nil
 				}

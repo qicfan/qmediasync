@@ -7,9 +7,7 @@ RUN apk update
 # 安装依赖
 RUN apk add --no-cache \
     curl \
-    wget \
-    tzdata build-base ffmpeg sudo \
-    postgresql15-jit postgresql15-client bash inotify-tools
+    tzdata ffmpeg sudo bash inotify-tools
 # 安装依赖
 RUN rm -rf /var/cache/apk/*
 # 设置时区

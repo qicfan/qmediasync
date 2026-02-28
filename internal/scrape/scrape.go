@@ -8,6 +8,7 @@ import (
 	"Q115-STRM/internal/scrape/scan"
 	"Q115-STRM/internal/v115open"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -203,5 +204,13 @@ func (s *Scrape) Stop() {
 // 识别错误就回滚所有刮削好的元数据
 func (s *Scrape) Rollback(mediaFile *models.ScrapeMediaFile) error {
 	s.init()
+	if s.scrapeImpl == nil {
+		helpers.AppLogger.Errorf("刮削实现为空")
+		return errors.New("刮削实现为空")
+	}
+	if mediaFile == nil {
+		helpers.AppLogger.Errorf("刮削文件为空")
+		return errors.New("刮削文件为空")
+	}
 	return s.scrapeImpl.Rollback(mediaFile)
 }
