@@ -1,5 +1,5 @@
 # 构建阶段
-FROM qicfan/qms-build-base:latest AS builder
+FROM qicfan/qms-build-base:beta AS builder
 ARG APP_VERSION
 ARG PUBLISH_DATE
 ARG FANART_API_KEY
@@ -20,7 +20,7 @@ RUN CGO_ENABLED=0 go build -ldflags="-s -w -X 'main.Version=${APP_VERSION}' -X '
 
 
 # 运行阶段
-FROM qicfan/qms-build-base:latest
+FROM qicfan/qms-build-base:beta
 # 设置时区
 ENV TZ=Asia/Shanghai
 ENV PATH=/app:$PATH
