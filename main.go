@@ -99,9 +99,9 @@ func (app *App) Stop() {
 	// 关闭定时任务（包含备份定时任务）
 	synccron.GlobalCron.Stop()
 	// 关闭数据库
-	// if app.dbManager != nil {
-	// 	app.dbManager.Stop()
-	// }
+	if app.dbManager != nil {
+		app.dbManager.Stop()
+	}
 	helpers.CloseLogger() // 关闭日志
 	if app.httpServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -174,46 +174,46 @@ func (app *App) StartDatabase(migrateMode bool) error {
 
 	// 初始化数据库配置
 	dbConfig := &database.Config{
-		Mode:     helpers.GlobalConfig.Db.PostgresType,
-		Host:     helpers.GlobalConfig.Db.PostgresConfig.Host,
-		Port:     helpers.GlobalConfig.Db.PostgresConfig.Port,
-		User:     helpers.GlobalConfig.Db.PostgresConfig.User,
-		Password: helpers.GlobalConfig.Db.PostgresConfig.Password,
-		DBName:   helpers.GlobalConfig.Db.PostgresConfig.Database,
-		SSLMode:  "disable",
-		// LogDir:   filepath.Join(helpers.ConfigDir, "postgres", "log"),
-		// DataDir:  filepath.Join(helpers.ConfigDir, "postgres", "data"),
-		// BinaryPath:   db.GetPostgresBinaryPath(helpers.DataDir),
+		Mode:         helpers.GlobalConfig.Db.PostgresType,
+		Host:         helpers.GlobalConfig.Db.PostgresConfig.Host,
+		Port:         helpers.GlobalConfig.Db.PostgresConfig.Port,
+		User:         helpers.GlobalConfig.Db.PostgresConfig.User,
+		Password:     helpers.GlobalConfig.Db.PostgresConfig.Password,
+		DBName:       helpers.GlobalConfig.Db.PostgresConfig.Database,
+		SSLMode:      "disable",
+		LogDir:       filepath.Join(helpers.ConfigDir, "postgres", "log"),
+		DataDir:      filepath.Join(helpers.ConfigDir, "postgres", "data"),
+		BinaryPath:   db.GetPostgresBinaryPath(helpers.DataDir),
 		MaxOpenConns: helpers.GlobalConfig.Db.PostgresConfig.MaxOpenConns,
 		MaxIdleConns: helpers.GlobalConfig.Db.PostgresConfig.MaxIdleConns,
 	}
-	// if dbConfig.Mode == helpers.PostgresTypeEmbedded {
-	// 	// 如果使用内置数据库，则需要启动和初始化数据库
-	// 	app.dbManager = database.NewEmbeddedManager(dbConfig)
-	// 	// 启动数据库
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	// 	defer cancel()
+	if dbConfig.Mode == helpers.PostgresTypeEmbedded {
+		// 如果使用内置数据库，则需要启动和初始化数据库
+		app.dbManager = database.NewEmbeddedManager(dbConfig)
+		// 启动数据库
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
 
-	// 	if err := app.dbManager.Start(ctx); err != nil {
-	// 		return err
-	// 	}
-	// 	db.InitPostgres(app.dbManager.GetDB())
+		if err := app.dbManager.Start(ctx); err != nil {
+			return err
+		}
+		db.InitPostgres(app.dbManager.GetDB())
 
-	// 	// 如果是迁移模式，启动迁移服务
-	// 	if migrateMode {
-	// 		helpers.AppLogger.Info("检测到使用内嵌PostgreSQL，启动迁移服务...")
-	// 		migrateServer := migrate.NewMigrateServer(app.dbManager, dbConfig)
-	// 		if err := migrateServer.Start(); err != nil {
-	// 			helpers.AppLogger.Errorf("启动迁移服务失败: %v", err)
-	// 			return err
-	// 		}
-	// 	}
-	// } else {
-	// 初始化PostgreSQL数据库连接
-	if err := db.ConnectPostgres(dbConfig); err != nil {
-		return err
+		// 如果是迁移模式，启动迁移服务
+		if migrateMode {
+			helpers.AppLogger.Info("检测到使用内嵌PostgreSQL，启动迁移服务...")
+			migrateServer := migrate.NewMigrateServer(app.dbManager, dbConfig)
+			if err := migrateServer.Start(); err != nil {
+				helpers.AppLogger.Errorf("启动迁移服务失败: %v", err)
+				return err
+			}
+		}
+	} else {
+		// 初始化PostgreSQL数据库连接
+		if err := db.ConnectPostgres(dbConfig); err != nil {
+			return err
+		}
 	}
-	// }
 
 	return nil
 }
@@ -272,7 +272,7 @@ func getRootDir() string {
 // 获取用户数据目录
 func getDataAndConfigDir() {
 	var appData string
-	// var dataDir string
+	var dataDir string
 	var configDir string
 	needMk := false
 	if runtime.GOOS == "windows" {
@@ -281,20 +281,20 @@ func getDataAndConfigDir() {
 		if appData == "" {
 			appData = os.Getenv("APPDATA")
 		}
-		// dataDir = filepath.Join(helpers.RootDir, "postgres")      // 数据库目录
+		dataDir = filepath.Join(helpers.RootDir, "postgres")      // 数据库目录
 		oldConfigDir := filepath.Join(appData, AppName, "config") // 配置目录
 		configDir = filepath.Join(helpers.RootDir, "config")      // 配置目录
-		// err := os.MkdirAll(dataDir, 0755)
-		// if err != nil {
-		// 	fmt.Printf("创建数据目录失败: %v\n", err)
-		// 	panic("创建数据目录失败")
-		// }
-		err := os.MkdirAll(configDir, 0755)
+		err := os.MkdirAll(dataDir, 0755)
+		if err != nil {
+			fmt.Printf("创建数据目录失败: %v\n", err)
+			panic("创建数据目录失败")
+		}
+		err = os.MkdirAll(configDir, 0755)
 		if err != nil {
 			fmt.Printf("创建配置目录失败: %v\n", err)
 			panic("创建配置目录失败")
 		}
-		// helpers.DataDir = dataDir
+		helpers.DataDir = dataDir
 		helpers.ConfigDir = configDir
 		if helpers.PathExists(oldConfigDir) {
 			// 迁移旧配置
@@ -314,42 +314,15 @@ func getDataAndConfigDir() {
 		if os.Getenv("TRIM_PKGETC") == "" {
 			appData = helpers.RootDir
 			configDir = filepath.Join(appData, "config") // 配置目录
-			// dataDir = filepath.Join(appData, "postgres") // 数据库目录
+			dataDir = filepath.Join(appData, "postgres") // 数据库目录
 			needMk = true
-			// helpers.DataDir = dataDir
+			helpers.DataDir = dataDir
 			helpers.ConfigDir = configDir
 		} else {
-			// 飞牛应用要将config目录放到应用共享目录内
-			oldConfigDir := os.Getenv("TRIM_PKGETC")
-			configDir = os.Getenv("TRIM_DATA_SHARE_PATHS")
-			if configDir == "" {
-				configDir = oldConfigDir
-				needMk = false
-			} else {
-				configDir = filepath.Join(configDir, "config")
-				needMk = true
-				// 检查是否需要迁移文件
-				// oldConfigDir必须存在且不为空
-				if helpers.PathExists(oldConfigDir) && oldConfigDir != configDir {
-					// 检查oldConfigDir是否为空目录
-					if !helpers.IsDirEmpty(oldConfigDir) {
-						err := os.MkdirAll(configDir, 0755)
-						if err != nil {
-							log.Printf("创建配置目录失败: %v\n", err)
-							panic("创建配置目录失败")
-						}
-						// 迁移旧配置
-						err = helpers.MoveDir(oldConfigDir, configDir)
-						if err != nil {
-							log.Printf("迁移旧配置目录失败: %v\n", err)
-							panic("迁移旧配置目录失败")
-						}
-						needMk = false
-					}
-				}
-			}
-			// dataDir = filepath.Join(configDir, "postgres") // 数据库目录
-			// helpers.DataDir = dataDir
+			configDir = os.Getenv("TRIM_PKGETC")
+			dataDir = filepath.Join(configDir, "postgres") // 数据库目录
+			needMk = false
+			helpers.DataDir = dataDir
 			helpers.ConfigDir = configDir
 		}
 	}
@@ -738,7 +711,7 @@ func initEnv() bool {
 	initTimeZone()        // 设置东8区
 	getDataAndConfigDir() // 获取数据库数据目录和配置文件目录
 	log.Printf("当前工作目录:%s\n", helpers.RootDir)
-	// log.Printf("当前数据目录：%s\n", helpers.DataDir)
+	log.Printf("当前数据目录：%s\n", helpers.DataDir)
 	log.Printf("当前配置文件目录: %s\n", helpers.ConfigDir)
 	ipv4, _ := helpers.GetLocalIP()
 	log.Printf("本机IPv4地址是 <%s>\n", ipv4)

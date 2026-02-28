@@ -80,7 +80,7 @@ var GlobalConfig Config
 var RootDir string
 var ConfigDir string
 
-// var DataDir string
+var DataDir string
 var SharePathes string
 var AccessiblePathes string
 var IsFnOS bool
