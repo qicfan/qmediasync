@@ -1,5 +1,5 @@
 # 构建阶段
-FROM alpine:latest
+FROM alpine:3.20
 # 备份并替换软件源文件为阿里云源
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 # 更新软件包索引（这是关键步骤，不要遗漏）
@@ -7,7 +7,7 @@ RUN apk update
 # 安装依赖
 RUN apk add --no-cache \
     curl \
-    tzdata ffmpeg sudo bash inotify-tools postgresql postgresql-client
+    tzdata ffmpeg sudo bash inotify-tools postgresql15 postgresql15-client
 # 安装依赖
 RUN rm -rf /var/cache/apk/*
 # 设置时区
