@@ -18,5 +18,4 @@ ENV TZ=Asia/Shanghai
 WORKDIR /workspace
 
 # 启动命令
-
 CMD ["/bin/sh"]
