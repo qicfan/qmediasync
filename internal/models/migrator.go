@@ -362,7 +362,7 @@ func Migrate() {
 		migrator.UpdateVersionCode(db.Db)
 	}
 	if migrator.VersionCode == 31 {
-		db.Db.AutoMigrate(SyncPathScrapePath{})
+		db.Db.AutoMigrate(SyncPathScrapePath{}, ScrapeStrmPath{})
 		migrator.UpdateVersionCode(db.Db)
 	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
