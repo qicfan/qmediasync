@@ -292,6 +292,19 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 		return
 	}
 
+	// 或者更直接地调用 RemoveWebhook 方法（如果可用）。但标准方法是设置空的 Webhook。
+	// 检查库的版本，通常通过 bot.RemoveWebhook() 或 bot.Request(DeleteWebhookConfig{}) 实现。
+	// 对于 v5 版本，可以创建一个 DeleteWebhook 的请求配置。
+	// 简单且通用的方式是设置一个空的 Webhook 来覆盖并清除旧的。
+	// 注意：以下方式可能不是最优雅的，但能达到清除目的。
+	// 更准确的做法是：
+	_, err := bot.Client.Request(tgbotapi.DeleteWebhookConfig{}) // 如果库支持
+	if err != nil {
+		AppLogger.Errorf("清除 webhook 时出错 (可能没有设置过): %v", err)
+	} else {
+		AppLogger.Infof("已尝试清除 Webhook。")
+	}
+
 	// 配置轮询参数
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
