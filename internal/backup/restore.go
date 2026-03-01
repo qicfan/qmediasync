@@ -36,8 +36,17 @@ func Restore(filePath string) error {
 	}
 	defer os.RemoveAll(tempDir)
 	// 解压文件
-	if err := helpers.ExtractZip(filePath, tempDir); err != nil {
-		return fmt.Errorf("解压文件失败: %v", err)
+	if zerr := helpers.ExtractZip(filePath, tempDir); zerr != nil {
+		return fmt.Errorf("解压文件失败: %v", zerr)
+	}
+	// 检查tempDir下是否只有一个文件夹
+	entries, err := os.ReadDir(tempDir)
+	if err != nil {
+		return fmt.Errorf("读取临时目录失败: %v", err)
+	}
+	if len(entries) == 1 && entries[0].IsDir() {
+		helpers.AppLogger.Infof("备份文件解压后只有一个文件夹: %s,使用该文件夹做为入口目录", entries[0].Name())
+		tempDir = filepath.Join(tempDir, entries[0].Name())
 	}
 	// 开始还原
 	SetRunningResult("restore", "开始还原数据库", totalTable, count, "", true)
@@ -207,10 +216,14 @@ func restoreFromJsonFile[T any](backupDir string, modelName string, totalTable i
 		var item T
 		if err := json.Unmarshal([]byte(line), &item); err != nil {
 			return fmt.Errorf("解析json失败: %v", err)
+		} else {
+			// helpers.AppLogger.Infof("%s 解析json成功: %d", modelName, restoredCount)
 		}
 		// 插入数据库
 		if err := db.Db.Create(&item).Error; err != nil {
 			return fmt.Errorf("插入数据库失败: %v", err)
+		} else {
+			// helpers.AppLogger.Infof("%s 插入数据库成功: %d", modelName, restoredCount)
 		}
 		restoredCount++
 	}
