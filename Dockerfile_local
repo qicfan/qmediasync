@@ -29,9 +29,11 @@ COPY temp_build/QMediaSync_linux_${TARGETARCH}_exe ./QMediaSync
 COPY web_statics ./web_statics/
 COPY scripts ./scripts/
 COPY icon.ico .
+
 RUN chmod +x /app/scripts/docker-entrypoint.sh
 RUN chmod +x /app/scripts/watch_update.sh
 RUN chmod +x /app/QMediaSync
+RUN chmod +w /app
 
 VOLUME ["/app/config", "/media"]
 # web ui端口
