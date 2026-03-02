@@ -32,6 +32,12 @@ type TelegramMessage struct {
 	ParseMode string `json:"parse_mode,omitempty"`
 }
 
+// CommandResponse 命令响应结构
+type CommandResponse struct {
+	Text        string
+	ReplyMarkup interface{}
+}
+
 // maskToken 掩码token用于日志输出
 func maskToken(token string) string {
 	if len(token) <= 8 {
@@ -286,7 +292,9 @@ func TestTelegramBot(token, chatID, httpProxy string) error {
 		return bot.TestConnection()
 	}
 }
-func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[string]func([]string) string) {
+
+// StartListening 启动监听Telegram命令
+func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[string]func([]string) CommandResponse) {
 	if bot.Client == nil {
 		AppLogger.Errorf("Bot Client 未初始化")
 		return
@@ -347,48 +355,29 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 		}
 
 		// --- 处理命令 ---
-		var responseText string
+		var response CommandResponse
 		if logic, ok := handleCommand[cmd]; ok {
-			responseText = logic(args)
+			response = logic(args)
 		} else {
 			switch cmd {
 			case "start", "help":
-				responseText = `👋 <b>欢迎使用 QMediaSync Bot</b>  
+				response.Text = `👋 <b>欢迎使用 QMediaSync Bot</b>  
 
-					📋 <b>命令列表：</b>  
-					📊/status - <b>查看系统运行状态</b>  
-					🚀/strm_sync - <b>执行全量 STRM 同步</b>  
-					🔄/strm_inc - <b>执行增量 STRM 同步</b>  
-					🎬/scrape - <b>执行刮削任务</b>  
-					🔄🎬/scrape_strm - <b>先刮削后同步</b>  
-					🎬🔄/strm_scrape - <b>先同步后刮削</b>
-					 
-					  
-					⚡ <b>同步模式说明：</b>  
-					• <b>全量模式：</b> "全量同步"操作会删除所有缓存数据（不会删除本地文件），然后执行同步，可以处理所有网盘文件变更  
-					• <b>增量模式：</b> "增量同步"仅会处理新增的文件，无法感知文件夹重命名等操作
-					
-					⚡ <b>同步/刮削命令：</b>  
-					• 不加任何参数执行默认对所有同步/刮削路径执行
-					• 可在命令后增加序号指定执行目录, 序号见同步/刮削目录设置。格式: /scrape #序号
-					
-					⚡ <b>任务序列命令：</b>  
-					• 格式: /scrape_strm #刮削目录序号 #同步目录序号
-					• 格式: /strm_scrape #同步目录序号 #刮削目录序号
-					• 若参数为 #0，则对所有目录执行任务
-					`
-			case "status":
-				responseText = "📊 <b>系统状态</b>\n运行中: OK\n时间: " + time.Now().Format("2006-01-02 15:04:05")
-			default:
-				responseText = "❓ 未知命令，输入 /help 查看帮助"
-			}
-		}
-
-		// 回复结果
-		if responseText != "" {
-			reply := tgbotapi.NewMessage(chatID, responseText)
-			reply.ParseMode = "HTML"
-			if cmd == "start" || cmd == "help" {
+						📋 <b>命令列表：</b>  
+						📊/status - <b>查看系统运行状态</b>  
+						🚀/strm_sync - <b>执行全量 STRM 同步</b>  
+						🔄/strm_inc - <b>执行增量 STRM 同步</b>  
+						🎬/scrape - <b>执行刮削任务</b>  
+						  						
+						⚡ <b>同步模式说明：</b>  
+						• <b>全量模式：</b> "全量同步"操作会删除所有缓存数据（不会删除本地文件），然后执行同步，可以处理所有网盘文件变更  
+						• <b>增量模式：</b> "增量同步"仅会处理新增的文件，无法感知文件夹重命名等操作
+						
+						⚡ <b>同步/刮削命令：</b>  
+						• 不加任何参数执行默认对所有同步/刮削路径执行
+						• 可在命令后增加序号指定执行目录, 序号见同步/刮削目录设置。格式: /scrape #序号
+						`
+				// 构建内联键盘
 				keyboard := tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("📊 系统状态", "status"),
@@ -401,8 +390,24 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 						tgbotapi.NewInlineKeyboardButtonData("🔄🎬 同步后刮削", "strm_scrape"),
 					),
 				)
-				reply.ReplyMarkup = keyboard
+				response.ReplyMarkup = keyboard
+			case "status":
+				response.Text = "📊 <b>系统状态</b>\n运行中: OK\n时间: " + time.Now().Format("2006-01-02 15:04:05")
+			default:
+				response.Text = "❓ 未知命令，输入 /help 查看帮助"
 			}
+		}
+
+		// 回复结果
+		if response.Text != "" {
+			reply := tgbotapi.NewMessage(chatID, response.Text)
+			reply.ParseMode = "HTML"
+
+			// 如果有内联键盘，则添加到回复中
+			if response.ReplyMarkup != nil {
+				reply.ReplyMarkup = response.ReplyMarkup
+			}
+
 			bot.Client.Send(reply)
 		}
 
@@ -420,7 +425,7 @@ func (bot *TelegramBot) SetMenuContent() {
 		{"strm_sync", "🚀 执行 STRM 全量同步"},
 		{"strm_inc", "🔄 执行 STRM 增量同步"},
 		{"scrape", "🎬 执行刮削任务"},
-		{"strm_scrape", "🔄🎬 先同步后刮削"},
+		// {"strm_scrape", "🔄🎬 先同步后刮削"},
 		{"help", "📋 显示功能操作指南"},
 		{"status", "📊 查看系统运行状态"},
 	}

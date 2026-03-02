@@ -35,8 +35,8 @@ type TelegramChannelHandler struct {
 	proxyURL       string // 系统代理URL
 	bot            *helpers.TelegramBot
 	initOnce       sync.Once
-	stopChan       chan struct{}                    // 用于停止信号
-	customCommands map[string]func([]string) string // 保存从外部注入的命令
+	stopChan       chan struct{}                                     // 用于停止信号
+	customCommands map[string]func([]string) helpers.CommandResponse // 保存从外部注入的命令
 }
 
 func NewTelegramChannelHandler(config *notification.TelegramChannelConfig) *TelegramChannelHandler {
@@ -146,7 +146,7 @@ func (h *TelegramChannelHandler) initBot() error {
 	return err
 }
 
-func (h *TelegramChannelHandler) SetCommands(cmds map[string]func([]string) string) {
+func (h *TelegramChannelHandler) SetCommands(cmds map[string]func([]string) helpers.CommandResponse) {
 	h.customCommands = cmds
 }
 

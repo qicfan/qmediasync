@@ -245,7 +245,7 @@ func (m *EnhancedNotificationManager) GetChannels() []notification.NotificationC
 }
 
 // RegisterTelegramCommands 将自定义命令逻辑注入到所有 Telegram 渠道中
-func (m *EnhancedNotificationManager) RegisterTelegramCommands(cmds map[string]func([]string) string) {
+func (m *EnhancedNotificationManager) RegisterTelegramCommands(cmds map[string]func([]string) helpers.CommandResponse) {
 	m.mu.Lock() // 修改内部状态，加写锁
 	defer m.mu.Unlock()
 
