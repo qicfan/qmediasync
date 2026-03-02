@@ -529,11 +529,17 @@ func getStrmPath(args []string) helpers.CommandResponse {
 	// 构建内联键盘
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for _, sp := range syncPaths {
-		button := tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("#%d %s", sp.ID, sp.RemotePath),
-			fmt.Sprintf("strm_inc #%d", sp.ID),
+		row := tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("#%d (增量同步)", sp.ID),
+				fmt.Sprintf("strm_inc #%d", sp.ID),
+			),
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("#%d (全量同步)", sp.ID),
+				fmt.Sprintf("strm_sync #%d", sp.ID),
+			),
 		)
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(button))
+		rows = append(rows, row)
 	}
 
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(rows...)
@@ -591,7 +597,7 @@ func getScrapePath(args []string) helpers.CommandResponse {
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for _, sp := range scrapePaths {
 		button := tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("#%d %s", sp.ID, sp.SourcePath),
+			fmt.Sprintf("#%d (执行刮削)", sp.ID),
 			fmt.Sprintf("scrape #%d", sp.ID),
 		)
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(button))

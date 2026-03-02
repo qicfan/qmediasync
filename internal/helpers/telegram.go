@@ -371,31 +371,33 @@ func (bot *TelegramBot) StartListening(ctx context.Context, handleCommand map[st
 			case "start", "help":
 				response.Text = `👋 <b>欢迎使用 QMediaSync Bot</b>  
 
-						📋 <b>命令列表：</b>  
-						📊/status - <b>查看系统运行状态</b>  
-						🚀/strm_sync - <b>执行全量 STRM 同步</b>  
-						🔄/strm_inc - <b>执行增量 STRM 同步</b>  
-						🎬/scrape - <b>执行刮削任务</b>  
-						  						
-						⚡ <b>同步模式说明：</b>  
-						• <b>全量模式：</b> "全量同步"操作会删除所有缓存数据（不会删除本地文件），然后执行同步，可以处理所有网盘文件变更  
-						• <b>增量模式：</b> "增量同步"仅会处理新增的文件，无法感知文件夹重命名等操作
-						
-						⚡ <b>同步/刮削命令：</b>  
-						• 不加任何参数执行默认对所有同步/刮削路径执行
-						• 可在命令后增加序号指定执行目录, 序号见同步/刮削目录设置。格式: /scrape #序号
-						`
+							📋 <b>命令列表：</b>  
+							📊/status - <b>查看系统运行状态</b>  
+							🚀/strm_sync - <b>执行全量 STRM 同步</b>  
+							🔄/strm_inc - <b>执行增量 STRM 同步</b>  
+							🎬/scrape - <b>执行刮削任务</b>  
+							📋/get_strm_path - <b>查看 STRM 同步路径</b>  
+							🧹/get_scrape_path - <b>查看刮削路径</b>  
+							   							
+							⚡ <b>同步模式说明：</b>  
+							• <b>全量模式：</b> "全量同步"操作会删除所有缓存数据（不会删除本地文件），然后执行同步，可以处理所有网盘文件变更  
+							• <b>增量模式：</b> "增量同步"仅会处理新增的文件，无法感知文件夹重命名等操作
+							
+							⚡ <b>同步/刮削命令：</b>  
+							• 不加任何参数执行默认对所有同步/刮削路径执行
+							• 可在命令后增加序号指定执行目录, 序号见同步/刮削目录设置。格式: /scrape #序号
+							`
 				// 构建内联键盘
 				keyboard := tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("📊 系统状态", "status"),
 						tgbotapi.NewInlineKeyboardButtonData("🚀 全量同步", "strm_sync"),
 						tgbotapi.NewInlineKeyboardButtonData("🔄 增量同步", "strm_inc"),
+						tgbotapi.NewInlineKeyboardButtonData("🎬 刮削任务", "scrape"),
 					),
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("🎬 刮削任务", "scrape"),
-						tgbotapi.NewInlineKeyboardButtonData("🎬🔄 刮削后同步", "scrape_strm"),
-						tgbotapi.NewInlineKeyboardButtonData("🔄🎬 同步后刮削", "strm_scrape"),
+						tgbotapi.NewInlineKeyboardButtonData("📋 同步路径", "get_strm_path"),
+						tgbotapi.NewInlineKeyboardButtonData("🧹 刮削路径", "get_scrape_path"),
+						tgbotapi.NewInlineKeyboardButtonData("📊📊 系统状态", "status"),
 					),
 				)
 				response.ReplyMarkup = keyboard
@@ -434,6 +436,8 @@ func (bot *TelegramBot) SetMenuContent() {
 		{"strm_sync", "🚀 执行 STRM 全量同步"},
 		{"strm_inc", "🔄 执行 STRM 增量同步"},
 		{"scrape", "🎬 执行刮削任务"},
+		{"get_strm_path", "📋 查看 STRM 同步路径"},
+		{"get_scrape_path", "🧹 查看刮削路径"},
 		// {"strm_scrape", "🔄🎬 先同步后刮削"},
 		{"help", "📋 显示功能操作指南"},
 		{"status", "📊 查看系统运行状态"},
