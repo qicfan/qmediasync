@@ -249,6 +249,7 @@ func (i *IdTvShowImpl) extractInfoByREV2(mediaFile *models.ScrapeMediaFile) (*he
 	filename := filepath.Base(mediaFile.VideoFilename)
 	// 从文件名中获取媒体信息
 	info := helpers.ExtractMediaInfoRe(filename, false, false, i.scrapePath.VideoExtList, i.scrapePath.DeleteKeyword...)
+	helpers.AppLogger.Infof("正则从文件名中提取信息，文件名 %s， 提取结果 %+v", filename, info)
 	info, err := i.find(mediaFile, info.TmdbId, info.Name, info.Year)
 	if err == nil {
 		return info, nil

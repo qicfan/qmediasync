@@ -52,6 +52,7 @@ type updateEmbyConfigRequest struct {
 	EnableAuth              int    `json:"enable_auth"`
 	SyncEnabled             int    `json:"sync_enabled"`
 	SyncCron                string `json:"sync_cron"`
+	// DeleteNetdiskLibrary    []string `json:"delete_netdisk_library"` // 允许联动删除的媒体库ID
 }
 
 // UpdateEmbyConfig 更新Emby配置
@@ -108,32 +109,20 @@ func UpdateEmbyConfig(c *gin.Context) {
 	config.EnableAuth = req.EnableAuth
 	config.SyncEnabled = req.SyncEnabled
 	config.SyncCron = req.SyncCron
+	// if req.DeleteNetdiskLibrary != nil {
+	// 	config.DeleteNetdiskLibrary = strings.Join(req.DeleteNetdiskLibrary, ",")
+	// }
 	if config.SyncEnabled == 0 {
 		config.EnableDeleteNetdisk = 0
 		config.EnableRefreshLibrary = 0
+		// config.DeleteNetdiskLibrary = ""
 	}
 
-	if isNew {
-		if err := db.Db.Create(config).Error; err != nil {
-			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "创建Emby配置失败: " + err.Error()})
-			return
-		}
-	} else {
-		updates := map[string]interface{}{
-			"emby_url":                  config.EmbyUrl,
-			"emby_api_key":              config.EmbyApiKey,
-			"enable_delete_netdisk":     config.EnableDeleteNetdisk,
-			"enable_refresh_library":    config.EnableRefreshLibrary,
-			"enable_media_notification": config.EnableMediaNotification,
-			"enable_extract_media_info": config.EnableExtractMediaInfo,
-			"enable_auth":               config.EnableAuth,
-			"sync_enabled":              config.SyncEnabled,
-		}
-		if err := config.Update(updates); err != nil {
-			c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "更新Emby配置失败: " + err.Error()})
-			return
-		}
+	if err := db.Db.Save(config).Error; err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "创建Emby配置失败: " + err.Error()})
+		return
 	}
+
 	if oldSyncEnabled != config.SyncEnabled || oldSyncCron != config.SyncCron {
 		// 同步状态改变，需要重新加载cron
 		synccron.InitCron()

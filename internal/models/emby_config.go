@@ -15,6 +15,7 @@ type EmbyConfig struct {
 	SyncEnabled             int    `json:"sync_enabled" gorm:"default:1"`
 	SyncCron                string `json:"sync_cron" gorm:"type:varchar(100);default:'*/5 * * * *'"`
 	LastSyncTime            int64  `json:"last_sync_time" gorm:"default:0"`
+	// DeleteNetdiskLibrary    string `json:"delete_netdisk_library" gorm:"type:varchar(200);default:''"` // 允许联动删除的媒体库ID，用,分隔, 空表示允许全部
 }
 
 func (*EmbyConfig) TableName() string {

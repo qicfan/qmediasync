@@ -194,6 +194,11 @@ func Webhook(ctx *gin.Context) {
 		if event.Item.Type == "Movie" || event.Item.Type == "Episode" || event.Item.Type == "Season" || event.Item.Type == "Series" {
 			// 触发联动删除
 			if models.GlobalEmbyConfig != nil && models.GlobalEmbyConfig.EnableDeleteNetdisk == 1 {
+				// 检查是否允许删除媒体库
+				// if !models.IsDeleteNetdiskLibraryEnabled(event.) {
+				// 	helpers.AppLogger.Infof("Emby媒体库 %s 未配置允许删除，跳过删除", event.Item.LibraryId)
+				// 	return
+				// }
 				switch event.Item.Type {
 				case "Movie":
 					// 电影：在网盘中将视频文件的父目录一起删除
