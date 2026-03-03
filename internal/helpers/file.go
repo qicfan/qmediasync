@@ -660,3 +660,28 @@ func IsDirEmpty(dirPath string) bool {
 	// 如果目录下没有文件或子目录，返回true
 	return len(names) == 0
 }
+
+// SafeJoin 安全地连接基础路径和用户输入的路径
+func SafeJoin(baseDir, userInput string) (string, error) {
+	// 清理用户输入
+	cleanInput := filepath.Clean(userInput)
+
+	// 移除开头的路径分隔符
+	cleanInput = strings.TrimPrefix(cleanInput, string(filepath.Separator))
+
+	// 如果是Windows，也处理反斜杠
+	if filepath.Separator == '\\' {
+		cleanInput = strings.TrimPrefix(cleanInput, "/")
+	}
+
+	// 连接路径
+	fullPath := filepath.Join(baseDir, cleanInput)
+
+	// 验证最终路径是否仍在基础目录内
+	if !strings.HasPrefix(fullPath, filepath.Clean(baseDir)+string(filepath.Separator)) &&
+		fullPath != filepath.Clean(baseDir) {
+		return "", fmt.Errorf("路径遍历攻击 detected: %s", userInput)
+	}
+
+	return fullPath, nil
+}

@@ -145,7 +145,11 @@ func DownloadLogFile(c *gin.Context) {
 	}
 
 	// 拼接完整日志文件路径
-	fullLogPath := filepath.Join(helpers.ConfigDir, "logs", logPath)
+	fullLogPath, err := helpers.SafeJoin(filepath.Join(helpers.ConfigDir, "logs"), logPath)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("路径遍历攻击 detected: %v", err)})
+		return
+	}
 
 	// 检查文件是否存在
 	if _, err := os.Stat(fullLogPath); os.IsNotExist(err) {

@@ -806,7 +806,12 @@ func ScrapeTmpImage(c *gin.Context) {
 	} else {
 		imageRootPath = filepath.Join(imageRootPath, "电影或其他")
 	}
-	imagePath = filepath.Join(imageRootPath, imagePath)
+	var err error
+	imagePath, err = helpers.SafeJoin(imageRootPath, imagePath)
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "路径遍历攻击 detected: " + err.Error(), Data: nil})
+		return
+	}
 	// 读取文件
 	file, err := os.Open(imagePath)
 	if err != nil {

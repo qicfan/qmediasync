@@ -544,7 +544,26 @@ func UpdateFNPath(c *gin.Context) {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "参数错误", Data: nil})
 		return
 	}
-	helpers.AccessiblePathes = req.Path
+	// 用冒号分隔路径
+	paths := strings.Split(req.Path, ":")
+	// 对每个路径进行清理
+	sysPathes := []string{"/dev", "/usr", "/etc", "/var", "/bin", "/lib", "/proc", "/run", "/boot", "/sbin", "/sys", "/srv", "/lib64"}
+	safePathes := make([]string, 0)
+mainloop:
+	for _, path := range paths {
+		p := filepath.Clean(path)
+		sp := ""
+		for _, sysPath := range sysPathes {
+			if strings.HasPrefix(p, sysPath) {
+				continue mainloop
+			}
+			sp = p
+		}
+		if sp != "" {
+			safePathes = append(safePathes, sp)
+		}
+	}
+	helpers.AccessiblePathes = strings.Join(safePathes, ":")
 	helpers.AppLogger.Infof("更新飞牛有权限的目录为: %s", req.Path)
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "更新目录成功", Data: nil})
 }
