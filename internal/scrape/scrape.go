@@ -161,7 +161,7 @@ func (s *Scrape) Start() bool {
 		case <-s.ctx.Done():
 			return
 		default:
-			s.ctxCancel() // 通知其他相关协程都退出
+			// s.ctxCancel() // 通知其他相关协程都退出
 		}
 	}()
 	// 把刮削中的全部改成待刮削
@@ -191,7 +191,7 @@ func (s *Scrape) Start() bool {
 		return false
 	}
 	helpers.AppLogger.Infof("刮削整理 #%d %s 成功", s.scrapePath.ID, s.scrapePath.SourcePath)
-	s.ctxCancel() // 通知其他相关协程都退出
+	// s.ctxCancel() // 通知其他相关协程都退出
 	return true
 }
 

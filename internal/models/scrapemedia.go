@@ -508,7 +508,7 @@ func (sm *ScrapeMediaFile) RemoveTvShowTmpFile(sp *ScrapePath, task *DbUploadTas
 	// 查询电视剧下的所有集
 	// 检查是否有未完成整理的集
 	// 检查是否全部上传完成
-	episodeMediaFiles := GetAllEpisodeByTvshow(sm.MediaId, sm.BatchNo)
+	episodeMediaFiles := GetAllEpisodeByTvshow(sm.TmdbId, sm.BatchNo)
 	helpers.AppLogger.Infof("电视剧 %s 共包含 %d 集", sm.Name, len(episodeMediaFiles))
 	// 使用集ID查询上传任务是否完成
 	allUploaded := true
@@ -1393,9 +1393,9 @@ func GetUnFinishEpisodeCount(mediaFile *ScrapeMediaFile) int64 {
 	return total
 }
 
-func GetAllEpisodeByTvshow(mediaId uint, batchNo string) []*ScrapeMediaFile {
+func GetAllEpisodeByTvshow(tmdbId int64, batchNo string) []*ScrapeMediaFile {
 	var scrapeMediaFiles []*ScrapeMediaFile
-	db.Db.Model(&ScrapeMediaFile{}).Where("media_id = ? AND batch_no = ?", mediaId, batchNo).Find(&scrapeMediaFiles)
+	db.Db.Model(&ScrapeMediaFile{}).Where("tmdb_id = ? AND batch_no = ?", tmdbId, batchNo).Find(&scrapeMediaFiles)
 	return scrapeMediaFiles
 }
 

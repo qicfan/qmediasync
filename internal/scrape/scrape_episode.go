@@ -164,7 +164,7 @@ func (t *tvShowScrapeImpl) FinishEpisode(mediaFile *models.ScrapeMediaFile) {
 	// 电视剧所有的集已经全部完成，发送通知，删除来源
 	// 检查同批次的所有集是否都完成
 	// 检查是否已整理完成
-	sameBatchMediaFiles := models.GetAllEpisodeByTvshow(mediaFile.MediaId, mediaFile.BatchNo)
+	sameBatchMediaFiles := models.GetAllEpisodeByTvshow(mediaFile.TmdbId, mediaFile.BatchNo)
 	s := true
 	eList := make(map[int][]int, 0)
 	for _, f := range sameBatchMediaFiles {
@@ -218,10 +218,10 @@ func (t *tvShowScrapeImpl) FinishEpisode(mediaFile *models.ScrapeMediaFile) {
 			}
 		}
 	}
-	// 删除临时目录
-	if mediaFile.SourceType == models.SourceTypeLocal {
-		t.RemoveEpisodeTmpFiles(mediaFile)
-	}
+	// // 删除临时目录
+	// if mediaFile.SourceType == models.SourceTypeLocal {
+	// 	t.RemoveEpisodeTmpFiles(mediaFile)
+	// }
 	if mediaFile.ScrapeType == models.ScrapeTypeOnly || mediaFile.RenameType != models.RenameTypeMove {
 		// 如果仅刮削，跳过
 		// 如果不是移动模式，跳过

@@ -18,6 +18,7 @@ import (
 
 var GlobalCron *cron.Cron
 var SyncCron *cron.Cron
+var TokenCron *cron.Cron
 
 func StartSyncCron() {
 	// 查询所有同步目录
@@ -226,10 +227,15 @@ func StartScrapeRollbackCron() {
 }
 
 func InitTokenCron() {
-	GlobalCron.AddFunc("*/2 * * * *", func() {
+	if TokenCron != nil {
+		TokenCron.Stop()
+	}
+	TokenCron = cron.New()
+	TokenCron.AddFunc("*/2 * * * *", func() {
 		// helpers.AppLogger.Info("定时刷新115的访问凭证")
 		RefreshOAuthAccessToken()
 	})
+	TokenCron.Start()
 }
 
 // 初始化定时任务
