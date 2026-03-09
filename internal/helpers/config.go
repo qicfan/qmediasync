@@ -44,6 +44,7 @@ type PostgresConfig struct {
 	User         string `yaml:"user"`
 	Password     string `yaml:"password"`
 	Database     string `yaml:"database"`
+	SSL          bool   `yaml:"ssl"`
 	MaxOpenConns int    `yaml:"maxOpenConns"`
 	MaxIdleConns int    `yaml:"maxIdleConns"`
 }

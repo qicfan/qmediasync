@@ -187,6 +187,9 @@ func (app *App) StartDatabase(migrateMode bool) error {
 		MaxOpenConns: helpers.GlobalConfig.Db.PostgresConfig.MaxOpenConns,
 		MaxIdleConns: helpers.GlobalConfig.Db.PostgresConfig.MaxIdleConns,
 	}
+	if helpers.GlobalConfig.Db.PostgresConfig.SSL {
+		dbConfig.SSLMode = "require"
+	}
 	if dbConfig.Mode == helpers.PostgresTypeEmbedded {
 		// 如果使用内置数据库，则需要启动和初始化数据库
 		app.dbManager = database.NewEmbeddedManager(dbConfig)
