@@ -834,6 +834,42 @@ func (sm *ScrapeMediaFile) ReScrape(name string, year int, tmdbId int64, season 
 }
 
 func (sm *ScrapeMediaFile) ExtractSeasonEpisode(sp *ScrapePath) error {
+	// 新增：先尝试使用多层级路径提取（参考 MoviePilot）
+	if sm.EpisodeNumber == -1 || sm.SeasonNumber == -1 {
+		// 构建完整路径用于多层级提取
+		var fullPath string
+		if sm.Path != "" {
+			fullPath = filepath.Join(sm.Path, sm.VideoFilename)
+		} else {
+			fullPath = filepath.Join(sm.TvshowPath, sm.VideoFilename)
+		}
+		
+		// 使用增强的多层级路径提取
+		info := helpers.ExtractMetadataFromPath(fullPath, false, sp.VideoExtList, sp.DeleteKeyword...)
+		if info != nil {
+			// 如果从多层级提取到了季集信息，优先使用
+			if info.Season != -1 && sm.SeasonNumber == -1 {
+				sm.SeasonNumber = info.Season
+				helpers.AppLogger.Infof("从多层级路径提取到季数: %s %d", sm.VideoFilename, sm.SeasonNumber)
+			}
+			if info.Episode != -1 && sm.EpisodeNumber == -1 {
+				sm.EpisodeNumber = info.Episode
+				helpers.AppLogger.Infof("从多层级路径提取到集数: %s %d", sm.VideoFilename, sm.EpisodeNumber)
+			}
+			// 如果还提取到了名称、年份等信息，也填充
+			if sm.Name == "" && info.Name != "" {
+				sm.Name = info.Name
+			}
+			if sm.Year == 0 && info.Year != 0 {
+				sm.Year = info.Year
+			}
+			if sm.TmdbId == 0 && info.TmdbId != 0 {
+				sm.TmdbId = info.TmdbId
+			}
+		}
+	}
+	
+	// 如果仍然没有提取到季集信息，使用原有逻辑
 	if sm.EpisodeNumber == -1 {
 		// 先识别季集
 		info := helpers.ExtractMediaInfoRe(sm.VideoFilename, false, true, sp.VideoExtList, sp.DeleteKeyword...)
