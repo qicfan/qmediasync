@@ -1,6 +1,6 @@
 module Q115-STRM
 
-go 1.25
+go 1.19
 
 require (
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.3
