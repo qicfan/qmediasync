@@ -470,6 +470,9 @@ func (h *CustomWebhookChannelHandler) sendPOST(ctx context.Context, n *notificat
 		return fmt.Errorf("模板渲染失败: %v", err)
 	}
 
+	// 添加调试日志
+	helpers.AppLogger.Debugf("[Webhook] 请求体: %s", bodyStr)
+
 	// 处理 query 鉴权（在 URL 上追加）
 	endpoint := h.config.Endpoint
 	if strings.ToLower(strings.TrimSpace(h.config.AuthType)) == "query" && strings.TrimSpace(h.config.AuthQueryKey) != "" {
@@ -502,6 +505,10 @@ func (h *CustomWebhookChannelHandler) sendPOST(ctx context.Context, n *notificat
 	defer resp.Body.Close()
 
 	respBody, _ := io.ReadAll(resp.Body)
+
+	// 添加响应日志
+	helpers.AppLogger.Debugf("[Webhook] 响应: status=%d, body=%s", resp.StatusCode, string(respBody))
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("POST 返回状态异常: status=%d, body=%s", resp.StatusCode, string(respBody))
 	}
@@ -513,6 +520,9 @@ func (h *CustomWebhookChannelHandler) sendGET(ctx context.Context, n *notificati
 	if err != nil {
 		return fmt.Errorf("模板渲染失败: %v", err)
 	}
+
+	// 添加调试日志
+	helpers.AppLogger.Debugf("[Webhook] 请求体: %s", bodyStr)
 
 	u, err := url.Parse(h.config.Endpoint)
 	if err != nil {
@@ -546,6 +556,10 @@ func (h *CustomWebhookChannelHandler) sendGET(ctx context.Context, n *notificati
 	defer resp.Body.Close()
 
 	respBody, _ := io.ReadAll(resp.Body)
+
+	// 添加响应日志
+	helpers.AppLogger.Debugf("[Webhook] 响应: status=%d, body=%s", resp.StatusCode, string(respBody))
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("GET 返回状态异常: status=%d, body=%s", resp.StatusCode, string(respBody))
 	}
@@ -555,45 +569,137 @@ func (h *CustomWebhookChannelHandler) sendGET(ctx context.Context, n *notificati
 func (h *CustomWebhookChannelHandler) renderTemplate(n *notification.Notification) (string, string, error) {
 	format := strings.ToLower(strings.TrimSpace(h.config.Format))
 	tpl := h.config.Template
-	title := n.Title
-	content := n.Content
-	timestamp := n.Timestamp.Format("2006-01-02 15:04:05")
-	image := n.Image
+
+	// 准备变量（处理空值和特殊字符）
+	vars := map[string]string{
+		"title":     sanitizeValue(n.Title, 256),
+		"content":   sanitizeValue(n.Content, 4096),
+		"timestamp": n.Timestamp.Format("2006-01-02 15:04:05"),
+		"image":     n.Image,
+	}
 
 	switch format {
 	case "json":
-		// 对字符串进行 JSON 转义，避免破坏 JSON 结构
-		escape := func(s string) string {
-			b, _ := json.Marshal(s)
-			if len(b) >= 2 {
-				return string(b[1 : len(b)-1])
-			}
-			return s
-		}
-		tpl = strings.ReplaceAll(tpl, "{{title}}", escape(title))
-		tpl = strings.ReplaceAll(tpl, "{{content}}", escape(content))
-		tpl = strings.ReplaceAll(tpl, "{{timestamp}}", escape(timestamp))
-		tpl = strings.ReplaceAll(tpl, "{{image}}", escape(image))
-		return tpl, "application/json", nil
+		// 智能处理 JSON 模板
+		return renderJSONTemplate(tpl, vars), "application/json", nil
 
 	case "form":
 		// 对值进行 URL 编码
 		encode := url.QueryEscape
-		tpl = strings.ReplaceAll(tpl, "{{title}}", encode(title))
-		tpl = strings.ReplaceAll(tpl, "{{content}}", encode(content))
-		tpl = strings.ReplaceAll(tpl, "{{timestamp}}", encode(timestamp))
-		tpl = strings.ReplaceAll(tpl, "{{image}}", encode(image))
+		tpl = strings.ReplaceAll(tpl, "{{title}}", encode(vars["title"]))
+		tpl = strings.ReplaceAll(tpl, "{{content}}", encode(vars["content"]))
+		tpl = strings.ReplaceAll(tpl, "{{timestamp}}", encode(vars["timestamp"]))
+		tpl = strings.ReplaceAll(tpl, "{{image}}", encode(vars["image"]))
 		return tpl, "application/x-www-form-urlencoded", nil
 
 	case "text", "":
-		tpl = strings.ReplaceAll(tpl, "{{title}}", title)
-		tpl = strings.ReplaceAll(tpl, "{{content}}", content)
-		tpl = strings.ReplaceAll(tpl, "{{timestamp}}", timestamp)
-		tpl = strings.ReplaceAll(tpl, "{{image}}", image)
+		tpl = strings.ReplaceAll(tpl, "{{title}}", vars["title"])
+		tpl = strings.ReplaceAll(tpl, "{{content}}", vars["content"])
+		tpl = strings.ReplaceAll(tpl, "{{timestamp}}", vars["timestamp"])
+		tpl = strings.ReplaceAll(tpl, "{{image}}", vars["image"])
 		return tpl, "text/plain; charset=utf-8", nil
 
 	default:
 		return "", "", fmt.Errorf("不支持的模板格式: %s", format)
+	}
+}
+
+// sanitizeValue 清理和限制值
+func sanitizeValue(value string, maxLen int) string {
+	// 移除控制字符（保留换行、回车、制表符）
+	value = strings.Map(func(r rune) rune {
+		if r < 32 && r != '\n' && r != '\r' && r != '\t' {
+			return -1
+		}
+		return r
+	}, value)
+
+	// 限制长度
+	if len(value) > maxLen {
+		value = value[:maxLen-3] + "..."
+	}
+
+	return value
+}
+
+// renderJSONTemplate 渲染 JSON 模板（智能处理空值）
+func renderJSONTemplate(template string, vars map[string]string) string {
+	// 1. 对字符串进行 JSON 转义，避免破坏 JSON 结构
+	escape := func(s string) string {
+		b, _ := json.Marshal(s)
+		if len(b) >= 2 {
+			return string(b[1 : len(b)-1])
+		}
+		return s
+	}
+
+	// 2. 先进行变量替换
+	result := template
+	for key, value := range vars {
+		result = strings.ReplaceAll(result, "{{"+key+"}}", escape(value))
+	}
+
+	// 3. 解析为 JSON 对象
+	var jsonObj interface{}
+	if err := json.Unmarshal([]byte(result), &jsonObj); err != nil {
+		helpers.AppLogger.Debugf("[Webhook] JSON 模板解析失败: %v, 使用原始替换", err)
+		return result
+	}
+
+	// 4. 递归清理空值
+	cleanedObj := cleanEmptyValues(jsonObj)
+
+	// 5. 重新序列化
+	cleanedBytes, err := json.Marshal(cleanedObj)
+	if err != nil {
+		helpers.AppLogger.Debugf("[Webhook] JSON 序列化失败: %v, 使用原始替换", err)
+		return result
+	}
+
+	cleanedResult := string(cleanedBytes)
+	helpers.AppLogger.Debugf("[Webhook] JSON 清理完成: 原长度=%d, 清理后长度=%d", len(result), len(cleanedResult))
+
+	return cleanedResult
+}
+
+// cleanEmptyValues 递归清理空值（Discord 特殊处理）
+func cleanEmptyValues(obj interface{}) interface{} {
+	switch v := obj.(type) {
+	case map[string]interface{}:
+		result := make(map[string]interface{})
+		for key, value := range v {
+			cleaned := cleanEmptyValues(value)
+
+			// Discord 特殊处理：如果 image.url 为空，移除整个 image 对象
+			if key == "image" {
+				if imgMap, ok := cleaned.(map[string]interface{}); ok {
+					if url, exists := imgMap["url"]; exists && url == "" {
+						continue // 跳过空的 image 字段
+					}
+				}
+			}
+
+			// 跳过其他空值
+			if cleaned == nil || cleaned == "" {
+				continue
+			}
+
+			result[key] = cleaned
+		}
+		return result
+
+	case []interface{}:
+		result := make([]interface{}, 0)
+		for _, value := range v {
+			cleaned := cleanEmptyValues(value)
+			if cleaned != nil && cleaned != "" {
+				result = append(result, cleaned)
+			}
+		}
+		return result
+
+	default:
+		return obj
 	}
 }
 
