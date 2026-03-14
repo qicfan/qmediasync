@@ -91,6 +91,11 @@ type ScrapePath struct {
 	EnableFanartTv        bool                         `json:"enable_fanart_tv" form:"enable_fanart_tv"`                 // 是否启用 fanart.tv，开启时会从 fanart.tv 下载高清图
 	IsScraping            bool                         `json:"is_scraping" form:"is_scraping"`                           // 是否正在刮削
 	MaxThreads            int                          `json:"max_threads" form:"max_threads"`                           // 刮削最大线程数，默认值为5
+	// 自定义定时任务相关字段
+	CronExpression  string    `json:"cron_expression" form:"cron_expression"`     // Cron 表达式（如：0 3 * * *）
+	CronDescription string    `json:"cron_description" form:"cron_description"`   // Cron 表达式描述（如：每天 3 点）
+	LastCronRun     time.Time `json:"last_cron_run" form:"last_cron_run"`          // 上次执行时间
+	NextCronRun     time.Time `json:"next_cron_run" form:"next_cron_run"`          // 下次执行时间
 	V115Client            *v115open.OpenClient         `json:"-" gorm:"-"`                                               // 115客户端
 	BaiduPanClient        *baidupan.Client             `json:"-" gorm:"-"`                                               // 百度网盘客户端
 	OpenListClient        *openlist.Client             `json:"-" gorm:"-"`                                               // openlist客户端
@@ -856,4 +861,73 @@ func GetRelatStrmPathByScrapePathID(id uint) []*ScrapeStrmPath {
 
 func GetTmdbImageUrl(path string) string {
 	return fmt.Sprintf("%s/t/p/original%s", GlobalScrapeSettings.GetTmdbImageUrl(), path)
+}
+
+// UpdateCronExpression 更新Cron表达式
+func (sp *ScrapePath) UpdateCronExpression(cronExpr string) error {
+	// 验证Cron表达式
+	if cronExpr != "" && !ValidateCronExpression(cronExpr) {
+		return fmt.Errorf("invalid cron expression: %s", cronExpr)
+	}
+
+	sp.CronExpression = cronExpr
+	sp.CronDescription = ParseCronDescription(cronExpr)
+
+	return db.Db.Model(&ScrapePath{}).Where("id = ?", sp.ID).Updates(map[string]interface{}{
+		"cron_expression":  sp.CronExpression,
+		"cron_description": sp.CronDescription,
+	}).Error
+}
+
+// ValidateCronExpression 验证Cron表达式
+func ValidateCronExpression(cronExpr string) bool {
+	if cronExpr == "" {
+		return true
+	}
+	// 简单验证：检查是否为5个字段
+	parts := strings.Fields(cronExpr)
+	if len(parts) != 5 {
+		return false
+	}
+	// TODO: 可以添加更详细的验证逻辑
+	return true
+}
+
+// ParseCronDescription 解析Cron表达式为人类可读的描述
+func ParseCronDescription(cronExpr string) string {
+	if cronExpr == "" {
+		return ""
+	}
+
+	parts := strings.Fields(cronExpr)
+	if len(parts) != 5 {
+		return "无效的Cron表达式"
+	}
+
+	minute := parts[0]
+	hour := parts[1]
+	day := parts[2]
+	month := parts[3]
+	weekday := parts[4]
+
+	// 常见模式匹配
+	switch {
+	case cronExpr == "0 3 * * *":
+		return "每天凌晨 3 点"
+	case cronExpr == "0 */2 * * *":
+		return "每 2 小时"
+	case cronExpr == "0 3 * * 1":
+		return "每周一凌晨 3 点"
+	case cronExpr == "0 0 1 * *":
+		return "每月 1 号凌晨"
+	case cronExpr == "0 3 * * 1-5":
+		return "工作日凌晨 3 点"
+	case minute == "0" && hour != "*" && day == "*" && month == "*" && weekday == "*":
+		return fmt.Sprintf("每天 %s 点", hour)
+	case minute == "0" && strings.HasPrefix(hour, "*/"):
+		return fmt.Sprintf("每 %s 小时", strings.TrimPrefix(hour, "*/"))
+	default:
+		// 通用描述
+		return fmt.Sprintf("自定义: %s", cronExpr)
+	}
 }
