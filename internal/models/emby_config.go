@@ -16,6 +16,13 @@ type EmbyConfig struct {
 	SyncCron                string `json:"sync_cron" gorm:"type:varchar(100);default:'*/5 * * * *'"`
 	LastSyncTime            int64  `json:"last_sync_time" gorm:"default:0"`
 	// DeleteNetdiskLibrary    string `json:"delete_netdisk_library" gorm:"type:varchar(200);default:''"` // 允许联动删除的媒体库ID，用,分隔, 空表示允许全部
+	// 播放通知配置
+	EnablePlaybackNotification int    `json:"enable_playback_notification" gorm:"default:0"`
+	EnablePlayStart            int    `json:"enable_play_start" gorm:"default:0"`
+	EnablePlayStop             int    `json:"enable_play_stop" gorm:"default:0"`
+	EnablePlayPause            int    `json:"enable_play_pause" gorm:"default:0"`
+	PlaybackUserFilter         string `json:"playback_user_filter" gorm:"type:varchar(500);default:''"`
+	PlaybackDeviceFilter       string `json:"playback_device_filter" gorm:"type:varchar(500);default:''"`
 }
 
 func (*EmbyConfig) TableName() string {

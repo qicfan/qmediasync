@@ -17,7 +17,7 @@ type Migrator struct {
 	VersionCode int `json:"version_code"` // 版本号
 }
 
-var MaxVersionCode = 32
+var MaxVersionCode = 33
 var AllTables = []any{
 	BackupConfig{}, BackupRecord{},
 	ApiKey{}, Settings{}, Sync{}, User{}, Account{},
@@ -374,6 +374,15 @@ func Migrate() {
 	}
 	if migrator.VersionCode == 31 {
 		db.Db.AutoMigrate(SyncPathScrapePath{}, ScrapeStrmPath{})
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 32 {
+		// 空迁移，保持版本连续性
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 33 {
+		// 添加播放通知相关字段到EmbyConfig表
+		db.Db.AutoMigrate(EmbyConfig{})
 		migrator.UpdateVersionCode(db.Db)
 	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
