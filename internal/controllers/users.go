@@ -12,8 +12,9 @@ import (
 )
 
 type LoginRequest struct {
-	Username string `json:"username" form:"username"`
-	Password string `json:"password" form:"password"`
+	Username   string `json:"username" form:"username"`
+	Password   string `json:"password" form:"password"`
+	RememberMe bool   `json:"remember_me" form:"remember_me"`
 }
 
 var LoginedUser *models.User = nil
@@ -64,6 +65,23 @@ func LoginAction(c *gin.Context) {
 		return
 	}
 	LoginedUser = user
+
+	// 设置Cookie以支持飞牛App内置浏览器
+	maxAge := 3600 // 默认1小时
+	if req.RememberMe {
+		maxAge = 86400 * 7 // 7天
+	}
+	cookie := &http.Cookie{
+		Name:     "auth_token",
+		Value:    tokenString,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: false, // 允许前端读取
+		Secure:   false, // 允许HTTP
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(c.Writer, cookie)
+
 	res := make(map[string]interface{})
 	u := make(map[string]string)
 	u["id"] = fmt.Sprintf("%d", user.ID)
