@@ -4,6 +4,7 @@ import (
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
 	"Q115-STRM/internal/v115open"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -211,5 +212,45 @@ func RepairDB(c *gin.Context) {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "修复数据库失败: " + err.Error(), Data: nil})
 		return
 	}
-	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "修复数据库成功", Data: nil})
+	// 修复数据库表的主键序列
+	err = models.BatchRepairTableSeq()
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "修复数据库表的主键序列失败: " + err.Error(), Data: nil})
+		return
+	}
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "已重建全部数据表并修复所有表的主键序列成功", Data: nil})
+}
+
+func GetAnnounce(c *gin.Context) {
+	// 从https://api.mqfamily.top/desc.json获取公告
+	bytes, err := helpers.ReadFromUrl("https://api.mqfamily.top/desc.json", v115open.DEFAULTUA)
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取公告失败: " + err.Error(), Data: nil})
+		return
+	}
+	// helpers.AppLogger.Infof("获取到的公告: %s", string(bytes))
+	// 解析json
+	type announce struct {
+		ID      int    `json:"id"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
+		Time    string `json:"time"`
+	}
+	var announces []announce
+	err = json.Unmarshal(bytes, &announces)
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "解析公告失败: " + err.Error(), Data: nil})
+		return
+	}
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "获取公告成功", Data: announces})
+}
+
+func DeleteAllTabble(c *gin.Context) {
+	// 重置数据库，删除所有表，重新初始化数据库
+	err := models.BatchDropTable()
+	if err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "删除数据库所有表失败: " + err.Error(), Data: nil})
+		return
+	}
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "删除数据库所有表成功", Data: nil})
 }

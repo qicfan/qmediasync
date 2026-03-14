@@ -359,7 +359,7 @@ func AddDownloadTaskFromSyncFile(file *SyncFile) error {
 		SourceType:    file.SourceType,
 		MTime:         file.MTime,
 	}
-	err := db.Db.Create(task).Error
+	err := db.Db.Save(task).Error
 	return err
 }
 
@@ -385,7 +385,7 @@ func AddDownloadTaskFromEmbyMedia(url, itemId, itemName string) error {
 		Size:          0,
 		SourceType:    SourceTypeEmbyMedia,
 	}
-	err := db.Db.Create(task).Error
+	err := db.Db.Save(task).Error
 	return err
 }
 

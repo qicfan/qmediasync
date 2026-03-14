@@ -274,8 +274,8 @@ func Get115UrlByPickCode(c *gin.Context) {
 				return
 			}
 			helpers.AppLogger.Infof("从接口中查询到115下载链接: pickcode=%s, ua=%s => %s", pickCode, ua, cachedUrl)
-			// 缓存2小时
-			db.Cache.Set(cacheKey, []byte(cachedUrl), 7200)
+			// 缓存50分钟
+			db.Cache.Set(cacheKey, []byte(cachedUrl), 3000)
 		} else {
 			helpers.AppLogger.Infof("从缓存中查询到115下载链接: pickcode=%s, ua=%s => %s", pickCode, ua, cachedUrl)
 		}
@@ -410,6 +410,7 @@ func GetQrCodeStatus(c *gin.Context) {
 // 生成并返回115 oauth登录地址
 func GetOAuthUrl(c *gin.Context) {
 	accountId := c.Query("account_id")
+	redirectUrl := c.Query("redirect_url")
 
 	if accountId == "" {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "缺少c账号ID参数", Data: nil})
@@ -427,22 +428,27 @@ func GetOAuthUrl(c *gin.Context) {
 	}
 	baseUrl := helpers.GlobalConfig.AuthServer
 	type stateData struct {
-		State    string `json:"state"`
-		Time     int64  `json:"time"`
-		ClientId string `json:"client_id"`
+		State       string `json:"state"`
+		Time        int64  `json:"time"`
+		ClientId    string `json:"client_id"`
+		RedirectUrl string `json:"redirect_url"`
+		AccountId   uint   `json:"account_id"`
 	}
 	stateObj := stateData{
-		State:    helpers.RandStr(16),
-		Time:     time.Now().Unix(),
-		ClientId: clientId,
+		State:       helpers.RandStr(16),
+		Time:        time.Now().Unix(),
+		ClientId:    clientId,
+		RedirectUrl: fmt.Sprintf("%s?source=115", redirectUrl),
+		AccountId:   account.ID,
 	}
+	// helpers.AppLogger.Infof("生成OAuth登录地址: %+v", stateObj)
 	stateJson, _ := json.Marshal(stateObj)
 	stateEncoded, err := helpers.Encrypt(string(stateJson))
 	if err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "生成OAuth登录地址失败: " + err.Error(), Data: nil})
 		return
 	}
-	oauthUrl := fmt.Sprintf("%s?action=code&state=%s", baseUrl, stateEncoded)
+	oauthUrl := fmt.Sprintf("%s/115.php?action=code&state=%s", baseUrl, stateEncoded)
 	c.JSON(http.StatusOK, APIResponse[string]{Code: Success, Message: "获取115 OAuth登录地址成功", Data: oauthUrl})
 }
 

@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -60,6 +61,9 @@ func ExtractTmdbId(name string) int64 {
 	var tmdbPatterns = []string{
 		`[\{|\[|【]{1}tmdbid-(\d+)[\}|\]】]{1}`,
 		`[\{|\[|【]{1}tmdb-(\d+)[\}|\]】]{1}`,
+		// 新增更多格式支持
+		`[\{|\[|【]{0,1}tmdbid[=\-](\d+)[\}|\]|】]{0,1}`,
+		`[\{|\[|【]{0,1}tmdb[=\-](\d+)[\}|\]|】]{0,1}`,
 	}
 	for _, pattern := range tmdbPatterns {
 		re := regexp.MustCompile(pattern)
@@ -72,6 +76,61 @@ func ExtractTmdbId(name string) int64 {
 		}
 	}
 	return 0
+}
+
+// ExtractDoubanId 从文件名提取豆瓣 ID
+func ExtractDoubanId(name string) int64 {
+	var doubanPatterns = []string{
+		`[\{|\[|【]{0,1}doubanid[=\-](\d+)[\}|\]|】]{0,1}`,
+		`[\{|\[|【]{0,1}douban[=\-](\d+)[\}|\]|】]{0,1}`,
+	}
+	for _, pattern := range doubanPatterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(name)
+		if len(matches) >= 2 {
+			doubanId, _ := strconv.ParseInt(matches[1], 10, 64)
+			return doubanId
+		}
+	}
+	return 0
+}
+
+// ExtractID 从文件名提取 ID 信息（支持 TMDB 和豆瓣 ID）
+// 返回: tmdbID, doubanID, mediaType, season, episode
+func ExtractID(filename string) (int64, int64, string, int, int) {
+	// 完整格式：{tmdbid=123;type=movie;s=1;e=1}
+	fullPattern := `\{tmdbid=(\d+);type=(\w+);s=(\d+);e=(\d+)\}`
+	re := regexp.MustCompile(fullPattern)
+	matches := re.FindStringSubmatch(filename)
+	if len(matches) >= 5 {
+		tmdbID, _ := strconv.ParseInt(matches[1], 10, 64)
+		mediaType := matches[2]
+		season, _ := strconv.Atoi(matches[3])
+		episode, _ := strconv.Atoi(matches[4])
+		return tmdbID, 0, mediaType, season, episode
+	}
+
+	// 提取 TMDB ID
+	tmdbID := ExtractTmdbId(filename)
+
+	// 提取豆瓣 ID
+	doubanID := ExtractDoubanId(filename)
+
+	// 如果没有提取到任何 ID，返回 0
+	if tmdbID == 0 && doubanID == 0 {
+		return 0, 0, "", 0, 0
+	}
+
+	// 提取季集信息
+	_, season, episode := ExtractSeasonEpisode(filename)
+
+	// 提取媒体类型
+	mediaType := ""
+	if season > 0 || episode > 0 {
+		mediaType = "tv"
+	}
+
+	return tmdbID, doubanID, mediaType, season, episode
 }
 
 func ExtractNameAndYear(name string) (string, int) {
@@ -788,4 +847,69 @@ func finalProcess(title string) string {
 	// title = FirstLetterUpper(title)
 	// fmt.Printf("最后得到的标题: %s\n", title)
 	return strings.ToLower(title)
+}
+
+// ExtractMetadataFromPath 从文件路径提取元数据（多层级）
+// 参考 MoviePilot 的实现，从文件名、父目录、上上级目录三个层级提取元数据并智能合并
+func ExtractMetadataFromPath(filePath string, isMovie bool, videoExt []string, excludePatterns ...string) *MediaInfo {
+	meta := &MediaInfo{
+		Season:  -1,
+		Episode: -1,
+		Year:    0,
+		TmdbId:  0,
+	}
+
+	// 1. 提取文件名元数据
+	fileMeta := ExtractMediaInfoRe(filepath.Base(filePath), isMovie, !isMovie, videoExt, excludePatterns...)
+	if fileMeta != nil {
+		meta.Merge(fileMeta)
+	}
+
+	// 2. 提取父目录元数据
+	parentDir := filepath.Base(filepath.Dir(filePath))
+	parentMeta := ExtractMediaInfoRe(parentDir, isMovie, !isMovie, videoExt, excludePatterns...)
+	if parentMeta != nil {
+		meta.Merge(parentMeta)
+	}
+
+	// 3. 提取上上级目录元数据
+	grandparentDir := filepath.Base(filepath.Dir(filepath.Dir(filePath)))
+	grandparentMeta := ExtractMediaInfoRe(grandparentDir, isMovie, !isMovie, videoExt, excludePatterns...)
+	if grandparentMeta != nil {
+		meta.Merge(grandparentMeta)
+	}
+
+	return meta
+}
+
+// Merge 智能合并元数据
+// 优先级：文件名 > 父目录 > 上上级目录
+func (m *MediaInfo) Merge(other *MediaInfo) {
+	if other == nil {
+		return
+	}
+
+	// 如果当前缺失年份，从父目录借用
+	if m.Year == 0 && other.Year != 0 {
+		m.Year = other.Year
+	}
+
+	// 如果当前缺失季/集信息，从目录补全
+	if m.Season == -1 && other.Season != -1 {
+		m.Season = other.Season
+	}
+	if m.Episode == -1 && other.Episode != -1 {
+		m.Episode = other.Episode
+	}
+
+	// TMDB ID 优先级：文件名 > 父目录 > 上上级目录
+	if m.TmdbId == 0 && other.TmdbId != 0 {
+		m.TmdbId = other.TmdbId
+	}
+
+	// 名称优先级：文件名 > 父目录 > 上上级目录
+	// 如果当前没有名称，从父目录借用
+	if m.Name == "" && other.Name != "" {
+		m.Name = other.Name
+	}
 }

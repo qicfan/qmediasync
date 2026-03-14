@@ -3,7 +3,7 @@
         "qmediasync.Application": {
             "title": "qmediasync",
             "icon": "images/icon_{0}.png",
-            "type": "iframe",
+            "type": "url",
             "protocol": "",
             "port": "12333",
             "url": "/",

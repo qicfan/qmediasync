@@ -94,6 +94,7 @@ func GetBaiDuPanStatus(c *gin.Context) {
 // @Security ApiKeyAuth
 func GetBaiDuPanOAuthUrl(c *gin.Context) {
 	accountId := c.Query("account_id")
+	redirectUrl := c.Query("redirect_url")
 
 	if accountId == "" {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "缺少账号ID参数", Data: nil})
@@ -113,17 +114,20 @@ func GetBaiDuPanOAuthUrl(c *gin.Context) {
 
 	// 生成state参数
 	type stateData struct {
-		State     string `json:"state"`
-		Time      int64  `json:"time"`
-		ClientId  string `json:"client_id"`
-		AccountId string `json:"account_id"`
+		State       string `json:"state"`
+		Time        int64  `json:"time"`
+		ClientId    string `json:"client_id"`
+		AccountId   string `json:"account_id"`
+		RedirectUrl string `json:"redirect_url"`
 	}
 	stateObj := stateData{
-		State:     helpers.RandStr(16),
-		Time:      time.Now().Unix(),
-		ClientId:  clientId,
-		AccountId: accountId,
+		State:       helpers.RandStr(16),
+		Time:        time.Now().Unix(),
+		ClientId:    clientId,
+		AccountId:   accountId,
+		RedirectUrl: fmt.Sprintf("%s?source=baidupan", redirectUrl),
 	}
+	// helpers.AppLogger.Infof("生成OAuth登录地址状态参数: %+v", stateObj)
 	stateJson, _ := json.Marshal(stateObj)
 	stateEncoded, err := helpers.Encrypt(string(stateJson))
 	if err != nil {
@@ -132,7 +136,7 @@ func GetBaiDuPanOAuthUrl(c *gin.Context) {
 	}
 
 	// 构建授权URL
-	authServerUrl := fmt.Sprintf("%s/baidupan/oauth-url", helpers.GlobalConfig.AuthServer)
+	authServerUrl := fmt.Sprintf("%s/baidu.php", helpers.GlobalConfig.AuthServer)
 	// 注意：redirect_uri需要与百度开放平台配置的一致
 	oauthUrl := fmt.Sprintf("%s?action=code&state=%s", authServerUrl, stateEncoded)
 	c.JSON(http.StatusOK, APIResponse[string]{Code: Success, Message: "获取百度网盘OAuth登录地址成功", Data: oauthUrl})
@@ -256,17 +260,17 @@ func GetBaiduPanUrlByPickCode(c *gin.Context) {
 			helpers.AppLogger.Infof("从缓存中查询到百度网盘下载链接: %s => %s", pickCode, cachedUrl)
 		}
 		// 检查是否开启了本地播放代理，如果开启则跳转到代理链接
-		if models.SettingsGlobal.LocalProxy == 1 {
-			// 跳转到本地代理
-			proxyUrl := fmt.Sprintf("/proxy-115?baidupan=1&url=%s", url.QueryEscape(cachedUrl))
-			helpers.AppLogger.Infof("通过本地代理访问百度网盘下载链接播放: %s", url.QueryEscape(cachedUrl))
-			c.Redirect(http.StatusFound, proxyUrl)
-			return
-		} else {
-			helpers.AppLogger.Infof("302重定向到百度网盘下载链接播放: %s", url.QueryEscape(cachedUrl))
-			c.Redirect(http.StatusFound, cachedUrl)
-			return
-		}
+		// if models.SettingsGlobal.LocalProxy == 1 {
+		// 跳转到本地代理
+		proxyUrl := fmt.Sprintf("/proxy-115?baidupan=1&url=%s", url.QueryEscape(cachedUrl))
+		helpers.AppLogger.Infof("通过本地代理访问百度网盘下载链接播放: %s", url.QueryEscape(cachedUrl))
+		c.Redirect(http.StatusFound, proxyUrl)
+		return
+		// } else {
+		// 	helpers.AppLogger.Infof("302重定向到百度网盘下载链接播放: %s", url.QueryEscape(cachedUrl))
+		// 	c.Redirect(http.StatusFound, cachedUrl)
+		// 	return
+		// }
 	}
 
 }

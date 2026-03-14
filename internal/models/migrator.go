@@ -17,6 +17,18 @@ type Migrator struct {
 	VersionCode int `json:"version_code"` // 版本号
 }
 
+var MaxVersionCode = 32
+var AllTables = []any{
+	BackupConfig{}, BackupRecord{},
+	ApiKey{}, Settings{}, Sync{}, User{}, Account{},
+	SyncPath{}, SyncFile{}, SyncPathScrapePath{},
+	ScrapeSettings{}, ScrapePath{}, MovieCategory{}, TvShowCategory{}, ScrapePathCategory{},
+	ScrapeMediaFile{}, Media{}, MediaSeason{}, MediaEpisode{}, ScrapeStrmPath{},
+	RequestStat{}, EmbyConfig{}, EmbyMediaItem{}, EmbyMediaSyncFile{}, EmbyLibrary{}, EmbyLibrarySyncPath{},
+	DbDownloadTask{}, DbUploadTask{}, NotificationChannel{}, TelegramChannelConfig{}, MeoWChannelConfig{}, BarkChannelConfig{},
+	ServerChanChannelConfig{}, CustomWebhookChannelConfig{}, NotificationRule{},
+}
+
 func (*Migrator) TableName() string {
 	return "migrator"
 }
@@ -26,9 +38,8 @@ func (*Migrator) TableName() string {
 // 如果已有数据库则从数据库中获取版本，根据版本执行变更
 func Migrate() {
 	// sqliteDb := db.InitSqlite3(dbFile)
-	maxVersion := 32
 	// 先初始化所有表和基础数据
-	if !InitDB(maxVersion) {
+	if !InitDB() {
 		// 初始化数据库版本表
 		helpers.AppLogger.Info("已完成数据库初始化")
 		return
@@ -322,7 +333,7 @@ func Migrate() {
 	if migrator.VersionCode == 24 {
 		db.Db.AutoMigrate(BackupConfig{}, BackupRecord{})
 		// 插入默认配置
-		db.Db.Create(&BackupConfig{
+		db.Db.Save(&BackupConfig{
 			BaseModel:       BaseModel{ID: 1},
 			BackupEnabled:   0,
 			BackupPath:      "backups",
@@ -368,59 +379,17 @@ func Migrate() {
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
 }
 
+// 重建不存在的表，然后修复主键
 func BatchCreateTable() error {
 	db.Db.Statement.PrepareStmt = true
 
 	var err error
 	var lastErr error
-	// 数据库版本表
-	err = db.Db.AutoMigrate(Migrator{})
-	if err != nil {
-		lastErr = err
-	}
-	// 配置、用户、同步目录表
-	err = db.Db.AutoMigrate(Settings{}, Sync{}, User{}, SyncPath{}, Account{})
-	if err != nil {
-		lastErr = err
-	}
-	err = db.Db.AutoMigrate(SyncFile{}, SyncPathScrapePath{})
-	if err != nil {
-		lastErr = err
-	}
-	// 刮削相关表
-	err = db.Db.AutoMigrate(ScrapeSettings{}, ScrapePath{}, MovieCategory{}, TvShowCategory{}, ScrapePathCategory{}, ScrapeMediaFile{}, Media{}, MediaSeason{}, MediaEpisode{}, ScrapeStrmPath{})
-	if err != nil {
-		lastErr = err
-	}
-	// 115请求统计表
-	err = db.Db.AutoMigrate(&RequestStat{})
-	if err != nil {
-		lastErr = err
-	}
-	// Emby 同步相关表
-	err = db.Db.AutoMigrate(EmbyConfig{}, EmbyMediaItem{}, EmbyMediaSyncFile{}, EmbyLibrary{}, EmbyLibrarySyncPath{})
-	if err != nil {
-		lastErr = err
-	}
-	// 下载队列
-	err = db.Db.AutoMigrate(DbDownloadTask{}, DbUploadTask{})
-	if err != nil {
-		lastErr = err
-	}
-	// 通知渠道表
-	err = db.Db.AutoMigrate(NotificationChannel{}, TelegramChannelConfig{}, MeoWChannelConfig{}, BarkChannelConfig{}, ServerChanChannelConfig{}, CustomWebhookChannelConfig{}, NotificationRule{})
-	if err != nil {
-		lastErr = err
-	}
-	// API Key认证表
-	err = db.Db.AutoMigrate(ApiKey{})
-	if err != nil {
-		lastErr = err
-	}
-	// 备份恢复相关表
-	err = db.Db.AutoMigrate(BackupConfig{}, BackupRecord{})
-	if err != nil {
-		lastErr = err
+	for _, table := range AllTables {
+		err = db.Db.AutoMigrate(table)
+		if err != nil {
+			lastErr = err
+		}
 	}
 	return lastErr
 }
@@ -428,24 +397,26 @@ func BatchCreateTable() error {
 func InitMigrationTable(version int) {
 	var migrator Migrator = Migrator{}
 	migrator = Migrator{BaseModel: BaseModel{ID: 1}, VersionCode: version} // 初始版本为version
-	db.Db.Create(&migrator)
+	db.Db.Save(&migrator)
 	helpers.AppLogger.Infof("初始化数据库版本表，当前版本为%d", version)
 }
 
-func InitDB(version int) bool {
+func InitDB() bool {
 	// 初始化
 	if db.Db.Migrator().HasTable(Migrator{}) {
 		helpers.AppLogger.Info("数据库版本表已存在，跳过初始化数据库过程")
 		return true
 	}
 	BatchCreateTable()
-	InitMigrationTable(version)
+	InitMigrationTable(MaxVersionCode)
 	// 初始化默认配置
 	InitSettings()
 	// 初始化用户
 	InitUser()
 	// 初始化刮削配置
 	InitScrapeSetting()
+	// 初始化 Emby 配置
+	InitEmbyConfig()
 	helpers.AppLogger.Info("已完成数据库初始化")
 	return false
 }
@@ -489,22 +460,30 @@ func InitSettings() {
 			OpenlistRetryDelay: 60,
 		},
 	}
-	db.Db.Create(&defaultSettings)
+	db.Db.Save(&defaultSettings)
 	helpers.AppLogger.Info("已默认添加配置")
 }
 
 func InitUser() {
-	password, _ := bcrypt.GenerateFromPassword([]byte(helpers.GlobalConfig.AdminPassword), bcrypt.MinCost)
+
 	defaultUser := User{
 		// 设置默认值
 		Username: helpers.GlobalConfig.AdminUsername,
-		Password: string(password),
+		Password: helpers.GlobalConfig.AdminPassword,
 	}
+	if defaultUser.Username == "" {
+		defaultUser.Username = "admin"
+	}
+	if defaultUser.Password == "" {
+		defaultUser.Password = "admin123"
+	}
+	password, _ := bcrypt.GenerateFromPassword([]byte(defaultUser.Password), bcrypt.MinCost)
+	defaultUser.Password = string(password)
 	uerr := db.Db.Model(&User{}).First(&defaultUser).Error
 	if errors.Is(uerr, gorm.ErrRecordNotFound) {
-		db.Db.Create(&defaultUser)
+		db.Db.Save(&defaultUser)
 	}
-	helpers.AppLogger.Infof("已默认添加管理员用户：%s 密码：%s", helpers.GlobalConfig.AdminUsername, helpers.GlobalConfig.AdminPassword)
+	helpers.AppLogger.Infof("已默认添加管理员用户：%s 密码：%s", defaultUser.Username, defaultUser.Password)
 }
 
 func InitScrapeSetting() {
@@ -518,7 +497,7 @@ func InitScrapeSetting() {
 		TmdbEnableProxy: true,
 		EnableAi:        AiActionAssist,
 	}
-	db.Db.Create(&scrapeSettings)
+	db.Db.Save(&scrapeSettings)
 	helpers.AppLogger.Info("已默认添加刮削设置")
 	// 外语电影分类（ID为1，不可删除）
 	waiyuDianying := MovieCategory{
@@ -526,7 +505,7 @@ func InitScrapeSetting() {
 		GenreIds: "[]",
 		Language: "[]",
 	}
-	if err := db.Db.Create(&waiyuDianying).Error; err != nil {
+	if err := db.Db.Save(&waiyuDianying).Error; err != nil {
 		helpers.AppLogger.Errorf("添加外语电影分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加外语电影分类")
@@ -537,7 +516,7 @@ func InitScrapeSetting() {
 		GenreIds: "[]",
 		Language: "[\"zh\", \"cn\", \"bo\",\"za\"]",
 	}
-	if err := db.Db.Create(&huayuiDianying).Error; err != nil {
+	if err := db.Db.Save(&huayuiDianying).Error; err != nil {
 		helpers.AppLogger.Errorf("添加华语电影分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加华语电影分类")
@@ -548,7 +527,7 @@ func InitScrapeSetting() {
 		GenreIds: "[16]",
 		Language: "",
 	}
-	if err := db.Db.Create(&donghuaDianying).Error; err != nil {
+	if err := db.Db.Save(&donghuaDianying).Error; err != nil {
 		helpers.AppLogger.Errorf("添加动画电影分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加动画电影分类")
@@ -559,7 +538,7 @@ func InitScrapeSetting() {
 		GenreIds:  "",
 		Countries: "",
 	}
-	if err := db.Db.Create(&qitaJu).Error; err != nil {
+	if err := db.Db.Save(&qitaJu).Error; err != nil {
 		helpers.AppLogger.Errorf("添加其他剧分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加其他剧分类")
@@ -570,7 +549,7 @@ func InitScrapeSetting() {
 		GenreIds:  "",
 		Countries: "[\"CN\",\"TW\", \"HK\", \"MO\"]",
 	}
-	if err := db.Db.Create(&guochanJU).Error; err != nil {
+	if err := db.Db.Save(&guochanJU).Error; err != nil {
 		helpers.AppLogger.Errorf("添加国产剧分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加国产剧分类")
@@ -581,7 +560,7 @@ func InitScrapeSetting() {
 		GenreIds:  "",
 		Countries: "[\"US\",\"GB\", \"DE\", \"FR\", \"ES\", \"IT\", \"PT\", \"RU\", \"UA\"]",
 	}
-	if err := db.Db.Create(&oumeiJu).Error; err != nil {
+	if err := db.Db.Save(&oumeiJu).Error; err != nil {
 		helpers.AppLogger.Errorf("添加欧美剧分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加欧美剧分类")
@@ -592,7 +571,7 @@ func InitScrapeSetting() {
 		GenreIds:  "",
 		Countries: "[\"JP\",\"KR\", \"KP\", \"TH\", \"IN\", \"SG\"]",
 	}
-	if err := db.Db.Create(&rihanJU).Error; err != nil {
+	if err := db.Db.Save(&rihanJU).Error; err != nil {
 		helpers.AppLogger.Errorf("添加日韩泰剧分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加日韩泰剧分类")
@@ -603,7 +582,7 @@ func InitScrapeSetting() {
 		GenreIds:  "[16]",
 		Countries: "[\"CN\",\"TW\", \"HK\",\"MO\"]",
 	}
-	if err := db.Db.Create(&guoman).Error; err != nil {
+	if err := db.Db.Save(&guoman).Error; err != nil {
 		helpers.AppLogger.Errorf("添加国漫分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加国漫分类")
@@ -614,7 +593,7 @@ func InitScrapeSetting() {
 		GenreIds:  "[16]",
 		Countries: "[\"JP\"]",
 	}
-	if err := db.Db.Create(&rifan).Error; err != nil {
+	if err := db.Db.Save(&rifan).Error; err != nil {
 		helpers.AppLogger.Errorf("添加日番分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加日番分类")
@@ -625,7 +604,7 @@ func InitScrapeSetting() {
 		GenreIds:  "[10764, 10767]",
 		Countries: "",
 	}
-	if err := db.Db.Create(&zongyi).Error; err != nil {
+	if err := db.Db.Save(&zongyi).Error; err != nil {
 		helpers.AppLogger.Errorf("添加综艺分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加综艺分类")
@@ -636,11 +615,29 @@ func InitScrapeSetting() {
 		GenreIds:  "[99]",
 		Countries: "",
 	}
-	if err := db.Db.Create(&jilu).Error; err != nil {
+	if err := db.Db.Save(&jilu).Error; err != nil {
 		helpers.AppLogger.Errorf("添加纪录片分类失败：%v", err)
 	} else {
 		helpers.AppLogger.Info("已默认添加纪录片分类")
 	}
+}
+
+func InitEmbyConfig() {
+	embyConfig := &EmbyConfig{
+		EmbyUrl:                 "",
+		EmbyApiKey:              "",
+		SyncEnabled:             0,
+		SyncCron:                "0 * * * *",
+		EnableDeleteNetdisk:     0,
+		EnableRefreshLibrary:    0,
+		EnableMediaNotification: 0,
+		EnableExtractMediaInfo:  0,
+		EnableAuth:              0,
+		LastSyncTime:            0,
+	}
+	db.Db.Save(embyConfig)
+	helpers.AppLogger.Info("已默认添加Emby配置")
+
 }
 
 func migrateEmbyConfig(dbConn *gorm.DB) {
@@ -757,4 +754,55 @@ func fillSyncPathIdInEmbyMediaSyncFile(dbConn *gorm.DB) {
 		}
 		offset += limit
 	}
+}
+
+func BatchDropTable() error {
+	var err, lastErr error
+	// 删除所有表
+	for _, table := range AllTables {
+		err = db.Db.Migrator().DropTable(table)
+		if err != nil {
+			lastErr = err
+			helpers.AppLogger.Errorf("删除表失败：%v", err)
+		}
+	}
+	if lastErr != nil {
+		return lastErr
+	}
+	return nil
+}
+
+// 批量更新表的主键序列
+// 只处理postgres的修复
+func BatchRepairTableSeq() error {
+	if helpers.GlobalConfig.Db.Engine != "postgres" {
+		return nil
+	}
+	var err, lastErr error
+	// 修复所有表
+	for _, table := range AllTables {
+		tableName := GetTableName(table)
+		err = ResetSequence(tableName, "id")
+		if err != nil {
+			lastErr = err
+			helpers.AppLogger.Errorf("修复表 %s 的主键序列失败：%v", tableName, err)
+		}
+	}
+	if lastErr != nil {
+		return lastErr
+	}
+	return nil
+}
+
+func ResetSequence(tableName string, columnName string) error {
+	var maxId int64
+	// 获取当前最大ID，如果表为空则从1开始
+	db.Db.Table(tableName).Select(fmt.Sprintf("COALESCE(MAX(%s), 0)", columnName)).Scan(&maxId)
+	if maxId == 0 {
+		// 如果没有值则不修复
+		return nil
+	}
+	// 重置序列
+	sequenceName := fmt.Sprintf("%s_%s_seq", tableName, columnName)
+	return db.Db.Exec(fmt.Sprintf("SELECT setval('%s', ?)", sequenceName), maxId).Error
 }

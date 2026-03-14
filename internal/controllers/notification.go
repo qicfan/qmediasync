@@ -84,7 +84,7 @@ func CreateTelegramChannel(c *gin.Context) {
 		IsEnabled:   true,
 	}
 
-	if err := db.Db.Create(&channel).Error; err != nil {
+	if err := db.Db.Save(&channel).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "创建渠道失败",
@@ -99,7 +99,7 @@ func CreateTelegramChannel(c *gin.Context) {
 		BotToken:  r.BotToken,
 		ChatID:    r.ChatID,
 	}
-	if err := db.Db.Create(&config).Error; err != nil {
+	if err := db.Db.Save(&config).Error; err != nil {
 		// 回滚
 		db.Db.Delete(&channel)
 		c.JSON(http.StatusOK, gin.H{
@@ -121,7 +121,7 @@ func CreateTelegramChannel(c *gin.Context) {
 			EventType: eventType,
 			IsEnabled: true,
 		}
-		db.Db.Create(&rule)
+		db.Db.Save(&rule)
 	}
 
 	// 重新加载管理器
@@ -174,7 +174,7 @@ func CreateMeoWChannel(c *gin.Context) {
 		IsEnabled:   true,
 	}
 
-	if err := db.Db.Create(&channel).Error; err != nil {
+	if err := db.Db.Save(&channel).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "创建渠道失败",
@@ -193,7 +193,7 @@ func CreateMeoWChannel(c *gin.Context) {
 		Nickname:  r.Nickname,
 		Endpoint:  r.Endpoint,
 	}
-	if err := db.Db.Create(&config).Error; err != nil {
+	if err := db.Db.Save(&config).Error; err != nil {
 		// 回滚
 		db.Db.Delete(&channel)
 		c.JSON(http.StatusOK, gin.H{
@@ -215,7 +215,7 @@ func CreateMeoWChannel(c *gin.Context) {
 			EventType: eventType,
 			IsEnabled: true,
 		}
-		db.Db.Create(&rule)
+		db.Db.Save(&rule)
 	}
 
 	// 重新加载管理器
@@ -272,7 +272,7 @@ func CreateBarkChannel(c *gin.Context) {
 		IsEnabled:   true,
 	}
 
-	if err := db.Db.Create(&channel).Error; err != nil {
+	if err := db.Db.Save(&channel).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "创建渠道失败",
@@ -296,7 +296,7 @@ func CreateBarkChannel(c *gin.Context) {
 		Sound:     r.Sound,
 		Icon:      r.Icon,
 	}
-	if err := db.Db.Create(&config).Error; err != nil {
+	if err := db.Db.Save(&config).Error; err != nil {
 		// 回滚
 		db.Db.Delete(&channel)
 		c.JSON(http.StatusOK, gin.H{
@@ -318,7 +318,7 @@ func CreateBarkChannel(c *gin.Context) {
 			EventType: eventType,
 			IsEnabled: true,
 		}
-		db.Db.Create(&rule)
+		db.Db.Save(&rule)
 	}
 
 	// 重新加载管理器
@@ -371,7 +371,7 @@ func CreateServerChanChannel(c *gin.Context) {
 		IsEnabled:   true,
 	}
 
-	if err := db.Db.Create(&channel).Error; err != nil {
+	if err := db.Db.Save(&channel).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "创建渠道失败",
@@ -390,7 +390,7 @@ func CreateServerChanChannel(c *gin.Context) {
 		SCKEY:     r.SCKEY,
 		Endpoint:  r.Endpoint,
 	}
-	if err := db.Db.Create(&config).Error; err != nil {
+	if err := db.Db.Save(&config).Error; err != nil {
 		// 回滚
 		db.Db.Delete(&channel)
 		c.JSON(http.StatusOK, gin.H{
@@ -412,7 +412,7 @@ func CreateServerChanChannel(c *gin.Context) {
 			EventType: eventType,
 			IsEnabled: true,
 		}
-		db.Db.Create(&rule)
+		db.Db.Save(&rule)
 	}
 
 	// 重新加载管理器
@@ -548,7 +548,7 @@ func CreateCustomWebhookChannel(c *gin.Context) {
 		Description: r.Description,
 		IsEnabled:   true,
 	}
-	if err := db.Db.Create(&channel).Error; err != nil {
+	if err := db.Db.Save(&channel).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{"code": 1, "message": "创建渠道失败", "data": nil})
 		return
 	}
@@ -580,7 +580,7 @@ func CreateCustomWebhookChannel(c *gin.Context) {
 		AuthQueryKey:  r.AuthQueryKey,
 		Headers:       headersJSON,
 	}
-	if err := db.Db.Create(&cfg).Error; err != nil {
+	if err := db.Db.Save(&cfg).Error; err != nil {
 		db.Db.Delete(&channel)
 		c.JSON(http.StatusOK, gin.H{"code": 1, "message": "创建配置失败", "data": nil})
 		return
@@ -589,7 +589,7 @@ func CreateCustomWebhookChannel(c *gin.Context) {
 	// 创建默认规则
 	eventTypes := []string{"sync_finish", "sync_error", "scrape_finish", "system_alert", "media_added", "media_removed"}
 	for _, et := range eventTypes {
-		db.Db.Create(&models.NotificationRule{ChannelID: channel.ID, EventType: et, IsEnabled: true})
+		db.Db.Save(&models.NotificationRule{ChannelID: channel.ID, EventType: et, IsEnabled: true})
 	}
 
 	// 刷新通知管理器
@@ -1566,7 +1566,7 @@ func UpdateNotificationRule(c *gin.Context) {
 				EventType: r.EventType,
 				IsEnabled: r.IsEnabled,
 			}
-			if err := db.Db.Create(&rule).Error; err != nil {
+			if err := db.Db.Save(&rule).Error; err != nil {
 				c.JSON(http.StatusOK, gin.H{
 					"code":    1,
 					"message": "创建规则失败",

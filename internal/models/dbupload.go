@@ -393,7 +393,7 @@ func AddUploadTaskFromSyncFile(file *SyncFile) error {
 		Status:        UploadStatusPending,
 		FileSize:      file.FileSize,
 	}
-	err := db.Db.Create(task).Error
+	err := db.Db.Save(task).Error
 	if err != nil {
 		helpers.AppLogger.Errorf("添加上传任务 %s => %s 失败: %s", file.LocalFilePath, remoteFileId, err.Error())
 		return err
@@ -433,7 +433,7 @@ func AddUploadTaskFromMediaFile(mediaFile *ScrapeMediaFile, scrapePath *ScrapePa
 		FileSize:             size,
 		IsSeasonOrTvshowFile: isSeasonOrTvshowFile,
 	}
-	derr := db.Db.Create(task).Error
+	derr := db.Db.Save(task).Error
 	return derr
 }
 

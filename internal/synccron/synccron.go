@@ -18,6 +18,7 @@ import (
 
 var GlobalCron *cron.Cron
 var SyncCron *cron.Cron
+var TokenCron *cron.Cron
 
 func StartSyncCron() {
 	// 查询所有同步目录
@@ -89,12 +90,13 @@ func RefreshOAuthAccessToken() {
 	now := time.Now().Unix()
 	for _, account := range accounts {
 		if account.RefreshToken == "" {
+			helpers.AppLogger.Infof("账号 %d 没有刷新token，跳过", account.ID)
 			continue
 		}
 		if account.SourceType == models.SourceType115 {
 			// helpers.AppLogger.Infof("当前时间: %d, 过期时间：%d", now, account.TokenExpiriesTime-3600)
-			if account.TokenExpiriesTime-300 > now {
-				// helpers.AppLogger.Infof("115账号token未过期，账号ID: %d, 115用户名：%s， 过期时间：%s", account.ID, account.Username, time.Unix(account.TokenExpiriesTime-3600, 0).Format("2006-01-02 15:04:05"))
+			if account.TokenExpiriesTime-1800 > now {
+				helpers.AppLogger.Infof("115账号token未过期，账号ID: %d, 115用户名：%s， 过期时间：%s", account.ID, account.Username, time.Unix(account.TokenExpiriesTime-1800, 0).Format("2006-01-02 15:04:05"))
 				continue
 			}
 			helpers.AppLogger.Infof("开始刷新115账号token，账号ID: %d, 115用户名：%s", account.ID, account.Username)
@@ -224,6 +226,18 @@ func StartScrapeRollbackCron() {
 
 }
 
+func InitTokenCron() {
+	if TokenCron != nil {
+		TokenCron.Stop()
+	}
+	TokenCron = cron.New()
+	TokenCron.AddFunc("*/2 * * * *", func() {
+		// helpers.AppLogger.Info("定时刷新115的访问凭证")
+		RefreshOAuthAccessToken()
+	})
+	TokenCron.Start()
+}
+
 // 初始化定时任务
 func InitCron() {
 	if GlobalCron != nil {
@@ -242,10 +256,7 @@ func InitCron() {
 		// helpers.AppLogger.Info("清理过期的同步记录")
 		models.ClearExpiredSyncRecords(1) // 保留3天内的记录
 	})
-	GlobalCron.AddFunc("*/5 * * * *", func() {
-		// helpers.AppLogger.Info("定时刷新115的访问凭证")
-		RefreshOAuthAccessToken()
-	})
+
 	GlobalCron.AddFunc("*/13 * * * *", func() {
 		// helpers.AppLogger.Info("启动刮削任务")
 		startScrapeCron()
@@ -269,6 +280,22 @@ func InitCron() {
 			helpers.AppLogger.Errorf("清理请求统计数据失败: %v", err)
 		} else {
 			helpers.AppLogger.Infof("已清理24小时前的请求统计数据")
+		}
+	})
+	GlobalCron.AddFunc("0 4 * * *", func() {
+		// 每天4点修复数据库表的主键序列
+		// 修复数据库，重建所有表
+		err := models.BatchCreateTable()
+		if err != nil {
+			helpers.AppLogger.Errorf("修复数据库失败: %v", err)
+			return
+		} else {
+			helpers.AppLogger.Infof("已重建全部数据表（不影响已存在的表和数据）")
+		}
+		if err := models.BatchRepairTableSeq(); err != nil {
+			helpers.AppLogger.Errorf("修复数据库表的主键序列失败: %v", err)
+		} else {
+			helpers.AppLogger.Infof("已修复所有表的主键序列")
 		}
 	})
 

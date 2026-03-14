@@ -177,6 +177,7 @@ func (s *SyncStrm) LoadDataFromStrm(strmPath string) *StrmData {
 
 func (sf *SyncStrm) GetRemoteFilePathUrlEncode(path string) string {
 	// 中文保留，只对特殊字符编码
+	path = strings.ReplaceAll(path, "%", "%25")
 	path = strings.ReplaceAll(path, "/", "%2F")
 	path = strings.ReplaceAll(path, "?", "%3F")
 	path = strings.ReplaceAll(path, "&", "%26")
@@ -187,6 +188,6 @@ func (sf *SyncStrm) GetRemoteFilePathUrlEncode(path string) string {
 	path = strings.ReplaceAll(path, "!", "%21")
 	path = strings.ReplaceAll(path, "$", "%24")
 	path = strings.ReplaceAll(path, " ", "%20")
-	path = strings.ReplaceAll(path, "%", "%25")
+
 	return path
 }

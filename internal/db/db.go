@@ -95,6 +95,9 @@ func ConnectPostgres(dbConfig *database.Config) error {
 				continue
 			} else {
 				helpers.AppLogger.Errorf("连接数据库失败: %v", err)
+				if i == maxRetries-1 {
+					return err
+				}
 				continue
 			}
 		} else {

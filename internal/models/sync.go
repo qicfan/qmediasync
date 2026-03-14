@@ -336,7 +336,7 @@ func CreateSync(syncPathId uint, sourcePath, sourcePathId, targetPath string) *S
 		IsFullSync: false,
 	}
 	// 写入数据库
-	if err := db.Db.Create(sync).Error; err != nil {
+	if err := db.Db.Save(sync).Error; err != nil {
 		helpers.AppLogger.Errorf("创建同步任务失败: %v", err)
 		return nil
 	}

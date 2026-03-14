@@ -240,13 +240,13 @@ videoloop:
 		waitSaveFiles = append(waitSaveFiles, mediaFile)
 		if len(waitSaveFiles) > 100 {
 			// 批量入库
-			db.Db.Create(waitSaveFiles)
+			db.Db.Save(waitSaveFiles)
 			waitSaveFiles = []*models.ScrapeMediaFile{}
 		}
 	}
 	if len(waitSaveFiles) > 0 {
 		// 批量入库
-		db.Db.Create(waitSaveFiles)
+		db.Db.Save(waitSaveFiles)
 	}
 	return nil
 }

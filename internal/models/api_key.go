@@ -80,7 +80,7 @@ func CreateAPIKey(userID uint, name string) (*ApiKey, string, error) {
 		IsActive:  true,
 	}
 
-	if err := db.Db.Create(apiKey).Error; err != nil {
+	if err := db.Db.Save(apiKey).Error; err != nil {
 		helpers.AppLogger.Errorf("创建API Key失败: %v", err)
 		return nil, "", err
 	}

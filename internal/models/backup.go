@@ -128,7 +128,7 @@ func GetOrCreateBackupConfig() *BackupConfig {
 				BackupMaxCount:  DefaultBackupMaxCount,
 				BackupCompress:  1,
 			}
-			if err := db.Db.Create(&config).Error; err != nil {
+			if err := db.Db.Save(&config).Error; err != nil {
 				helpers.AppLogger.Errorf("创建默认备份配置失败: %v", err)
 				return &config
 			}

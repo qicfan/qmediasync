@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数据库配置 - QMediaSync</title>
+    <title>配置向导 - QMediaSync</title>
     <style>
         * {
             margin: 0;
@@ -206,7 +206,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="title">数据库配置</h1>
+        <h1 class="title">配置向导</h1>
 
         {{ if .isRestricted }}
         <div class="warning-box visible">
@@ -277,6 +277,12 @@
                 <label for="database">数据库名</label>
                 <input type="text" id="database" value="qmediasync" oninput="onInputChanged()">
             </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <span style="width:50%;">启用 SSL 连接</span>
+                    <input type="checkbox" id="ssl" onchange="onInputChanged()">
+                </label>
+            </div>
             <div class="btn-group">
                 <button id="btn-test" class="btn btn-secondary" onclick="testConnection()">测试连接</button>
                 <button id="btn-save" class="btn" onclick="saveConfig()" disabled style="opacity: 0.5; cursor: not-allowed;">保存配置</button>
@@ -291,6 +297,7 @@
             postgresType: 'external'
         };
         let connectionTested = false;
+        let needDropDatabase = false;
 
         function goToEngineSelect() {
             const adminUsername = document.getElementById('adminUsername').value.trim();
@@ -359,6 +366,7 @@
             const user = document.getElementById('user').value;
             const password = document.getElementById('password').value;
             const database = document.getElementById('database').value;
+            const ssl = document.getElementById('ssl').checked;
 
             if (!host || !user || !password || !database) {
                 showMessage('error', '请填写所有必填字段');
@@ -379,7 +387,8 @@
                     port: port,
                     user: user,
                     password: password,
-                    database: database
+                    database: database,
+                    ssl: ssl
                 })
             })
             .then(response => response.json())
@@ -392,6 +401,12 @@
                     btnTest.style.borderColor = '#28a745';
                     showMessage('success', result.message);
                     connectionTested = true;
+                    needDropDatabase = false;
+                    if (result.dbExists && result.hasOtherTables) {
+                        if (confirm('数据库已存在且包含数据表，是否清空该数据库？\n\n选择"确定"将删除并重建数据库(如果要完全重装请选择确定）\n选择"取消"将保留现有数据')) {
+                            needDropDatabase = true;
+                        }
+                    }
                     updateSaveButton();
                 } else {
                     btnTest.textContent = '测试连接';
@@ -431,7 +446,8 @@
                 engine: currentConfig.engine,
                 postgresType: currentConfig.postgresType,
                 adminUsername: document.getElementById('adminUsername').value.trim(),
-                adminPassword: document.getElementById('adminPassword').value
+                adminPassword: document.getElementById('adminPassword').value,
+                dropDatabase: needDropDatabase
             };
 
             if (currentConfig.engine === 'postgres' && currentConfig.postgresType === 'external') {
@@ -440,6 +456,7 @@
                 data.user = document.getElementById('user').value;
                 data.password = document.getElementById('password').value;
                 data.database = document.getElementById('database').value;
+                data.ssl = document.getElementById('ssl').checked;
 
                 if (!data.host || !data.user || !data.password || !data.database) {
                     showMessage('error', '请填写所有必填字段');

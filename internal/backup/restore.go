@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
 // 从文件还原到数据库
 func Restore(filePath string) error {
-	totalTable := 35
+	totalTable := len(models.AllTables)
 	count := 0
 	// 检查是否正在运行
 	if IsRunning() {
@@ -50,126 +51,18 @@ func Restore(filePath string) error {
 	}
 	// 开始还原
 	SetRunningResult("restore", "开始还原数据库", totalTable, count, "", true)
-	if err := restoreFromJsonFile(tempDir, "Account", totalTable, &count, models.Account{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "ApiKey", totalTable, &count, models.ApiKey{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "DbDownloadTask", totalTable, &count, models.DbDownloadTask{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "DbUploadTask", totalTable, &count, models.DbUploadTask{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "Settings", totalTable, &count, models.Settings{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "User", totalTable, &count, models.User{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "Sync", totalTable, &count, models.Sync{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "SyncPath", totalTable, &count, models.SyncPath{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "SyncFile", totalTable, &count, models.SyncFile{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "ScrapeSettings", totalTable, &count, models.ScrapeSettings{}); err != nil {
-		return err
-	}
-
-	if err := restoreFromJsonFile(tempDir, "ScrapePath", totalTable, &count, models.ScrapePath{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "ScrapeMediaFile", totalTable, &count, models.ScrapeMediaFile{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "ScrapePathCategory", totalTable, &count, models.ScrapePathCategory{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "MovieCategory", totalTable, &count, models.MovieCategory{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "TvShowCategory", totalTable, &count, models.TvShowCategory{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "Media", totalTable, &count, models.Media{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "MediaSeason", totalTable, &count, models.MediaSeason{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "MediaEpisode", totalTable, &count, models.MediaEpisode{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "ScrapeStrmPath", totalTable, &count, models.ScrapeStrmPath{}); err != nil {
-		return err
-	}
-
-	if err := restoreFromJsonFile(tempDir, "EmbyConfig", totalTable, &count, models.EmbyConfig{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "EmbyLibrary", totalTable, &count, models.EmbyLibrary{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "EmbyMediaItem", totalTable, &count, models.EmbyMediaItem{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "EmbyMediaSyncFile", totalTable, &count, models.EmbyMediaSyncFile{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "EmbyLibrarySyncPath", totalTable, &count, models.EmbyLibrarySyncPath{}); err != nil {
-		return err
-	}
-
-	if err := restoreFromJsonFile(tempDir, "RequestStat", totalTable, &count, models.RequestStat{}); err != nil {
-		return err
-	}
-
-	if err := restoreFromJsonFile(tempDir, "BackupConfig", totalTable, &count, models.BackupConfig{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "BackupRecord", totalTable, &count, models.BackupRecord{}); err != nil {
-		return err
-	}
-
-	if err := restoreFromJsonFile(tempDir, "BarkChannelConfig", totalTable, &count, models.BarkChannelConfig{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "CustomWebhookChannelConfig", totalTable, &count, models.CustomWebhookChannelConfig{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "MeowChannelConfig", totalTable, &count, models.MeoWChannelConfig{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "TelegramChannelConfig", totalTable, &count, models.TelegramChannelConfig{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "NotificationChannel", totalTable, &count, models.NotificationChannel{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "ServerChanChannelConfig", totalTable, &count, models.ServerChanChannelConfig{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "NotificationRule", totalTable, &count, models.NotificationRule{}); err != nil {
-		return err
-	}
-	if err := restoreFromJsonFile(tempDir, "SyncPathScrapePath", totalTable, &count, models.SyncPathScrapePath{}); err != nil {
-		return err
-	}
-
-	if err := restoreFromJsonFile(tempDir, "Migrator", totalTable, &count, models.Migrator{}); err != nil {
-		return err
+	for _, table := range models.AllTables {
+		if err := restoreFromJsonFile(tempDir, helpers.GetStructName(table), totalTable, &count, table); err != nil {
+			helpers.AppLogger.Warnf("恢复表 %s 失败: %v", helpers.GetStructName(table), err)
+			continue
+		}
 	}
 	helpers.AppLogger.Infof("完成恢复任务")
 	return nil
 }
 
 // 从json文件还原到数据库
-func restoreFromJsonFile[T any](backupDir string, modelName string, totalTable int, count *int, model T) error {
+func restoreFromJsonFile(backupDir string, modelName string, totalTable int, count *int, model any) error {
 	backupFilePath := filepath.Join(backupDir, modelName+".json")
 	// 检查文件是否存在
 	if _, err := os.Stat(backupFilePath); os.IsNotExist(err) {
@@ -184,7 +77,7 @@ func restoreFromJsonFile[T any](backupDir string, modelName string, totalTable i
 	}
 	defer file.Close()
 	// 1. 删除表（如果存在）
-	err = db.Db.Migrator().DropTable(&model)
+	err = db.Db.Migrator().DropTable(model)
 	if err != nil {
 		// 处理错误
 		helpers.AppLogger.Warnf("删除表 %s 失败: %v", modelName, err)
@@ -194,7 +87,7 @@ func restoreFromJsonFile[T any](backupDir string, modelName string, totalTable i
 	}
 
 	// 2. 重新创建表
-	err = db.Db.AutoMigrate(&model)
+	err = db.Db.AutoMigrate(model)
 	if err != nil {
 		// 处理错误
 		helpers.AppLogger.Warnf("创建表 %s 失败: %v", modelName, err)
@@ -210,25 +103,33 @@ func restoreFromJsonFile[T any](backupDir string, modelName string, totalTable i
 	scanner := bufio.NewScanner(file)
 	// 统计还原数量
 	var restoredCount int
+	typ := reflect.TypeOf(model)
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	setCount := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		// 解析json
-		var item T
-		if err := json.Unmarshal([]byte(line), &item); err != nil {
-			// return fmt.Errorf("解析json失败: %v", err)
+		// 使用反射创建新实例
+		item := reflect.New(typ).Interface()
+		if err := json.Unmarshal([]byte(line), item); err != nil {
 			helpers.AppLogger.Warnf("%s 解析json失败: %v", modelName, err)
 		} else {
-			// helpers.AppLogger.Infof("%s 解析json成功: %d", modelName, restoredCount)
-		}
-		// 插入数据库
-		if err := db.Db.Create(&item).Error; err != nil {
-			// return fmt.Errorf("插入数据库失败: %v", err)
-			helpers.AppLogger.Warnf("%s 插入数据库失败: %v", modelName, err)
-		} else {
-			// helpers.AppLogger.Infof("%s 插入数据库成功: %d", modelName, restoredCount)
+			// 插入数据库
+			if err := db.Db.Create(item).Error; err != nil {
+				helpers.AppLogger.Warnf("%s 插入数据库失败: %v", modelName, err)
+			}
 		}
 		restoredCount++
+		setCount++
+		if setCount >= 10 {
+			setCount = 0
+			SetRunningResult("restore", fmt.Sprintf("已还原 %d 条 %s 记录", restoredCount, modelName), totalTable, *count, "", false)
+		}
 	}
+	tableName := models.GetTableName(model)
+	// 重置表的主键序列
+	models.ResetSequence(tableName, "id")
 	*count++
 	SetRunningResult("restore", fmt.Sprintf("已还原 %d 条 %s 记录", restoredCount, modelName), totalTable, *count, "", false)
 	return nil

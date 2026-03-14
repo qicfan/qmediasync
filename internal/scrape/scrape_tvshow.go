@@ -64,58 +64,84 @@ func (t *tvShowScrapeImpl) Start() error {
 		go t.scrapeTvShow(i+1, wg, episodeWg)
 		go t.scrapeEpisode(i+1, episodeWg)
 	}
+	// 启动一个协程检查是否停止
+	stopChan := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-t.ctx.Done():
+			stoploop:
+				for {
+					select {
+					case tvshowTask := <-t.fileTasks:
+						helpers.AppLogger.Infof("清理剩余电视剧刮削任务 %d", tvshowTask.mediaFile.ID)
+						wg.Done()
+					case episodeMediaFileID := <-t.episodeTasks:
+						helpers.AppLogger.Infof("清理剩余集刮削任务 %d", episodeMediaFileID)
+						episodeWg.Done()
+					default:
+						break stoploop
+					}
+				}
+				// helpers.AppLogger.Infof("所有待刮削和待整理记录都已处理")
+				time.Sleep(time.Second)
+				return
+			case <-stopChan:
+				helpers.AppLogger.Infof("刮削任务接收到停止信号，退出清理循环")
+				return
+			default:
+				helpers.AppLogger.Infof("1秒后继续检查是否已经停止任务")
+				time.Sleep(time.Second)
+			}
+		}
+	}()
 mainloop:
 	for {
 		select {
 		case <-t.ctx.Done():
 			helpers.AppLogger.Infof("刮削任务接收到取消信号，退出主循环")
-			// 清空后关闭所有队列
-			// range 会读取所有剩余数据后自动退出
-			for {
-				select {
-				case tvshowTask := <-t.fileTasks:
-					helpers.AppLogger.Infof("清理剩余电视剧刮削任务 %s", filepath.Base(tvshowTask.mediaFile.TvshowPath))
-					wg.Done()
-				case episodeMediaFileID := <-t.episodeTasks:
-					helpers.AppLogger.Infof("清理剩余集刮削任务 %d", episodeMediaFileID)
-					episodeWg.Done()
-				default:
-					break mainloop
-				}
-			}
+			break mainloop
 		default:
-			// 从数据库取数据
-			// 扫描阶段已经提取了季和集的序号，这里获取到的是用剧分组的所有数据，需要处理成剧->季的形式
-			mediaFiles := models.GetScannedScrapeMediaFilesGroupByTvshowPathId(t.scrapePath.ID, t.scrapePath.GetMaxThreads()*2)
-			if len(mediaFiles) == 0 {
-				helpers.AppLogger.Infof("所有待刮削和待整理记录都已加入处理队列，关闭队列通道，等待执行完成")
-				break mainloop
-			}
-			tvshowTasks := make(map[string]*tvshowTask, 0)
-			for _, mediaFile := range mediaFiles {
-				// helpers.AppLogger.Infof("处理电视剧 %s 季 %d", filepath.Base(mediaFile.TvshowPath), mediaFile.SeasonNumber)
-				if _, ok := tvshowTasks[mediaFile.TvshowPathId]; !ok {
-					tvshowTasks[mediaFile.TvshowPathId] = &tvshowTask{
-						mediaFile: mediaFile,
-						seasons:   make([]uint, 0),
-					}
-				}
-				// 去重
-				if slices.Contains(tvshowTasks[mediaFile.TvshowPathId].seasons, mediaFile.ID) {
-					continue
-				}
-				tvshowTasks[mediaFile.TvshowPathId].seasons = append(tvshowTasks[mediaFile.TvshowPathId].seasons, mediaFile.ID)
-			}
-			for _, tvshowTask := range tvshowTasks {
-				t.fileTasks <- tvshowTask
-				wg.Add(1) // 加进去之后，计数+1
-				helpers.AppLogger.Infof("电视剧 %s 已加入处理队列", tvshowTask.mediaFile.VideoFilename)
-			}
-			helpers.AppLogger.Infof("已加入 %d 个季到处理队列，等待刮削完成", len(tvshowTasks))
-			wg.Wait()
-			episodeWg.Wait() // 等待集处理队列完成
 		}
+		// 从数据库取数据
+		// 扫描阶段已经提取了季和集的序号，这里获取到的是用剧分组的所有数据，需要处理成剧->季的形式
+		mediaFiles := models.GetScannedScrapeMediaFilesGroupByTvshowPathId(t.scrapePath.ID, t.scrapePath.GetMaxThreads()*2)
+		if len(mediaFiles) == 0 {
+			helpers.AppLogger.Infof("所有待刮削和待整理记录都已加入处理队列，关闭队列通道，等待执行完成")
+			break mainloop
+		}
+		tvshowTasks := make(map[string]*tvshowTask, 0)
+	fileloop:
+		for _, mediaFile := range mediaFiles {
+			// helpers.AppLogger.Infof("处理电视剧 %s 季 %d", filepath.Base(mediaFile.TvshowPath), mediaFile.SeasonNumber)
+			if _, ok := tvshowTasks[mediaFile.TvshowPathId]; !ok {
+				tvshowTasks[mediaFile.TvshowPathId] = &tvshowTask{
+					mediaFile: mediaFile,
+					seasons:   make([]uint, 0),
+				}
+			}
+			// 去重
+			if slices.Contains(tvshowTasks[mediaFile.TvshowPathId].seasons, mediaFile.ID) {
+				continue fileloop
+			}
+			tvshowTasks[mediaFile.TvshowPathId].seasons = append(tvshowTasks[mediaFile.TvshowPathId].seasons, mediaFile.ID)
+		}
+		for _, tvshowTask := range tvshowTasks {
+			t.fileTasks <- tvshowTask
+			wg.Add(1) // 加进去之后，计数+1
+			helpers.AppLogger.Infof("电视剧 %s 已加入处理队列", tvshowTask.mediaFile.VideoFilename)
+		}
+		helpers.AppLogger.Infof("已加入 %d 个季到处理队列，等待刮削完成", len(tvshowTasks))
+		wg.Wait()
+		episodeWg.Wait() // 等待集处理队列完成
 	}
+	helpers.AppLogger.Infof("所有集刮削整理任务都已完成，发送停止信号")
+	select {
+	case stopChan <- struct{}{}:
+		helpers.AppLogger.Infof("已发送信号让所有清理监控任务退出")
+	default:
+	}
+	close(stopChan)
 	close(t.fileTasks)
 	close(t.episodeTasks)
 	helpers.AppLogger.Infof("所有刮削整理任务都已完成，本次任务结束")

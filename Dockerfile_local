@@ -33,7 +33,7 @@ COPY icon.ico .
 RUN chmod +x /app/scripts/docker-entrypoint.sh
 RUN chmod +x /app/scripts/watch_update.sh
 RUN chmod +x /app/QMediaSync
-RUN chmod +w /app
+RUN chmod 777 /app
 
 VOLUME ["/app/config", "/media"]
 # web ui端口

@@ -11,6 +11,7 @@ import (
 	mathrand "math/rand"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -263,4 +264,12 @@ func ChineseToPinyin(s string) (bool, string) {
 		}
 	}
 	return hasChinese, result.String()
+}
+
+func GetStructName(obj interface{}) string {
+	if t := reflect.TypeOf(obj); t.Kind() == reflect.Ptr {
+		return t.Elem().Name()
+	} else {
+		return t.Name()
+	}
 }

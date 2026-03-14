@@ -335,7 +335,7 @@ func (m *MovieCategory) Save(name string, genreIdsArray []int, languageArray []s
 		m.Language = string(language)
 	}
 	if m.ID == 0 {
-		db.Db.Create(m)
+		db.Db.Save(m)
 	} else {
 		db.Db.Save(m)
 	}
@@ -368,7 +368,7 @@ func (m *TvShowCategory) Save(name string, genreIdsArray []int, countryArray []s
 		m.Countries = string(countries)
 	}
 	if m.ID == 0 {
-		db.Db.Create(m)
+		db.Db.Save(m)
 	} else {
 		db.Db.Save(m)
 	}
@@ -426,7 +426,7 @@ func SaveScrapePathCategory(spcId, scrapePathId uint, categoryId uint, fileId st
 			FileId:       fileId,
 		}
 		// 保存新记录
-		err = db.Db.Create(scrapePathCategory).Error
+		err = db.Db.Save(scrapePathCategory).Error
 	}
 	if err != nil {
 		helpers.AppLogger.Errorf("保存刮削目录分类失败: %v", err)

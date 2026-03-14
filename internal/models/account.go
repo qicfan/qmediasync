@@ -173,7 +173,7 @@ func CreateAccountByName(name string, srouceType SourceType, appId string) (*Acc
 	account.Username = ""
 
 	// 插入数据库，如果插入失败则报错
-	err := db.Db.Create(account).Error
+	err := db.Db.Save(account).Error
 	if err != nil {
 		helpers.AppLogger.Errorf("创建开放平台账号失败: %v", err)
 		return nil, err
@@ -228,7 +228,7 @@ func CreateOpenListAccount(baseUrl string, username string, password string, tok
 	helpers.AppLogger.Infof("创建openlist账号成功，用户ID：%s，用户名：%s", account.UserId, account.Name)
 
 	// 插入数据库，如果插入失败则报错
-	err := db.Db.Create(account).Error
+	err := db.Db.Save(account).Error
 	if err != nil {
 		helpers.AppLogger.Errorf("创建openlist账号失败: %v", err)
 		return nil, err
@@ -270,7 +270,7 @@ func CreateAccountFull(sourceType SourceType, AppId string, name string, token s
 		}
 		return account
 	} else {
-		err := db.Db.Create(account).Error
+		err := db.Db.Save(account).Error
 		if err != nil {
 			helpers.AppLogger.Errorf("创建开放平台账号失败: %v", err)
 			return nil

@@ -22,7 +22,7 @@ func (*RequestStat) TableName() string {
 
 // CreateRequestStat 创建请求统计记录
 func CreateRequestStat(stat *RequestStat) error {
-	return db.Db.Create(stat).Error
+	return db.Db.Save(stat).Error
 }
 
 // GetRequestStatsByDateRange 获取指定日期范围内的请求统计

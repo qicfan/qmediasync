@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync/atomic"
 )
 
@@ -100,7 +102,12 @@ func (d *localDriver) GetPathIdByPath(ctx context.Context, path string) (string,
 }
 
 func (d *localDriver) MakeStrmContent(sf *SyncFileCache) string {
-	return sf.GetFileId()
+	fullPath := sf.GetFileId()
+	if runtime.GOOS == "windows" {
+		// windows要将分隔换成\
+		fullPath = strings.ReplaceAll(fullPath, "/", "\\")
+	}
+	return fullPath
 }
 
 func (d *localDriver) GetTotalFileCount(ctx context.Context) (int64, string, error) {

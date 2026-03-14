@@ -62,7 +62,6 @@ check_and_update_ownership() {
             if [ "$SAVED_ID" != "$CURRENT_ID" ]; then
                 echo "检测到GUID:GPID变化 ($SAVED_ID -> $CURRENT_ID)，更新目录所有者..."
                 chown -R "$CURRENT_GUID:$CURRENT_GPID" /app/config
-                chown "$CURRENT_GUID:$CURRENT_GPID" /app
                 echo "所有者更新完成"
                 echo "$CURRENT_ID" > "$USER_FILE"
             else
@@ -73,7 +72,6 @@ check_and_update_ownership() {
             echo "$CURRENT_ID" > "$USER_FILE"
             chown "$CURRENT_GUID:$CURRENT_GPID" "$USER_FILE" 2>/dev/null
             chown -R "$CURRENT_GUID:$CURRENT_GPID" /app/config
-            chown "$CURRENT_GUID:$CURRENT_GPID" /app
              echo "检测到GUID:GPID变化 ($SAVED_ID -> $CURRENT_ID)，更新目录所有者完成"
         fi
     else

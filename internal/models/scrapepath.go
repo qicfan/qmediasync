@@ -169,7 +169,7 @@ func (m *ScrapePath) Save() error {
 				m.MaxThreads = DEFAULT_LOCAL_MAX_THREADS
 			}
 		}
-		err := db.Db.Create(m).Error
+		err := db.Db.Save(m).Error
 		if err != nil {
 			helpers.AppLogger.Errorf("添加刮削目录失败: %v", err)
 			return err

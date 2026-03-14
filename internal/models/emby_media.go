@@ -96,7 +96,7 @@ func UpsertEmbyLibraries(libs []embyclientrestgo.EmbyLibrary) error {
 			}
 		case err == gorm.ErrRecordNotFound:
 			rec := &EmbyLibrary{Name: lib.Name, LibraryId: lib.ID}
-			if cerr := db.Db.Create(rec).Error; cerr != nil {
+			if cerr := db.Db.Save(rec).Error; cerr != nil {
 				return cerr
 			}
 		default:
@@ -111,7 +111,7 @@ func CreateOrUpdateEmbyMediaItem(item *EmbyMediaItem) error {
 	existing := &EmbyMediaItem{}
 	err := db.Db.Where("item_id = ?", item.ItemId).First(existing).Error
 	if err != nil {
-		return db.Db.Create(item).Error
+		return db.Db.Save(item).Error
 	}
 	item.ID = existing.ID
 	return db.Db.Model(existing).Updates(item).Error
@@ -190,7 +190,7 @@ func CreateEmbyMediaSyncFile(embyItemId string, syncFileId uint, pickCode string
 		return nil
 	}
 	relation := &EmbyMediaSyncFile{EmbyItemId: uint(embyItemIdInt), SyncFileId: syncFileId, PickCode: pickCode, SyncPathId: syncPathId}
-	return db.Db.Create(relation).Error
+	return db.Db.Save(relation).Error
 }
 
 // CreateOrUpdateEmbyLibrarySyncPath 创建或更新关联（存在则跳过）
@@ -205,7 +205,7 @@ func CreateOrUpdateEmbyLibrarySyncPath(libraryId string, syncPathId uint, librar
 		return nil
 	}
 	relation := &EmbyLibrarySyncPath{LibraryId: libraryId, SyncPathId: syncPathId, LibraryName: libraryName}
-	return db.Db.Create(relation).Error
+	return db.Db.Save(relation).Error
 }
 
 // DeleteEmbyLibrarySyncPathsBySyncPathID 按同步路径删除关联
