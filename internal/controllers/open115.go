@@ -136,6 +136,38 @@ func GetFileDetail(c *gin.Context) {
 
 var keyLock KeyLockWithTimeout
 
+// checkURLValidity 使用HEAD请求检查URL是否有效
+// 返回true表示URL有效（2xx状态码），false表示URL已失效
+func checkURLValidity(urlStr string) bool {
+	client := &http.Client{
+		Timeout: 3 * time.Second, // 3秒超时
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// 不跟随重定向，只检查第一次响应
+			return http.ErrUseLastResponse
+		},
+	}
+
+	req, err := http.NewRequest("HEAD", urlStr, nil)
+	if err != nil {
+		helpers.AppLogger.Warnf("创建HEAD请求失败: %v", err)
+		return false
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		helpers.AppLogger.Warnf("HEAD请求失败: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+
+	// 检查状态码是否为2xx
+	isValid := resp.StatusCode >= 200 && resp.StatusCode < 300
+	if !isValid {
+		helpers.AppLogger.Warnf("URL已失效，状态码: %d, URL: %s", resp.StatusCode, urlStr)
+	}
+	return isValid
+}
+
 // 查询并302跳转到115文件直链
 // 请求下载链接的user-agent必须跟访问下载链接的user-agent相同
 func Get115FileUrl(c *gin.Context) {
@@ -185,6 +217,20 @@ func Get115FileUrl(c *gin.Context) {
 			db.Cache.Set(cacheKey, []byte(cachedUrl), 1800)
 		} else {
 			helpers.AppLogger.Infof("从缓存中查询到115下载链接: pickcode=%s, ua=%s => %s", req.PickCode, ua, cachedUrl)
+			// 检查缓存链接是否有效
+			if !checkURLValidity(cachedUrl) {
+				helpers.AppLogger.Warnf("缓存链接已失效，删除缓存并重新获取: pickcode=%s, ua=%s", req.PickCode, ua)
+				db.Cache.Delete(cacheKey)
+				// 重新获取链接
+				cachedUrl = client.GetDownloadUrl(context.Background(), req.PickCode, ua, true)
+				if cachedUrl == "" {
+					c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取115下载链接失败", Data: nil})
+					return
+				}
+				helpers.AppLogger.Infof("重新获取到115下载链接: pickcode=%s, ua=%s => %s", req.PickCode, ua, cachedUrl)
+				// 缓存半小时
+				db.Cache.Set(cacheKey, []byte(cachedUrl), 1800)
+			}
 		}
 		if req.Force == 0 {
 			if models.SettingsGlobal.LocalProxy == 1 {
@@ -278,6 +324,20 @@ func Get115UrlByPickCode(c *gin.Context) {
 			db.Cache.Set(cacheKey, []byte(cachedUrl), 3000)
 		} else {
 			helpers.AppLogger.Infof("从缓存中查询到115下载链接: pickcode=%s, ua=%s => %s", pickCode, ua, cachedUrl)
+			// 检查缓存链接是否有效
+			if !checkURLValidity(cachedUrl) {
+				helpers.AppLogger.Warnf("缓存链接已失效，删除缓存并重新获取: pickcode=%s, ua=%s", pickCode, ua)
+				db.Cache.Delete(cacheKey)
+				// 重新获取链接
+				cachedUrl = client.GetDownloadUrl(context.Background(), pickCode, ua, true)
+				if cachedUrl == "" {
+					c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取115下载链接失败", Data: nil})
+					return
+				}
+				helpers.AppLogger.Infof("重新获取到115下载链接: pickcode=%s, ua=%s => %s", pickCode, ua, cachedUrl)
+				// 缓存50分钟
+				db.Cache.Set(cacheKey, []byte(cachedUrl), 3000)
+			}
 		}
 		if req.Force == 0 {
 			if models.SettingsGlobal.LocalProxy == 1 {
