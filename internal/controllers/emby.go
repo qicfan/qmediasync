@@ -600,6 +600,19 @@ func sendDeletedSeriesNotification(seriesId string, seriesName string, seasons m
 	}
 }
 
+// removeDuplicates 去除剧集数组中的重复集数
+func removeDuplicates(episodes []int) []int {
+	seen := make(map[int]struct{})
+	result := make([]int, 0, len(episodes))
+	for _, ep := range episodes {
+		if _, exists := seen[ep]; !exists {
+			seen[ep] = struct{}{}
+			result = append(result, ep)
+		}
+	}
+	return result
+}
+
 func formatSeasonEpisodes(seasons map[int][]int) string {
 	if len(seasons) == 0 {
 		return ""
@@ -617,6 +630,10 @@ func formatSeasonEpisodes(seasons map[int][]int) string {
 		if len(episodes) == 0 {
 			continue
 		}
+
+		// 去重处理，避免同一集多次触发事件导致重复显示
+		episodes = removeDuplicates(episodes)
+
 		sort.Ints(episodes)
 		seasonStr := fmt.Sprintf("S%d", seasonNumber)
 
