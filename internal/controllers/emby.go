@@ -31,6 +31,12 @@ type EmbyEvent struct {
 		ID      string `json:"Id"`
 		Version string `json:"Version"`
 	} `json:"Server"`
+	User struct {
+		ID        string `json:"Id"`
+		Name      string `json:"Name"`
+		IsAdmin   bool   `json:"IsAdmin"`
+		IsActive  bool   `json:"IsActive"`
+	} `json:"User"`
 	Item struct {
 		Name              string            `json:"Name"`
 		ID                string            `json:"Id"`
@@ -49,6 +55,25 @@ type EmbyEvent struct {
 		Genres            []string          `json:"Genres"`
 		ImageTags         map[string]string `json:"ImageTags"`
 	} `json:"Item"`
+	Session struct {
+		ID          string `json:"Id"`
+		UserId      string `json:"UserId"`
+		UserName    string `json:"UserName"`
+		ClientName  string `json:"ClientName"`
+		DeviceName  string `json:"DeviceName"`
+		DeviceId    string `json:"DeviceId"`
+		ApplicationVersion string `json:"ApplicationVersion"`
+	} `json:"Session"`
+	PlaybackInfo struct {
+		PositionTicks       int64  `json:"PositionTicks"`
+		IsPaused           bool   `json:"IsPaused"`
+		IsMuted           bool   `json:"IsMuted"`
+		VolumeLevel       int    `json:"VolumeLevel"`
+		AudioStreamIndex  int    `json:"AudioStreamIndex"`
+		SubtitleStreamIndex int   `json:"SubtitleStreamIndex"`
+		PlayMethod        string `json:"PlayMethod"`
+		PlaySessionId     string `json:"PlaySessionId"`
+	} `json:"PlaybackInfo"`
 }
 
 var refreshLibraryLock bool = false
@@ -220,6 +245,19 @@ func Webhook(ctx *gin.Context) {
 				}
 			}
 		}
+	}
+
+	// 处理播放事件
+	if event.Event == "playback.start" {
+		helpers.AppLogger.Infof("Emby播放开始事件: User=%s, Item=%s, Device=%s", 
+			event.User.Name, event.Item.Name, event.Session.DeviceName)
+		go sendPlaybackStartNotification(event)
+	}
+
+	if event.Event == "playback.stopped" {
+		helpers.AppLogger.Infof("Emby播放停止事件: User=%s, Item=%s, Device=%s", 
+			event.User.Name, event.Item.Name, event.Session.DeviceName)
+		go sendPlaybackStoppedNotification(event)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -607,3 +645,208 @@ func formatSeasonEpisodes(seasons map[int][]int) string {
 
 	return strings.Join(seasonStrArr, "; ")
 }
+
+// sendPlaybackStartNotification 发送播放开始通知
+func sendPlaybackStartNotification(event EmbyEvent) {
+	// 检查是否启用播放通知
+	if models.GlobalEmbyConfig == nil || models.GlobalEmbyConfig.EnablePlaybackNotification == 0 {
+		return
+	}
+
+	// 检查是否启用播放开始通知
+	if models.GlobalEmbyConfig.EnablePlayStart == 0 {
+		return
+	}
+
+	// 用户过滤
+	if models.GlobalEmbyConfig.PlaybackUserFilter != "" {
+		allowedUsers := strings.Split(models.GlobalEmbyConfig.PlaybackUserFilter, ",")
+		isAllowed := false
+		for _, user := range allowedUsers {
+			if strings.TrimSpace(user) == event.User.Name {
+				isAllowed = true
+				break
+			}
+		}
+		if !isAllowed {
+			helpers.AppLogger.Infof("播放通知：用户 %s 不在通知列表中，跳过", event.User.Name)
+			return
+		}
+	}
+
+	// 设备过滤
+	if models.GlobalEmbyConfig.PlaybackDeviceFilter != "" {
+		allowedDevices := strings.Split(models.GlobalEmbyConfig.PlaybackDeviceFilter, ",")
+		isAllowed := false
+		for _, device := range allowedDevices {
+			if strings.TrimSpace(device) == event.Session.DeviceName {
+				isAllowed = true
+				break
+			}
+		}
+		if !isAllowed {
+			helpers.AppLogger.Infof("播放通知：设备 %s 不在通知列表中，跳过", event.Session.DeviceName)
+			return
+		}
+	}
+
+	// 格式化媒体名称
+	mediaName := formatMediaName(event.Item)
+
+	// 构建通知标题
+	title := "🎬 Emby 播放开始"
+
+	// 构建通知内容
+	content := fmt.Sprintf("用户：%s\n设备：%s\n客户端：%s\n媒体：%s",
+		event.User.Name,
+		event.Session.DeviceName,
+		event.Session.ClientName,
+		mediaName)
+
+	// 发送通知
+	notif := &models.Notification{
+		Type:      models.NotificationType("playback_start"),
+		Title:     title,
+		Content:   content,
+		Timestamp: time.Now(),
+		Priority:  models.NormalPriority,
+	}
+	if notificationmanager.GlobalEnhancedNotificationManager != nil {
+		if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(context.Background(), notif); err != nil {
+			helpers.AppLogger.Errorf("发送播放开始通知失败: %v", err)
+		}
+	}
+}
+
+// sendPlaybackStoppedNotification 发送播放停止通知
+func sendPlaybackStoppedNotification(event EmbyEvent) {
+	// 检查是否启用播放通知
+	if models.GlobalEmbyConfig == nil || models.GlobalEmbyConfig.EnablePlaybackNotification == 0 {
+		return
+	}
+
+	// 检查是否启用播放停止通知
+	if models.GlobalEmbyConfig.EnablePlayStop == 0 {
+		return
+	}
+
+	// 用户过滤
+	if models.GlobalEmbyConfig.PlaybackUserFilter != "" {
+		allowedUsers := strings.Split(models.GlobalEmbyConfig.PlaybackUserFilter, ",")
+		isAllowed := false
+		for _, user := range allowedUsers {
+			if strings.TrimSpace(user) == event.User.Name {
+				isAllowed = true
+				break
+			}
+		}
+		if !isAllowed {
+			helpers.AppLogger.Infof("播放通知：用户 %s 不在通知列表中，跳过", event.User.Name)
+			return
+		}
+	}
+
+	// 设备过滤
+	if models.GlobalEmbyConfig.PlaybackDeviceFilter != "" {
+		allowedDevices := strings.Split(models.GlobalEmbyConfig.PlaybackDeviceFilter, ",")
+		isAllowed := false
+		for _, device := range allowedDevices {
+			if strings.TrimSpace(device) == event.Session.DeviceName {
+				isAllowed = true
+				break
+			}
+		}
+		if !isAllowed {
+			helpers.AppLogger.Infof("播放通知：设备 %s 不在通知列表中，跳过", event.Session.DeviceName)
+			return
+		}
+	}
+
+	// 格式化媒体名称
+	mediaName := formatMediaName(event.Item)
+
+	// 计算播放进度
+	progress := calculatePlaybackProgress(event.PlaybackInfo.PositionTicks)
+
+	// 构建通知标题
+	title := "⏹️ Emby 播放停止"
+
+	// 构建通知内容
+	content := fmt.Sprintf("用户：%s\n设备：%s\n客户端：%s\n媒体：%s\n播放进度：%s",
+		event.User.Name,
+		event.Session.DeviceName,
+		event.Session.ClientName,
+		mediaName,
+		progress)
+
+	// 发送通知
+	notif := &models.Notification{
+		Type:      models.NotificationType("playback_stop"),
+		Title:     title,
+		Content:   content,
+		Timestamp: time.Now(),
+		Priority:  models.NormalPriority,
+	}
+	if notificationmanager.GlobalEnhancedNotificationManager != nil {
+		if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(context.Background(), notif); err != nil {
+			helpers.AppLogger.Errorf("发送播放停止通知失败: %v", err)
+		}
+	}
+}
+
+// formatMediaName 格式化媒体名称
+func formatMediaName(item struct {
+	Name              string            `json:"Name"`
+	ID                string            `json:"Id"`
+	Type              string            `json:"Type"`
+	IsFolder          bool              `json:"IsFolder"`
+	FileName          string            `json:"FileName"`
+	Path              string            `json:"Path"`
+	Overview          string            `json:"Overview"`
+	SeriesName        string            `json:"SeriesName"`
+	SeasonName        string            `json:"SeasonName"`
+	SeriesId          string            `json:"SeriesId"`
+	SeasonId          string            `json:"SeasonId"`
+	IndexNumber       int               `json:"IndexNumber"`
+	ParentIndexNumber int               `json:"ParentIndexNumber"`
+	ProductionYear    int               `json:"ProductionYear"`
+	Genres            []string          `json:"Genres"`
+	ImageTags         map[string]string `json:"ImageTags"`
+}) string {
+	switch item.Type {
+	case "Episode":
+		if item.SeriesName != "" {
+			if item.ParentIndexNumber > 0 && item.IndexNumber > 0 {
+				return fmt.Sprintf("%s S%02dE%02d %s", item.SeriesName, item.ParentIndexNumber, item.IndexNumber, item.Name)
+			}
+			return fmt.Sprintf("%s %s", item.SeriesName, item.Name)
+		}
+		return item.Name
+	case "Movie":
+		if item.ProductionYear > 0 {
+			return fmt.Sprintf("%s (%d)", item.Name, item.ProductionYear)
+		}
+		return item.Name
+	default:
+		return item.Name
+	}
+}
+
+// calculatePlaybackProgress 计算播放进度
+func calculatePlaybackProgress(positionTicks int64) string {
+	if positionTicks <= 0 {
+		return "0%"
+	}
+	// 将ticks转换为秒（1 tick = 100纳秒）
+	positionSeconds := positionTicks / 10000000
+	// 格式化时长
+	hours := positionSeconds / 3600
+	minutes := (positionSeconds % 3600) / 60
+	seconds := positionSeconds % 60
+
+	if hours > 0 {
+		return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	}
+	return fmt.Sprintf("%02d:%02d", minutes, seconds)
+}
+
