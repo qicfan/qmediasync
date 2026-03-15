@@ -459,6 +459,7 @@ func initOthers() {
 	synccron.InitNewSyncQueueManager()
 	synccron.InitCron()      // 初始化定时任务（包含备份定时任务）
 	synccron.InitSyncCron()  // 初始化同步目录的定时任务
+	synccron.InitScrapeCron() // 初始化刮削目录的自定义定时任务
 	synccron.InitTokenCron() // 初始化定时刷新115的访问凭证
 	// 初始化备份服务
 	models.InitBackupService()
