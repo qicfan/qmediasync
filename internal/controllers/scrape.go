@@ -537,10 +537,33 @@ func SaveScrapePath(c *gin.Context) {
 		}
 	}
 	helpers.AppLogger.Infof("最大线程数：%d", reqData.MaxThreads)
+
+	// 检查 cron 表达式是否发生变化
+	var oldCronExpr string
+	var cronChanged bool
+	if reqData.ID > 0 {
+		// 更新操作
+		oldScrapePath := models.GetScrapePathByID(reqData.ID)
+		if oldScrapePath != nil {
+			oldCronExpr = oldScrapePath.CronExpression
+			cronChanged = oldCronExpr != reqData.CronExpression
+		}
+	} else {
+		// 新增操作：如果设置了 cron 表达式，则需要重新加载定时任务
+		cronChanged = reqData.CronExpression != ""
+	}
+
 	if err := reqData.Save(); err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: err.Error(), Data: nil})
 		return
 	}
+
+	// 如果 cron 表达式发生变化或新增了启用 cron 的刮削目录，重新加载定时任务
+	if cronChanged {
+		helpers.AppLogger.Infof("检测到刮削目录的 cron 配置发生变化，重新加载定时任务")
+		synccron.InitScrapeCron()
+	}
+
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "保存刮削目录成功", Data: nil})
 }
 
@@ -558,10 +581,25 @@ func SaveScrapePath(c *gin.Context) {
 // @Security ApiKeyAuth
 func DeleteScrapePath(c *gin.Context) {
 	id := helpers.StringToInt(c.Param("id"))
+
+	// 检查是否是启用了 cron 的刮削目录
+	oldScrapePath := models.GetScrapePathByID(uint(id))
+	shouldReloadCron := false
+	if oldScrapePath != nil && oldScrapePath.EnableCron && oldScrapePath.CronExpression != "" {
+		shouldReloadCron = true
+	}
+
 	if err := models.DeleteScrapePath(uint(id)); err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: err.Error(), Data: nil})
 		return
 	}
+
+	// 如果删除的是启用了 cron 的刮削目录，重新加载定时任务
+	if shouldReloadCron {
+		helpers.AppLogger.Infof("检测到删除的刮削目录 %d 启用了 cron，重新加载定时任务", id)
+		synccron.InitScrapeCron()
+	}
+
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "删除刮削目录成功", Data: nil})
 }
 
@@ -1095,6 +1133,11 @@ func ToggleScrapePathCron(c *gin.Context) {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "切换定时刮削失败: " + err.Error(), Data: nil})
 		return
 	}
+
+	// 重新加载定时任务管理器
+	helpers.AppLogger.Infof("刮削目录 %d 的定时任务开关已切换，重新加载定时任务", req.ID)
+	synccron.InitScrapeCron()
+
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "操作成功，定时刮削已切换", Data: nil})
 }
 
