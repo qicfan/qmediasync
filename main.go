@@ -459,6 +459,7 @@ func initOthers() {
 	synccron.InitNewSyncQueueManager()
 	synccron.InitCron()      // 初始化定时任务（包含备份定时任务）
 	synccron.InitSyncCron()  // 初始化同步目录的定时任务
+	synccron.InitScrapeCron() // 初始化刮削目录的自定义定时任务
 	synccron.InitTokenCron() // 初始化定时刷新115的访问凭证
 	// 初始化备份服务
 	models.InitBackupService()
@@ -606,6 +607,7 @@ func setRouter(r *gin.Engine) {
 		api.GET("/setting/strm-config", controllers.GetStrmConfig)                                 // 获取STRM配置
 		api.POST("/setting/strm-config", controllers.UpdateStrmConfig)                             // 更新STRM配置
 		api.GET("/setting/cron", controllers.GetCronNextTime)                                      // 获取Cron表达式的下5次执行时间
+		api.POST("/cron/validate", controllers.ValidateCron)                                      // 验证Cron表达式并返回描述
 		api.POST("/setting/emby/parse", controllers.ParseEmby)                                     // 解析Emby媒体信息
 		api.GET("/setting/emby-config", controllers.GetEmbyConfig)                                 // 获取新的Emby配置
 		api.POST("/setting/emby-config", controllers.UpdateEmbyConfig)                             // 更新新的Emby配置

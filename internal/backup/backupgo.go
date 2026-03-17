@@ -80,6 +80,9 @@ func stopAllTasks() error {
 	if synccron.GlobalCron != nil {
 		synccron.GlobalCron.Stop()
 	}
+	if synccron.ScrapeCron != nil {
+		synccron.ScrapeCron.Stop()
+	}
 	if models.GlobalDownloadQueue != nil {
 		models.GlobalDownloadQueue.Stop()
 	}
@@ -94,6 +97,7 @@ func startAllTasks() error {
 	synccron.ResumeAllNewSyncQueues()
 	synccron.InitCron()
 	synccron.InitSyncCron()
+	synccron.InitScrapeCron()
 	if models.GlobalDownloadQueue != nil {
 		models.GlobalDownloadQueue.Start()
 	}

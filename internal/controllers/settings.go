@@ -413,6 +413,43 @@ func GetCronNextTime(c *gin.Context) {
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "获取下次执行时间成功", Data: timeStrs})
 }
 
+// ValidateCron 验证Cron表达式并返回描述
+// @Summary 验证Cron表达式
+// @Description 验证Cron表达式的有效性并返回人类可读的描述
+// @Tags Cron
+// @Accept json
+// @Produce json
+// @Param cron_expression body string true "Cron表达式"
+// @Success 200 {object} object
+// @Failure 200 {object} object
+// @Router /cron/validate [post]
+// @Security JwtAuth
+// @Security ApiKeyAuth
+func ValidateCron(c *gin.Context) {
+	type validateCronRequest struct {
+		CronExpression string `json:"cron_expression" binding:"required"`
+	}
+	var req validateCronRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "请求参数错误: " + err.Error(), Data: nil})
+		return
+	}
+
+	// 验证Cron表达式
+	scrapePath := &models.ScrapePath{}
+	if !scrapePath.ValidateCronExpression(req.CronExpression) {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "无效的Cron表达式", Data: nil})
+		return
+	}
+
+	// 解析Cron表达式为人类可读的描述
+	description := scrapePath.ParseCronDescription(req.CronExpression)
+
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "验证成功", Data: map[string]string{
+		"description": description,
+	}})
+}
+
 // GetThreads 获取线程配置
 // @Summary 获取线程数配置
 // @Description 获取当前下载和文件详情查询的线程数配置
