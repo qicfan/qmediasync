@@ -42,6 +42,7 @@ FNOS/qmediasync-arm64/app/QMediaSync
 FNOS/qmediasync-arm64/app/web_statics/
 FNOS/qmediasync-amd64/app/web_statics/
 FNOS/qmediasync-amd64/app/QMediaSync
+Q115-STRM
 config/qmediasync.db-shm
 config/qmediasync.db-wal
 config/config - 副本.yml
