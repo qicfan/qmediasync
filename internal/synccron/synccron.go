@@ -11,6 +11,7 @@ import (
 	"Q115-STRM/internal/v115open"
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -20,6 +21,8 @@ var GlobalCron *cron.Cron
 var SyncCron *cron.Cron
 var ScrapeCron *cron.Cron
 var TokenCron *cron.Cron
+
+var tokenRefreshRunning int32 = 0
 
 func StartSyncCron() {
 	// 查询所有同步目录
@@ -91,6 +94,15 @@ func startScrapeCron() {
 }
 
 func RefreshOAuthAccessToken() {
+	// 检查是否已在运行，防止并发执行
+	if !atomic.CompareAndSwapInt32(&tokenRefreshRunning, 0, 1) {
+		helpers.AppLogger.Warn("Token刷新任务已在运行，跳过本次执行")
+		return
+	}
+
+	// 使用defer确保函数结束时释放锁
+	defer atomic.StoreInt32(&tokenRefreshRunning, 0)
+
 	// 刷新115的访问凭证
 	// 取所有115类型的账号
 	accounts, _ := models.GetAllAccount()
