@@ -86,7 +86,7 @@ func Webhook(ctx *gin.Context) {
 	var body []byte
 	if ctx.Request.Body != nil {
 		body, _ = io.ReadAll(ctx.Request.Body)
-		// helpers.AppLogger.Infof("emby webhook body: %s", string(body))
+		helpers.AppLogger.Infof("emby webhook body: %s", string(body))
 	}
 	if body == nil || (models.GlobalEmbyConfig != nil && (models.GlobalEmbyConfig.EmbyUrl == "" || models.GlobalEmbyConfig.EmbyApiKey == "")) {
 		ctx.JSON(http.StatusOK, gin.H{
