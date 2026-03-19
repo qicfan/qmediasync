@@ -47,3 +47,4 @@ config/qmediasync.db-shm
 config/qmediasync.db-wal
 config/config - 副本.yml
 QMediaSync
+*.mp4
