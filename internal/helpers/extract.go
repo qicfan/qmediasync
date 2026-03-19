@@ -446,7 +446,7 @@ func ExtractReleaseGroup(filename string) string {
 	}
 
 	// 尝试匹配通用的发布组模式（文件名末尾的横杠+字母数字组合）
-	re := regexp.MustCompile(`-(\w{2,})$`)
+	re := regexp.MustCompile(`-(\w{2,})(?:\.\w+)?$`)
 	matches := re.FindStringSubmatch(filename)
 	if len(matches) > 1 {
 		return matches[1]
