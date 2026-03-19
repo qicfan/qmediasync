@@ -21,7 +21,7 @@ var excludeKeyword = []string{
 	"VC-1", "DOVI", "NF", "ZmWeb", "DV", "HQ", "friDay", "amzn", "CC", "DTS", "dd+", "dvd5", "Extended", "Cut", "MVSTP",
 	"2Audios", "2Audio", "2Audios5.1", "2Audio5.1", "2Audio", "3Audios", "3AUDIO", "8Audios", "8Audio", "5Audios", "5Audio",
 	"sharphd", "NF", "HQ", "AAC", "GER", "MA", "FRA", "BFI", "EUR", "CN", "JP", "RU", "USA", "dd", "truehd", "HDR", "HDR10",
-	"CTRLHD", "FraMeSToR", "10bit", "IMAX", "web-dl", "uhd", "HDMA5", "BlueRay", "bluray", "blu-ray", "blue-ray", "DBD-Raws", "DBD", "WEBRIP", "DreamHD", "Remux", "ExKinoRay", "PandaQT", "CMCTV", "HDSKY",
+	"CTRLHD", "FraMeSToR", "10bit", "IMAX", "uhd", "HDMA5", "BlueRay", "bluray", "blu-ray", "blue-ray", "DBD-Raws", "DBD", "WEBRIP", "DreamHD", "Remux", "ExKinoRay", "PandaQT", "CMCTV", "HDSKY",
 	"tptv", "HDTV", "mnhd", "hhweb", "frds", "iTunes", "hybrid", "blu",
 	"c0kE", "mteam", "carpt", "1ptba", "SupaHacka", "lpcm2.0", "lpcm 1.0", "lpcm 2.0", "lpcm1.0", "lpcm", "hdspace", "diy", "F13@",
 	// "h264", "x264", "x265", "h265", "h.264", "h.265", "x.264", "x.265", "5.1", "7.1", "2.0",
@@ -427,6 +427,24 @@ func ExtractReleaseGroup(filename string) string {
 		`CHDBits$`, `HDHome$`, `HDSpace$`, `QuickIO$`, `NUKEHD$`, `WEBLE$`,
 		`112114119$`,
 		`CtrlHD$`, `FraMeSToR$`, `ExKinoRay$`, `HDSKY$`,
+		// 新增常见发布组
+		`HiveWeb$`, `HotWEB$`, `CatWEB$`, `ADWEB$`,
+		`CMCT$`, `CMCTV$`, `Oldboys$`,
+		`HDC$`, `HDChina$`, `HDCTV$`,
+		`CHDWEB$`, `CHD$`, `CHDHKTV$`,
+		`KKYY$`, `FRDS$`, `cfandora$`,
+		`HDH$`, `HDHWEB$`, `HDHTV$`,
+		`Wiki$`, `HDS$`, `HDSWEB$`,
+		`HDSky$`, `HDSPad$`, `HDSTV$`,
+		`AQLJ$`, `PTER$`, `PTERWEB$`, `PTerTV$`,
+		`OurTV$`, `Pbk$`, `FLTTH$`, `Ao$`,
+		`iLoveHD$`, `iLoveTV$`, `BeiTai$`,
+		`LeagueNF$`, `LeagueTV$`, `LeagueWEB$`,
+		`LHD$`, `beAst$`, `PuTao$`,
+		`TJUPT$`, `NYHD$`, `NYPT$`, `NYTV$`,
+		`PTH$`, `PTHWEB$`, `BTSCHOOL$`,
+		`BTSHD$`, `BTSTV$`,
+		`Hares$`, `HaresWEB$`, `HaresTV$`,
 	}
 
 	// 提取发布组
@@ -446,8 +464,16 @@ func ExtractReleaseGroup(filename string) string {
 	}
 
 	// 尝试匹配通用的发布组模式（文件名末尾的横杠+字母数字组合）
-	re := regexp.MustCompile(`-(\w{2,})$`)
+	// 先尝试匹配带文件扩展名的情况
+	re := regexp.MustCompile(`-(\w{2,})\.\w{3,4}$`)
 	matches := re.FindStringSubmatch(filename)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	// 如果没有匹配到，再尝试不带扩展名的情况
+	re = regexp.MustCompile(`-(\w{2,})$`)
+	matches = re.FindStringSubmatch(filename)
 	if len(matches) > 1 {
 		return matches[1]
 	}
@@ -465,7 +491,7 @@ func ExtractResourceType(filename string) string {
 		{`(?i)BluRay\.?Remux`, "BluRay Remux"},
 		{`(?i)Remux`, "Remux"},
 		{`(?i)(Blu.?Ray|Blue.?Ray|BDRip)`, "BluRay"},
-		{`(?i)(WEB.?DL|WEBDL|Netflix|Amazon|Disney\+|Hulu)`, "WEB-DL"},
+		{`(?i)(WEB.?DL|WEBDL|NETFLIX|AMAZON|DISNEY\+|HULU|HBO)`, "WEB-DL"},
 		{`(?i)(WEBRip|WEB-Rip)`, "WEBRip"},
 		{`(?i)HDTV`, "HDTV"},
 		{`(?i)(TVRip|TV-Rip)`, "TVRip"},
