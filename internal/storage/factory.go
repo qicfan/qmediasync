@@ -9,17 +9,17 @@ import (
 type DriverType string
 
 const (
-	DriverTypeLocal     DriverType = "local"
-	DriverType115       DriverType = "115"
-	DriverTypeBaiduPan  DriverType = "baidupan"
-	DriverTypeOpenList  DriverType = "openlist"
+	DriverTypeLocal    DriverType = "local"
+	DriverType115      DriverType = "115"
+	DriverTypeBaiduPan DriverType = "baidupan"
+	DriverTypeOpenList DriverType = "openlist"
 )
 
 // DriverConfig 驱动配置
 type DriverConfig struct {
 	Type    DriverType
 	Account interface{} // 具体的账号信息
-	BaseURL string     // 基础URL（某些网盘需要）
+	BaseURL string      // 基础URL（某些网盘需要）
 
 	// 115网盘配置
 	Client115 interface{} // *v115open.OpenClient

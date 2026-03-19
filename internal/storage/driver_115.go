@@ -74,7 +74,7 @@ func (d *Driver115) GetNetFileFiles(ctx context.Context, parentPath, parentPathI
 			Path:     parentPath,
 			FileName: file.FileName,
 			PickCode: file.PickCode,
-			FileType: file.FileCategory,
+			FileType: string(file.FileCategory),
 			FileSize: file.FileSize,
 			MTime:    file.Ptime,
 			Sha1:     file.Sha1,
@@ -225,12 +225,13 @@ func (d *Driver115) CreateDirRecursively(ctx context.Context, path string) (path
 
 // DeleteDir 删除目录
 func (d *Driver115) DeleteDir(ctx context.Context, path, pathId string) error {
-	return d.client.Del(ctx, []string{pathId}, "")
+	_, err := d.client.Del(ctx, []string{pathId}, "")
+	return err
 }
 
 // DeleteFile 删除文件
 func (d *Driver115) DeleteFile(ctx context.Context, parentId string, fileIds []string) error {
-	_, err := d.client.Del(ctx, fileIds, parentId)
+	_, err := d.client.Del(ctx, fileIds, "")
 	return err
 }
 
