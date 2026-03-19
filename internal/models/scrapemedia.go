@@ -581,6 +581,21 @@ func (sm *ScrapeMediaFile) FinishFromRenaming() {
 	sm.Save()
 }
 
+// CheckFolderTemplateValid 检查文件夹模板是否有效
+// 返回：true-有效, false-无效
+// 说明：文件夹模板不允许使用 {video_codec}、{audio_codec}、{original_name} 变量
+func CheckFolderTemplateValid(template string) bool {
+	// 检查是否包含不允许的变量
+	forbiddenVars := []string{"{video_codec}", "{audio_codec}", "{original_name}"}
+	for _, forbiddenVar := range forbiddenVars {
+		if strings.Contains(template, forbiddenVar) {
+			helpers.AppLogger.Errorf("文件夹模板不允许使用变量 %s，请检查模板配置", forbiddenVar)
+			return false
+		}
+	}
+	return true
+}
+
 func (sm *ScrapeMediaFile) GenerateNameByTemplate(template string) string {
 	if template == "" {
 		// 替换占位符
@@ -657,6 +672,30 @@ func (sm *ScrapeMediaFile) GenerateNameByTemplate(template string) string {
 		} else {
 			newName = strings.ReplaceAll(newName, "{episode_name}", "")
 		}
+	}
+	// 新增变量：original_title（从Media.OriginalName获取，文件夹模板和文件名模板都可用）
+	if sm.Media != nil && sm.Media.OriginalName != "" {
+		newName = strings.ReplaceAll(newName, "{original_title}", sm.Media.OriginalName)
+	} else {
+		newName = strings.ReplaceAll(newName, "{original_title}", "")
+	}
+	// 新增变量：video_codec（从VideoCodec.Codec获取，仅文件名模板可用）
+	if sm.VideoCodec != nil && sm.VideoCodec.Codec != "" {
+		newName = strings.ReplaceAll(newName, "{video_codec}", sm.VideoCodec.Codec)
+	} else {
+		newName = strings.ReplaceAll(newName, "{video_codec}", "")
+	}
+	// 新增变量：audio_codec（取第一个音频流的Codec，仅文件名模板可用）
+	if len(sm.AudioCodec) > 0 && sm.AudioCodec[0].Codec != "" {
+		newName = strings.ReplaceAll(newName, "{audio_codec}", sm.AudioCodec[0].Codec)
+	} else {
+		newName = strings.ReplaceAll(newName, "{audio_codec}", "")
+	}
+	// 新增变量：original_name（从VideoFilename获取，仅文件名模板可用）
+	if sm.VideoFilename != "" {
+		newName = strings.ReplaceAll(newName, "{original_name}", sm.VideoFilename)
+	} else {
+		newName = strings.ReplaceAll(newName, "{original_name}", "")
 	}
 	return newName
 }

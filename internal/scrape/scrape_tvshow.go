@@ -479,7 +479,13 @@ func (t *tvShowScrapeImpl) GenerateNewTvshowName(mediaFile *models.ScrapeMediaFi
 			mediaFile.NewPathName = oldPathName
 		}
 	} else {
-		mediaFile.NewPathName = mediaFile.GenerateNameByTemplate(t.scrapePath.FolderNameTemplate)
+		// 检查文件夹模板是否有效
+		if !models.CheckFolderTemplateValid(t.scrapePath.FolderNameTemplate) {
+			helpers.AppLogger.Errorf("文件夹模板包含不允许的变量，使用默认模板 {title} ({year})")
+			mediaFile.NewPathName = mediaFile.GenerateNameByTemplate("{title} ({year})")
+		} else {
+			mediaFile.NewPathName = mediaFile.GenerateNameByTemplate(t.scrapePath.FolderNameTemplate)
+		}
 	}
 	mediaFile.Media.Path = filepath.Join(mediaFile.DestPath, mediaFile.CategoryName, mediaFile.NewPathName)
 	// 保存

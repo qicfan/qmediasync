@@ -299,7 +299,13 @@ func (m *movieScrapeImpl) GenerateNewName(mediaFile *models.ScrapeMediaFile) {
 			mediaFile.NewPathName = oldPathName
 		}
 	} else {
-		mediaFile.NewPathName = mediaFile.GenerateNameByTemplate(m.scrapePath.FolderNameTemplate)
+		// 检查文件夹模板是否有效
+		if !models.CheckFolderTemplateValid(m.scrapePath.FolderNameTemplate) {
+			helpers.AppLogger.Errorf("文件夹模板包含不允许的变量，使用默认模板 {title} ({year})")
+			mediaFile.NewPathName = mediaFile.GenerateNameByTemplate("{title} ({year})")
+		} else {
+			mediaFile.NewPathName = mediaFile.GenerateNameByTemplate(m.scrapePath.FolderNameTemplate)
+		}
 	}
 	if m.scrapePath.FileNameTemplate == "" {
 		mediaFile.NewVideoBaseName = baseName
