@@ -21,7 +21,7 @@ var excludeKeyword = []string{
 	"VC-1", "DOVI", "NF", "ZmWeb", "DV", "HQ", "friDay", "amzn", "CC", "DTS", "dd+", "dvd5", "Extended", "Cut", "MVSTP",
 	"2Audios", "2Audio", "2Audios5.1", "2Audio5.1", "2Audio", "3Audios", "3AUDIO", "8Audios", "8Audio", "5Audios", "5Audio",
 	"sharphd", "NF", "HQ", "AAC", "GER", "MA", "FRA", "BFI", "EUR", "CN", "JP", "RU", "USA", "dd", "truehd", "HDR", "HDR10",
-	"CTRLHD", "FraMeSToR", "10bit", "IMAX", "web-dl", "uhd", "HDMA5", "BlueRay", "bluray", "blu-ray", "blue-ray", "DBD-Raws", "DBD", "WEBRIP", "DreamHD", "Remux", "ExKinoRay", "PandaQT", "CMCTV", "HDSKY",
+	"CTRLHD", "FraMeSToR", "10bit", "IMAX", "uhd", "HDMA5", "BlueRay", "bluray", "blu-ray", "blue-ray", "DBD-Raws", "DBD", "WEBRIP", "DreamHD", "Remux", "ExKinoRay", "PandaQT", "CMCTV", "HDSKY",
 	"tptv", "HDTV", "mnhd", "hhweb", "frds", "iTunes", "hybrid", "blu",
 	"c0kE", "mteam", "carpt", "1ptba", "SupaHacka", "lpcm2.0", "lpcm 1.0", "lpcm 2.0", "lpcm1.0", "lpcm", "hdspace", "diy", "F13@",
 	// "h264", "x264", "x265", "h265", "h.264", "h.265", "x.264", "x.265", "5.1", "7.1", "2.0",
