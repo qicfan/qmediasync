@@ -10,7 +10,7 @@ func TestMD5Hash(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"test", "d8578edf8458ce06fbc5bb76a58c5ca4"},
+		{"test", "098f6bcd4621d373cade4e832627b4f6"},
 		{"hello world", "5eb63bbbe01eeed093cb22bb8f5acdc3"},
 		{"", "d41d8cd98f00b204e9800998ecf8427e"},
 	}

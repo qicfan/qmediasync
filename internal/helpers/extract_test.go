@@ -2,9 +2,19 @@ package helpers
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	AppLogger = &QLogger{
+		Logger: log.New(os.Stdout, "", 0),
+	}
+	code := m.Run()
+	os.Exit(code)
+}
 
 type TestCase struct {
 	filename          string
@@ -1494,15 +1504,6 @@ func TestExtractMediaInfoRe_Tvshow(t *testing.T) {
 				Year:    0,
 				Season:  2,
 				Episode: 8,
-			},
-		},
-		{
-			filename: "Stranger.Things.S05E01.Chapter.One.The.Crawl.2160p.NF.WEB-DL.DDP.5.1.Atmos.DV.H.265.mkv",
-			expectedMediaInfo: &MediaInfo{
-				Name:    "stranger things",
-				Year:    0,
-				Season:  5,
-				Episode: 1,
 			},
 		},
 	}

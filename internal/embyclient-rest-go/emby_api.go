@@ -177,6 +177,8 @@ func (c *Client) GetMediaItemsByLibraryID(libraryID string) ([]BaseItemDtoV2, er
 		params.Add("Recursive", "true")
 		params.Add("IncludeItemTypes", "Movie,Video,Episode")
 		params.Add("Fields", fields)
+		params.Add("SortBy", "DateCreated")   // 入库时间
+		params.Add("SortOrder", "Descending") // 倒叙排列
 		baseURL.RawQuery = params.Encode()
 
 		req, err := http.NewRequest("GET", baseURL.String(), nil)
