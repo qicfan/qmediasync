@@ -1769,3 +1769,345 @@ func TestExtractMediaInfoRe_Tmdb(t *testing.T) {
 		}
 	}
 }
+
+// TestExtractReleaseGroup 测试发布组提取功能
+func TestExtractReleaseGroup(t *testing.T) {
+	testCases := []struct {
+		filename          string
+		expectedGroup     string
+		description       string
+	}{
+		// 测试带文件扩展名的发布组识别（Issue #161 修复）
+		{
+			filename:      "七王国的骑士.A.Knight.of.the.Seven.Kingdoms.S01E06.2160p.WEB-DL.DV.H265.DDP5.1.Atmos-HiveWeb.mkv",
+			expectedGroup: "HiveWeb",
+			description:  "带.mkv扩展名的发布组识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-CHD.mp4",
+			expectedGroup: "CHD",
+			description:  "带.mp4扩展名的发布组识别",
+		},
+		{
+			filename:      "Another.Movie.2025.1080p.WEB-DL.H264.AAC-MTeam.avi",
+			expectedGroup: "MTeam",
+			description:  "带.avi扩展名的发布组识别",
+		},
+		// 测试不带文件扩展名的发布组识别
+		{
+			filename:      "The.Movie.2025.HDH",
+			expectedGroup: "HDH",
+			description:  "不带扩展名的发布组识别",
+		},
+		// 测试新增的常见发布组
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DV.DDP5.1-HotWEB.mkv",
+			expectedGroup: "HotWEB",
+			description:  "新增发布组HotWEB",
+		},
+		{
+			filename:      "The.Movie.2025.1080p.WEB-DL.H264.AAC-CatWEB.mp4",
+			expectedGroup: "CatWEB",
+			description:  "新增发布组CatWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-ADWEB.mkv",
+			expectedGroup: "ADWEB",
+			description:  "新增发布组ADWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-CMCTV.mkv",
+			expectedGroup: "CMCTV",
+			description:  "新增发布组CMCTV",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-FRDS.mkv",
+			expectedGroup: "FRDS",
+			description:  "新增发布组FRDS",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-PTERWEB.mkv",
+			expectedGroup: "PTERWEB",
+			description:  "新增发布组PTERWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-HaresWEB.mkv",
+			expectedGroup: "HaresWEB",
+			description:  "新增发布组HaresWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-LeagueNF.mkv",
+			expectedGroup: "LeagueNF",
+			description:  "新增发布组LeagueNF",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-PuTao.mkv",
+			expectedGroup: "PuTao",
+			description:  "新增发布组PuTao",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-TJUPT.mkv",
+			expectedGroup: "TJUPT",
+			description:  "新增发布组TJUPT",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-PTHWEB.mkv",
+			expectedGroup: "PTHWEB",
+			description:  "新增发布组PTHWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-iLoveHD.mkv",
+			expectedGroup: "iLoveHD",
+			description:  "新增发布组iLoveHD",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.H265.DDP5.1-BeiTai.mkv",
+			expectedGroup: "BeiTai",
+			description:  "新增发布组BeiTai",
+		},
+		// 测试原有的发布组
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-MTeam.mkv",
+			expectedGroup: "MTeam",
+			description:  "原有发布组MTeam",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-TPTV.mkv",
+			expectedGroup: "TPTV",
+			description:  "原有发布组TPTV",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-CHD.mkv",
+			expectedGroup: "CHD",
+			description:  "原有发布组CHD",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-CHDWEB.mkv",
+			expectedGroup: "CHDWEB",
+			description:  "原有发布组CHDWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-HDSky.mkv",
+			expectedGroup: "HDSky",
+			description:  "原有发布组HDSky",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-HDSWEB.mkv",
+			expectedGroup: "HDSWEB",
+			description:  "原有发布组HDSWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-HHWEB.mkv",
+			expectedGroup: "HHWEB",
+			description:  "原有发布组HHWEB",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-MWeb.mkv",
+			expectedGroup: "MWeb",
+			description:  "原有发布组MWeb",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1-CMCT.mkv",
+			expectedGroup: "CMCT",
+			description:  "原有发布组CMCT",
+		},
+		// 测试没有发布组的情况
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1.mkv",
+			expectedGroup: "",
+			description:  "没有发布组的情况",
+		},
+		{
+			filename:      "测试电影 (2025).mp4",
+			expectedGroup: "",
+			description:  "简单文件名无发布组",
+		},
+	}
+
+	passed := 0
+	failed := 0
+
+	for _, tc := range testCases {
+		releaseGroup := ExtractReleaseGroup(tc.filename)
+		if releaseGroup == tc.expectedGroup {
+			passed++
+		} else {
+			t.Errorf("测试失败 [%s]: 文件名 '%s', 预期发布组 '%s', 实际 '%s'",
+				tc.description, tc.filename, tc.expectedGroup, releaseGroup)
+			failed++
+		}
+	}
+
+	fmt.Printf("ExtractReleaseGroup 测试完成: 通过 %d, 失败 %d, 总计 %d\n", passed, failed, len(testCases))
+}
+
+// TestExtractResourceType 测试资源类型提取功能
+func TestExtractResourceType(t *testing.T) {
+	testCases := []struct {
+		filename            string
+		expectedType       string
+		description        string
+	}{
+		// 测试WEB-DL识别（Issue #161 修复）
+		{
+			filename:      "七王国的骑士.S01E06.2160p.WEB-DL.DV.H265.DDP5.1.Atmos-HiveWeb.mkv",
+			expectedType:  "WEB-DL",
+			description:  "标准WEB-DL识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEBDL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "WEBDL识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "WEB-DL识别",
+		},
+		// 测试大写平台名称识别（Issue #161 修复）
+		{
+			filename:      "The.Movie.2025.2160p.NETFLIX.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "大写NETFLIX平台识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.AMAZON.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "大写AMAZON平台识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.DISNEY+.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "大写DISNEY+平台识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.HULU.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "大写HULU平台识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.HBO.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "大写HBO平台识别",
+		},
+		// 测试小写平台名称（应该也能识别）
+		{
+			filename:      "The.Movie.2025.2160p.netflix.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "小写netflix平台识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.amazon.WEB-DL.HEVC.DDP5.1.mkv",
+			expectedType:  "WEB-DL",
+			description:  "小写amazon平台识别",
+		},
+		// 测试其他资源类型
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.Remux.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "BluRay Remux",
+			description:  "BluRay Remux识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.Remux.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "Remux",
+			description:  "Remux识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BluRay.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "BluRay",
+			description:  "BluRay识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BlueRay.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "BluRay",
+			description:  "BlueRay识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.BDRip.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "BluRay",
+			description:  "BDRip识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEBRip.HEVC.AAC5.1.mkv",
+			expectedType:  "WEBRip",
+			description:  "WEBRip识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.WEB-Rip.HEVC.AAC5.1.mkv",
+			expectedType:  "WEBRip",
+			description:  "WEB-Rip识别",
+		},
+		{
+			filename:      "The.Movie.2025.1080p.HDTV.H264.AAC5.1.ts",
+			expectedType:  "HDTV",
+			description:  "HDTV识别",
+		},
+		{
+			filename:      "The.Movie.2025.720p.TVRip.MPEG2.AAC2.0.avi",
+			expectedType:  "TVRip",
+			description:  "TVRip识别",
+		},
+		{
+			filename:      "The.Movie.2025.1080p.TV-Rip.MPEG2.AAC2.0.avi",
+			expectedType:  "TVRip",
+			description:  "TV-Rip识别",
+		},
+		{
+			filename:      "The.Movie.2025.1080p.DVD5.MPEG2.AAC2.0.iso",
+			expectedType:  "DVD",
+			description:  "DVD5识别",
+		},
+		{
+			filename:      "The.Movie.2025.1080p.DVD9.MPEG2.AAC2.0.iso",
+			expectedType:  "DVD",
+			description:  "DVD9识别",
+		},
+		{
+			filename:      "The.Movie.2025.1080p.DVDRip.MPEG2.AAC2.0.mkv",
+			expectedType:  "DVD",
+			description:  "DVDRip识别",
+		},
+		{
+			filename:      "The.Movie.2025.1080p.DVD-Rip.MPEG2.AAC2.0.mkv",
+			expectedType:  "DVD",
+			description:  "DVD-Rip识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.UHD.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "UHD",
+			description:  "UHD识别",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.4K.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "4K",
+			description:  "4K识别",
+		},
+		// 测试没有资源类型的情况
+		{
+			filename:      "测试电影 (2025).mp4",
+			expectedType:  "",
+			description:  "没有资源类型的情况",
+		},
+		{
+			filename:      "The.Movie.2025.2160p.HEVC.DTS-HD.MA5.1.mkv",
+			expectedType:  "",
+			description:  "只有分辨率和编码",
+		},
+	}
+
+	passed := 0
+	failed := 0
+
+	for _, tc := range testCases {
+		resourceType := ExtractResourceType(tc.filename)
+		if resourceType == tc.expectedType {
+			passed++
+		} else {
+			t.Errorf("测试失败 [%s]: 文件名 '%s', 预期资源类型 '%s', 实际 '%s'",
+				tc.description, tc.filename, tc.expectedType, resourceType)
+			failed++
+		}
+	}
+
+	fmt.Printf("ExtractResourceType 测试完成: 通过 %d, 失败 %d, 总计 %d\n", passed, failed, len(testCases))
+}
