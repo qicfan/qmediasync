@@ -417,21 +417,21 @@ func cleanFilename(name string) string {
 func ExtractReleaseGroup(filename string) string {
 	// 常见的发布组模式
 	releaseGroupPatterns := []string{
-		`MTeam$`, `TPTV$`, `SupaHacka$`, `c0kE$`, `HONE$`, `HDZ$`, `CHD$`,
-		`CSWEB$`, `BLoz$`, `ADE$`, `TMT$`, `HDS$`, `HDH$`, `INCUBO$`,
-		`GMA$`, `NoGrp$`, `MainFrame$`, `MNHD-FRDS$`, `SharpHD$`, `UBits$`,
-		`ZmWeb$`, `MKu$`, `CMCTV$`, `ADWeb$`, `UBWEB$`, `Panda$`, `iFPD$`,
-		`LWRTD$`, `ZTR$`, `CHDWEB$`, `PtBM$`, `WiKi$`, `BONE$`, `HHWEB$`,
-		`MWeb$`, "SPWEB$", "DREAMHD$", `HiveWeb$`,
-		`PTer$`, `MWeb$`, `NoGroup$`, `CMCT$`, `HDSky$`, `Hero$`, `HDSky$`,
-		`CHDBits$`, `HDHome$`, `HDSpace$`, `QuickIO$`, `NUKEHD$`, `WEBLE$`,
-		`112114119$`,
-		`CtrlHD$`, `FraMeSToR$`, `ExKinoRay$`, `HDSKY$`,
+		`MTeam`, `TPTV`, `SupaHacka`, `c0kE`, `HONE`, `HDZ`, `CHD`,
+		`CSWEB`, `BLoz`, `ADE`, `TMT`, `HDS`, `HDH`, `INCUBO`,
+		`GMA`, `NoGrp`, `MainFrame`, `MNHD-FRDS`, `SharpHD`, `UBits`,
+		`ZmWeb`, `MKu`, `CMCTV`, `ADWeb`, `UBWEB`, `Panda`, `iFPD`,
+		`LWRTD`, `ZTR`, `CHDWEB`, `PtBM`, `WiKi`, `BONE`, `HHWEB`,
+		`MWeb`, "SPWEB", "DREAMHD", `HiveWeb`,
+		`PTer`, `MWeb`, `NoGroup`, `CMCT`, `HDSky`, `Hero`, `HDSky`,
+		`CHDBits`, `HDHome`, `HDSpace`, `QuickIO`, `NUKEHD`, `WEBLE`,
+		`112114119`,
+		`CtrlHD`, `FraMeSToR`, `ExKinoRay`, `HDSKY`,
 	}
 
 	// 提取发布组
 	for _, pattern := range releaseGroupPatterns {
-		re := regexp.MustCompile(`(?i)(\-[\p{han}\a-z|0-9]+)?(\-|@)?` + pattern)
+		re := regexp.MustCompile(`(?i)(\-[\p{han}\a-z|0-9]+)?(\-|@)?` + pattern + `(?:\.\w+)?$`)
 		matches := re.FindStringSubmatch(filename)
 		if len(matches) > 0 {
 			// 提取发布组名称（去除前缀和后缀）
@@ -465,7 +465,7 @@ func ExtractResourceType(filename string) string {
 		{`(?i)BluRay\.?Remux`, "BluRay Remux"},
 		{`(?i)Remux`, "Remux"},
 		{`(?i)(Blu.?Ray|Blue.?Ray|BDRip)`, "BluRay"},
-		{`(?i)(WEB.?DL|WEBDL|Netflix|Amazon|Disney\+|Hulu)`, "WEB-DL"},
+		{`(?i)(WEB.?DL|WEBDL|NETFLIX|AMAZON|DISNEY\+|HULU|HBO)`, "WEB-DL"},
 		{`(?i)(WEBRip|WEB-Rip)`, "WEBRip"},
 		{`(?i)HDTV`, "HDTV"},
 		{`(?i)(TVRip|TV-Rip)`, "TVRip"},
