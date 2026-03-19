@@ -273,3 +273,8 @@ func GetStructName(obj interface{}) string {
 		return t.Name()
 	}
 }
+
+// ContainsIgnoreCase 不区分大小写的字符串包含检查
+func ContainsIgnoreCase(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
+}

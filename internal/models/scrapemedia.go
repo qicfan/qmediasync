@@ -642,19 +642,19 @@ func (sm *ScrapeMediaFile) GenerateNameByTemplate(template string) string {
 	} else {
 		newName = strings.ReplaceAll(newName, "{en_title}", "")
 	}
-	// videoCodec - 视频编码
+	// videoCodec - 视频编码（统一大写）
 	if sm.VideoCodec != nil && sm.VideoCodec.Micodec != "" {
-		newName = strings.ReplaceAll(newName, "{videoCodec}", sm.VideoCodec.Micodec)
+		newName = strings.ReplaceAll(newName, "{videoCodec}", strings.ToUpper(sm.VideoCodec.Micodec))
 	} else if sm.VideoCodec != nil && sm.VideoCodec.Codec != "" {
-		newName = strings.ReplaceAll(newName, "{videoCodec}", sm.VideoCodec.Codec)
+		newName = strings.ReplaceAll(newName, "{videoCodec}", strings.ToUpper(sm.VideoCodec.Codec))
 	} else {
 		newName = strings.ReplaceAll(newName, "{videoCodec}", "")
 	}
-	// audioCodec - 音频编码
+	// audioCodec - 音频编码（统一大写）
 	if len(sm.AudioCodec) > 0 && sm.AudioCodec[0].Micodec != "" {
-		newName = strings.ReplaceAll(newName, "{audioCodec}", sm.AudioCodec[0].Micodec)
+		newName = strings.ReplaceAll(newName, "{audioCodec}", strings.ToUpper(sm.AudioCodec[0].Micodec))
 	} else if len(sm.AudioCodec) > 0 && sm.AudioCodec[0].Codec != "" {
-		newName = strings.ReplaceAll(newName, "{audioCodec}", sm.AudioCodec[0].Codec)
+		newName = strings.ReplaceAll(newName, "{audioCodec}", strings.ToUpper(sm.AudioCodec[0].Codec))
 	} else {
 		newName = strings.ReplaceAll(newName, "{audioCodec}", "")
 	}
