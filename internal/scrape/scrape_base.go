@@ -164,6 +164,15 @@ func (sm *ScrapeBase) GetFFprobeInfoFromFileOrUrl(mediaFile *models.ScrapeMediaF
 		// 计算是否HDR视频
 		mediaFile.IsHDR = helpers.IsHDRFormat(mediaFile.VideoCodec.PixelFormat)
 	}
+	// 检查文件名中的DDP标识，修复audioCodec识别错误
+	if len(mediaFile.AudioCodec) > 0 {
+		filename := mediaFile.VideoFilename
+		// 检查文件名中是否包含DDP或Dolby Digital Plus标识
+		if helpers.ContainsIgnoreCase(filename, "DDP") || helpers.ContainsIgnoreCase(filename, "Dolby Digital Plus") {
+			// 将第一个音频流的Micodec设置为DDP
+			mediaFile.AudioCodec[0].Micodec = "DDP"
+		}
+	}
 }
 
 func (s *ScrapeBase) GetDownloadUrl(mediaFile *models.ScrapeMediaFile) string {

@@ -650,11 +650,11 @@ func (sm *ScrapeMediaFile) GenerateNameByTemplate(template string) string {
 	} else {
 		newName = strings.ReplaceAll(newName, "{videoCodec}", "")
 	}
-	// audioCodec - 音频编码
+	// audioCodec - 音频编码（统一大写）
 	if len(sm.AudioCodec) > 0 && sm.AudioCodec[0].Micodec != "" {
-		newName = strings.ReplaceAll(newName, "{audioCodec}", sm.AudioCodec[0].Micodec)
+		newName = strings.ReplaceAll(newName, "{audioCodec}", strings.ToUpper(sm.AudioCodec[0].Micodec))
 	} else if len(sm.AudioCodec) > 0 && sm.AudioCodec[0].Codec != "" {
-		newName = strings.ReplaceAll(newName, "{audioCodec}", sm.AudioCodec[0].Codec)
+		newName = strings.ReplaceAll(newName, "{audioCodec}", strings.ToUpper(sm.AudioCodec[0].Codec))
 	} else {
 		newName = strings.ReplaceAll(newName, "{audioCodec}", "")
 	}
