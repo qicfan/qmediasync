@@ -422,7 +422,7 @@ func ExtractReleaseGroup(filename string) string {
 		`GMA$`, `NoGrp$`, `MainFrame$`, `MNHD-FRDS$`, `SharpHD$`, `UBits$`,
 		`ZmWeb$`, `MKu$`, `CMCTV$`, `ADWeb$`, `UBWEB$`, `Panda$`, `iFPD$`,
 		`LWRTD$`, `ZTR$`, `CHDWEB$`, `PtBM$`, `WiKi$`, `BONE$`, `HHWEB$`,
-		`MWeb$`, "SPWEB$", "DREAMHD$",
+		`MWeb$`, "SPWEB$", "DREAMHD$", `HiveWeb$`,
 		`PTer$`, `MWeb$`, `NoGroup$`, `CMCT$`, `HDSky$`, `Hero$`, `HDSky$`,
 		`CHDBits$`, `HDHome$`, `HDSpace$`, `QuickIO$`, `NUKEHD$`, `WEBLE$`,
 		`112114119$`,
