@@ -20,6 +20,15 @@ type DriverConfig struct {
 	Type    DriverType
 	Account interface{} // 具体的账号信息
 	BaseURL string     // 基础URL（某些网盘需要）
+
+	// 115网盘配置
+	Client115 interface{} // *v115open.OpenClient
+
+	// 百度网盘配置
+	ClientBaidu interface{} // *baidupan.Client
+
+	// OpenList配置
+	ClientOpenList interface{} // *openlist.Client
 }
 
 // DriverFactory 驱动工厂
