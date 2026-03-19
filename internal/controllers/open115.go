@@ -630,6 +630,7 @@ func CleanOldRequestStats(c *gin.Context) {
 // 返回true表示URL有效（2xx状态码），false表示URL已失效
 // ua参数：必须使用当前请求的USER-AGENT访问115链接（否则返回403）
 func checkURLValidity(urlStr string, ua string) bool {
+	helpers.AppLogger.Infof("URL有效性检查开始: %s, UA=%s", urlStr, ua)
 	client := &http.Client{
 		Timeout: 3 * time.Second,
 		Transport: &http.Transport{
