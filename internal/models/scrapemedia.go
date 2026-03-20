@@ -583,10 +583,10 @@ func (sm *ScrapeMediaFile) FinishFromRenaming() {
 
 // CheckFolderTemplateValid 检查文件夹模板是否有效
 // 返回：true-有效, false-无效
-// 说明：文件夹模板不允许使用 {video_codec}、{audio_codec}、{original_name} 变量
+// 说明：文件夹模板不允许使用 {video_codec}、{audio_codec} 变量
 func CheckFolderTemplateValid(template string) bool {
 	// 检查是否包含不允许的变量
-	forbiddenVars := []string{"{video_codec}", "{audio_codec}", "{original_name}"}
+	forbiddenVars := []string{"{video_codec}", "{audio_codec}"}
 	for _, forbiddenVar := range forbiddenVars {
 		if strings.Contains(template, forbiddenVar) {
 			helpers.AppLogger.Errorf("文件夹模板不允许使用变量 %s，请检查模板配置", forbiddenVar)
@@ -690,12 +690,6 @@ func (sm *ScrapeMediaFile) GenerateNameByTemplate(template string) string {
 		newName = strings.ReplaceAll(newName, "{audio_codec}", sm.AudioCodec[0].Codec)
 	} else {
 		newName = strings.ReplaceAll(newName, "{audio_codec}", "")
-	}
-	// 新增变量：original_name（从VideoFilename获取，仅文件名模板可用）
-	if sm.VideoFilename != "" {
-		newName = strings.ReplaceAll(newName, "{original_name}", sm.VideoFilename)
-	} else {
-		newName = strings.ReplaceAll(newName, "{original_name}", "")
 	}
 	return newName
 }
