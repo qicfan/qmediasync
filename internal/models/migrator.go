@@ -3,6 +3,7 @@ package models
 import (
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/helpers"
+	"Q115-STRM/internal/notification"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ type Migrator struct {
 	VersionCode int `json:"version_code"` // 版本号
 }
 
-var MaxVersionCode = 33
+var MaxVersionCode = 34
 var AllTables = []any{
 	BackupConfig{}, BackupRecord{},
 	ApiKey{}, Settings{}, Sync{}, User{}, Account{},
@@ -381,6 +382,11 @@ func Migrate() {
 		db.Db.AutoMigrate(ScrapePath{})
 		migrator.UpdateVersionCode(db.Db)
 	}
+	if migrator.VersionCode == 33 {
+		// 为已有渠道添加新的播放通知类型规则（PlaybackStart、PlaybackPause、PlaybackStop）
+		addPlaybackNotificationRulesForExistingChannels(db.Db)
+		migrator.UpdateVersionCode(db.Db)
+	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
 }
 
@@ -689,14 +695,10 @@ func migrateExistingNotificationSettings(dbConn *gorm.DB) {
 			dbConn.Create(&config)
 
 			// 创建默认规则（所有事件都发送到此渠道）
-			eventTypes := []string{
-				"sync_finish", "sync_error", "scrape_finish",
-				"system_alert", "media_added", "media_removed",
-			}
-			for _, eventType := range eventTypes {
+			for _, eventType := range notification.AllNotificationTypes {
 				rule := NotificationRule{
 					ChannelID: channel.ID,
-					EventType: eventType,
+					EventType: string(eventType),
 					IsEnabled: true,
 				}
 				dbConn.Create(&rule)
@@ -721,14 +723,10 @@ func migrateExistingNotificationSettings(dbConn *gorm.DB) {
 			dbConn.Create(&config)
 
 			// 创建默认规则
-			eventTypes := []string{
-				"sync_finish", "sync_error", "scrape_finish",
-				"system_alert", "media_added", "media_removed",
-			}
-			for _, eventType := range eventTypes {
+			for _, eventType := range notification.AllNotificationTypes {
 				rule := NotificationRule{
 					ChannelID: channel.ID,
-					EventType: eventType,
+					EventType: string(eventType),
 					IsEnabled: true,
 				}
 				dbConn.Create(&rule)
@@ -736,6 +734,50 @@ func migrateExistingNotificationSettings(dbConn *gorm.DB) {
 			helpers.AppLogger.Infof("已迁移MeoW通知配置到新表")
 		}
 	}
+}
+
+// addPlaybackNotificationRulesForExistingChannels 为已有渠道添加新的播放通知类型规则
+func addPlaybackNotificationRulesForExistingChannels(dbConn *gorm.DB) {
+	// 新增的播放通知类型
+	newPlaybackTypes := []notification.NotificationType{
+		notification.PlaybackStart,
+		notification.PlaybackPause,
+		notification.PlaybackStop,
+	}
+
+	// 获取所有已有的通知渠道
+	var channels []NotificationChannel
+	if err := dbConn.Find(&channels).Error; err != nil {
+		helpers.AppLogger.Errorf("获取通知渠道失败：%v", err)
+		return
+	}
+
+	addedCount := 0
+	for _, channel := range channels {
+		for _, eventType := range newPlaybackTypes {
+			// 检查规则是否已存在
+			var existingRule NotificationRule
+			err := dbConn.Where("channel_id = ? AND event_type = ?", channel.ID, string(eventType)).
+				First(&existingRule).Error
+
+			if err == gorm.ErrRecordNotFound {
+				// 规则不存在，创建新规则
+				newRule := NotificationRule{
+					ChannelID: channel.ID,
+					EventType: string(eventType),
+					IsEnabled: true,
+				}
+				if err := dbConn.Create(&newRule).Error; err != nil {
+					helpers.AppLogger.Errorf("为渠道 %d 添加播放通知规则失败：%v", channel.ID, err)
+				} else {
+					addedCount++
+					helpers.AppLogger.Infof("为渠道 %d（%s）添加播放通知规则：%s", channel.ID, channel.ChannelName, eventType)
+				}
+			}
+		}
+	}
+
+	helpers.AppLogger.Infof("数据库迁移完成：已为 %d 个渠道添加新的播放通知类型规则", addedCount)
 }
 
 func fillSyncPathIdInEmbyMediaSyncFile(dbConn *gorm.DB) {
