@@ -32,6 +32,9 @@ const (
 	SystemAlert    NotificationType = notification.SystemAlert
 	MediaAdded     NotificationType = notification.MediaAdded
 	MediaRemoved   NotificationType = notification.MediaRemoved
+	PlaybackStart  NotificationType = notification.PlaybackStart
+	PlaybackPause  NotificationType = notification.PlaybackPause
+	PlaybackStop   NotificationType = notification.PlaybackStop
 )
 
 // NotificationPriority 通知优先级 - 从 internal/notification 导入

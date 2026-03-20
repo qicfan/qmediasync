@@ -76,7 +76,23 @@ const (
 	SystemAlert    NotificationType = "system_alert"
 	MediaAdded     NotificationType = "media_added"
 	MediaRemoved   NotificationType = "media_removed"
+	PlaybackStart  NotificationType = "playback_start" // 播放开始
+	PlaybackPause  NotificationType = "playback_pause" // 播放暂停
+	PlaybackStop   NotificationType = "playback_stop"  // 播放停止
 )
+
+// AllNotificationTypes 所有通知类型，用于创建渠道时的默认规则
+var AllNotificationTypes = []NotificationType{
+	SyncFinished,
+	SyncError,
+	ScrapeFinished,
+	SystemAlert,
+	MediaAdded,
+	MediaRemoved,
+	PlaybackStart,
+	PlaybackPause,
+	PlaybackStop,
+}
 
 // NotificationPriority 通知优先级
 type NotificationPriority string

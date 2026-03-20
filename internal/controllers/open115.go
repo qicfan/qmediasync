@@ -630,8 +630,15 @@ func CleanOldRequestStats(c *gin.Context) {
 // 返回true表示URL有效（2xx状态码），false表示URL已失效
 // ua参数：必须使用当前请求的USER-AGENT访问115链接（否则返回403）
 func checkURLValidity(urlStr string, ua string) bool {
+	helpers.AppLogger.Infof("URL有效性检查开始: %s, UA=%s", urlStr, ua)
 	client := &http.Client{
-		Timeout: 100 * time.Millisecond, // 100毫秒超时
+		Timeout: 3 * time.Second,
+		Transport: &http.Transport{
+			ResponseHeaderTimeout: 2 * time.Second, // 等待响应头的超时
+			DisableKeepAlives:     true,            // 禁用长连接，请求完立即关闭
+			TLSHandshakeTimeout:   1 * time.Second, // TLS握手超时
+			MaxIdleConns:          0,               // 不保持空闲连接
+		},
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			// 不跟随重定向，只检查第一次响应
 			return http.ErrUseLastResponse

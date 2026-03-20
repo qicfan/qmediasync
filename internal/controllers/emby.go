@@ -5,7 +5,9 @@ import (
 	embyclientrestgo "Q115-STRM/internal/embyclient-rest-go"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
+	"Q115-STRM/internal/notification"
 	"Q115-STRM/internal/notificationmanager"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -67,6 +69,10 @@ var newSeriesBufferMu = sync.Mutex{}
 // 删除事件缓冲区
 var deletedSeriesBuffer = make(map[string]newSeries)
 var deletedSeriesBufferMu = sync.Mutex{}
+
+// 播放事件去重缓存
+var playbackEventCache = make(map[string]time.Time)
+var playbackEventCacheMu = sync.Mutex{}
 
 // 定义一个轮询剧集的协程，如果没有启动则第一次收到通知时启动它
 var newSeriesBufferTickerStarted bool = false
@@ -220,6 +226,10 @@ func Webhook(ctx *gin.Context) {
 				}
 			}
 		}
+	}
+	// 处理播放事件（playback.start、playback.pause、playback.stop）
+	if event.Event == "playback.start" || event.Event == "playback.pause" || event.Event == "playback.stop" {
+		go handlePlaybackEvent(body, event)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -621,4 +631,119 @@ func removeDuplicates(episodes []int) []int {
 		}
 	}
 	return result
+}
+
+// handlePlaybackEvent 处理 Emby 播放事件
+func handlePlaybackEvent(body []byte, event EmbyEvent) {
+	// 解析完整的播放事件数据
+	var playbackWebhook models.EmbyPlaybackWebhook
+	if err := json.Unmarshal(body, &playbackWebhook); err != nil {
+		helpers.AppLogger.Errorf("解析播放事件失败: %v", err)
+		return
+	}
+
+	// 检查去重（1分钟内不重复通知）
+	cacheKey := fmt.Sprintf("%s_%s_%s_%s_%s",
+		playbackWebhook.GetUserID(),
+		playbackWebhook.Item.Type,
+		playbackWebhook.Item.Name,
+		playbackWebhook.GetDeviceName(),
+		playbackWebhook.Event,
+	)
+
+	playbackEventCacheMu.Lock()
+	if lastTime, exists := playbackEventCache[cacheKey]; exists {
+		if time.Since(lastTime) < 1*time.Minute {
+			helpers.AppLogger.Infof("播放事件去重跳过: %s (%v前)", cacheKey, time.Since(lastTime))
+			playbackEventCacheMu.Unlock()
+			return
+		}
+	}
+	playbackEventCache[cacheKey] = time.Now()
+
+	// 清理过期的缓存项（清理超过5分钟的缓存）
+	for key, timestamp := range playbackEventCache {
+		if time.Since(timestamp) > 5*time.Minute {
+			delete(playbackEventCache, key)
+		}
+	}
+	playbackEventCacheMu.Unlock()
+
+	// 构造并发送通知
+	notif := createPlaybackNotification(&playbackWebhook)
+	imagePath := notif.Image // 保存图片路径以便后续清理
+	if notificationmanager.GlobalEnhancedNotificationManager != nil {
+		if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(context.Background(), notif); err != nil {
+			helpers.AppLogger.Errorf("发送播放通知失败: %v", err)
+		}
+	}
+
+	// 删除临时图片文件
+	if imagePath != "" {
+		os.Remove(imagePath)
+	}
+}
+
+// createPlaybackNotification 构造播放通知
+func createPlaybackNotification(webhook *models.EmbyPlaybackWebhook) *notification.Notification {
+	// 构造通知内容
+	title := fmt.Sprintf("%s %s %s ", webhook.GetEventTypeEmoji(), webhook.GetEventTypeName(), webhook.Item.Name)
+	content := formatPlaybackNotificationContent(webhook)
+
+	// 下载海报图片（如果有）
+	imagePath := ""
+	if webhook.Item.ImageTags != nil {
+		if tag, ok := webhook.Item.ImageTags["Primary"]; ok {
+			imageUrl := fmt.Sprintf("%s/emby/Items/%s/Images/Primary?tag=%s&api_key=%s",
+				models.GlobalEmbyConfig.EmbyUrl,
+				webhook.Item.ID,
+				tag,
+				models.GlobalEmbyConfig.EmbyApiKey)
+			posterPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s_playback.jpg", webhook.Item.ID))
+			derr := helpers.DownloadFile(imageUrl, posterPath, "QMediaSync")
+			if derr != nil {
+				helpers.AppLogger.Errorf("下载Emby海报失败: %v", derr)
+			} else {
+				imagePath = posterPath
+			}
+		}
+	}
+
+	// 构造通知元数据
+	metadata := map[string]interface{}{}
+	playbackDuration := webhook.GetPlaybackDuration()
+	if playbackDuration > 0 {
+		metadata["观看时长"] = models.FormatPlaybackDuration(playbackDuration)
+	}
+
+	notif := &notification.Notification{
+		Type:      notification.NotificationType(webhook.GetNotificationEventType()),
+		Title:     title,
+		Content:   content,
+		Metadata:  metadata,
+		Timestamp: time.Now(),
+		Priority:  notification.NormalPriority,
+	}
+
+	// 如果有图片，添加到通知
+	if imagePath != "" {
+		notif.Image = imagePath
+	}
+
+	return notif
+}
+
+// formatPlaybackNotificationContent 格式化播放通知内容
+func formatPlaybackNotificationContent(webhook *models.EmbyPlaybackWebhook) string {
+	var buf bytes.Buffer
+
+	fmt.Fprintf(&buf, "用户：%s\n", webhook.GetUserName())
+	fmt.Fprintf(&buf, "设备：%s (%s)\n", webhook.GetDeviceName(), webhook.GetClientName())
+	// buf.WriteString(webhook.Item.Name)
+	if webhook.Item.Type == "Episode" {
+		fmt.Fprintf(&buf, "电视剧：%s\n", webhook.Item.SeriesName)
+		fmt.Fprintf(&buf, "季集：S%dE%d\n", webhook.Item.SeasonNumber, webhook.Item.EpisodeNumber)
+	}
+
+	return buf.String()
 }

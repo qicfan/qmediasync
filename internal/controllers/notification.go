@@ -111,14 +111,10 @@ func CreateTelegramChannel(c *gin.Context) {
 	}
 
 	// 创建默认规则
-	eventTypes := []string{
-		"sync_finish", "sync_error", "scrape_finish",
-		"system_alert", "media_added", "media_removed",
-	}
-	for _, eventType := range eventTypes {
+	for _, eventType := range notification.AllNotificationTypes {
 		rule := models.NotificationRule{
 			ChannelID: channel.ID,
-			EventType: eventType,
+			EventType: string(eventType),
 			IsEnabled: true,
 		}
 		db.Db.Save(&rule)
@@ -205,14 +201,10 @@ func CreateMeoWChannel(c *gin.Context) {
 	}
 
 	// 创建默认规则
-	eventTypes := []string{
-		"sync_finish", "sync_error", "scrape_finish",
-		"system_alert", "media_added", "media_removed",
-	}
-	for _, eventType := range eventTypes {
+	for _, eventType := range notification.AllNotificationTypes {
 		rule := models.NotificationRule{
 			ChannelID: channel.ID,
-			EventType: eventType,
+			EventType: string(eventType),
 			IsEnabled: true,
 		}
 		db.Db.Save(&rule)
@@ -308,14 +300,10 @@ func CreateBarkChannel(c *gin.Context) {
 	}
 
 	// 创建默认规则
-	eventTypes := []string{
-		"sync_finish", "sync_error", "scrape_finish",
-		"system_alert", "media_added", "media_removed",
-	}
-	for _, eventType := range eventTypes {
+	for _, eventType := range notification.AllNotificationTypes {
 		rule := models.NotificationRule{
 			ChannelID: channel.ID,
-			EventType: eventType,
+			EventType: string(eventType),
 			IsEnabled: true,
 		}
 		db.Db.Save(&rule)
@@ -402,14 +390,10 @@ func CreateServerChanChannel(c *gin.Context) {
 	}
 
 	// 创建默认规则
-	eventTypes := []string{
-		"sync_finish", "sync_error", "scrape_finish",
-		"system_alert", "media_added", "media_removed",
-	}
-	for _, eventType := range eventTypes {
+	for _, eventType := range notification.AllNotificationTypes {
 		rule := models.NotificationRule{
 			ChannelID: channel.ID,
-			EventType: eventType,
+			EventType: string(eventType),
 			IsEnabled: true,
 		}
 		db.Db.Save(&rule)
@@ -587,9 +571,8 @@ func CreateCustomWebhookChannel(c *gin.Context) {
 	}
 
 	// 创建默认规则
-	eventTypes := []string{"sync_finish", "sync_error", "scrape_finish", "system_alert", "media_added", "media_removed"}
-	for _, et := range eventTypes {
-		db.Db.Save(&models.NotificationRule{ChannelID: channel.ID, EventType: et, IsEnabled: true})
+	for _, eventType := range notification.AllNotificationTypes {
+		db.Db.Save(&models.NotificationRule{ChannelID: channel.ID, EventType: string(eventType), IsEnabled: true})
 	}
 
 	// 刷新通知管理器
