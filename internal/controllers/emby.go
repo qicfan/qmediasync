@@ -5,7 +5,9 @@ import (
 	embyclientrestgo "Q115-STRM/internal/embyclient-rest-go"
 	"Q115-STRM/internal/helpers"
 	"Q115-STRM/internal/models"
+	"Q115-STRM/internal/notification"
 	"Q115-STRM/internal/notificationmanager"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -67,6 +69,10 @@ var newSeriesBufferMu = sync.Mutex{}
 // 删除事件缓冲区
 var deletedSeriesBuffer = make(map[string]newSeries)
 var deletedSeriesBufferMu = sync.Mutex{}
+
+// 播放事件去重缓存
+var playbackEventCache = make(map[string]time.Time)
+var playbackEventCacheMu = sync.Mutex{}
 
 // 定义一个轮询剧集的协程，如果没有启动则第一次收到通知时启动它
 var newSeriesBufferTickerStarted bool = false
@@ -220,6 +226,10 @@ func Webhook(ctx *gin.Context) {
 				}
 			}
 		}
+	}
+	// 处理播放事件（Playback.Start、Playback.Pause、Playback.Stop）
+	if event.Event == "Playback.Start" || event.Event == "Playback.Pause" || event.Event == "Playback.Stop" {
+		go handlePlaybackEvent(body, event)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -622,3 +632,117 @@ func removeDuplicates(episodes []int) []int {
 	}
 	return result
 }
+
+// handlePlaybackEvent 处理 Emby 播放事件
+func handlePlaybackEvent(body []byte, event EmbyEvent) {
+	// 解析完整的播放事件数据
+	var playbackWebhook models.EmbyPlaybackWebhook
+	if err := json.Unmarshal(body, &playbackWebhook); err != nil {
+		helpers.AppLogger.Errorf("解析播放事件失败: %v", err)
+		return
+	}
+
+	// 检查去重（1分钟内不重复通知）
+	cacheKey := fmt.Sprintf("%s_%s_%s_%s_%s",
+		playbackWebhook.UserID,
+		playbackWebhook.Item.Type,
+		playbackWebhook.Item.Name,
+		playbackWebhook.DeviceName,
+		playbackWebhook.Event,
+	)
+
+	playbackEventCacheMu.Lock()
+	if lastTime, exists := playbackEventCache[cacheKey]; exists {
+		if time.Since(lastTime) < 1*time.Minute {
+			helpers.AppLogger.Infof("播放事件去重跳过: %s (%v前)", cacheKey, time.Since(lastTime))
+			playbackEventCacheMu.Unlock()
+			return
+		}
+	}
+	playbackEventCache[cacheKey] = time.Now()
+
+	// 清理过期的缓存项（清理超过5分钟的缓存）
+	for key, timestamp := range playbackEventCache {
+		if time.Since(timestamp) > 5*time.Minute {
+			delete(playbackEventCache, key)
+		}
+	}
+	playbackEventCacheMu.Unlock()
+
+	// 构造并发送通知
+	notif := createPlaybackNotification(&playbackWebhook)
+	if notificationmanager.GlobalEnhancedNotificationManager != nil {
+		if err := notificationmanager.GlobalEnhancedNotificationManager.SendNotification(context.Background(), notif); err != nil {
+			helpers.AppLogger.Errorf("发送播放通知失败: %v", err)
+		}
+	}
+}
+
+// createPlaybackNotification 构造播放通知
+func createPlaybackNotification(webhook *models.EmbyPlaybackWebhook) *notification.Notification {
+	// 构造通知内容
+	title := fmt.Sprintf("%s %s", webhook.GetEventTypeEmoji(), webhook.GetEventTypeName())
+	content := formatPlaybackNotificationContent(webhook)
+
+	// 构造通知元数据
+	metadata := map[string]interface{}{
+		"user_id":     webhook.UserID,
+		"user_name":   webhook.UserName,
+		"media_type":  webhook.Item.Type,
+		"media_title": webhook.Item.Name,
+		"device_name": webhook.DeviceName,
+		"client_name": webhook.ClientName,
+	}
+
+	if webhook.Item.Type == "Episode" {
+		metadata["series_name"] = webhook.Item.SeriesName
+		metadata["season_number"] = webhook.Item.SeasonNumber
+		metadata["episode_number"] = webhook.Item.EpisodeNumber
+	}
+
+	if webhook.PlaybackDuration > 0 {
+		metadata["playback_duration"] = webhook.PlaybackDuration
+		metadata["playback_duration_formatted"] = models.FormatPlaybackDuration(webhook.PlaybackDuration)
+	}
+
+	return &notification.Notification{
+		Type:      notification.NotificationType(webhook.GetNotificationEventType()),
+		Title:     title,
+		Content:   content,
+		Metadata:  metadata,
+		Timestamp: time.Now(),
+		Priority:  notification.NormalPriority,
+	}
+}
+
+// formatPlaybackNotificationContent 格式化播放通知内容
+func formatPlaybackNotificationContent(webhook *models.EmbyPlaybackWebhook) string {
+	var buf bytes.Buffer
+
+	buf.WriteString(fmt.Sprintf("用户：%s\n", webhook.UserName))
+	buf.WriteString(fmt.Sprintf("内容：%s - %s\n", webhook.GetMediaTypeName(), webhook.Item.Name))
+
+	// 如果是剧集，添加季集信息
+	if webhook.Item.Type == "Episode" {
+		seasonEpisode := webhook.Item.GetSeasonEpisodeString()
+		if seasonEpisode != "" {
+			buf.WriteString(fmt.Sprintf("%s\n", seasonEpisode))
+		}
+	}
+
+	// 添加原始标题
+	if webhook.Item.OriginalTitle != "" && webhook.Item.OriginalTitle != webhook.Item.Name {
+		buf.WriteString(fmt.Sprintf("原始标题：%s\n", webhook.Item.OriginalTitle))
+	}
+
+	// 添加设备信息
+	buf.WriteString(fmt.Sprintf("设备：%s (%s)\n", webhook.DeviceName, webhook.ClientName))
+
+	// 如果是停止事件，添加播放时长
+	if webhook.Event == "Playback.Stop" && webhook.PlaybackDuration > 0 {
+		buf.WriteString(fmt.Sprintf("时长：%s", models.FormatPlaybackDuration(webhook.PlaybackDuration)))
+	}
+
+	return buf.String()
+}
+

@@ -76,6 +76,9 @@ const (
 	SystemAlert    NotificationType = "system_alert"
 	MediaAdded     NotificationType = "media_added"
 	MediaRemoved   NotificationType = "media_removed"
+	PlaybackStart  NotificationType = "playback_start"  // 播放开始
+	PlaybackPause  NotificationType = "playback_pause"  // 播放暂停
+	PlaybackStop   NotificationType = "playback_stop"   // 播放停止
 )
 
 // NotificationPriority 通知优先级
