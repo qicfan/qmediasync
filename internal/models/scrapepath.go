@@ -1075,6 +1075,24 @@ func GetRelatStrmPathByScrapePathID(id uint) []*ScrapeStrmPath {
 	return scrapeStrmPaths
 }
 
+// GetScrapePathsBySyncPathID 根据同步路径ID查询关联的刮削路径
+func GetScrapePathsBySyncPathID(syncPathId uint) []*ScrapePath {
+	var scrapeStrmPaths []*ScrapeStrmPath
+	if err := db.Db.Where("strm_path_id = ?", syncPathId).Find(&scrapeStrmPaths).Error; err != nil {
+		helpers.AppLogger.Errorf("查询关联刮削路径失败 sync_path_id=%d err=%v", syncPathId, err)
+		return nil
+	}
+
+	var scrapePaths []*ScrapePath
+	for _, ssp := range scrapeStrmPaths {
+		scrapePath := GetScrapePathByID(ssp.ScrapePathID)
+		if scrapePath != nil {
+			scrapePaths = append(scrapePaths, scrapePath)
+		}
+	}
+	return scrapePaths
+}
+
 func GetTmdbImageUrl(path string) string {
 	return fmt.Sprintf("%s/t/p/original%s", GlobalScrapeSettings.GetTmdbImageUrl(), path)
 }

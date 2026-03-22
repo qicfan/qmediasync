@@ -159,6 +159,8 @@ func Webhook(ctx *gin.Context) {
 						helpers.AppLogger.Errorf("触发Emby信息提取失败 错误: %v", err)
 					}
 				}()
+				// 触发自动刮削（延迟30秒）
+				go emby.TriggerAutoScrape(event.Item.ID, event.Item.Name)
 			} else {
 				helpers.AppLogger.Infof("Emby媒体信息提取功能未启用，跳过媒体信息提取")
 			}
