@@ -103,28 +103,31 @@ func (sm *ScrapeBase) GetFFprobeInfoFromFileOrUrl(mediaFile *models.ScrapeMediaF
 	for index, stream := range ffprobeJson.Streams {
 		// 解析视频编码
 		if stream.CodecType == "video" {
-			mediaFile.VideoCodec = &models.VideoCodec{}
-			mediaFile.VideoCodec.StreamIndex = index
-			mediaFile.VideoCodec.Codec = stream.CodecName
-			mediaFile.VideoCodec.Micodec = stream.CodecName
-			mediaFile.VideoCodec.Width = stream.Width
-			mediaFile.VideoCodec.Height = stream.Height
-			mediaFile.VideoCodec.Duration = ffprobeJson.Format.Duration
-			mediaFile.VideoCodec.AspectRatio = helpers.CalculateAspectRatio(stream.Width, stream.Height)
-			mediaFile.VideoCodec.Aspect = stream.DisplayAspectRatio
-			mediaFile.VideoCodec.PixelFormat = stream.PixelFormat
-			bitrate, err := helpers.CalculateBitrate(&stream, &ffprobeJson.Format)
-			if err == nil {
-				mediaFile.VideoCodec.Bitrate = bitrate
-			} else {
-				mediaFile.VideoCodec.Bitrate = 0
-			}
-			mediaFile.VideoCodec.Framerate = stream.AvgFrameRate
-			mediaFile.VideoCodec.DurationInSeconds, _ = helpers.ParseDurationToSeconds(ffprobeJson.Format.Duration)
-			if mediaFile.VideoCodec.DurationInSeconds > 0 {
-				mediaFile.VideoCodec.DurationInMinutes = mediaFile.VideoCodec.DurationInSeconds / 60
-			} else {
-				mediaFile.VideoCodec.DurationInMinutes = 0
+			// 只处理第一个视频流，避免封面图流覆盖主视频流的信息
+			if mediaFile.VideoCodec == nil {
+				mediaFile.VideoCodec = &models.VideoCodec{}
+				mediaFile.VideoCodec.StreamIndex = index
+				mediaFile.VideoCodec.Codec = stream.CodecName
+				mediaFile.VideoCodec.Micodec = stream.CodecName
+				mediaFile.VideoCodec.Width = stream.Width
+				mediaFile.VideoCodec.Height = stream.Height
+				mediaFile.VideoCodec.Duration = ffprobeJson.Format.Duration
+				mediaFile.VideoCodec.AspectRatio = helpers.CalculateAspectRatio(stream.Width, stream.Height)
+				mediaFile.VideoCodec.Aspect = stream.DisplayAspectRatio
+				mediaFile.VideoCodec.PixelFormat = stream.PixelFormat
+				bitrate, err := helpers.CalculateBitrate(&stream, &ffprobeJson.Format)
+				if err == nil {
+					mediaFile.VideoCodec.Bitrate = bitrate
+				} else {
+					mediaFile.VideoCodec.Bitrate = 0
+				}
+				mediaFile.VideoCodec.Framerate = stream.AvgFrameRate
+				mediaFile.VideoCodec.DurationInSeconds, _ = helpers.ParseDurationToSeconds(ffprobeJson.Format.Duration)
+				if mediaFile.VideoCodec.DurationInSeconds > 0 {
+					mediaFile.VideoCodec.DurationInMinutes = mediaFile.VideoCodec.DurationInSeconds / 60
+				} else {
+					mediaFile.VideoCodec.DurationInMinutes = 0
+				}
 			}
 		}
 		// 解析音频编码
