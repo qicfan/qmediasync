@@ -18,7 +18,7 @@ type Migrator struct {
 	VersionCode int `json:"version_code"` // 版本号
 }
 
-var MaxVersionCode = 35
+var MaxVersionCode = 36
 var AllTables = []any{
 	BackupConfig{}, BackupRecord{},
 	ApiKey{}, Settings{}, Sync{}, User{}, Account{},
@@ -423,6 +423,28 @@ func Migrate() {
 		helpers.AppLogger.Infof("更新EmbyMediaItem item_id_int字段完成")
 		migrator.UpdateVersionCode(db.Db)
 	}
+	if migrator.VersionCode == 35 {
+		// 清理重复的 ScrapeSettings 记录
+		var count int64
+		db.Db.Model(&ScrapeSettings{}).Count(&count)
+		if count > 1 {
+			helpers.AppLogger.Infof("发现%d条刮削设置记录，清理重复记录", count)
+			var allSettings []*ScrapeSettings
+			db.Db.Order("id asc").Find(&allSettings)
+			// 保留第一条，删除其余的
+			for i := 1; i < len(allSettings); i++ {
+				if err := db.Db.Delete(allSettings[i]).Error; err != nil {
+					helpers.AppLogger.Errorf("删除重复的刮削设置记录失败，ID=%d: %v", allSettings[i].ID, err)
+				} else {
+					helpers.AppLogger.Infof("删除重复的刮削设置记录，ID=%d", allSettings[i].ID)
+				}
+			}
+		} else if count == 0 {
+			helpers.AppLogger.Warnf("数据库中没有刮削设置记录，将创建默认记录")
+			InitScrapeSetting()
+		}
+		migrator.UpdateVersionCode(db.Db)
+	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)
 }
 
@@ -534,6 +556,14 @@ func InitUser() {
 }
 
 func InitScrapeSetting() {
+	// 先检查是否已存在记录
+	var count int64
+	db.Db.Model(&ScrapeSettings{}).Count(&count)
+	if count > 0 {
+		helpers.AppLogger.Info("刮削设置已存在，跳过初始化")
+		return
+	}
+
 	// 添加默认值
 	scrapeSettings := ScrapeSettings{
 		TmdbApiKey:      "",

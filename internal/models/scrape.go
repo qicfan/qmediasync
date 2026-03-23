@@ -42,12 +42,26 @@ const (
 var GlobalScrapeSettings = &ScrapeSettings{}
 
 func LoadScrapeSettings() *ScrapeSettings {
-	if err := db.Db.Take(GlobalScrapeSettings).Error; err != nil {
+	// 检查是否存在记录
+	var count int64
+	db.Db.Model(&ScrapeSettings{}).Count(&count)
+
+	if count == 0 {
+		helpers.AppLogger.Warnf("数据库中没有刮削设置记录，将创建默认记录")
+		// 创建默认记录
+		InitScrapeSetting()
+	}
+
+	if count > 1 {
+		helpers.AppLogger.Warnf("数据库中存在多条刮削设置记录（%d条），将只使用第一条", count)
+	}
+
+	if err := db.Db.First(GlobalScrapeSettings).Error; err != nil {
 		helpers.AppLogger.Errorf("加载刮削设置失败: %v", err)
 		return nil
 	}
 
-	helpers.AppLogger.Infof("从数据库读取刮削设置成功")
+	helpers.AppLogger.Infof("从数据库读取刮削设置成功，ID=%d", GlobalScrapeSettings.ID)
 	return GlobalScrapeSettings
 }
 
@@ -106,6 +120,7 @@ func (s *ScrapeSettings) GetTmdbClient() *tmdb.Client {
 
 // 保存tmdb设置
 func (s *ScrapeSettings) SaveTmdb(apiKey, accessToken string, apiUrl string, imageUrl string, language string, imageLanguage string, enableProxy bool) error {
+	// 更新全局对象
 	s.TmdbApiKey = apiKey
 	s.TmdbAccessToken = accessToken
 	s.TmdbUrl = apiUrl
@@ -113,6 +128,8 @@ func (s *ScrapeSettings) SaveTmdb(apiKey, accessToken string, apiUrl string, ima
 	s.TmdbLanguage = language
 	s.TmdbImageLanguage = imageLanguage
 	s.TmdbEnableProxy = enableProxy
+
+	// 准备更新数据
 	updateData := make(map[string]interface{})
 	updateData["tmdb_api_key"] = apiKey
 	updateData["tmdb_access_token"] = accessToken
@@ -121,11 +138,21 @@ func (s *ScrapeSettings) SaveTmdb(apiKey, accessToken string, apiUrl string, ima
 	updateData["tmdb_language"] = language
 	updateData["tmdb_image_language"] = imageLanguage
 	updateData["tmdb_enable_proxy"] = enableProxy
-	err := db.Db.Model(ScrapeSettings{}).Where("id = ?", s.ID).Updates(updateData).Error
-	if err != nil {
-		helpers.AppLogger.Errorf("更新TMDB设置失败: %v", err)
-		return err
+
+	// 使用 s 作为 Model 参数，确保更新正确的记录
+	result := db.Db.Model(s).Updates(updateData)
+	if result.Error != nil {
+		helpers.AppLogger.Errorf("更新TMDB设置失败: %v", result.Error)
+		return result.Error
 	}
+
+	// 检查是否真的更新了记录
+	if result.RowsAffected == 0 {
+		helpers.AppLogger.Warnf("更新TMDB设置：没有记录被更新，ID=%d", s.ID)
+		return fmt.Errorf("没有找到要更新的记录")
+	}
+
+	helpers.AppLogger.Infof("TMDB设置已成功更新，ID=%d，影响行数=%d", s.ID, result.RowsAffected)
 	return nil
 }
 
