@@ -18,7 +18,7 @@ type Migrator struct {
 	VersionCode int `json:"version_code"` // 版本号
 }
 
-var MaxVersionCode = 35
+var MaxVersionCode = 36
 var AllTables = []any{
 	BackupConfig{}, BackupRecord{},
 	ApiKey{}, Settings{}, Sync{}, User{}, Account{},
@@ -421,6 +421,12 @@ func Migrate() {
 			page++
 		}
 		helpers.AppLogger.Infof("更新EmbyMediaItem item_id_int字段完成")
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 35 {
+		// 为EmbyConfig表添加媒体库选择字段
+		db.Db.AutoMigrate(EmbyConfig{})
+		helpers.AppLogger.Infof("已为EmbyConfig表添加selected_libraries和sync_all_libraries字段")
 		migrator.UpdateVersionCode(db.Db)
 	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)

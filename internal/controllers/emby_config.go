@@ -52,6 +52,8 @@ type updateEmbyConfigRequest struct {
 	EnableAuth              int    `json:"enable_auth"`
 	SyncEnabled             int    `json:"sync_enabled"`
 	SyncCron                string `json:"sync_cron"`
+	SelectedLibraries       string `json:"selected_libraries"`
+	SyncAllLibraries        int    `json:"sync_all_libraries"`
 	// DeleteNetdiskLibrary    []string `json:"delete_netdisk_library"` // 允许联动删除的媒体库ID
 }
 
@@ -109,6 +111,8 @@ func UpdateEmbyConfig(c *gin.Context) {
 	config.EnableAuth = req.EnableAuth
 	config.SyncEnabled = req.SyncEnabled
 	config.SyncCron = req.SyncCron
+	config.SelectedLibraries = req.SelectedLibraries
+	config.SyncAllLibraries = req.SyncAllLibraries
 	// if req.DeleteNetdiskLibrary != nil {
 	// 	config.DeleteNetdiskLibrary = strings.Join(req.DeleteNetdiskLibrary, ",")
 	// }
