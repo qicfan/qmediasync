@@ -346,9 +346,11 @@ func (r *RenameLocal) CheckAndMkDir(destFullPath string, rootPath, rootPathId st
 }
 
 func (r *RenameLocal) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile, sp *models.ScrapePath) error {
+	hasSeason := true
 	sourcePath := mediaFile.PathId
 	if sourcePath == "" && mediaFile.MediaType == models.MediaTypeTvShow {
 		sourcePath = mediaFile.TvshowPathId
+		hasSeason = false
 	}
 	if sourcePath == sp.SourcePath {
 		helpers.AppLogger.Info("视频文件的父目录是来源根路径，不删除")
@@ -366,7 +368,7 @@ func (r *RenameLocal) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile, s
 		}
 	}
 	if len(dirEntries) == 0 || sp.ForceDeleteSourcePath {
-		// 删除本地目录
+		// 删除本地目录（Season 文件夹或电影文件夹）
 		err := os.RemoveAll(sourcePath)
 		if err != nil {
 			helpers.AppLogger.Errorf("删除本地目录失败: %s %v", sourcePath, err)
@@ -374,17 +376,25 @@ func (r *RenameLocal) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile, s
 		}
 		helpers.AppLogger.Infof("刮削完成，尝试删除本地目录成功, 路径：%s", sourcePath)
 	}
-	// 如果有电视剧文件夹，则删除
-	if mediaFile.PathId != "" {
+	// 如果有 Season 文件夹，再尝试删除电视剧主文件夹
+	if mediaFile.PathId != "" && hasSeason {
 		// 检查电视剧文件夹的父目录是否是来源根路径
-		tvshowParentId := mediaFile.TvshowPathId
-		if tvshowParentId == sp.SourcePathId {
+		if mediaFile.TvshowPathId == sp.SourcePathId {
 			helpers.AppLogger.Info("电视剧的父目录是来源根路径，不删除")
 			return nil
 		}
-		// 判断这个目录下是否没有任何其他文件或目录
-		dirEntries, _ := os.ReadDir(tvshowParentId)
-		if len(dirEntries) == 0 || sp.ForceDeleteSourcePath {
+		// 检查电视剧主文件夹下是否还有其他目录（其他 Season 文件夹）
+		tvshowDirEntries, _ := os.ReadDir(mediaFile.TvshowPathId)
+		if len(tvshowDirEntries) > 0 {
+			for _, entry := range tvshowDirEntries {
+				if entry.IsDir() {
+					helpers.AppLogger.Infof("电视剧目录 %s 下还有其他目录 %s，不删除电视剧主文件夹", mediaFile.TvshowPathId, entry.Name())
+					return nil
+				}
+			}
+		}
+		// 删除电视剧主文件夹
+		if len(tvshowDirEntries) == 0 || sp.ForceDeleteSourcePath {
 			err := os.RemoveAll(mediaFile.TvshowPathId)
 			if err != nil {
 				helpers.AppLogger.Errorf("删除电视剧文件夹失败: %s %v", mediaFile.TvshowPathId, err)

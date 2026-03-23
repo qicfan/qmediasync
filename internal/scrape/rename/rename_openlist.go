@@ -344,9 +344,11 @@ func (r *RenameOpenList) CheckAndMkDir(destFullPath string, rootPath, rootPathId
 }
 
 func (r *RenameOpenList) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile, sp *models.ScrapePath) error {
+	hasSeason := true
 	sourcePath := mediaFile.PathId
 	if sourcePath == "" && mediaFile.MediaType == models.MediaTypeTvShow {
 		sourcePath = mediaFile.TvshowPathId
+		hasSeason = false
 	}
 	fsDetail, err := r.client.FileList(r.ctx, sourcePath, 1, 10)
 	if err != nil {
@@ -366,7 +368,7 @@ func (r *RenameOpenList) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile
 			helpers.AppLogger.Info("视频文件的父目录是来源根路径，不删除")
 			return nil
 		}
-		// 删除目录
+		// 删除目录（Season 文件夹或电影文件夹）
 		err := r.client.Del(filepath.Dir(sourcePath), []string{filepath.Base(sourcePath)})
 		if err != nil {
 			helpers.AppLogger.Errorf("删除Openlist文件失败: %s %v", sourcePath, err)
@@ -374,29 +376,36 @@ func (r *RenameOpenList) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile
 		}
 		helpers.AppLogger.Infof("刮削完成，尝试删除Openlist文件夹成功, 路径：%s", sourcePath)
 	}
-	// 再删除电视剧文件夹
-	if mediaFile.PathId != "" {
+	// 如果有 Season 文件夹，再尝试删除电视剧主文件夹
+	if mediaFile.PathId != "" && hasSeason {
 		// 检查电视剧文件夹的父目录是否是来源根路径
-		tvshowParentId := mediaFile.TvshowPathId
-		if tvshowParentId == sp.SourcePath {
+		if mediaFile.TvshowPathId == sp.SourcePath {
 			helpers.AppLogger.Info("电视剧的父目录是来源根路径，不删除")
 			return nil
 		}
-		fsDetail, err := r.client.FileList(r.ctx, tvshowParentId, 1, 10)
+		tvshowFsDetail, err := r.client.FileList(r.ctx, mediaFile.TvshowPathId, 1, 10)
 		if err != nil {
-			helpers.AppLogger.Errorf("删除Openlist文件失败: %s %v", mediaFile.PathId, err)
+			helpers.AppLogger.Errorf("获取Openlist电视剧文件夹列表失败: %s %v", mediaFile.TvshowPathId, err)
 			return err
 		}
-		if fsDetail.Total == 0 || sp.ForceDeleteSourcePath {
-			// 删除目录
-			err := r.client.Del(tvshowParentId, []string{filepath.Base(tvshowParentId)})
+		// 检查电视剧主文件夹下是否还有其他目录（其他 Season 文件夹）
+		if tvshowFsDetail.Total > 0 {
+			for _, file := range tvshowFsDetail.Content {
+				if file.IsDir {
+					helpers.AppLogger.Infof("电视剧目录 %s 下还有其他目录 %s，不删除电视剧主文件夹", mediaFile.TvshowPathId, file.Name)
+					return nil
+				}
+			}
+		}
+		// 删除电视剧主文件夹
+		if tvshowFsDetail.Total == 0 || sp.ForceDeleteSourcePath {
+			err := r.client.Del(filepath.Dir(mediaFile.TvshowPathId), []string{filepath.Base(mediaFile.TvshowPathId)})
 			if err != nil {
-				helpers.AppLogger.Errorf("删除Openlist文件失败: %s %v", mediaFile.TvshowPathId, err)
+				helpers.AppLogger.Errorf("删除Openlist电视剧文件夹失败: %s %v", mediaFile.TvshowPathId, err)
 				return err
 			}
 			helpers.AppLogger.Infof("刮削完成，尝试删除Openlist中的电视剧文件夹成功, 路径：%s", mediaFile.TvshowPathId)
 		}
-
 	}
 	return nil
 }

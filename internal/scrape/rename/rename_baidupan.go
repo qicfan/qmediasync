@@ -270,9 +270,11 @@ func (r *RenameBaiduPan) CheckAndMkDir(destFullPath string, rootPath, rootPathId
 }
 
 func (r *RenameBaiduPan) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile, sp *models.ScrapePath) error {
+	hasSeason := true
 	sourcePath := mediaFile.PathId
 	if sourcePath == "" && mediaFile.MediaType == models.MediaTypeTvShow {
 		sourcePath = mediaFile.TvshowPathId
+		hasSeason = false
 	}
 	fsList, err := r.client.GetFileList(r.ctx, sourcePath, 1, 1, 0, 1000)
 	if err != nil {
@@ -292,7 +294,7 @@ func (r *RenameBaiduPan) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile
 			helpers.AppLogger.Info("视频文件的父目录是来源根路径，不删除")
 			return nil
 		}
-		// 删除目录
+		// 删除目录（Season 文件夹或电影文件夹）
 		err := r.client.Del(r.ctx, []string{sourcePath})
 		if err != nil {
 			helpers.AppLogger.Errorf("百度网盘 删除文件夹失败: %s %v", sourcePath, err)
@@ -300,29 +302,36 @@ func (r *RenameBaiduPan) RemoveMediaSourcePath(mediaFile *models.ScrapeMediaFile
 		}
 		helpers.AppLogger.Infof("刮削完成，尝试删除百度网盘文件夹成功, 路径：%s", sourcePath)
 	}
-	// 再删除电视剧文件夹
-	if mediaFile.PathId != "" {
+	// 如果有 Season 文件夹，再尝试删除电视剧主文件夹
+	if mediaFile.PathId != "" && hasSeason {
 		// 检查电视剧文件夹的父目录是否是来源根路径
-		tvshowParentId := mediaFile.TvshowPathId
-		if tvshowParentId == sp.SourcePath {
+		if mediaFile.TvshowPathId == sp.SourcePath {
 			helpers.AppLogger.Info("电视剧的父目录是来源根路径，不删除")
 			return nil
 		}
-		fsList, err := r.client.GetFileList(r.ctx, tvshowParentId, 1, 1, 0, 1000)
+		tvshowFsList, err := r.client.GetFileList(r.ctx, mediaFile.TvshowPathId, 1, 1, 0, 1000)
 		if err != nil {
-			helpers.AppLogger.Errorf("删除Openlist文件失败: %s %v", mediaFile.PathId, err)
+			helpers.AppLogger.Errorf("百度网盘 获取电视剧文件夹列表失败: %s %v", mediaFile.TvshowPathId, err)
 			return err
 		}
-		if len(fsList) == 0 || sp.ForceDeleteSourcePath {
-			// 删除目录
-			err := r.client.Del(r.ctx, []string{tvshowParentId})
+		// 检查电视剧主文件夹下是否还有其他目录（其他 Season 文件夹）
+		if len(tvshowFsList) > 0 {
+			for _, file := range tvshowFsList {
+				if file.IsDir == 1 {
+					helpers.AppLogger.Infof("电视剧目录 %s 下还有其他目录 %s，不删除电视剧主文件夹", mediaFile.TvshowPathId, file.ServerFilename)
+					return nil
+				}
+			}
+		}
+		// 删除电视剧主文件夹
+		if len(tvshowFsList) == 0 || sp.ForceDeleteSourcePath {
+			err := r.client.Del(r.ctx, []string{mediaFile.TvshowPathId})
 			if err != nil {
 				helpers.AppLogger.Errorf("删除百度网盘电视剧文件夹失败: %s %v", mediaFile.TvshowPathId, err)
 				return err
 			}
 			helpers.AppLogger.Infof("刮削完成，尝试删除百度网盘电视剧文件夹成功, 路径：%s", mediaFile.TvshowPathId)
 		}
-
 	}
 	return nil
 }
