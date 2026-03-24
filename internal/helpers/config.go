@@ -72,6 +72,7 @@ type Config struct {
 	HttpsHost     string     `yaml:"httpsHost"` // HTTPS主机地址
 	Strm          ConfigStrm `yaml:"strm"`
 	AuthServer    string     `yaml:"authServer"`
+	NewAuthServer string     `yaml:"newAuthServer"`
 	BaiDuPanAppId string     `yaml:"baiDuPanAppId"`
 	AdminUsername string     `yaml:"adminUsername"`
 	AdminPassword string     `yaml:"adminPassword"`
@@ -112,6 +113,12 @@ func InitConfig() error {
 	// if GlobalConfig.Strm.Cron == "" {
 	GlobalConfig.Strm.Cron = "30 * * * *" // 每小时30分执行
 	// }
+	if GlobalConfig.AuthServer == "" {
+		GlobalConfig.AuthServer = "https://api.mqfamily.top"
+	}
+	if GlobalConfig.NewAuthServer == "" {
+		GlobalConfig.NewAuthServer = "https://oauth.qmediasync.cn"
+	}
 	return nil
 }
 
@@ -231,6 +238,7 @@ func MakeDefaultConfig() *Config {
 		HttpHost:      ":12333",
 		HttpsHost:     ":12332",
 		AuthServer:    "https://api.mqfamily.top",
+		NewAuthServer: "https://oauth.qmediasync.cn",
 		BaiDuPanAppId: "QMediaSync",
 		AdminUsername: "admin",
 		AdminPassword: "admin123",

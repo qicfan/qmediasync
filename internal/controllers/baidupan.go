@@ -136,7 +136,7 @@ func GetBaiDuPanOAuthUrl(c *gin.Context) {
 	}
 
 	// 构建授权URL
-	authServerUrl := fmt.Sprintf("%s/baidu.php", helpers.GlobalConfig.AuthServer)
+	authServerUrl := fmt.Sprintf("%s/baidu.php", helpers.GlobalConfig.NewAuthServer)
 	// 注意：redirect_uri需要与百度开放平台配置的一致
 	oauthUrl := fmt.Sprintf("%s?action=code&state=%s", authServerUrl, stateEncoded)
 	c.JSON(http.StatusOK, APIResponse[string]{Code: Success, Message: "获取百度网盘OAuth登录地址成功", Data: oauthUrl})
