@@ -590,12 +590,13 @@ func (sm *ScrapeMediaFile) isNewTemplateSyntax(template string) bool {
 
 func (sm *ScrapeMediaFile) buildTemplateContext() pongo2.Context {
 	ctx := pongo2.Context{
-		"title":       sm.Name,
-		"year":        sm.Year,
-		"tmdbid":      sm.TmdbId,
-		"videoFormat": sm.Resolution,
-		"edition":     sm.ResolutionLevel,
-		"fileExt":     sm.VideoExt,
+		"title":         sm.Name,
+		"year":          sm.Year,
+		"tmdbid":        sm.TmdbId,
+		"videoFormat":   sm.Resolution,
+		"edition":       sm.ResolutionLevel,
+		"fileExt":       sm.VideoExt,
+		"original_name": sm.VideoFilename,
 	}
 
 	if sm.Media != nil {
@@ -701,6 +702,18 @@ func (sm *ScrapeMediaFile) GenerateNameByTemplate(template string) string {
 		newName = strings.ReplaceAll(newName, "{tmdb_id}", fmt.Sprintf("{tmdbid-%d}", sm.TmdbId))
 	} else {
 		newName = strings.ReplaceAll(newName, "{tmdb_id}", "")
+	}
+	// 处理 original_title（原始标题）
+	if sm.Media != nil && sm.Media.OriginalName != "" {
+		newName = strings.ReplaceAll(newName, "{original_title}", sm.Media.OriginalName)
+	} else {
+		newName = strings.ReplaceAll(newName, "{original_title}", "")
+	}
+	// 处理 original_name（原始文件名）
+	if sm.VideoFilename != "" {
+		newName = strings.ReplaceAll(newName, "{original_name}", sm.VideoFilename)
+	} else {
+		newName = strings.ReplaceAll(newName, "{original_name}", "")
 	}
 	// 处理演员
 	actorName := ""
