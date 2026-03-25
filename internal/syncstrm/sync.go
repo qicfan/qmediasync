@@ -268,6 +268,10 @@ func (s *SyncStrm) Start() error {
 		case models.SourceTypeBaiduPan:
 			s.StartBaiduPanSync()
 		default:
+			// 如果是本地类型，先删除所有数据表中的数据
+			if s.Account.SourceType == models.SourceTypeLocal {
+				db.Db.Where("sync_path_id = ?", s.SyncPathId).Delete(&models.SyncFile{})
+			}
 			// 其他来源走一套逻辑
 			s.StartOther()
 		}
@@ -448,9 +452,14 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 	s.Sync.UpdateSubStatus(models.SyncSubStatusProcessLocalFileList)
 	select {
 	case <-s.Context.Done():
+		s.Sync.Logger.Info("对比本地文件和临时表中的文件被取消")
 		return nil
 	default:
 		rootPath := filepath.Join(s.TargetPath, s.SourcePath)
+		if s.Account.SourceType == models.SourceTypeLocal {
+			rootPath = s.TargetPath
+		}
+
 		s.Sync.Logger.Infof("开始对比本地文件和临时表中的文件，根目录: %s", rootPath)
 		// 对比本地文件和临时表中的文件
 		filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
@@ -463,6 +472,7 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 				if err != nil || path == "." || strings.Contains(path, ".verysync") || strings.Contains(path, ".deletedByTMM") {
 					// 跳过根目录本身
 					// 跳过微力同步和TMM的临时目录中的文件
+					s.Sync.Logger.Infof("跳过文件 %s，错误: %v", path, err)
 					return nil
 				}
 				if info.IsDir() {
@@ -502,7 +512,7 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 				if err != nil {
 					s.Sync.Logger.Warnf("查询同步缓存失败 %s: %v", path, err)
 				}
-				// s.Sync.Logger.Infof("对比本地文件 %s，是否存在于网盘: %v", path, existsFile)
+				s.Sync.Logger.Infof("对比本地文件 %s，是否存在于网盘: %v", path, existsFile)
 				if isVideo {
 					// STRM文件，检查文件在临时表是否存在，不存在需要删除临时文件
 					if existsFile != nil {
@@ -532,6 +542,9 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 							return nil
 						}
 						sourceRootPath := filepath.ToSlash(filepath.Join(s.TargetPath, s.Sync.RemotePath))
+						if s.Account.SourceType == models.SourceTypeLocal {
+							sourceRootPath = s.Sync.RemotePath
+						}
 						// 添加上传任务
 						// 检查文件是否可以上传
 						// 普通元数据文件需要父目录存在才可以上传，允许上传目录下的文件需要循环创建目录上传
@@ -587,8 +600,11 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 							IsVideo:       isVideo,
 							LocalFilePath: filepath.Join(parentPath, info.Name()),
 						}
-						if s.Account.SourceType != models.SourceType115 {
+						s.Sync.Logger.Infof("准备添加上传任务，检查各个路径是否正确 %s : %s => %s", db115File.FileId, db115File.Path, db115File.FileName)
+						if s.Account.SourceType != models.SourceTypeLocal {
 							db115File.FileId = filepath.ToSlash(filepath.Join(db115File.Path, db115File.FileName))
+						} else {
+							db115File.FileId = filepath.Join(sourceRootPath, db115File.Path, db115File.FileName)
 						}
 						models.AddUploadTaskFromSyncFile(db115File)
 						return nil

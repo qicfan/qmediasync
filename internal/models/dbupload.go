@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -377,9 +376,9 @@ func AddUploadTaskFromSyncFile(file *SyncFile) error {
 	// 	file.SyncPath = GetSyncPathById(file.SyncPathId)
 	// }
 	remoteFileId := file.FileId
-	if file.SourceType == SourceType115 {
-		remoteFileId = filepath.Join(file.Path, file.FileName)
-	}
+	// if file.SourceType == SourceType115 {
+	// 	remoteFileId = filepath.Join(file.Path, file.FileName)
+	// }
 	// 插入新纪录
 	task := &DbUploadTask{
 		AccountId:     file.AccountId,
