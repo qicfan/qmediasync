@@ -498,7 +498,6 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 					return nil
 				}
 				// 检查文件在临时表是否存在
-				// existsFile, _ := s.queryTempTableByLocalPath(path)
 				existsFile, err := s.memSyncCache.GetByLocalPath(path)
 				if err != nil {
 					s.Sync.Logger.Warnf("查询同步缓存失败 %s: %v", path, err)
