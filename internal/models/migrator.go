@@ -18,7 +18,7 @@ type Migrator struct {
 	VersionCode int `json:"version_code"` // 版本号
 }
 
-var MaxVersionCode = 36
+var MaxVersionCode = 37
 var AllTables = []any{
 	BackupConfig{}, BackupRecord{},
 	ApiKey{}, Settings{}, Sync{}, User{}, Account{},
@@ -448,6 +448,12 @@ func Migrate() {
 			InitScrapeSetting()
 		}
 
+		migrator.UpdateVersionCode(db.Db)
+	}
+	if migrator.VersionCode == 36 {
+		// 添加115文件列表每页查询数量字段到Settings表
+		db.Db.AutoMigrate(Settings{})
+		helpers.AppLogger.Info("已添加file_list_page_size字段到Settings表")
 		migrator.UpdateVersionCode(db.Db)
 	}
 	helpers.AppLogger.Infof("当前数据库版本 %d", migrator.VersionCode)

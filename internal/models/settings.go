@@ -16,6 +16,7 @@ type SettingThreads struct {
 	OpenlistQPS        int `form:"openlist_qps" json:"openlist_qps" binding:"required" gorm:"default:3"`                  // OpenList QPS
 	OpenlistRetry      int `form:"openlist_retry" json:"openlist_retry" binding:"required" gorm:"default:1"`              // OpenList 重试次数
 	OpenlistRetryDelay int `form:"openlist_retry_delay" json:"openlist_retry_delay" binding:"required" gorm:"default:60"` // OpenList 重试间隔，单位秒
+	FileListPageSize   int `form:"file_list_page_size" json:"file_list_page_size" gorm:"default:1150"`                    // 115文件列表每页查询数量，范围100-1150
 }
 
 type SettingStrm struct {
@@ -57,6 +58,7 @@ func (t SettingThreads) ToMap() map[string]any {
 		"openlist_qps":         t.OpenlistQPS,
 		"openlist_retry":       t.OpenlistRetry,
 		"openlist_retry_delay": t.OpenlistRetryDelay,
+		"file_list_page_size":  t.FileListPageSize,
 	}
 }
 
@@ -276,4 +278,14 @@ func InitNotificationManager() {
 		helpers.AppLogger.Warnf("加载通知渠道失败: %v", err)
 	}
 	notificationmanager.GlobalEnhancedNotificationManager = enhancedManager
+}
+
+// GetFileListPageSize 获取115文件列表每页查询数量
+// 如果配置不存在或不在范围内(100-1150)，返回默认值1150
+func GetFileListPageSize() int {
+	pageSize := SettingsGlobal.FileListPageSize
+	if pageSize < 100 || pageSize > 1150 {
+		return 1150
+	}
+	return pageSize
 }

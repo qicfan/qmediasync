@@ -97,7 +97,7 @@ func (s *Scan115Impl) startPathWorkWithLimiter(workerID int) {
 				return
 			}
 			offset := 0
-			limit := 1150
+			limit := models.GetFileListPageSize()
 			// 记录下图片、nfo、字幕文件
 			// 如果发现了视频文件，则寻找有没有视频文件对应的图片、nfo、字幕文件
 			// 如果没发现视频文件，则清空

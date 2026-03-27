@@ -12,7 +12,7 @@ import (
 // 启动115文件处理调度器
 // 启动N个文件处理，将所有文件查询回来入临时表
 func (s *SyncStrm) Start115FileDispathcer(total int64) error {
-	limit := 1150
+	limit := models.GetFileListPageSize()
 	// 根据文件总数来计算需要多少个处理器
 	pageCount := total / int64(limit)
 	if total%int64(limit) != 0 {

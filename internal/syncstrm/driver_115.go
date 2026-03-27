@@ -187,7 +187,7 @@ func (d *open115Driver) GetTotalFileCount(ctx context.Context) (int64, string, e
 // 查询目录下的子目录
 func (d *open115Driver) GetDirsByPathId(ctx context.Context, pathId string) ([]pathQueueItem, error) {
 	offset := 0
-	const limit = 1150
+	limit := models.GetFileListPageSize()
 	pathDirs := make([]pathQueueItem, 0)
 	for {
 		resp, err := d.client.GetFsList(ctx, pathId, true, true, true, offset, limit)
