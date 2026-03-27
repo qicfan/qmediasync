@@ -682,8 +682,8 @@ func ManualSync(c *gin.Context) {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: fmt.Sprintf("请求参数错误: %v", err), Data: nil})
 		return
 	}
-	if req.PathId == "" || req.Path == "" {
-		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "path_id 和 path 参数不能为空", Data: nil})
+	if req.PathId == "" {
+		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "path_id 参数不能为空", Data: nil})
 		return
 	}
 	account, err := models.GetAccountById(req.AccountId)
