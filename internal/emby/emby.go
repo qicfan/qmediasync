@@ -6,6 +6,7 @@ import (
 	"Q115-STRM/internal/models"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"sync"
@@ -53,6 +54,8 @@ func PerformEmbySync() (int, error) {
 	}
 	defer atomic.StoreInt32(&embySyncRunning, 0)
 
+	helpers.AppLogger.Infof("[Emby同步] 开始同步，EmbyUrl=%s", config.EmbyUrl)
+
 	client := embyclientrestgo.NewClient(config.EmbyUrl, config.EmbyApiKey)
 	users, err := client.GetUsersWithAllLibrariesAccess()
 	if err != nil {
@@ -61,6 +64,7 @@ func PerformEmbySync() (int, error) {
 	if len(users) == 0 {
 		return 0, errors.New("没有找到可访问全部媒体库的Emby用户")
 	}
+	helpers.AppLogger.Infof("[Emby同步] 选中用户: %s (ID: %s)", users[0].Name, users[0].ID)
 
 	libs, err := client.GetAllMediaLibraries()
 	if err != nil {
@@ -69,11 +73,19 @@ func PerformEmbySync() (int, error) {
 	if len(libs) == 0 {
 		return 0, errors.New("未获取到任何Emby媒体库")
 	}
+	helpers.AppLogger.Infof("[Emby同步] Emby返回媒体库列表(%d个): %v", len(libs), func() []string {
+		names := make([]string, 0, len(libs))
+		for _, l := range libs {
+			names = append(names, fmt.Sprintf("%s(ID:%s)", l.Name, l.ID))
+		}
+		return names
+	}())
 	if err := models.UpsertEmbyLibraries(libs); err != nil {
 		helpers.AppLogger.Warnf("保存媒体库信息失败: %v", err)
 	}
 
 	// 根据配置过滤媒体库
+	helpers.AppLogger.Infof("[Emby同步] SyncAllLibraries=%d, SelectedLibraries=%s", config.SyncAllLibraries, config.SelectedLibraries)
 	if config.SyncAllLibraries == 0 {
 		var selectedLibIds []string
 		if err := json.Unmarshal([]byte(config.SelectedLibraries), &selectedLibIds); err == nil {
@@ -102,9 +114,16 @@ func PerformEmbySync() (int, error) {
 	}
 
 	if len(libs) == 0 {
-		helpers.AppLogger.Info("没有选中任何媒体库，跳过同步")
+		helpers.AppLogger.Errorf("[Emby同步] 过滤后没有可同步的媒体库，请检查媒体库同步选择配置")
 		return 0, nil
 	}
+	helpers.AppLogger.Infof("[Emby同步] 过滤后待同步媒体库(%d个): %v", len(libs), func() []string {
+		names := make([]string, 0, len(libs))
+		for _, l := range libs {
+			names = append(names, fmt.Sprintf("%s(ID:%s)", l.Name, l.ID))
+		}
+		return names
+	}())
 
 	// 准备并发池
 	workerCount := 2
@@ -117,12 +136,16 @@ func PerformEmbySync() (int, error) {
 
 	worker := func() {
 		defer wg.Done()
+		var skippedNoPickCode int64
+		var savedCount int64
+		var saveFailCount int64
 		for task := range jobs {
 			pickCode, mediaPath, err := extractPickCode(task.Item.MediaSources)
-			// pickCode, mediaPath := "", ""
 			if err != nil {
-				// helpers.AppLogger.Warnf("从MediaSource中查询PickCode失败 item=%s name=%s path=%s err=%v", task.Item.Id, task.Item.Name, mediaPath, err)
-				// 没有pickcode不入库
+				skippedNoPickCode++
+				if skippedNoPickCode <= 10 {
+					helpers.AppLogger.Errorf("[Emby同步] Item被跳过(无pickcode): name=%s type=%s id=%s mediaSources=%d path=%s", task.Item.Name, task.Item.Type, task.Item.Id, len(task.Item.MediaSources), mediaPath)
+				}
 				continue
 			}
 			pathStr := mediaPath
@@ -165,9 +188,13 @@ func PerformEmbySync() (int, error) {
 				}
 			}
 			if err := models.CreateOrUpdateEmbyMediaItem(mediaItem); err != nil {
-				helpers.AppLogger.Errorf("保存Emby媒体项失败 id=%s name=%s err=%v", task.Item.Id, task.Item.Name, err)
+				saveFailCount++
+				if saveFailCount <= 10 {
+					helpers.AppLogger.Errorf("[Emby同步] 保存媒体项失败: id=%s name=%s err=%v", task.Item.Id, task.Item.Name, err)
+				}
 				continue
 			}
+			savedCount++
 			mu.Lock()
 			validItemIds = append(validItemIds, task.Item.Id)
 			mu.Unlock()
@@ -190,10 +217,15 @@ func PerformEmbySync() (int, error) {
 	}
 
 	for _, lib := range libs {
+		helpers.AppLogger.Infof("[Emby同步] 开始同步媒体库: %s (ID: %s)", lib.Name, lib.ID)
 		items, gerr := client.GetMediaItemsByLibraryID(lib.ID, 0)
 		if gerr != nil {
-			helpers.AppLogger.Warnf("获取媒体库%s失败: %v", lib.Name, gerr)
+			helpers.AppLogger.Errorf("[Emby同步] 获取媒体库Items失败: library=%s (ID:%s), error=%v", lib.Name, lib.ID, gerr)
 			continue
+		}
+		helpers.AppLogger.Infof("[Emby同步] 媒体库 %s 返回 %d 个Items", lib.Name, len(items))
+		if len(items) == 0 {
+			helpers.AppLogger.Errorf("[Emby同步] 媒体库 %s (ID:%s) 返回0个Items，请检查Emby中该媒体库是否有内容，以及IncludeItemTypes过滤条件", lib.Name, lib.ID)
 		}
 		for _, item := range items {
 			jobs <- embySyncTask{LibraryId: lib.ID, LibraryName: lib.Name, Item: item}
@@ -210,7 +242,10 @@ func PerformEmbySync() (int, error) {
 	if err := models.UpdateLastSyncTime(); err != nil {
 		helpers.AppLogger.Warnf("更新Emby最后同步时间失败: %v", err)
 	}
-	helpers.AppLogger.Infof("Emby同步完成，处理 %d 个项目", processed)
+	helpers.AppLogger.Infof("[Emby同步] 同步完成，总处理 %d 个项目", processed)
+	if processed == 0 {
+		helpers.AppLogger.Errorf("[Emby同步] ⚠️ 同步结果为0！可能原因：1)媒体库过滤后为空 2)Items的MediaSource.Path不含pickcode 3)Emby API返回空结果。请查看上方日志排查")
+	}
 	return int(processed), nil
 }
 

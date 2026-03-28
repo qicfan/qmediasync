@@ -231,6 +231,7 @@ mainloop:
 		}
 
 		if firstRequest {
+			helpers.AppLogger.Infof("[Emby同步] Items API返回: libraryID=%s, TotalRecordCount=%d, 本次返回=%d条", libraryID, response.TotalRecordCount, len(response.Items))
 			if response.TotalRecordCount > 0 {
 				allItems = make([]BaseItemDtoV2, 0, response.TotalRecordCount)
 			}
