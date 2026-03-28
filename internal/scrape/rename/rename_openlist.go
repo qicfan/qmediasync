@@ -104,20 +104,17 @@ func (r *RenameOpenList) move(mediaFile *models.ScrapeMediaFile, newName, newPat
 		}
 		files := []string{}
 		for _, sub := range mediaFile.SubtitleFiles {
-			files = append(files, sub.FileName)
-			if mediaFile.MediaType != models.MediaTypeTvShow {
-				mediaFile.Media.SubtitleFiles = append(mediaFile.Media.SubtitleFiles, &models.MediaMetaFiles{
-					FileName: sub.FileName,
-					FileId:   filepath.Join(newPathId, sub.FileName),
-					PickCode: filepath.Join(newPathId, sub.FileName),
-				})
-			} else {
-				mediaFile.MediaEpisode.SubtitleFiles = append(mediaFile.MediaEpisode.SubtitleFiles, &models.MediaMetaFiles{
-					FileName: sub.FileName,
-					FileId:   filepath.Join(newPathId, sub.FileName),
-					PickCode: filepath.Join(newPathId, sub.FileName),
-				})
+			newSub := &models.MediaMetaFiles{
+				FileName: sub.FileName,
+				FileId:   filepath.Join(newPathId, sub.FileName),
+				PickCode: filepath.Join(newPathId, sub.FileName),
 			}
+			if mediaFile.MediaType != models.MediaTypeTvShow {
+				mediaFile.Media.SubtitleFiles = append(mediaFile.Media.SubtitleFiles, newSub)
+			} else {
+				mediaFile.MediaEpisode.SubtitleFiles = append(mediaFile.MediaEpisode.SubtitleFiles, newSub)
+			}
+			files = append(files, sub.FileName)
 		}
 		// 移动字幕文件到新目录
 		err := r.client.Move(oldPath, newPathId, files)
@@ -125,19 +122,14 @@ func (r *RenameOpenList) move(mediaFile *models.ScrapeMediaFile, newName, newPat
 			helpers.AppLogger.Errorf("OpenList移动字幕文件失败: %v", err)
 		}
 		// 改名
-		for idx, sub := range mediaFile.SubtitleFiles {
-			// 改名
+		for _, sub := range mediaFile.SubtitleFiles {
 			newSubName := strings.Replace(sub.FileName, oldBaseName, mediaFile.NewVideoBaseName, 1)
 			if newSubName != sub.FileName {
-				// 改名
 				err := r.client.Rename(newPathId, sub.FileName, newSubName)
 				if err != nil {
 					helpers.AppLogger.Errorf("OpenList改名字幕文件失败: %v", err)
 				} else {
 					helpers.AppLogger.Infof("字幕文件 %s 重命名成功：%s", newPathId+"/"+sub.FileName, newSubName)
-					mediaFile.Media.SubtitleFiles[idx].FileName = newSubName
-					mediaFile.Media.SubtitleFiles[idx].FileId = filepath.Join(newPathId, newSubName)
-					mediaFile.Media.SubtitleFiles[idx].PickCode = filepath.Join(newPathId, newSubName)
 				}
 			}
 		}
