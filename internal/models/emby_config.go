@@ -17,6 +17,8 @@ type EmbyConfig struct {
 	LastSyncTime            int64  `json:"last_sync_time" gorm:"default:0"`
 	SelectedLibraries       string `json:"selected_libraries" gorm:"type:text;default:'[]'"` // 选中的媒体库ID列表（JSON格式）
 	SyncAllLibraries        int    `json:"sync_all_libraries" gorm:"default:1"`              // 是否同步所有媒体库（1=全部，0=部分）
+	EnablePlaybackOverview  int    `json:"enable_playback_overview" gorm:"default:0"`        // 播放通知是否显示剧情简介
+	EnablePlaybackProgress  int    `json:"enable_playback_progress" gorm:"default:0"`        // 播放通知是否显示播放进度
 	// DeleteNetdiskLibrary    string `json:"delete_netdisk_library" gorm:"type:varchar(200);default:''"` // 允许联动删除的媒体库ID，用,分隔, 空表示允许全部
 }
 
