@@ -363,6 +363,23 @@ func (c *Client) GetUsersWithAllLibrariesAccess() ([]UserDto, error) {
 		}
 	}
 
+	// 当没有找到符合条件的用户时，打印ERROR级别详细日志
+	if len(usersWithAllAccess) == 0 {
+		helpers.AppLogger.Errorf("没有找到能访问全部媒体库的用户，共检查 %d 个用户：", len(users))
+		for _, user := range users {
+			helpers.AppLogger.Errorf("  ❌ 用户[%s](ID: %s) 不满足全库权限条件，原因：未开启全部文件夹访问(EnableAllFolders=false)", user.Name, user.ID)
+		}
+	} else {
+		// 调试模式下打印详细信息
+		for _, user := range users {
+			if user.Policy.EnableAllFolders {
+				helpers.AppLogger.Debugf("  ✅ 用户[%s](ID: %s) 满足全库权限条件，原因：开启了所有文件夹访问(EnableAllFolders=true)", user.Name, user.ID)
+			} else {
+				helpers.AppLogger.Debugf("  ❌ 用户[%s](ID: %s) 不满足全库权限条件，原因：未开启全部文件夹访问(EnableAllFolders=false)", user.Name, user.ID)
+			}
+		}
+	}
+
 	return usersWithAllAccess, nil
 }
 
