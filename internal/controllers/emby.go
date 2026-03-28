@@ -745,5 +745,46 @@ func formatPlaybackNotificationContent(webhook *models.EmbyPlaybackWebhook) stri
 		fmt.Fprintf(&buf, "季集：S%dE%d\n", webhook.Item.SeasonNumber, webhook.Item.EpisodeNumber)
 	}
 
+	// 播放进度
+	if models.GlobalEmbyConfig != nil && models.GlobalEmbyConfig.EnablePlaybackProgress == 1 {
+		positionTicks := webhook.Session.PlaybackInfo.PositionTicks
+		runtimeTicks := webhook.Session.PlaybackInfo.MediaSource.RunTimeTicks
+		if positionTicks > 0 && runtimeTicks > 0 {
+			positionStr := formatTicksToTime(positionTicks)
+			runtimeStr := formatTicksToTime(runtimeTicks)
+			percentage := float64(positionTicks) / float64(runtimeTicks) * 100
+			fmt.Fprintf(&buf, "播放进度：%s / %s (%.0f%%)\n", positionStr, runtimeStr, percentage)
+		} else if runtimeTicks > 0 {
+			// start事件没有position，显示总时长
+			runtimeStr := formatTicksToTime(runtimeTicks)
+			fmt.Fprintf(&buf, "时长：%s\n", runtimeStr)
+		}
+	}
+
+	// 剧情简介
+	if models.GlobalEmbyConfig != nil && models.GlobalEmbyConfig.EnablePlaybackOverview == 1 {
+		detail := emby.GetEmbyItemDetail(webhook.Item.ID)
+		if detail != nil && detail.Overview != "" {
+			overview := detail.Overview
+			runes := []rune(overview)
+			if len(runes) > 100 {
+				overview = string(runes[:100]) + "..."
+			}
+			fmt.Fprintf(&buf, "简介：%s\n", overview)
+		}
+	}
+
 	return buf.String()
+}
+
+// formatTicksToTime 将Emby Ticks（100纳秒单位）转换为 HH:MM:SS 格式
+func formatTicksToTime(ticks int64) string {
+	totalSeconds := ticks / 10000000 // ticks to seconds
+	hours := totalSeconds / 3600
+	minutes := (totalSeconds % 3600) / 60
+	seconds := totalSeconds % 60
+	if hours > 0 {
+		return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	}
+	return fmt.Sprintf("%02d:%02d", minutes, seconds)
 }
