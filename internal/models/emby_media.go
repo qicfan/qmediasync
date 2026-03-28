@@ -109,6 +109,21 @@ func UpsertEmbyLibraries(libs []embyclientrestgo.EmbyLibrary) error {
 	return nil
 }
 
+// CleanupDeletedEmbyLibraries 清理已不在Emby中存在的媒体库记录
+func CleanupDeletedEmbyLibraries(activeLibraryIds []string) error {
+	if len(activeLibraryIds) == 0 {
+		return nil
+	}
+
+	// 级联清理关联的同步路径记录
+	if err := db.Db.Where("library_id NOT IN ?", activeLibraryIds).Delete(&EmbyLibrarySyncPath{}).Error; err != nil {
+		return err
+	}
+
+	// 清理已删除的媒体库记录
+	return db.Db.Where("library_id NOT IN ?", activeLibraryIds).Delete(&EmbyLibrary{}).Error
+}
+
 // CreateOrUpdateEmbyMediaItem upsert by ItemId
 func CreateOrUpdateEmbyMediaItem(item *EmbyMediaItem) error {
 	existing := &EmbyMediaItem{}

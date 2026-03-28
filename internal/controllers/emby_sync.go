@@ -105,6 +105,15 @@ func GetEmbyLibraries(c *gin.Context) {
 		return
 	}
 
+	// 清理已不在Emby中存在的媒体库记录
+	activeLibraryIds := make([]string, 0, len(libs))
+	for _, lib := range libs {
+		activeLibraryIds = append(activeLibraryIds, lib.ID)
+	}
+	if err := models.CleanupDeletedEmbyLibraries(activeLibraryIds); err != nil {
+		helpers.AppLogger.Warnf("清理已删除媒体库记录失败: %v", err)
+	}
+
 	libraries, err := models.GetAllEmbyLibraries()
 	if err != nil {
 		c.JSON(http.StatusOK, APIResponse[any]{Code: BadRequest, Message: "获取媒体库列表失败: " + err.Error()})
