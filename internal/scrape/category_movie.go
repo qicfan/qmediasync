@@ -26,6 +26,10 @@ func (cm *CategoryMovieImpl) DoCategory(mediaFile *models.ScrapeMediaFile) (stri
 	genres := mediaFile.Media.Genres
 	originalLanguage := mediaFile.Media.OriginalLanguage
 	helpers.AppLogger.Infof("计算电影的二级分类，影片名称: %s 流派 %+v 和语言 %s", mediaFile.Media.Name, genres, originalLanguage)
+	if len(cm.scrapePath.Category.MovieCategory) == 0 {
+		helpers.AppLogger.Warnf("电影分类规则为空，跳过分类")
+		return "", nil
+	}
 	defaultCategory := cm.scrapePath.Category.MovieCategory[0]
 	if len(genres) == 0 && originalLanguage != "" {
 		helpers.AppLogger.Infof("只有语言 %s 要求，不匹配流派", originalLanguage)

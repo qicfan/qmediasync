@@ -26,6 +26,10 @@ func (ct *CategoryTvShowImpl) DoCategory(mediaFile *models.ScrapeMediaFile) (str
 	genres := mediaFile.Media.Genres
 	originalCountry := mediaFile.Media.OriginCountry
 	helpers.AppLogger.Infof("计算电视剧的二级分类，影片名称: %s 流派 %+v 和国家 %+v 的二级分类", mediaFile.Media.Name, genres, originalCountry)
+	if len(ct.scrapePath.Category.TvShowCategory) == 0 {
+		helpers.AppLogger.Warnf("电视剧分类规则为空，跳过分类")
+		return "", nil
+	}
 	defaultCategory := ct.scrapePath.Category.TvShowCategory[0]
 	if len(genres) == 0 && len(originalCountry) > 0 {
 		helpers.AppLogger.Infof("电视剧只有国家 %+v 要求，没有流派", originalCountry)

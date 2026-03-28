@@ -33,7 +33,7 @@ func (t *TmdbMovieImpl) CheckByNameAndYear(name string, year int, switchYear boo
 		helpers.AppLogger.Errorf("查询tmdb电影详情失败, 下次重试, 失败原因: %v", err)
 		return "", 0, 0, err
 	}
-	if movieDetail != nil && movieDetail.TotalResults > 0 {
+	if movieDetail != nil && movieDetail.TotalResults > 0 && len(movieDetail.Results) > 0 {
 		if movieDetail.TotalResults > 1 {
 			// 如果第一个数据的title等于name则认为是正确的
 			if strings.EqualFold(movieDetail.Results[0].Title, name) || strings.EqualFold(movieDetail.Results[0].OriginalTitle, name) {
