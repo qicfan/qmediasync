@@ -48,7 +48,6 @@ func SetRunningResult(t string, desc string, total int, count int, errorMsg stri
 	runningResult.ErrorMsg = errorMsg
 	runningResult.IsRunning = IsRunning()
 	runningResult.Elapsed = time.Since(runningResult.StartTime).Seconds()
-	helpers.AppLogger.Infof("%s %s %d/%d张表", runningResult.Type, runningResult.Desc, runningResult.Count, runningResult.Total)
 }
 
 func IsRunning() bool {
@@ -194,6 +193,7 @@ func Backup(backupType string, reason string) error {
 	db.Db.Save(record)
 	// 删除目录
 	os.RemoveAll(backupRecordDir)
+	helpers.AppLogger.Infof("备份完成: 共%d张表, 耗%.1f秒, 文件大小%.2fMB", totalTable, time.Since(startTime).Seconds(), float64(stat.Size())/1024/1024)
 	return nil
 }
 
@@ -213,7 +213,6 @@ func backupToJsonFile(backupDir string, modelName string, totalTable int, count 
 	totalCount := 0
 	typ := reflect.TypeOf(model)
 	sliceType := reflect.SliceOf(typ)
-	setCount := 0
 	for {
 		records := reflect.New(sliceType).Interface()
 		if err := db.Db.Model(model).Offset(page * pageSize).Limit(pageSize).Order("id").Find(records).Error; err != nil {
@@ -222,7 +221,6 @@ func backupToJsonFile(backupDir string, modelName string, totalTable int, count 
 		}
 		recordsValue := reflect.ValueOf(records).Elem()
 		if recordsValue.Len() == 0 {
-			helpers.AppLogger.Infof("查询%s完成", modelName)
 			break
 		}
 
@@ -234,9 +232,7 @@ func backupToJsonFile(backupDir string, modelName string, totalTable int, count 
 				helpers.AppLogger.Errorf("写入%s备份文件失败: %v", modelName, err)
 			}
 			totalCount++
-			setCount++
-			if setCount >= 10 {
-				setCount = 0
+			if totalCount%10 == 0 {
 				SetRunningResult("backup", fmt.Sprintf("已备份%s %d条", modelName, totalCount), totalTable, *count, "", false)
 			}
 		}
@@ -244,5 +240,6 @@ func backupToJsonFile(backupDir string, modelName string, totalTable int, count 
 	}
 	*count++
 	SetRunningResult("backup", fmt.Sprintf("已备份%s %d条", modelName, totalCount), totalTable, *count, "", false)
+	helpers.AppLogger.Infof("表[%s]备份完成，共%d条数据", modelName, totalCount)
 	return nil
 }
