@@ -14,30 +14,30 @@ import (
 )
 
 type GiteeRelease struct {
-	ID          int64       `json:"id"`
-	TagName     string      `json:"tag_name"`
-	Name        string      `json:"name"`
-	Body        string      `json:"body"`
-	Draft       bool        `json:"draft"`
-	Prerelease  bool        `json:"prerelease"`
-	PublishedAt string      `json:"published_at"`
+	ID          int64        `json:"id"`
+	TagName     string       `json:"tag_name"`
+	Name        string       `json:"name"`
+	Body        string       `json:"body"`
+	Draft       bool         `json:"draft"`
+	Prerelease  bool         `json:"prerelease"`
+	PublishedAt string       `json:"created_at"`
 	Assets      []GiteeAsset `json:"assets"`
-	HTMLURL     string      `json:"html_url"`
+	HTMLURL     string       `json:"html_url"`
 }
 
 type GiteeAsset struct {
-	ID               int64  `json:"id"`
-	Name             string `json:"name"`
+	ID                 int64  `json:"id"`
+	Name               string `json:"name"`
 	BrowserDownloadURL string `json:"browser_download_url"`
-	Size             int64  `json:"size"`
-	ContentType      string `json:"content_type"`
+	Size               int64  `json:"size"`
+	ContentType        string `json:"content_type"`
 }
 
 type GiteeUpdater struct {
-	Owner          string
-	Repo           string
-	CurrentVersion string
-	HTTPClient     *http.Client
+	Owner             string
+	Repo              string
+	CurrentVersion    string
+	HTTPClient        *http.Client
 	IncludePreRelease bool
 }
 
