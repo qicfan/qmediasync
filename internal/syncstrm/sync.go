@@ -607,6 +607,7 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 							db115File.FileId = filepath.Join(sourceRootPath, db115File.Path, db115File.FileName)
 						}
 						models.AddUploadTaskFromSyncFile(db115File)
+						atomic.AddInt64(&s.NewUpload, 1)
 						return nil
 					}
 					// 网盘存在且设置为上传，需要检查本地是不是比网盘新，如果是的话，需要删除网盘文件并将本地文件上传
@@ -636,6 +637,7 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 							}
 							// 2. 添加上传任务
 							models.AddUploadTaskFromSyncFile(existsFile.GetSyncFile(s, s.Account.BaseUrl))
+							atomic.AddInt64(&s.NewUpload, 1)
 
 							// 3. 删除数据库记录（下次同步时会将新上传的文件插入数据库）
 							s.memSyncCache.DeleteByFileId(existsFile.GetFileId())
