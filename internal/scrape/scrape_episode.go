@@ -230,9 +230,10 @@ func (t *tvShowScrapeImpl) FinishEpisode(mediaFile *models.ScrapeMediaFile) {
 	// if mediaFile.SourceType == models.SourceTypeLocal {
 	// 	t.RemoveEpisodeTmpFiles(mediaFile)
 	// }
-	if mediaFile.ScrapeType == models.ScrapeTypeOnly || mediaFile.RenameType != models.RenameTypeMove {
+	if mediaFile.ScrapeType == models.ScrapeTypeOnly || mediaFile.RenameType != models.RenameTypeMove || mediaFile.IsReScrape {
 		// 如果仅刮削，跳过
 		// 如果不是移动模式，跳过
+		// 如果是重新刮削（回退后），跳过删除源路径
 		// 如果不强制删除来源目录，跳过
 		// 如果视频在来源根目录，跳过
 		helpers.AppLogger.Infof("视频 %s 存在不符合删除来源目录的条件，跳过删除来源目录: %s", mediaFile.Name, mediaFile.Path)
