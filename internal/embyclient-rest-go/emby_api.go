@@ -589,3 +589,104 @@ func ProcessLibraries(embyURL, apiKey string, excludeIds []string) []map[string]
 	}
 	return tasks
 }
+
+// GetMediaItemsForPoster 获取媒体库中用于封面生成的媒体项（带图片信息）
+// 获取 Movie 和 Series 类型，包含图片标签信息
+func (c *Client) GetMediaItemsForPoster(libraryID string, limit int) ([]BaseItemDtoV2, error) {
+	params := url.Values{}
+	params.Set("ParentId", libraryID)
+	params.Set("IncludeItemTypes", "Movie,Series")
+	params.Set("Fields", "PrimaryImageAspectRatio,SortName")
+	params.Set("ImageTypeLimit", "1")
+	params.Set("EnableImageTypes", "Primary")
+	params.Set("SortBy", "DateCreated")
+	params.Set("SortOrder", "Descending")
+	params.Set("Limit", fmt.Sprintf("%d", limit))
+	params.Set("Recursive", "true")
+	params.Set("api_key", c.apiKey)
+
+	reqURL := fmt.Sprintf("%s/emby/Items?%s", c.embyURL, params.Encode())
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API返回状态码: %d", resp.StatusCode)
+	}
+
+	var response QueryResultBaseItemDto
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	// 过滤出有 Primary 图片的项目
+	result := make([]BaseItemDtoV2, 0, len(response.Items))
+	for _, item := range response.Items {
+		if _, hasPrimary := item.ImageTags["Primary"]; hasPrimary {
+			result = append(result, item)
+		}
+	}
+	return result, nil
+}
+
+// DownloadItemImage 下载媒体项的 Primary 图片
+func (c *Client) DownloadItemImage(itemID string, maxWidth int) ([]byte, string, error) {
+	params := url.Values{}
+	params.Set("MaxWidth", fmt.Sprintf("%d", maxWidth))
+	params.Set("api_key", c.apiKey)
+
+	reqURL := fmt.Sprintf("%s/emby/Items/%s/Images/Primary?%s", c.embyURL, itemID, params.Encode())
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("下载图片失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("下载图片返回状态码: %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", fmt.Errorf("读取图片数据失败: %w", err)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	return data, contentType, nil
+}
+
+// UploadItemImage 上传图片到 Emby 媒体项
+func (c *Client) UploadItemImage(itemID string, imageData []byte, contentType string) error {
+	reqURL := fmt.Sprintf("%s/emby/Items/%s/Images/Primary?api_key=%s", c.embyURL, itemID, c.apiKey)
+
+	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(imageData))
+	if err != nil {
+		return fmt.Errorf("创建请求失败: %w", err)
+	}
+	req.Header.Set("Content-Type", contentType)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("上传图片失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("上传图片返回状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}

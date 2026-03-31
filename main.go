@@ -623,9 +623,10 @@ func setRouter(r *gin.Engine) {
 		api.POST("/setting/threads", controllers.UpdateThreads)                                    // 更新线程数
 		api.GET("/setting/threads", controllers.GetThreads)                                        // 获取线程数
 
-		api.POST("/emby/sync/start", controllers.StartEmbySync)     // 手动启动Emby同步
-		api.GET("/emby/sync/status", controllers.GetEmbySyncStatus) // 获取Emby同步状态
-		api.GET("/emby/libraries", controllers.GetEmbyLibraries)    // 获取Emby媒体库列表
+		api.POST("/emby/sync/start", controllers.StartEmbySync)                        // 手动启动Emby同步
+		api.GET("/emby/sync/status", controllers.GetEmbySyncStatus)                    // 获取Emby同步状态
+		api.GET("/emby/libraries", controllers.GetEmbyLibraries)                       // 获取Emby媒体库列表
+		api.POST("/emby/generate-library-posters", controllers.GenerateLibraryPosters) // 手动生成媒体库封面
 		// 删除媒体库与同步目录关联
 
 		api.POST("/sync/start", controllers.StartSync)                       // 启动同步

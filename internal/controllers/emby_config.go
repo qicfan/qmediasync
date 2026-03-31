@@ -56,6 +56,8 @@ type updateEmbyConfigRequest struct {
 	SyncAllLibraries        int    `json:"sync_all_libraries"`
 	EnablePlaybackOverview  int    `json:"enable_playback_overview"`
 	EnablePlaybackProgress  int    `json:"enable_playback_progress"`
+	EnableLibraryPoster     int    `json:"enable_library_poster"`
+	LibraryPosterCron       string `json:"library_poster_cron"`
 	// DeleteNetdiskLibrary    []string `json:"delete_netdisk_library"` // 允许联动删除的媒体库ID
 }
 
@@ -94,15 +96,22 @@ func UpdateEmbyConfig(c *gin.Context) {
 	isNew := err == gorm.ErrRecordNotFound
 	oldSyncEnabled := 0
 	oldSyncCron := req.SyncCron
+	oldEnableLibraryPoster := 0
+	oldLibraryPosterCron := "0 3 * * *"
 	if !isNew {
 		oldSyncEnabled = config.SyncEnabled
 		oldSyncCron = config.SyncCron
+		oldEnableLibraryPoster = config.EnableLibraryPoster
+		oldLibraryPosterCron = config.LibraryPosterCron
 	}
 	if isNew {
 		config = &models.EmbyConfig{}
 	}
 	if req.SyncCron == "" {
 		req.SyncCron = "0 * * * *"
+	}
+	if req.LibraryPosterCron == "" {
+		req.LibraryPosterCron = "0 3 * * *"
 	}
 	config.EmbyUrl = req.EmbyUrl
 	config.EmbyApiKey = req.EmbyApiKey
@@ -117,6 +126,8 @@ func UpdateEmbyConfig(c *gin.Context) {
 	config.SyncAllLibraries = req.SyncAllLibraries
 	config.EnablePlaybackOverview = req.EnablePlaybackOverview
 	config.EnablePlaybackProgress = req.EnablePlaybackProgress
+	config.EnableLibraryPoster = req.EnableLibraryPoster
+	config.LibraryPosterCron = req.LibraryPosterCron
 	// if req.DeleteNetdiskLibrary != nil {
 	// 	config.DeleteNetdiskLibrary = strings.Join(req.DeleteNetdiskLibrary, ",")
 	// }
@@ -131,7 +142,7 @@ func UpdateEmbyConfig(c *gin.Context) {
 		return
 	}
 
-	if oldSyncEnabled != config.SyncEnabled || oldSyncCron != config.SyncCron {
+	if oldSyncEnabled != config.SyncEnabled || oldSyncCron != config.SyncCron || oldEnableLibraryPoster != config.EnableLibraryPoster || oldLibraryPosterCron != config.LibraryPosterCron {
 		// 同步状态改变，需要重新加载cron
 		synccron.InitCron()
 	}

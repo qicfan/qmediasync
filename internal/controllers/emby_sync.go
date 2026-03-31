@@ -121,3 +121,25 @@ func GetEmbyLibraries(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "获取媒体库列表成功", Data: libraries})
 }
+
+// GenerateLibraryPosters 手动触发媒体库封面生成
+// @Summary 手动生成媒体库封面
+// @Description 手动触发为所有媒体库生成美观封面
+// @Tags Emby管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} object
+// @Failure 200 {object} object
+// @Router /emby/generate-library-posters [post]
+// @Security JwtAuth
+// @Security ApiKeyAuth
+func GenerateLibraryPosters(c *gin.Context) {
+	go func() {
+		if err := emby.GenerateAllLibraryPosters(); err != nil {
+			helpers.AppLogger.Errorf("手动触发媒体库封面生成失败: %v", err)
+		} else {
+			helpers.AppLogger.Info("手动触发媒体库封面生成完成")
+		}
+	}()
+	c.JSON(http.StatusOK, APIResponse[any]{Code: Success, Message: "媒体库封面生成任务已启动"})
+}

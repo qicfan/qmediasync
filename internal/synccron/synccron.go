@@ -317,6 +317,18 @@ func InitCron() {
 			helpers.AppLogger.Infof("已修复所有表的主键序列")
 		}
 	})
+	if config, err := models.GetEmbyConfig(); err == nil {
+		if config.EmbyApiKey != "" && config.EmbyUrl != "" && config.EnableLibraryPoster == 1 {
+			GlobalCron.AddFunc(config.LibraryPosterCron, func() {
+				helpers.AppLogger.Info("启动媒体库封面生成任务")
+				if err := emby.GenerateAllLibraryPosters(); err != nil {
+					helpers.AppLogger.Errorf("媒体库封面生成失败: %v", err)
+				} else {
+					helpers.AppLogger.Info("媒体库封面生成完成")
+				}
+			})
+		}
+	}
 
 	addBackupCron()
 
