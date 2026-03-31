@@ -1,6 +1,6 @@
 module Q115-STRM
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.3
@@ -16,7 +16,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/shirou/gopsutil v2.21.11+incompatible
 	github.com/swaggo/swag v1.16.6
-	golang.org/x/crypto v0.42.0
+	golang.org/x/crypto v0.48.0
 	golang.org/x/time v0.8.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -41,8 +41,9 @@ require (
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
-	golang.org/x/mod v0.27.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/image v0.38.0 // indirect
+	golang.org/x/mod v0.33.0 // indirect
+	golang.org/x/tools v0.42.0 // indirect
 	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
 )
 
@@ -68,8 +69,8 @@ require (
 	github.com/ugorji/go/codec v1.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/arch v0.21.0 // indirect
-	golang.org/x/net v0.44.0 // indirect
-	golang.org/x/sync v0.17.0
+	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/sync v0.20.0
 	google.golang.org/protobuf v1.36.9 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -87,8 +88,8 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	golang.org/x/sys v0.36.0
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/sys v0.41.0
+	golang.org/x/text v0.35.0 // indirect
 	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
