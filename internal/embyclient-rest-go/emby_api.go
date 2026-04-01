@@ -3,7 +3,6 @@ package embyclientrestgo
 import (
 	"Q115-STRM/internal/helpers"
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -668,18 +667,15 @@ func (c *Client) DownloadItemImage(itemID string, maxWidth int) ([]byte, string,
 	return data, contentType, nil
 }
 
-// UploadItemImage 上传图片到 Emby 媒体项（Base64编码格式）
+// UploadItemImage 上传图片到 Emby 媒体项（直接上传二进制图片流）
 func (c *Client) UploadItemImage(itemID string, imageData []byte, contentType string) error {
 	reqURL := fmt.Sprintf("%s/emby/Items/%s/Images/Primary?api_key=%s", c.embyURL, itemID, c.apiKey)
 
-	// Emby API 要求图片数据为 Base64 编码格式
-	encoded := base64.StdEncoding.EncodeToString(imageData)
-
-	req, err := http.NewRequest("POST", reqURL, bytes.NewReader([]byte(encoded)))
+	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(imageData))
 	if err != nil {
 		return fmt.Errorf("创建请求失败: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
