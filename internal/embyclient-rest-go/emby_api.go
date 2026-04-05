@@ -518,6 +518,24 @@ func (c *Client) GetLibraryVirtualFolders() ([]VirtualFolderDto, error) {
 	return virtualFolders, nil
 }
 
+// UploadItemImage 上传图片到 Emby 媒体项
+func (c *Client) UploadItemImage(itemId string, imageData []byte, contentType string) error {
+	url := fmt.Sprintf("%s/emby/Items/%s/Images/Primary?api_key=%s", c.embyURL, itemId, c.apiKey)
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(imageData))
+	req.Header.Set("Content-Type", contentType)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("上传图片失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("上传图片失败，状态码: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 // 刷新所有媒体库媒体流数据
 func ProcessLibraries(embyURL, apiKey string, excludeIds []string) []map[string]string {
 	// 创建一个新的 Emby 客户端

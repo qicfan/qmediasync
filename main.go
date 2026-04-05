@@ -6,6 +6,7 @@ import (
 	"Q115-STRM/emby302/web"
 	"Q115-STRM/internal/backup"
 	"Q115-STRM/internal/controllers"
+	"Q115-STRM/internal/covergen/font"
 	"Q115-STRM/internal/db"
 	"Q115-STRM/internal/db/database"
 	"Q115-STRM/internal/github"
@@ -424,6 +425,7 @@ func initLogger() {
 
 func initOthers() {
 	helpers.InitEventBus() // 初始化事件总线
+	font.InitFontManager(helpers.ConfigDir) // 初始化字体管理器
 	models.LoadSettings()  // 从数据库加载设置
 	// 初始化GitHub访问管理器
 	github.InitManager(models.SettingsGlobal.HttpProxy)
@@ -716,6 +718,17 @@ func setRouter(r *gin.Engine) {
 		api.GET("/backup/config", controllers.GetBackupConfig)           // 获取备份配置
 		api.PUT("/backup/config", controllers.UpdateBackupConfig)        // 更新备份配置
 		api.GET("/backup/status", controllers.GetBackupStatus)           // 获取备份状态
+
+		// 封面生成路由组
+		coverGenGroup := api.Group("/cover-gen")
+		{
+			coverGenGroup.GET("/config", controllers.GetCoverGenConfig)
+			coverGenGroup.POST("/config", controllers.UpdateCoverGenConfig)
+			coverGenGroup.POST("/generate", controllers.GenerateCovers)
+			coverGenGroup.POST("/preview", controllers.PreviewCover)
+			coverGenGroup.GET("/status", controllers.GetCoverGenStatus)
+			coverGenGroup.GET("/fonts/status", controllers.GetFontStatus)
+		}
 
 	}
 }
