@@ -37,13 +37,13 @@ func GenerateGridCover(imagePaths []string, libraryName string, config StyleGrid
 		return nil, fmt.Errorf("加载图片失败: %w", err)
 	}
 	
-	width, height := getImageResolution(config.Resolution)
+	width, height := GetImageResolution(config.Resolution)
 	
 	gridImg := createGridImage(images, width, height, config.MultiBlur)
 	
 	dominantColor := color.ExtractDominantColor(images[0], 0.3)
 	
-	finalImg := addGradientOverlay(gridImg, dominantColor, 0.6)
+	finalImg := AddGradientOverlay(gridImg, dominantColor, 0.6)
 	
 	fontManager := font.GetFontManager()
 	if fontManager == nil {
@@ -53,9 +53,9 @@ func GenerateGridCover(imagePaths []string, libraryName string, config StyleGrid
 	zhFontPath := fontManager.GetZhFontPath()
 	enFontPath := fontManager.GetEnFontPath()
 	
-	titleCfg := parseTitleConfig(libraryName, config.TitleConfig)
+	titleCfg := ParseTitleConfig(libraryName, config.TitleConfig)
 	
-	finalImg, err = drawTitles(finalImg, titleCfg.MainTitle, titleCfg.SubTitle, 
+	finalImg, err = DrawTitles(finalImg, titleCfg.MainTitle, titleCfg.SubTitle, 
 		zhFontPath, enFontPath, config.ZhFontSize, config.EnFontSize, config.TitleSpacing)
 	if err != nil {
 		return nil, fmt.Errorf("绘制标题失败: %w", err)
@@ -134,7 +134,7 @@ func createGridImage(images []image.Image, targetWidth, targetHeight int, multiB
 	}
 	
 	if multiBlur {
-		blurredImg := gaussianBlur(images[0], 50)
+		blurredImg := GaussianBlur(images[0], 50)
 		
 		for row := 0; row < gridRows; row++ {
 			for col := 0; col < gridCols; col++ {
@@ -226,7 +226,7 @@ func drawBackground(dst draw.Image, src image.Image, width, height int) {
 		return
 	}
 	
-	blurred := gaussianBlur(src, 50)
+	blurred := GaussianBlur(src, 50)
 	
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
