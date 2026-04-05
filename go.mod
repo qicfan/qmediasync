@@ -5,10 +5,13 @@ go 1.25
 require (
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.3
 	github.com/bogem/id3v2 v1.2.0
+	github.com/davecgh/go-spew v1.1.1
+	github.com/disintegration/imaging v1.6.2
 	github.com/flosch/pongo2/v5 v5.0.0
 	github.com/gin-gonic/gin v1.10.1
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/golang/freetype v0.0.0-20170609003504-e2365fdc0a0d
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gorilla/websocket v1.5.3
 	github.com/lxn/walk v0.0.0-20210112085537-c389da54e794
@@ -16,7 +19,9 @@ require (
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/shirou/gopsutil v2.21.11+incompatible
 	github.com/swaggo/swag v1.16.6
+	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.42.0
+	golang.org/x/image v0.23.0
 	golang.org/x/time v0.8.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
