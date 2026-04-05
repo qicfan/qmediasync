@@ -2,8 +2,8 @@ package covergen
 
 import (
 	"Q115-STRM/internal/covergen/style"
-	"Q115-STRM/internal/helpers"
 	embyclient "Q115-STRM/internal/embyclient-rest-go"
+	"Q115-STRM/internal/helpers"
 	"fmt"
 	"sync"
 	"time"
@@ -49,14 +49,14 @@ func getDefaultConfig() *CoverGenConfig {
 func (e *CoverGenEngine) GetConfig() *CoverGenConfig {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	
+
 	return e.config
 }
 
 func (e *CoverGenEngine) UpdateConfig(newConfig *CoverGenConfig) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	
+
 	e.config = newConfig
 	return nil
 }
@@ -64,7 +64,7 @@ func (e *CoverGenEngine) UpdateConfig(newConfig *CoverGenConfig) error {
 func (e *CoverGenEngine) GetStatus() *CoverGenStatus {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	
+
 	return &CoverGenStatus{
 		IsRunning:      e.isRunning,
 		LastRunTime:    e.lastRunTime,
@@ -80,23 +80,23 @@ func (e *CoverGenEngine) GenerateCovers(req *CoverGenRequest) (*CoverGenSummary,
 	}
 	e.isRunning = true
 	e.mutex.Unlock()
-	
+
 	defer func() {
 		e.mutex.Lock()
 		e.isRunning = false
 		e.mutex.Unlock()
 	}()
-	
+
 	client, err := NewEmbyImageClient()
 	if err != nil {
 		return nil, fmt.Errorf("创建Emby客户端失败: %w", err)
 	}
-	
+
 	libraries, err := client.client.GetAllMediaLibraries()
 	if err != nil {
 		return nil, fmt.Errorf("获取媒体库列表失败: %w", err)
 	}
-	
+
 	var targetLibraries []embyclient.EmbyLibrary
 	if len(req.LibraryIDs) > 0 {
 		for _, lib := range libraries {
@@ -110,19 +110,19 @@ func (e *CoverGenEngine) GenerateCovers(req *CoverGenRequest) (*CoverGenSummary,
 	} else {
 		targetLibraries = libraries
 	}
-	
+
 	if len(targetLibraries) == 0 {
 		return nil, fmt.Errorf("没有找到目标媒体库")
 	}
-	
+
 	results := make([]CoverGenResult, 0, len(targetLibraries))
-	
+
 	for _, lib := range targetLibraries {
 		startTime := time.Now()
-		
-		result, err := e.generateCoverForLibrary(client, lib, req.Style)
+
+		err := e.generateCoverForLibrary(client, lib, req.Style)
 		durationMs := time.Since(startTime).Milliseconds()
-		
+
 		if err != nil {
 			helpers.AppLogger.Errorf("生成媒体库 %s 封面失败: %v", lib.Name, err)
 			results = append(results, CoverGenResult{
@@ -142,19 +142,19 @@ func (e *CoverGenEngine) GenerateCovers(req *CoverGenRequest) (*CoverGenSummary,
 			})
 		}
 	}
-	
+
 	successCount := 0
 	for _, r := range results {
 		if r.Success {
 			successCount++
 		}
 	}
-	
+
 	e.mutex.Lock()
 	e.lastRunResults = results
 	e.lastRunTime = time.Now().Format("2006-01-02 15:04:05")
 	e.mutex.Unlock()
-	
+
 	return &CoverGenSummary{
 		Total:   len(results),
 		Success: successCount,
@@ -180,11 +180,11 @@ func (e *CoverGenEngine) generateSingleCover(client *EmbyImageClient, library em
 		return fmt.Errorf("下载图片失败: %w", err)
 	}
 	defer CleanupTempImages(images)
-	
+
 	if len(images) == 0 {
 		return fmt.Errorf("没有可用的图片")
 	}
-	
+
 	config := style.StyleSingleConfig{
 		ZhFontSize:   e.config.ZhFontSize,
 		EnFontSize:   e.config.EnFontSize,
@@ -195,16 +195,16 @@ func (e *CoverGenEngine) generateSingleCover(client *EmbyImageClient, library em
 		UsePrimary:   e.config.UsePrimary,
 		TitleConfig:  e.config.TitleConfig,
 	}
-	
+
 	coverData, err := style.GenerateSingleCover(images[0].LocalPath, library.Name, config)
 	if err != nil {
 		return fmt.Errorf("生成封面失败: %w", err)
 	}
-	
+
 	if err := client.UploadCoverToEmby(library.ID, coverData); err != nil {
 		return fmt.Errorf("上传封面到Emby失败: %w", err)
 	}
-	
+
 	helpers.AppLogger.Infof("媒体库 %s 单图封面生成并上传成功", library.Name)
 	return nil
 }
@@ -215,16 +215,16 @@ func (e *CoverGenEngine) generateGridCover(client *EmbyImageClient, library emby
 		return fmt.Errorf("下载图片失败: %w", err)
 	}
 	defer CleanupTempImages(images)
-	
+
 	if len(images) == 0 {
 		return fmt.Errorf("没有可用的图片")
 	}
-	
+
 	imagePaths := make([]string, 0, len(images))
 	for _, img := range images {
 		imagePaths = append(imagePaths, img.LocalPath)
 	}
-	
+
 	config := style.StyleGridConfig{
 		ZhFontSize:   e.config.ZhFontSize,
 		EnFontSize:   e.config.EnFontSize,
@@ -235,16 +235,16 @@ func (e *CoverGenEngine) generateGridCover(client *EmbyImageClient, library emby
 		UsePrimary:   e.config.UsePrimary,
 		TitleConfig:  e.config.TitleConfig,
 	}
-	
+
 	coverData, err := style.GenerateGridCover(imagePaths, library.Name, config)
 	if err != nil {
 		return fmt.Errorf("生成封面失败: %w", err)
 	}
-	
+
 	if err := client.UploadCoverToEmby(library.ID, coverData); err != nil {
 		return fmt.Errorf("上传封面到Emby失败: %w", err)
 	}
-	
+
 	helpers.AppLogger.Infof("媒体库 %s 九宫格封面生成并上传成功", library.Name)
 	return nil
 }
@@ -254,12 +254,12 @@ func (e *CoverGenEngine) PreviewCover(libraryID string, styleType CoverStyle, cu
 	if err != nil {
 		return nil, fmt.Errorf("创建Emby客户端失败: %w", err)
 	}
-	
+
 	libraries, err := client.client.GetAllMediaLibraries()
 	if err != nil {
 		return nil, fmt.Errorf("获取媒体库列表失败: %w", err)
 	}
-	
+
 	var targetLibrary *embyclient.EmbyLibrary
 	for _, lib := range libraries {
 		if lib.ID == libraryID {
@@ -267,21 +267,21 @@ func (e *CoverGenEngine) PreviewCover(libraryID string, styleType CoverStyle, cu
 			break
 		}
 	}
-	
+
 	if targetLibrary == nil {
 		return nil, fmt.Errorf("未找到媒体库: %s", libraryID)
 	}
-	
+
 	images, err := client.DownloadImagesForLibrary(libraryID, 1, e.config.UsePrimary, e.config.SortBy)
 	if err != nil {
 		return nil, fmt.Errorf("下载图片失败: %w", err)
 	}
 	defer CleanupTempImages(images)
-	
+
 	if len(images) == 0 {
 		return nil, fmt.Errorf("没有可用的图片")
 	}
-	
+
 	switch styleType {
 	case CoverStyleSingle:
 		config := style.StyleSingleConfig{
@@ -294,25 +294,25 @@ func (e *CoverGenEngine) PreviewCover(libraryID string, styleType CoverStyle, cu
 			UsePrimary:   e.config.UsePrimary,
 			TitleConfig:  e.config.TitleConfig,
 		}
-		
+
 		if len(customTitle) >= 2 {
 			config.TitleConfig = fmt.Sprintf("%s:\n- %s\n- %s", targetLibrary.Name, customTitle[0], customTitle[1])
 		}
-		
+
 		return style.GenerateSingleCover(images[0].LocalPath, targetLibrary.Name, config)
-		
+
 	case CoverStyleGrid:
 		images9, err := client.DownloadImagesForLibrary(libraryID, 9, e.config.UsePrimary, e.config.SortBy)
 		if err != nil {
 			return nil, fmt.Errorf("下载图片失败: %w", err)
 		}
 		defer CleanupTempImages(images9)
-		
+
 		imagePaths := make([]string, 0, len(images9))
 		for _, img := range images9 {
 			imagePaths = append(imagePaths, img.LocalPath)
 		}
-		
+
 		config := style.StyleGridConfig{
 			ZhFontSize:   e.config.ZhFontSize,
 			EnFontSize:   e.config.EnFontSize,
@@ -323,13 +323,13 @@ func (e *CoverGenEngine) PreviewCover(libraryID string, styleType CoverStyle, cu
 			UsePrimary:   e.config.UsePrimary,
 			TitleConfig:  e.config.TitleConfig,
 		}
-		
+
 		if len(customTitle) >= 2 {
 			config.TitleConfig = fmt.Sprintf("%s:\n- %s\n- %s", targetLibrary.Name, customTitle[0], customTitle[1])
 		}
-		
+
 		return style.GenerateGridCover(imagePaths, targetLibrary.Name, config)
-		
+
 	default:
 		return nil, fmt.Errorf("不支持的封面样式: %s", styleType)
 	}
