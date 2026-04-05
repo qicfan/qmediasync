@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"image/jpeg"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -57,6 +58,13 @@ func (c *EmbyImageClient) GetLibraryMediaItems(libraryID string, sortBy CoverSor
 	}
 	
 	items := allItems
+	
+	if sortBy == CoverSortRandom {
+		rand.Shuffle(len(items), func(i, j int) {
+			items[i], items[j] = items[j], items[i]
+		})
+	}
+	
 	if limit > 0 && len(items) > limit {
 		items = items[:limit]
 	}

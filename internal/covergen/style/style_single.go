@@ -36,7 +36,7 @@ type TitleConfig struct {
 	SubTitle  string
 }
 
-func parseTitleConfig(libraryName, titleConfig string) TitleConfig {
+func ParseTitleConfig(libraryName, titleConfig string) TitleConfig {
 	return TitleConfig{
 		MainTitle: libraryName,
 		SubTitle:  libraryName,
@@ -55,11 +55,11 @@ func GenerateSingleCover(imagePath string, libraryName string, config StyleSingl
 		return nil, fmt.Errorf("解码图片失败: %w", err)
 	}
 	
-	width, height := getImageResolution(config.Resolution)
+	width, height := GetImageResolution(config.Resolution)
 	
 	resizedImg := resizeAndCropImage(img, width, height)
 	
-	blurredImg := gaussianBlur(resizedImg, config.BlurSize)
+	blurredImg := GaussianBlur(resizedImg, config.BlurSize)
 	
 	foregroundImg := resizeToFitImage(img, width, height)
 	
@@ -67,7 +67,7 @@ func GenerateSingleCover(imagePath string, libraryName string, config StyleSingl
 	
 	dominantColor := color.ExtractDominantColor(img, 0.3)
 	
-	finalImg = addGradientOverlay(finalImg, dominantColor, 0.6)
+	finalImg = AddGradientOverlay(finalImg, dominantColor, 0.6)
 	
 	fontManager := font.GetFontManager()
 	if fontManager == nil {
@@ -77,9 +77,9 @@ func GenerateSingleCover(imagePath string, libraryName string, config StyleSingl
 	zhFontPath := fontManager.GetZhFontPath()
 	enFontPath := fontManager.GetEnFontPath()
 	
-	titleCfg := parseTitleConfig(libraryName, config.TitleConfig)
+	titleCfg := ParseTitleConfig(libraryName, config.TitleConfig)
 	
-	finalImg, err = drawTitles(finalImg, titleCfg.MainTitle, titleCfg.SubTitle, 
+	finalImg, err = DrawTitles(finalImg, titleCfg.MainTitle, titleCfg.SubTitle, 
 		zhFontPath, enFontPath, config.ZhFontSize, config.EnFontSize, config.TitleSpacing)
 	if err != nil {
 		return nil, fmt.Errorf("绘制标题失败: %w", err)
@@ -93,7 +93,7 @@ func GenerateSingleCover(imagePath string, libraryName string, config StyleSingl
 	return buf.Bytes(), nil
 }
 
-func getImageResolution(res string) (int, int) {
+func GetImageResolution(res string) (int, int) {
 	switch res {
 	case "1080p":
 		return 1920, 1080
@@ -153,7 +153,7 @@ func resizeAndCropImage(img image.Image, targetWidth, targetHeight int) image.Im
 	return croppedImg
 }
 
-func gaussianBlur(img image.Image, radius int) image.Image {
+func GaussianBlur(img image.Image, radius int) image.Image {
 	if img == nil || radius <= 0 {
 		return img
 	}
@@ -274,7 +274,7 @@ func blendImages(background, foreground image.Image, ratio float64) image.Image 
 	return result
 }
 
-func addGradientOverlay(img image.Image, dominantColor color.RGB, maxAlpha float64) image.Image {
+func AddGradientOverlay(img image.Image, dominantColor color.RGB, maxAlpha float64) image.Image {
 	if img == nil {
 		return nil
 	}
@@ -311,7 +311,7 @@ func addGradientOverlay(img image.Image, dominantColor color.RGB, maxAlpha float
 	return result
 }
 
-func drawTitles(img image.Image, mainTitle, subTitle string, 
+func DrawTitles(img image.Image, mainTitle, subTitle string, 
 	zhFontPath, enFontPath string, zhSize, enSize, spacing float64) (image.Image, error) {
 	if img == nil {
 		return nil, fmt.Errorf("图片为空")
