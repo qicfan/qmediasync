@@ -76,13 +76,17 @@ func (d *localDriver) CreateDirRecursively(ctx context.Context, path string) (pa
 	if err != nil {
 		return "", "", fmt.Errorf("计算相对路径失败: %s 错误：%v", path, err)
 	}
-	targetPath := filepath.Join(d.s.SourcePath, relPath)
+	relPath = filepath.ToSlash(relPath)
+	targetPath := filepath.ToSlash(filepath.Join(d.s.SourcePath, relPath))
 	if err := os.MkdirAll(targetPath, 0755); err != nil {
 		return "", "", fmt.Errorf("创建目录失败: %s 错误：%v", targetPath, err)
 	}
 	// 将新添加的目录加入同步缓存
+	// ParentId 必须保存网盘（挂载目录）中的父目录路径：本地类型的真实网盘路径保存在 ParentId 中，
+	// SyncFileCache.GetFullRemotePath()/GetLocalFilePath() 都依赖它。如果只保存相对路径，
+	// 同一次同步中该目录下的文件就无法通过本地路径在缓存中匹配到父目录（Issue #258 同源问题）
 	syncFileCache := &SyncFileCache{
-		ParentId:   filepath.Dir(relPath),
+		ParentId:   filepath.ToSlash(filepath.Dir(filepath.Join(d.s.SourcePath, relPath))),
 		FileName:   filepath.Base(relPath),
 		FileType:   v115open.TypeDir,
 		IsVideo:    false,

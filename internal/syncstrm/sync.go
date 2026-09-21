@@ -541,10 +541,10 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 							s.Sync.Logger.Infof("本地元数据文件 %s 由于存在上传任务所以不需要处理", path)
 							return nil
 						}
-						sourceRootPath := filepath.ToSlash(filepath.Join(s.TargetPath, s.Sync.RemotePath))
-						if s.Account.SourceType == models.SourceTypeLocal {
-							sourceRootPath = s.Sync.RemotePath
-						}
+						isLocalSource := s.Account.SourceType == models.SourceTypeLocal
+						// 网盘侧的同步根目录（上传路径 remotePath 的相对路径基准）、
+						// 与本地文件路径 parentDir 处于同一命名空间的同步根目录（用于判断父目录是否就是同步根）
+						sourceRootPath, localRootPath := s.uploadSyncRoots(isLocalSource)
 						// 添加上传任务
 						// 检查文件是否可以上传
 						// 普通元数据文件需要父目录存在才可以上传，允许上传目录下的文件需要循环创建目录上传
@@ -559,7 +559,7 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 						// 如果不存在，检查是否可以创建目录
 						var parentPath, parentPathId, remotePath string
 						s.Sync.Logger.Infof("准备上传本地元数据文件 %s，检查父目录 %s 是否存在网盘", parentDir, sourceRootPath)
-						if existsPath == nil && parentDir != sourceRootPath {
+						if existsPath == nil && parentDir != localRootPath {
 							if !isAllowedUploadDir {
 								s.Sync.Logger.Infof("父目录 %s 不存在网盘，进入删除流程 %s，", parentDir, path)
 								s.RemoveFileAndCheckDirEmtry(path)
@@ -574,14 +574,13 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 								parentPath = parentDir
 							}
 						} else {
-							if parentDir == sourceRootPath {
-								parentPath = sourceRootPath
-								parentPathId = s.SourcePathId
-								remotePath = s.SourcePath
+							if parentDir == localRootPath {
+								parentPath = parentDir
+								parentPathId, remotePath = s.uploadRootParent(sourceRootPath, isLocalSource)
 							} else {
 								parentPath = parentDir
 								parentPathId = existsPath.GetFileId()
-								remotePath = fmt.Sprintf("%s/%s", existsPath.Path, existsPath.FileName)
+								remotePath = s.uploadRemoteDirPath(existsPath, sourceRootPath, isLocalSource)
 							}
 						}
 						// 加入上传队列
@@ -650,6 +649,63 @@ func (s *SyncStrm) compareLocalFilesWithTempTable() error {
 		})
 	}
 	return nil
+}
+
+// uploadRemoteDirPath 计算待上传元数据文件所在父目录在网盘中的上传路径（仅用于父目录已存在网盘时）
+// 非本地类型（115/百度/OpenList/123）：统一使用 SyncFileCache.GetFullRemotePath() 取父目录在网盘中的
+// 完整路径。OpenList 的 Path 字段同样从不赋值、真实路径保存在 ParentId 中，原来用 Path 拼接会退化成
+// "/子目录名"，使元数据被上传到网盘根目录，与 Issue #258 属于同一类错误
+// 本地类型（网盘是挂载到本地的目录）：上传时 FileId = 网盘同步根目录 + 本函数返回值 + 文件名，
+// 因此需要把父目录的完整网盘路径换算成相对于网盘同步根目录的相对路径
+func (s *SyncStrm) uploadRemoteDirPath(existsPath *SyncFileCache, remoteRoot string, isLocalSource bool) string {
+	if existsPath == nil {
+		return ""
+	}
+	fullRemotePath := filepath.ToSlash(existsPath.GetFullRemotePath())
+	if !isLocalSource {
+		return fullRemotePath
+	}
+	relPath, err := filepath.Rel(filepath.ToSlash(filepath.Clean(remoteRoot)), fullRemotePath)
+	if err == nil && !isRelativePathOutsideRoot(relPath) {
+		return filepath.ToSlash(relPath)
+	}
+	// 算不出相对路径：一般是同一次同步中新创建的目录（缓存里保存的已经是相对路径），
+	// 或者网盘根目录配置与缓存中的路径不同源。此时按「已经是相对路径」处理：
+	// 宁可多出层级，也不能丢掉父级目录——丢掉父级目录会把文件上传到错误的位置（Issue #258 的症状）
+	if s.Sync != nil && s.Sync.Logger != nil {
+		s.Sync.Logger.Warnf("父目录 %s 无法换算成相对于网盘同步根目录 %s 的相对路径: %v，按相对路径处理", fullRemotePath, remoteRoot, err)
+	}
+	return filepath.ToSlash(strings.TrimPrefix(strings.TrimPrefix(fullRemotePath, "./"), "/"))
+}
+
+// isRelativePathOutsideRoot 判断相对路径是否指向同步根目录之外
+func isRelativePathOutsideRoot(relPath string) bool {
+	return relPath == ".." || strings.HasPrefix(relPath, "../") || strings.HasPrefix(relPath, `..\`)
+}
+
+// uploadRootParent 返回待上传文件直接位于同步根目录时使用的父目录信息
+// 本地类型：网盘根目录就是本地挂载目录本身，ParentId 保存网盘路径、上传路径相对网盘根就是当前目录
+// （"."，filepath.Join 会清理掉），最终 FileId = 网盘根目录 + 文件名
+// 非本地类型：Path 保存的是网盘中的路径，保持原有行为
+func (s *SyncStrm) uploadRootParent(remoteRoot string, isLocalSource bool) (parentPathId, remotePath string) {
+	if isLocalSource {
+		return remoteRoot, "."
+	}
+	return s.SourcePathId, s.SourcePath
+}
+
+// uploadSyncRoots 计算上传元数据文件时用到的两个同步根目录
+// 返回值一：网盘侧的同步根目录，是上传路径（remotePath）的相对路径基准
+// 返回值二：与本地文件路径 parentDir 处于同一命名空间的同步根目录，用于判断父目录是否就是同步根目录
+// 本地类型的网盘是挂载到本地的目录：本地文件路径以 TargetPath 为根，与网盘根目录不在同一命名空间，
+// 直接用网盘根目录和本地路径比较会恒不相等，使同步根目录下的文件走错分支（Issue #258 同源问题）。
+// 这里对 TargetPath 做 Clean，避免配置里带了结尾分隔符（如 D:/strm/）导致比较不相等
+func (s *SyncStrm) uploadSyncRoots(isLocalSource bool) (remoteRoot, localRoot string) {
+	remoteRoot = filepath.ToSlash(filepath.Join(s.TargetPath, s.Sync.RemotePath))
+	if isLocalSource {
+		return filepath.ToSlash(s.Sync.RemotePath), filepath.ToSlash(filepath.Clean(s.TargetPath))
+	}
+	return remoteRoot, remoteRoot
 }
 
 // 处理SyncFile表和内存同步缓存的数据差异

@@ -1,0 +1,16 @@
+# 覆盖用 Dockerfile：以官方运行时镜像为底座，只替换 QMediaSync 二进制。
+#
+# 为什么可以这样换：官方镜像最新版本是 v0.14.23，而修复分支的基线（main）与 v0.14.23 之间
+# 只有 README 和构建脚本的改动，没有一行 Go 代码或 web_statics 改动，
+# 因此新二进制与底座镜像里的前端资源、scripts/、ffmpeg、postgresql15 完全匹配。
+# 固定 v0.14.23 而不是 :latest，避免上游以后更新 latest 造成前端资源不匹配。
+#
+# 用 COPY --chmod 而不是 RUN chmod：这样构建过程不需要执行任何指令，
+# 多架构构建时不必装 QEMU 模拟。
+FROM qicfan/qmediasync:v0.14.23
+
+ARG TARGETARCH=amd64
+
+COPY --chmod=0755 build/QMediaSync-linux-${TARGETARCH} /app/QMediaSync
+
+# 底座镜像原有的 VOLUME / EXPOSE(12333 12332 8095 8094) / CMD 全部保留

@@ -1,0 +1,75 @@
+name: build-258fix-image
+
+# 由 GitHub 自己编译并推送镜像到 GHCR，服务器直接 docker pull，无需本地构建。
+# 产物：ghcr.io/<你的用户名>/qmediasync:258fix
+#
+# 首次使用需要先启用 Actions：
+#   仓库页面 → Actions 标签 → 点击 "I understand my workflows, go ahead and enable them"
+# 然后 Actions → build-258fix-image → Run workflow 即可。
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/258-local-meta-upload-path
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/qmediasync
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # 固定检出修复分支：这样即使在 main 上手动触发，构建的也是带修复的代码
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/258-local-meta-upload-path
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: 编译 linux 二进制（amd64 + arm64）
+        run: |
+          set -euo pipefail
+          # 仓库把 go.sum 加进了 .gitignore，所以要先 tidy 生成
+          go mod tidy
+          mkdir -p build
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath \
+              -ldflags "-s -w -X main.Version=v0.14.24-258fix -X 'main.PublishDate=$(date +%F)'" \
+              -o "build/QMediaSync-linux-$arch" .
+          done
+          ls -lh build
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.fix258
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:258fix
+
+      - name: 输出结果
+        run: |
+          {
+            echo "### 镜像已推送"
+            echo ""
+            echo '```'
+            echo "docker pull ${{ env.IMAGE }}:258fix"
+            echo '```'
+            echo ""
+            echo "如果服务器上 pull 报 denied，把包设为公开："
+            echo "https://github.com/users/${{ github.repository_owner }}/packages/container/qmediasync/settings"
+          } >> "$GITHUB_STEP_SUMMARY"
