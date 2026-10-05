@@ -30,7 +30,7 @@ func (c *Client) GetToken() (*TokenData, error) {
 		return nil, err
 	}
 	tokenData := result.Data
-	helpers.OpenListLog.Infof("开放平台获取访问凭证成功: %s", tokenData.Token)
+	helpers.OpenListLog.Info("开放平台获取访问凭证成功")
 	// 给客户端设置新的token
 	c.SetAuthToken(tokenData.Token)
 	// 通知models保存token到数据库
