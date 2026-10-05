@@ -126,7 +126,10 @@ func (c *Client) request(url string, req *resty.Request) (*resty.Response, error
 		return response, err
 	}
 	// helpers.OpenListLog.Infof("认证访问 %s %s\nstate=%v, code=%d, msg=%s, data=%s\n", req.Method, req.URL, resp.State, resp.Code, resp.Message, string(resp.Data))
-	helpers.OpenListLog.Infof("%s %s 请求数据：%+v 返回值：%s\n", req.Method, req.URL, req.Body, string(data))
+	// 登录请求的请求数据含密码，返回值含访问凭证，不写入日志
+	if url != "/api/auth/login" {
+		helpers.OpenListLog.Infof("%s %s 请求数据：%+v 返回值：%s\n", req.Method, req.URL, req.Body, string(data))
+	}
 	if data != nil && jsonResult != nil {
 		switch jsonResult["code"].(float64) {
 		case http.StatusUnauthorized:
